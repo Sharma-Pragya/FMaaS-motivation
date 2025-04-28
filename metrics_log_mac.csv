@@ -1,0 +1,2 @@
+model_name,dataset_name,device,model_load_duration_sec,memory_after_load_mb,peak_memory_usage_mb,avg_cpu_usage_percent,avg_gpu_usage_percent,total_prompt_tokens,prompt_eval_rate_tokens_per_sec,ttft_ms,total_generated_tokens,throughput_tokens_per_sec,accuracy,average_latency_ms,total_inference_time_sec,num_samples
+bert-base-uncased,imdb,mps,2.8250431250198744,335.08203125,374.44921875,3.960999999999999,,12800,3206.276119042712,,0,,0.0,39.92170207668096,3.992170207668096,100
