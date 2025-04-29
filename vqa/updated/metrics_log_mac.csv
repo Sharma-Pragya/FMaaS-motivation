@@ -1,0 +1,2 @@
+model_name,dataset_name,device,model_load_duration_sec,memory_after_load_mb,peak_memory_usage_mb,avg_cpu_usage_percent,avg_gpu_usage_percent,total_prompt_tokens,prompt_eval_rate_tokens_per_sec,ttft_ms,total_generated_tokens,throughput_tokens_per_sec,accuracy,average_latency_ms,total_inference_time_sec,num_samples
+google/gemma-3-1b-it,dataset/val2014,mps,112.27926707267761,368.86328125,4.873638153076172,15.6,,1369,5.120636392092926,0,834,3.1195111402523743,0.25,2671.6134691238403,267.349582195282,100

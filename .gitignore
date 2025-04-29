@@ -1,2 +1,5 @@
 vqa/dataset
+vqa/updated/models
+vqa/updated/dataset
+hf-token.txt
 .DS_Store
