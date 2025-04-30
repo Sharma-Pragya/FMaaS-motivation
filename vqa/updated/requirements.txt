@@ -5,3 +5,7 @@ transformers
 pynvml
 pillow
 moondream
+sentencepiece
+protobuf
+wheel
+flash-attn

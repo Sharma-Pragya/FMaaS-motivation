@@ -23,10 +23,20 @@ def load_model(model_id):
 
     start_time = time.time()
     try:
-        if "llava" in model_name:
+        if "llava-1.5" in model_name:
             from transformers import LlavaForConditionalGeneration, LlavaProcessor
             processor = LlavaProcessor.from_pretrained(model_id)
             model = LlavaForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16).to("cuda")
+        elif "llava-v1.6" in model_name or "llava-next" in model_name:
+            from transformers import LlavaNextForConditionalGeneration, AutoProcessor
+            processor = AutoProcessor.from_pretrained(model_id, trust_remote_code=True)
+            model = LlavaNextForConditionalGeneration.from_pretrained(
+                model_id,
+                torch_dtype=torch.float16,
+                trust_remote_code=True,
+                low_cpu_mem_usage=True,
+                use_flash_attention_2=True
+            ).to("cuda")
         elif "moondream" in model_name:
             from transformers import AutoProcessor
             processor = AutoProcessor.from_pretrained(model_id, trust_remote_code=True)
