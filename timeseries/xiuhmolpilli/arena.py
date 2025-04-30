@@ -113,65 +113,30 @@ class FoundationalTimeSeriesArena:
 
 if __name__ == "__main__":
     import fire
-
-    from .models.benchmarks import (
-        ADIDA,
-        AutoARIMA,
-        AutoCES,
-        AutoETS,
-        AutoLGBM,
-        AutoNHITS,
-        AutoTFT,
-        CrostonClassic,
-        DOTheta,
-        HistoricAverage,
-        NixtlaProphet,
-        IMAPA,
-        SeasonalNaive,
-        Theta,
-        ZeroModel,
-    )
     from .models.foundational import (
         Chronos,
         LagLlama,
         Moirai,
-        TimeGPT,
         TimesFM,
     )
 
-    frequencies = ["Hourly", "Daily", "Weekly", "Monthly"]
+    frequencies = ["Hourly", 
+    # "Daily", 
+    # "Weekly", 
+    # "Monthly"
+    ]
     files = [
         f"./nixtla-foundational-time-series/data/{freq}.parquet" for freq in frequencies
     ]
     arena = FoundationalTimeSeriesArena(
         models=[
-            # naive
-            SeasonalNaive(),
-            HistoricAverage(),
-            ZeroModel(),
-            # statistical
-            AutoARIMA(),
-            NixtlaProphet(),
-            AutoCES(),
-            AutoETS(),
-            Theta(),
-            DOTheta(),
-            ADIDA(),
-            IMAPA(),
-            CrostonClassic(),
-            # ml
-            AutoLGBM(),
-            # neural
-            AutoTFT(),
-            AutoNHITS(),
             # foundational models
             Chronos(),
             LagLlama(),
             Moirai(),
-            TimeGPT(),
-            TimeGPT(model="timegpt-1-long-horizon", alias="TimeGPTLongHorizon"),
             TimesFM(),
         ],
         parquet_data_paths=files,
     )
+    print("Competing models...")
     fire.Fire(arena.compete)

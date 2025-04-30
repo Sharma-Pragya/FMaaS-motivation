@@ -75,7 +75,7 @@ class TimeSeriesDataset:
 class Chronos(Forecaster):
     def __init__(
         self,
-        repo_id: str = "amazon/chronos-t5-large",
+        repo_id: str = "amazon/chronos-t5-tiny",
         batch_size: int = 16,
         alias: str = "Chronos",
     ):

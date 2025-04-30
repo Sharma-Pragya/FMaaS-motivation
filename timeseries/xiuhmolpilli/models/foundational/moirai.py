@@ -7,7 +7,7 @@ from ..utils.gluonts_forecaster import GluonTSForecaster
 class Moirai(GluonTSForecaster):
     def __init__(
         self,
-        repo_id: str = "Salesforce/moirai-1.0-R-large",
+        repo_id: str = "Salesforce/moirai-1.0-R-small",
         filename: str = "model.ckpt",
         alias: str = "Moirai",
     ):
