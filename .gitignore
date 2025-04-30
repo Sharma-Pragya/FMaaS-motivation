@@ -4,3 +4,4 @@ vqa/updated/dataset
 hf-token.txt
 .DS_Store
 *__pycache__
+timeseries/nixtla-foundational-time-series/
