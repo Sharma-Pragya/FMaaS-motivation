@@ -1,0 +1,6 @@
+torch
+psutil
+huggingface_hub
+transformers
+pynvml
+pillow
