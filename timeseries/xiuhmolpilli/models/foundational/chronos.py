@@ -92,7 +92,7 @@ class Chronos(Forecaster):
         self.load_memory_before = get_gpu_memory_and_util(self.handle)["gpu_mem_used_mb"]
         self.model = ChronosPipeline.from_pretrained(
             repo_id,
-            device_map="auto",
+            device_map="cuda:0",
             torch_dtype=torch.bfloat16,
         )
         self.load_duration = perf_counter() - start
@@ -112,11 +112,11 @@ class Chronos(Forecaster):
         total_cpu_util=0
         total_cpu_mem=0
         tracemalloc.start()
-        
+        gpu_before = get_gpu_memory_and_util(self.handle)
+        cpu_before = get_cpu_memory_and_util()
         for batch in tqdm(dataset):
             start = perf_counter()
-            gpu_before = get_gpu_memory_and_util(self.handle)
-            cpu_before = get_cpu_memory_and_util()
+
             pred = self.model.predict(batch, prediction_length=h)
             inference_times.append(perf_counter() - start)
             gpu_after = get_gpu_memory_and_util(self.handle)
@@ -130,9 +130,9 @@ class Chronos(Forecaster):
             print(f"CPU util: {cpu_after['cpu_util_percent']}%, Mem used: Δ{cpu_mem_delta:.2f} MB")
             print(f"GPU util: {gpu_after['gpu_util_percent']}%, Mem used: Δ{gpu_mem_delta:.2f} MB")
             total_gpu_util += gpu_after["gpu_util_percent"]
-            total_gpu_mem += gpu_after["gpu_mem_used_mb"]
+            total_gpu_mem += gpu_mem_delta
             total_cpu_util += cpu_after["cpu_util_percent"]
-            total_cpu_mem += cpu_after["cpu_mem_used_mb"]
+            total_cpu_mem += cpu_mem_delta
 
         fcst = torch.cat(fcsts)
         fcst = fcst.numpy()
