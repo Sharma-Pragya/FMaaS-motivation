@@ -9,6 +9,7 @@ class Moirai(GluonTSForecaster):
         self,
         repo_id: str = "Salesforce/moirai-1.0-R-small",
         filename: str = "model.ckpt",
+        batch_size: int = 32,
         alias: str = "Moirai",
     ):
         super().__init__(
@@ -28,5 +29,5 @@ class Moirai(GluonTSForecaster):
             feat_dynamic_real_dim=0,
             past_feat_dynamic_real_dim=0,
         )
-        predictor = model.create_predictor(batch_size=32)
+        predictor = model.create_predictor(batch_size=self.batch_size)
         return predictor

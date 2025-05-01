@@ -1,6 +1,7 @@
 from typing import List
 
 import pandas as pd
+import numpy as np
 from gluonts.time_feature.seasonality import get_seasonality as _get_seasonality
 from tqdm import tqdm
 from utilsforecast.processing import (
@@ -44,6 +45,11 @@ class Forecaster:
         df = maybe_convert_col_to_datetime(df, "ds")
         # mlforecast cv code
         results = []
+        avg_batch_time=[]
+        avg_split_time=[]
+        gpu_mem=[]
+        gpu_util=[]
+        avg_peak=[]
         sort_idxs = maybe_compute_sort_indices(df, "unique_id", "ds")
         if sort_idxs is not None:
             df = take_rows(df, sort_idxs)
@@ -61,7 +67,7 @@ class Forecaster:
                 raise NotImplementedError(
                     "Cross validation with exogenous variables is not yet supported."
                 )
-            y_pred = self.forecast(
+            y_pred,average_batch_time,total_inference_time,avg_gpu_util,avg_gpu_mem,peak = self.forecast(
                 df=train,
                 h=h,
                 freq=freq,
@@ -79,9 +85,14 @@ class Forecaster:
                     "and that there aren't any missing periods."
                 )
             results.append(result)
+            gpu_mem.append(avg_gpu_mem)
+            gpu_util.append(avg_gpu_util)
+            avg_peak.append(peak)
+            avg_batch_time.append(average_batch_time)
+            avg_split_time.append(total_inference_time)
         out = vertical_concat(results)
         out = drop_index_if_pandas(out)
         first_out_cols = ["unique_id", "ds", "cutoff", "y"]
         remaining_cols = [c for c in out.columns if c not in first_out_cols]
         fcst_cv_df = out[first_out_cols + remaining_cols]
-        return fcst_cv_df
+        return fcst_cv_df,np.mean(avg_batch_time),np.mean(avg_split_time),np.mean(avg_gpu_util),np.mean(avg_gpu_mem),np.mean(avg_peak)

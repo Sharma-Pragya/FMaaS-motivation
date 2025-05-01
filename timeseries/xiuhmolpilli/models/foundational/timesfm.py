@@ -1,5 +1,6 @@
 import pandas as pd
 import timesfm
+from time import perf_counter
 import torch
 from paxml import checkpoints
 
@@ -44,6 +45,8 @@ class TimesFM(Forecaster):
         freq: str,
     ) -> pd.DataFrame:
         predictor = self.get_predictor(prediction_length=h)
+        inference_times=[]
+        start = perf_counter()
         fcst_df = predictor.forecast_on_df(
             inputs=df,
             freq=freq,
@@ -51,5 +54,9 @@ class TimesFM(Forecaster):
             model_name=self.alias,
             num_jobs=1,
         )
+        inference_times.append(perf_counter() - start)
+        total_inference_time = sum(inference_times)
+        average_batch_time = total_inference_time / len(inference_times)
+        print(f"Total inference time: {total_inference_time:.4f}s, Avg per batch: {average_batch_time:.4f}s")
         fcst_df = fcst_df[["unique_id", "ds", self.alias]]
-        return fcst_df
+        return fcst_df,average_batch_time,total_inference_time

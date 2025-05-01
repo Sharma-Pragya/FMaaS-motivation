@@ -9,6 +9,7 @@ class LagLlama(GluonTSForecaster):
         self,
         repo_id: str = "time-series-foundation-models/Lag-Llama",
         filename: str = "lag-llama.ckpt",
+        batch_size: int = 32,
         alias: str = "LagLlama",
     ):
         super().__init__(

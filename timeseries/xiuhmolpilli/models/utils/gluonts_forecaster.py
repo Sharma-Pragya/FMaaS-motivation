@@ -1,5 +1,5 @@
 from typing import Iterable, List, Any
-
+from time import perf_counter
 import pandas as pd
 import torch
 from gluonts.dataset.pandas import PandasDataset
@@ -104,11 +104,17 @@ class GluonTSForecaster(Forecaster):
             timestamp="ds",
             freq=fix_freq(freq),
         )
+        inference_times=[]
         predictor = self.get_predictor(prediction_length=h)
+        start = perf_counter()
         fcsts = predictor.predict(gluonts_dataset, num_samples=100)
+        inference_times.append(perf_counter() - start)
         fcst_df = self.gluonts_fcsts_to_df(
             fcsts,
             freq=freq,
             model_name=self.alias,
         )
-        return fcst_df
+        total_inference_time = sum(inference_times)
+        average_batch_time = total_inference_time / len(inference_times)
+        print(f"Total inference time: {total_inference_time}s, Avg per batch: {average_batch_time}s")
+        return fcst_df,average_batch_time,total_inference_time

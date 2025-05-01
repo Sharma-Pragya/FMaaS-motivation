@@ -1,5 +1,5 @@
 from typing import Iterable, List
-
+from time import perf_counter
 import numpy as np
 import pandas as pd
 import torch
@@ -8,6 +8,32 @@ from tqdm import tqdm
 from utilsforecast.processing import make_future_dataframe
 
 from ..utils.forecaster import Forecaster
+
+import tracemalloc
+import psutil
+from pynvml import *
+
+def init_nvml():
+    nvmlInit()
+    handle = nvmlDeviceGetHandleByIndex(0)  # assuming single-GPU
+    return handle
+
+def get_gpu_memory_and_util(handle):
+    mem_info = nvmlDeviceGetMemoryInfo(handle)
+    util = nvmlDeviceGetUtilizationRates(handle)
+    return {
+        "gpu_mem_used_mb": mem_info.used / 1024**2,
+        "gpu_util_percent": util.gpu,
+    }
+
+# def get_cpu_memory_and_util(handle):
+#     process = psutil.Process()
+#     cpu_mem = process.memory_info().rss / 1024**2
+#     cpu_util = psutil.cpu_percent(interval=1)
+#     return {
+#         "cpu_mem_used_mb": cpu_mem,
+#         "cpu_util_percent": cpu_util,
+#     }
 
 
 class TimeSeriesDataset:
@@ -82,11 +108,15 @@ class Chronos(Forecaster):
         self.repo_id = repo_id
         self.batch_size = batch_size
         self.alias = alias
+        start = perf_counter()
+        self.load_memory_before=psutil.Process().memory_info().rss / 1024**2
         self.model = ChronosPipeline.from_pretrained(
             repo_id,
             device_map="auto",
             torch_dtype=torch.bfloat16,
         )
+        self.load_duration = perf_counter() - start
+        self.load_memory= psutil.Process().memory_info().rss / 1024**2-self.load_memory_before
 
     def forecast(
         self,
@@ -95,11 +125,38 @@ class Chronos(Forecaster):
         freq: str,
     ) -> pd.DataFrame:
         dataset = TimeSeriesDataset.from_df(df, batch_size=self.batch_size)
-        fcsts = [
-            self.model.predict(batch, prediction_length=h) for batch in tqdm(dataset)
-        ]
+        inference_times=[]
+        fcsts=[]
+        total_gpu_util = 0
+        total_gpu_mem = 0
+        tracemalloc.start()
+        handle = init_nvml()
+        for batch in tqdm(dataset):
+            start = perf_counter()
+            gpu_before = get_gpu_memory_and_util(handle)
+            pred = self.model.predict(batch, prediction_length=h)
+            inference_times.append(perf_counter() - start)
+            gpu_after = get_gpu_memory_and_util(handle)
+            fcsts.append(pred)
+            gpu_mem_delta = gpu_after["gpu_mem_used_mb"] - gpu_before["gpu_mem_used_mb"]
+            print(f"GPU util: {gpu_after['gpu_util_percent']}%, Mem used: Δ{gpu_mem_delta:.2f} MB")
+            total_gpu_util += gpu_after["gpu_util_percent"]
+            total_gpu_mem += gpu_after["gpu_mem_used_mb"]
+
         fcst = torch.cat(fcsts)
         fcst = fcst.numpy()
         fcst_df = dataset.make_future_dataframe(h=h, freq=freq)
         fcst_df[self.alias] = np.mean(fcst, axis=1).reshape(-1, 1)
-        return fcst_df
+
+        total_inference_time = sum(inference_times)
+        current, peak = tracemalloc.get_traced_memory()
+        tracemalloc.stop()
+
+        average_batch_time = total_inference_time / len(inference_times)
+        avg_gpu_util = total_gpu_util / len(inference_times)
+        avg_gpu_mem = total_gpu_mem / len(inference_times)
+
+        print(f"GPU util: {avg_gpu_util}%, Mem used: Δ{avg_gpu_mem} MB")
+        print(f"Total inference time: {total_inference_time}s, Avg per batch: {average_batch_time}s")
+
+        return fcst_df,average_batch_time,total_inference_time,avg_gpu_util,avg_gpu_mem, peak / 1024**2

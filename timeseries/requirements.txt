@@ -23,3 +23,4 @@ flax==0.8.2 #timesfm error flax
 protobuf==3.19.6 #timesfm error flax
 pytest
 prophet
+pynvml #

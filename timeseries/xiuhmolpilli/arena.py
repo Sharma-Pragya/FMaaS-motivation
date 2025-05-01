@@ -10,7 +10,8 @@ from .models.utils.forecaster import Forecaster
 from .utils.experiment_handler import ExperimentDataset, ForecastDataset
 from .utils.logger_config import setup_logger
 
-
+import sys
+import yaml
 main_logger = setup_logger(__name__)
 
 
@@ -26,8 +27,16 @@ def print_df_rich(df: pd.DataFrame):
     console.print(table)
 
 
-def time_to_df(total_time: float, model_name: str) -> pd.DataFrame:
-    return pd.DataFrame({"metric": ["time"], model_name: [total_time]})
+def time_to_df(total_time: float, average_batch_time:float,average_split_time:float,average_gpu_mem:float,average_gpu_util:float,average_peak:float,load_duration:float,load_memory:float,model_name: str) -> pd.DataFrame:
+    return pd.DataFrame([{"metric": "time", model_name: total_time},
+            {"metric": "AVG batch time", model_name: average_batch_time},
+            {"metric": "AVG split time", model_name: average_split_time},
+            {"metric": "AVG GPU mem", model_name: average_gpu_mem},
+            {"metric": "AVG GPU util", model_name: average_gpu_util},
+            {"metric": "Peak GPU mem", model_name: average_peak},
+            {"metric": "Load time", model_name: load_duration},
+            {"metric": "Load memory", model_name: load_memory}
+            ])
 
 
 class FoundationalTimeSeriesArena:
@@ -64,7 +73,7 @@ class FoundationalTimeSeriesArena:
                 if not is_forecast_ready or overwrite:
                     main_logger.info(f"Forecasting {model.alias}")
                     start = perf_counter()
-                    forecast_df = model.cross_validation(
+                    forecast_df,average_batch_time,average_split_time,average_gpu_util,average_gpu_mem,average_peak = model.cross_validation(
                         df=dataset.df,
                         h=dataset.horizon,
                         freq=dataset.pandas_frequency,
@@ -72,8 +81,9 @@ class FoundationalTimeSeriesArena:
                     total_time = perf_counter() - start
                     fcst_dataset = ForecastDataset(
                         forecast_df=forecast_df,
-                        time_df=time_to_df(total_time, model.alias),
+                        time_df=time_to_df(total_time, average_batch_time,average_split_time,average_gpu_mem,average_gpu_util,average_peak,model.load_duration,model.load_memory,model.alias),
                     )
+                    print(time_to_df(total_time, average_batch_time,average_split_time,average_gpu_mem,average_gpu_util,average_peak,model.load_duration,model.load_memory,model.alias))
                     fcst_dataset.save_to_dir(dir=model_results_path)
                 else:
                     main_logger.info(f"Loading {model.alias} forecast")
@@ -112,31 +122,35 @@ class FoundationalTimeSeriesArena:
 
 
 if __name__ == "__main__":
-    import fire
-    from .models.foundational import (
-        Chronos,
-        LagLlama,
-        Moirai,
-        TimesFM,
-    )
+    from .models.foundational import Chronos, LagLlama, Moirai, TimesFM
+    # Model class lookup
+    MODEL_REGISTRY = {
+        "Chronos": Chronos,
+        "LagLlama": LagLlama,
+        "Moirai": Moirai,
+        "TimesFM": TimesFM,
+    }
 
-    frequencies = ["Hourly", 
-    # "Daily", 
-    # "Weekly", 
-    # "Monthly"
-    ]
-    files = [
-        f"./nixtla-foundational-time-series/data/{freq}.parquet" for freq in frequencies
-    ]
+    # Load config
+    with open("config.yaml", "r") as f:
+        config = yaml.safe_load(f)
+
+    frequencies = config.get("frequencies", [])
+    files = [f"./nixtla-foundational-time-series/data/{freq}.parquet" for freq in frequencies]
+
+    models = []
+    for mcfg in config["models"]:
+        model_type = mcfg.pop("type")
+        if model_type not in MODEL_REGISTRY:
+            raise ValueError(f"Unknown model type: {model_type}")
+
+        model_class = MODEL_REGISTRY[model_type]
+        print(f"Instantiating model: {model_type} with config: {mcfg}")
+        models.append(model_class(**mcfg))
+
     arena = FoundationalTimeSeriesArena(
-        models=[
-            # foundational models
-            Chronos(),
-            LagLlama(),
-            Moirai(),
-            TimesFM(),
-        ],
+        models=models,
         parquet_data_paths=files,
     )
-    print("Competing models...")
-    fire.Fire(arena.compete)
+
+    arena.compete()
