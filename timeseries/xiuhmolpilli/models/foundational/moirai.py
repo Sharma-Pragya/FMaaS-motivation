@@ -17,8 +17,11 @@ class Moirai(GluonTSForecaster):
             filename=filename,
             alias=alias,
         )
+        self.handle = init_nvml()
 
     def get_predictor(self, prediction_length: int) -> PyTorchPredictor:
+        start = perf_counter()
+        self.load_memory_before = get_gpu_memory_and_util(self.handle)["gpu_mem_used_mb"]
         model = MoiraiForecast(
             module=MoiraiModule.from_pretrained(self.repo_id),
             prediction_length=prediction_length,
@@ -30,4 +33,7 @@ class Moirai(GluonTSForecaster):
             past_feat_dynamic_real_dim=0,
         )
         predictor = model.create_predictor(batch_size=self.batch_size)
+        self.load_duration = perf_counter() - start
+        self.load_memory= get_gpu_memory_and_util(self.handle)["gpu_mem_used_mb"]-self.load_memory_before
+
         return predictor

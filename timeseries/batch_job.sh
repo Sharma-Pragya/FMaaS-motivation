@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --mem=48G  # Requested Memory
 #SBATCH -p gpu-preempt # Partition
-#SBATCH --gres=gpu:a100:1 # Number and type of GPUs
+#SBATCH --gres=gpu:a16:1 # Number and type of GPUs
 #SBATCH -t 02:00:00  # Job time limit
 #SBATCH -o slurm-%j.out  # %j = job ID
 

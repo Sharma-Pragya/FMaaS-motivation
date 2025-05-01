@@ -27,13 +27,13 @@ def print_df_rich(df: pd.DataFrame):
     console.print(table)
 
 
-def time_to_df(total_time: float, average_batch_time:float,average_split_time:float,average_gpu_mem:float,average_gpu_util:float,average_peak:float,load_duration:float,load_memory:float,model_name: str) -> pd.DataFrame:
+def time_to_df(total_time: float, average_batch_time:float,average_gpu_mem:float,average_gpu_util:float,average_cpu_util:float,average_cpu_mem:float,load_duration:float,load_memory:float,model_name: str) -> pd.DataFrame:
     return pd.DataFrame([{"metric": "time", model_name: total_time},
             {"metric": "AVG batch time", model_name: average_batch_time},
-            {"metric": "AVG split time", model_name: average_split_time},
             {"metric": "AVG GPU mem", model_name: average_gpu_mem},
             {"metric": "AVG GPU util", model_name: average_gpu_util},
-            {"metric": "Peak GPU mem", model_name: average_peak},
+            {"metric": "AVG CPU mem", model_name: average_cpu_mem},
+            {"metric": "AVG CPU util", model_name: average_cpu_util},
             {"metric": "Load time", model_name: load_duration},
             {"metric": "Load memory", model_name: load_memory}
             ])
@@ -73,7 +73,7 @@ class FoundationalTimeSeriesArena:
                 if not is_forecast_ready or overwrite:
                     main_logger.info(f"Forecasting {model.alias}")
                     start = perf_counter()
-                    forecast_df,average_batch_time,average_split_time,average_gpu_util,average_gpu_mem,average_peak = model.cross_validation(
+                    forecast_df,average_batch_time,average_gpu_util,average_gpu_mem,average_cpu_util,average_cpu_mem = model.cross_validation(
                         df=dataset.df,
                         h=dataset.horizon,
                         freq=dataset.pandas_frequency,
@@ -81,9 +81,9 @@ class FoundationalTimeSeriesArena:
                     total_time = perf_counter() - start
                     fcst_dataset = ForecastDataset(
                         forecast_df=forecast_df,
-                        time_df=time_to_df(total_time, average_batch_time,average_split_time,average_gpu_mem,average_gpu_util,average_peak,model.load_duration,model.load_memory,model.alias),
+                        time_df=time_to_df(total_time,average_batch_time,average_gpu_mem,average_gpu_util,average_cpu_util,average_cpu_mem,model.load_duration,model.load_memory,model.alias),
                     )
-                    print(time_to_df(total_time, average_batch_time,average_split_time,average_gpu_mem,average_gpu_util,average_peak,model.load_duration,model.load_memory,model.alias))
+                    print(time_to_df(total_time, average_batch_time,average_gpu_mem,average_gpu_util,average_cpu_util,average_cpu_mem,model.load_duration,model.load_memory,model.alias))
                     fcst_dataset.save_to_dir(dir=model_results_path)
                 else:
                     main_logger.info(f"Loading {model.alias} forecast")

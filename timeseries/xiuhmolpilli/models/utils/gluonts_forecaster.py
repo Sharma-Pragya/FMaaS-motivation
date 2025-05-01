@@ -105,16 +105,33 @@ class GluonTSForecaster(Forecaster):
             freq=fix_freq(freq),
         )
         inference_times=[]
+        total_gpu_util = 0
+        total_gpu_mem = 0
+        tracemalloc.start()
+        handle = init_nvml()
+
         predictor = self.get_predictor(prediction_length=h)
+
         start = perf_counter()
+        gpu_before = get_gpu_memory_and_util(handle)
         fcsts = predictor.predict(gluonts_dataset, num_samples=100)
         inference_times.append(perf_counter() - start)
+        gpu_after = get_gpu_memory_and_util(handle)
         fcst_df = self.gluonts_fcsts_to_df(
             fcsts,
             freq=freq,
             model_name=self.alias,
         )
+        gpu_mem_delta = gpu_after["gpu_mem_used_mb"] - gpu_before["gpu_mem_used_mb"]
+        print(f"GPU util: {gpu_after['gpu_util_percent']}%, Mem used: Δ{gpu_mem_delta:.2f} MB")
+        total_gpu_util += gpu_after["gpu_util_percent"]
+        total_gpu_mem += gpu_after["gpu_mem_used_mb"]
         total_inference_time = sum(inference_times)
+        current, peak = tracemalloc.get_traced_memory()
+        tracemalloc.stop()
         average_batch_time = total_inference_time / len(inference_times)
+        avg_gpu_util = total_gpu_util / len(inference_times)
+        avg_gpu_mem = total_gpu_mem / len(inference_times)
+        print(f"GPU util: {avg_gpu_util}%, Mem used: Δ{avg_gpu_mem} MB")
         print(f"Total inference time: {total_inference_time}s, Avg per batch: {average_batch_time}s")
-        return fcst_df,average_batch_time,total_inference_time
+        return fcst_df,average_batch_time,total_inference_time,avg_gpu_util,avg_gpu_mem, peak / 1024**2

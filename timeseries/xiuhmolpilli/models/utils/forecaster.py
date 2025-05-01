@@ -46,7 +46,6 @@ class Forecaster:
         # mlforecast cv code
         results = []
         avg_batch_time=[]
-        avg_split_time=[]
         gpu_mem=[]
         gpu_util=[]
         avg_peak=[]
@@ -67,7 +66,7 @@ class Forecaster:
                 raise NotImplementedError(
                     "Cross validation with exogenous variables is not yet supported."
                 )
-            y_pred,average_batch_time,total_inference_time,avg_gpu_util,avg_gpu_mem,peak = self.forecast(
+            y_pred,average_batch_time,avg_gpu_util,avg_gpu_mem,avg_cpu_util,avg_cpu_mem = self.forecast(
                 df=train,
                 h=h,
                 freq=freq,
@@ -87,12 +86,12 @@ class Forecaster:
             results.append(result)
             gpu_mem.append(avg_gpu_mem)
             gpu_util.append(avg_gpu_util)
-            avg_peak.append(peak)
+            cpu_mem.append(avg_cpu_mem)
+            cpu_util.append(avg_cpu_util)
             avg_batch_time.append(average_batch_time)
-            avg_split_time.append(total_inference_time)
         out = vertical_concat(results)
         out = drop_index_if_pandas(out)
         first_out_cols = ["unique_id", "ds", "cutoff", "y"]
         remaining_cols = [c for c in out.columns if c not in first_out_cols]
         fcst_cv_df = out[first_out_cols + remaining_cols]
-        return fcst_cv_df,np.mean(avg_batch_time),np.mean(avg_split_time),np.mean(avg_gpu_util),np.mean(avg_gpu_mem),np.mean(avg_peak)
+        return fcst_cv_df,np.mean(avg_batch_time),np.mean(gpu_util),np.mean(gpu_mem),np.mean(cpu_mem),np.mean(cpu_util)
