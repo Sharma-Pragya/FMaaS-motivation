@@ -119,8 +119,9 @@ class Chronos(Forecaster):
             cpu_before = get_cpu_memory_and_util()
             pred = self.model.predict(batch, prediction_length=h)
             inference_times.append(perf_counter() - start)
-            cpu_after = get_cpu_memory_and_util()
             gpu_after = get_gpu_memory_and_util(self.handle)
+            cpu_after = get_cpu_memory_and_util()
+            
             fcsts.append(pred)
             gpu_mem_delta = gpu_after["gpu_mem_used_mb"] - gpu_before["gpu_mem_used_mb"]
             gpu_util_delta = gpu_after["gpu_util_percent"] - gpu_before["gpu_util_percent"]
