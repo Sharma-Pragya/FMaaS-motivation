@@ -2,6 +2,7 @@ torch
 psutil
 huggingface_hub
 transformers
+pyvips
 pynvml
 pillow
 moondream
