@@ -111,7 +111,6 @@ class Chronos(Forecaster):
         total_gpu_mem = 0
         total_cpu_util=0
         total_cpu_mem=0
-        tracemalloc.start()
         gpu_before = get_gpu_memory_and_util(self.handle)
         cpu_before = get_cpu_memory_and_util()
         for batch in tqdm(dataset):
