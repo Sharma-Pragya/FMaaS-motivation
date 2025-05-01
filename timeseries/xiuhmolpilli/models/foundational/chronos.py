@@ -138,15 +138,15 @@ class Chronos(Forecaster):
         fcst_df = dataset.make_future_dataframe(h=h, freq=freq)
         fcst_df[self.alias] = np.mean(fcst, axis=1).reshape(-1, 1)
 
-        total_inference_time = sum(inference_times)
+        inference_time = sum(inference_times)
 
-        average_batch_time = total_inference_time / len(inference_times)
+        average_batch_time = inference_time / len(inference_times)
         avg_gpu_util = total_gpu_util / len(inference_times)
         avg_gpu_mem = total_gpu_mem / len(inference_times)
         avg_cpu_util = total_cpu_util / len(inference_times)
         avg_cpu_mem = total_cpu_mem / len(inference_times)
 
         print(f"GPU util: {avg_gpu_util}%, Mem used: Δ{avg_gpu_mem} MB")
-        print(f"Total inference time: {total_inference_time}s, Avg per batch: {average_batch_time}s")
+        print(f"Avg per batch: {average_batch_time}s")
 
-        return fcst_df,average_batch_time,total_inference_time,avg_gpu_util,avg_gpu_mem,avg_cpu_util,avg_cpu_mem
+        return fcst_df,average_batch_time,avg_gpu_util,avg_gpu_mem,avg_cpu_util,avg_cpu_mem

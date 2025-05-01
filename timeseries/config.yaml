@@ -5,7 +5,7 @@ models:
   - type: Chronos
     repo_id: amazon/chronos-t5-tiny
     alias: chronos_tiny
-    batch_size: 50
+    batch_size: 10
 
   # - type: Chronos
   #   repo_id: amazon/chronos-t5-mini

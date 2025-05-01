@@ -3,6 +3,7 @@ import threading
 import os
 import json
 from pynvml import *
+import psutil
 
 LOG_INTERVAL = 0.001  # Logging interval in seconds
 stop_logging = threading.Event()  # Stop signal
