@@ -48,7 +48,8 @@ class Forecaster:
         avg_batch_time=[]
         gpu_mem=[]
         gpu_util=[]
-        avg_peak=[]
+        cpu_mem=[]
+        cpu_util=[]   
         sort_idxs = maybe_compute_sort_indices(df, "unique_id", "ds")
         if sort_idxs is not None:
             df = take_rows(df, sort_idxs)
@@ -94,4 +95,4 @@ class Forecaster:
         first_out_cols = ["unique_id", "ds", "cutoff", "y"]
         remaining_cols = [c for c in out.columns if c not in first_out_cols]
         fcst_cv_df = out[first_out_cols + remaining_cols]
-        return fcst_cv_df,np.mean(avg_batch_time),np.mean(gpu_util),np.mean(gpu_mem),np.mean(cpu_mem),np.mean(cpu_util)
+        return fcst_cv_df,np.mean(avg_batch_time),np.mean(gpu_util),np.mean(gpu_mem),np.mean(cpu_util),np.mean(cpu_mem)
