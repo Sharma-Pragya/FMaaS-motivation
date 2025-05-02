@@ -4,6 +4,7 @@ from lag_llama.gluon.estimator import LagLlamaEstimator
 from ..utils.gluonts_forecaster import GluonTSForecaster
 from ..utils.log_collector import *
 from time import perf_counter
+from ..utils.log_collector import *
 
 class LagLlama(GluonTSForecaster):
     def __init__(

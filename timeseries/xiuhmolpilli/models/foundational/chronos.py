@@ -12,7 +12,6 @@ from ..utils.log_collector import *
 
 import tracemalloc
 import psutil
-from pynvml import *
 
 
 class TimeSeriesDataset:

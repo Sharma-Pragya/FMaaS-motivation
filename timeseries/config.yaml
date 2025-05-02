@@ -2,10 +2,10 @@ frequencies:
   - Hourly
 
 models:
-  - type: Chronos
-    repo_id: amazon/chronos-t5-tiny
-    alias: chronos_tiny
-    batch_size: 1
+  # - type: Chronos
+  #   repo_id: amazon/chronos-t5-tiny
+  #   alias: chronos_tiny
+  #   batch_size: 1
 
   # - type: Chronos
   #   repo_id: amazon/chronos-t5-mini
@@ -29,7 +29,7 @@ models:
 
 
   # - type: Moirai
-  #   repo_id: Salesforce/moirai-16.0-R-small
+  #   repo_id: Salesforce/moirai-1.0-R-small
   #   alias: Moirai_Small
   #   batch_size: 16
 
@@ -48,12 +48,12 @@ models:
   #   alias: LagLlama
   #   batch_size: 16
 
-  # - type: TimesFM
-  #   repo_id: google/timesfm-16.0-200m
-  #   alias: TimesFM-200m
-  #   batch_size: 16
+  - type: TimesFM
+    repo_id: google/timesfm-1.0-200m
+    alias: TimesFM-200m
+    batch_size: 16
 
   # - type: TimesFM
-  #   repo_id: google/timesfm-16.0-500m
+  #   repo_id: google/timesfm-1.0-500m
   #   alias: TimesFM-500m
   #   batch_size: 16

@@ -2,7 +2,8 @@ from gluonts.torch.model.predictor import PyTorchPredictor
 from uni2ts.model.moirai import MoiraiForecast, MoiraiModule
 
 from ..utils.gluonts_forecaster import GluonTSForecaster
-
+from ..utils.log_collector import *
+from time import perf_counter
 
 class Moirai(GluonTSForecaster):
     def __init__(
@@ -12,12 +13,14 @@ class Moirai(GluonTSForecaster):
         batch_size: int = 32,
         alias: str = "Moirai",
     ):
+        self.batch_size= batch_size
+        self.handle = init_nvml()
         super().__init__(
             repo_id=repo_id,
             filename=filename,
             alias=alias,
         )
-        self.handle = init_nvml()
+
 
     def get_predictor(self, prediction_length: int) -> PyTorchPredictor:
         start = perf_counter()
