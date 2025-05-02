@@ -41,9 +41,18 @@ def get_gpu_name():
     return torch.cuda.get_device_name(0) if torch.cuda.is_available() else "CPU"
 
 def inject_gpu_name_in_log(log_file, gpu_name):
-    with open(log_file, "r") as f:
-        rows = list(csv.DictReader(f))
-        fieldnames = rows[0].keys() if rows else []
+    try:
+        with open(log_file, "r") as f:
+            rows = list(csv.DictReader(f))
+            fieldnames = rows[0].keys() if rows else []
+    except FileNotFoundError:
+        print(f"⚠️ Log file {log_file} not found. Creating a new one.")
+        rows = []
+        fieldnames = []
+
+    # If log exists but is empty, try to detect fieldnames from standard structure
+    if not fieldnames and rows:
+        fieldnames = rows[0].keys()
 
     # Add gpu_name field if it doesn't exist
     if "gpu_name" not in fieldnames:
@@ -65,8 +74,11 @@ def main():
 
     for model in model_list:
         print(f"\nRunning model: {model}")
-        update_config_model(model)
-        subprocess.run(["python", "gpu_run_model_inference.py"], check=True)
+        subprocess.run([
+            "python", "gpu_run_model_inference.py",
+            "--model_name", model,
+            "--log_file", log_file
+        ], check=True)
         inject_gpu_name_in_log(log_file, gpu_name)
         time.sleep(1)
 

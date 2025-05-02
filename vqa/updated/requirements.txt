@@ -10,3 +10,5 @@ sentencepiece
 protobuf
 wheel
 flash-attn
+qwen-vl-utils
+torchvision
