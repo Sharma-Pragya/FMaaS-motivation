@@ -154,6 +154,7 @@ if __name__ == "__main__":
         config = yaml.safe_load(f)
 
     frequencies = config.get("frequencies", [])
+    device = config.get("device", [])
     files = [f"./nixtla-foundational-time-series/data/{freq}.parquet" for freq in frequencies]
 
     models = []
