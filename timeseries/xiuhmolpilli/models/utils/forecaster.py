@@ -43,6 +43,14 @@ class Forecaster:
         step_size: int | None = None,
     ) -> pd.DataFrame:
         df = maybe_convert_col_to_datetime(df, "ds")
+        max_series=100
+        # Limit the number of unique time series to process
+        if max_series > 0:
+            unique_ids = df['unique_id'].unique()
+            if len(unique_ids) > max_series:
+                print(f"Limiting dataset to first {max_series} time series out of {len(unique_ids)}")
+                selected_ids = unique_ids[:max_series]
+                df = df[df['unique_id'].isin(selected_ids)]
         # mlforecast cv code
         results = []
         avg_batch_time=[]
