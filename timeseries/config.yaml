@@ -39,7 +39,7 @@ models:
     batch_size: 1
 
   - type: Moirai
-    repo_id: Salesforce/moirai-16.0-R-large
+    repo_id: Salesforce/moirai-1.0-R-large
     alias: Moirai_Large
     batch_size: 1
 
