@@ -12,3 +12,7 @@ wheel
 flash-attn
 qwen-vl-utils
 torchvision
+accelerate
+pandas
+matplotlib
+seaborn

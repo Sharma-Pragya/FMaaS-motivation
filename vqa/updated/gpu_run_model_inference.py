@@ -7,10 +7,16 @@ import tracemalloc
 from huggingface_hub import login
 from PIL import Image
 from transformers import AutoModelForCausalLM, AutoProcessor, GenerationConfig
+from transformers.image_utils import load_image
 from config import model_name, dataset, dataset_json, models_directory
 import csv, argparse
 from pynvml import *
 import argparse
+import builtins
+from typing import List
+
+# Workaround for broken MINICPM code that doesn't import List
+builtins.List = List
 
 # ============ Parse CLI Arguments ============
 def parse_args():
@@ -63,40 +69,45 @@ def load_model(model_id, handle):
     try:
         if "llava-1.5" in model_name:
             from transformers import LlavaForConditionalGeneration, LlavaProcessor
-            processor = LlavaProcessor.from_pretrained(model_id, cache_dir=models_directory)
-            model = LlavaForConditionalGeneration.from_pretrained(model_id, cache_dir=models_directory, torch_dtype=torch.float16).to("cuda")
+            processor = LlavaProcessor.from_pretrained(model_id, cache_dir=models_directory, use_fast=True)
+            model = LlavaForConditionalGeneration.from_pretrained(model_id, cache_dir=models_directory, torch_dtype=torch.float16, attn_implementation="flash_attention_2", device_map={"": "cuda:0"}).to("cuda")
         elif "llava-v1.6" in model_name or "llava-next" in model_name:
             from transformers import LlavaNextForConditionalGeneration, AutoProcessor
-            processor = AutoProcessor.from_pretrained(model_id, cache_dir=models_directory, trust_remote_code=True)
-            model = LlavaNextForConditionalGeneration.from_pretrained(model_id, cache_dir=models_directory, torch_dtype=torch.float16, trust_remote_code=True, low_cpu_mem_usage=True, use_flash_attention_2=True).to("cuda")
-        elif "moondream" in model_name:
+            processor = AutoProcessor.from_pretrained(model_id, cache_dir=models_directory, trust_remote_code=True, use_fast=True)
+            model = LlavaNextForConditionalGeneration.from_pretrained(model_id, cache_dir=models_directory, torch_dtype=torch.float16, trust_remote_code=True, low_cpu_mem_usage=True, attn_implementation="flash_attention_2", device_map={"": "cuda:0"}).to("cuda")
+        elif "moondream2" in model_name:
             from transformers import AutoProcessor
-            processor = AutoProcessor.from_pretrained(model_id, cache_dir=models_directory, trust_remote_code=True)
+            processor = None #AutoProcessor.from_pretrained(model_id, cache_dir=models_directory, trust_remote_code=True)
             model = AutoModelForCausalLM.from_pretrained(model_id, cache_dir=models_directory, trust_remote_code=True).to("cuda")
         elif "qwen" in model_name.lower():
             from transformers import AutoModelForVision2Seq, AutoProcessor
-            processor = AutoProcessor.from_pretrained(model_id, cache_dir=models_directory, trust_remote_code=True)
-            model = AutoModelForVision2Seq.from_pretrained(model_id, cache_dir=models_directory, torch_dtype=torch.float16, trust_remote_code=True).to("cuda")
+            processor = AutoProcessor.from_pretrained(model_id, cache_dir=models_directory, trust_remote_code=True, use_fast=True)
+            model = AutoModelForVision2Seq.from_pretrained(model_id, cache_dir=models_directory, torch_dtype=torch.float16, trust_remote_code=True, attn_implementation="flash_attention_2", device_map={"": "cuda:0"}).to("cuda")
         elif "molmo" in model_name.lower():
             from transformers import AutoProcessor
-            processor = AutoProcessor.from_pretrained(model_id, cache_dir=models_directory, trust_remote_code=True)
-            model = AutoModelForCausalLM.from_pretrained(model_id, cache_dir=models_directory, trust_remote_code=True, torch_dtype=dtype).to("cuda")
+            processor = AutoProcessor.from_pretrained(model_id, cache_dir=models_directory, trust_remote_code=True, use_fast=True)
+            model = AutoModelForCausalLM.from_pretrained(model_id, cache_dir=models_directory, trust_remote_code=True, torch_dtype=dtype, attn_implementation="eager", device_map={"": "cuda:0"}).to("cuda")
         elif "phi" in model_name.lower():
             from transformers import AutoProcessor
-            processor = AutoProcessor.from_pretrained(model_id, cache_dir=models_directory, trust_remote_code=True, attn_implementation="eager")
-            model = AutoModelForCausalLM.from_pretrained(model_id, cache_dir=models_directory, trust_remote_code=True, torch_dtype=dtype, attn_implementation="eager").to("cuda")
+            processor = AutoProcessor.from_pretrained(model_id, cache_dir=models_directory, trust_remote_code=True, use_fast=True)
+            model = AutoModelForCausalLM.from_pretrained(model_id, cache_dir=models_directory, trust_remote_code=True, torch_dtype=torch.float16, attn_implementation="flash_attention_2", device_map={"": "cuda:0"}).to("cuda")
         elif "smolvlm" in model_name.lower():
             from transformers import AutoModelForVision2Seq, AutoProcessor
-            processor = AutoProcessor.from_pretrained(model_id, cache_dir=models_directory, trust_remote_code=True)
-            model = AutoModelForVision2Seq.from_pretrained(model_id, cache_dir=models_directory, torch_dtype=torch.float16, trust_remote_code=True).to("cuda")
+            processor = AutoProcessor.from_pretrained(model_id, cache_dir=models_directory, trust_remote_code=True, use_fast=False)
+            model = AutoModelForVision2Seq.from_pretrained(model_id, cache_dir=models_directory, torch_dtype=torch.float16, trust_remote_code=True, attn_implementation="flash_attention_2", device_map={"": "cuda:0"}).to("cuda")
         elif "llama" in model_name:
             from transformers import MllamaForConditionalGeneration, AutoProcessor
-            processor = AutoProcessor.from_pretrained(model_id, cache_dir=models_directory, trust_remote_code=True)
-            model = MllamaForConditionalGeneration.from_pretrained(model_id, cache_dir=models_directory, torch_dtype=torch.float16, trust_remote_code=True).to("cuda")
+            processor = AutoProcessor.from_pretrained(model_id, cache_dir=models_directory, trust_remote_code=True, use_fast=True)
+            model = MllamaForConditionalGeneration.from_pretrained(model_id, cache_dir=models_directory, torch_dtype=torch.float16, trust_remote_code=True, attn_implementation="eager", device_map={"": "cuda:0"}).to("cuda")
+        elif "minicpm" in model_name.lower():
+            from transformers import AutoModel, AutoTokenizer
+            tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True, cache_dir=models_directory)
+            model = AutoModel.from_pretrained(model_id, trust_remote_code=True, torch_dtype=torch.bfloat16, cache_dir=models_directory, attn_implementation="flash_attention_2").eval().cuda()
+            processor = tokenizer 
         else:
             from transformers import AutoProcessor
             processor = AutoProcessor.from_pretrained(model_id, cache_dir=models_directory, token=hf_token, use_fast=True, trust_remote_code=True)
-            model = AutoModelForCausalLM.from_pretrained(model_id, torch_dtype=dtype, cache_dir=models_directory, token=hf_token, trust_remote_code=True)
+            model = AutoModelForCausalLM.from_pretrained(model_id, torch_dtype=dtype, cache_dir=models_directory, token=hf_token, trust_remote_code=True, attn_implementation="flash_attention_2", device_map={"": "cuda:0"})
             model = model.to(device)
     except Exception as e:
         raise RuntimeError(f"Error loading model {model_id}: {e}")
@@ -134,6 +145,7 @@ def run_inference(model, processor, data, handle):
     is_phi = "phi" in model_name.lower()
     is_smolvlm = "smolvlm" in model_name.lower()
     is_llama = "llama-3.2" in model_name.lower()
+    is_minicpm = "minicpm" in model_name.lower()
 
     for i, item in enumerate(data):
         print("\nRunning inference")
@@ -148,7 +160,10 @@ def run_inference(model, processor, data, handle):
             continue
         print(f"✅ Using [{i}] - Found image: {image_name}")
 
-        image = Image.open(image_path).convert("RGB")
+        if not is_smolvlm:
+            image = Image.open(image_path).convert("RGB")
+        else:
+            image = load_image(image_path).resize((512, 512), Image.LANCZOS)
 
         # conversation = [{"role": "user", "content": question}]
         # prompt = processor.tokenizer.apply_chat_template(conversation, tokenize=False, add_generation_prompt=True)
@@ -158,8 +173,9 @@ def run_inference(model, processor, data, handle):
         
         with torch.no_grad():
             if is_moondream:
-                image_embeds = model.encode_image(image)
-                answer = model.answer_question(image_embeds=image_embeds, question=question+ " Please answer in one word.")
+                # image_embeds = model.encode_image(image)
+                # answer = model.answer_question(image_embeds=image_embeds, question=question+ " Please answer in one word.")
+                answer = model.query(image, question + " Please answer in one word.")["answer"]
                 input_tokens = len(question.split())
                 generated_tokens = len(answer.split())
             elif is_qwen:
@@ -194,32 +210,60 @@ def run_inference(model, processor, data, handle):
                 input_tokens = inputs["input_ids"].shape[1]
                 generated_tokens = 1
             elif is_phi:
-                prompt = question + " Please answer in one word."
-                inputs = processor(images=image, text=prompt, return_tensors="pt").to(model.device)
-                outputs = model.generate(**inputs, max_new_tokens=20)
-                response = processor.tokenizer.decode(outputs[0], skip_special_tokens=True)
-                answer = response.strip().split()[0]
+                # Add image placeholder to match expected format
+                prompt = f"<|image_1|>\n{question} Please answer in one word."
+                messages = [{"role": "user", "content": prompt}]
+                
+                # Create chat-style prompt with special tokens
+                text_prompt = processor.tokenizer.apply_chat_template(
+                    messages, tokenize=False, add_generation_prompt=True
+                )
+
+                # Tokenize + process image(s) together
+                inputs = processor(text_prompt, [image], return_tensors="pt").to(model.device)
+
+                # Run inference
+                outputs = model.generate(
+                    **inputs,
+                    eos_token_id=processor.tokenizer.eos_token_id,
+                    max_new_tokens=20,
+                    temperature=0.0,
+                    do_sample=False,
+                )
+
+                # Strip off prompt tokens
+                generated_ids = outputs[:, inputs["input_ids"].shape[1]:]
+                response = processor.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
+                answer = response.split()[0] if response else ""
+
                 input_tokens = inputs["input_ids"].shape[1]
-                generated_tokens = outputs.shape[1] - input_tokens
+                generated_tokens = generated_ids.shape[1]
             elif is_smolvlm:
                 messages = [
                     {
                         "role": "user",
                         "content": [
                             {"type": "image"},
-                            {"type": "text", "text": question + " Please answer in one word."}]}]
+                            {"type": "text", "text": question + " Please answer in one word."}
+                        ]
+                    }
+                ]
+                # print(f"[DEBUG] Original image size: {image.size}")
+                # image = image.copy().resize((512, 512), Image.LANCZOS)
+                # print(f"[DEBUG] Resized image size: {image.size}")
                 prompt = processor.apply_chat_template(messages, add_generation_prompt=True)
                 inputs = processor(text=prompt, images=[image], return_tensors="pt").to(model.device)
+
                 outputs = model.generate(**inputs, max_new_tokens=20)
                 response = processor.batch_decode(outputs, skip_special_tokens=True)[0].strip()
-                print(response)
+
                 import re
-                match = re.search(r"assistant:\s*(\w+)", response, flags=re.IGNORECASE)
+                match = re.search(r"assistant\s*:?[\s\n]*(\w+)", response, flags=re.IGNORECASE)
                 answer = match.group(1) if match else response.strip().split()[0]
-                print(answer)
+
                 input_tokens = inputs["input_ids"].shape[1]
                 generated_tokens = outputs.shape[1] - input_tokens
-            if is_llama:
+            elif is_llama:
                 messages = [
                     {
                         "role": "user",
@@ -240,6 +284,20 @@ def run_inference(model, processor, data, handle):
                     answer = response.strip().split()[0]
                 input_tokens = inputs["input_ids"].shape[1]
                 generated_tokens = outputs.shape[1] - input_tokens
+            elif is_minicpm:
+                question_prompt = question + " Please answer in one word."
+                msgs = [{"role": "user", "content": [image, question_prompt]}]
+                
+                with torch.no_grad():
+                    response = model.chat(
+                        image=None,
+                        msgs=msgs,
+                        tokenizer=processor,  # tokenizer = processor in this case
+                    )
+                
+                answer = response.strip().split()[0]
+                input_tokens = len(question_prompt.split())
+                generated_tokens = len(answer.split())
             else:
                 prompt = f"USER: <image>\n{question}\nPlease answer in one word.\nASSISTANT:"
                 inputs = processor(text=prompt, images=image, return_tensors="pt").to("cuda")
