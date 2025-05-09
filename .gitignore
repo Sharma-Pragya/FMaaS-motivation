@@ -2,6 +2,7 @@ vqa/dataset
 vqa/updated/models
 vqa/updated/dataset
 hf-token.txt
+*.pyc
 .DS_Store
 *.pyc
 __pycache__/
