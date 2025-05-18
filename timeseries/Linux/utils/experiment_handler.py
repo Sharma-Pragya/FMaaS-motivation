@@ -6,7 +6,7 @@ from typing import Any, Callable, List
 
 import pandas as pd
 from utilsforecast.evaluation import evaluate
-from utilsforecast.losses import mae, _zero_to_nan
+from utilsforecast.losses import mae, _zero_to_nan, rmse
 
 from .logger_config import setup_logger
 
@@ -145,7 +145,7 @@ class ExperimentDataset(DatasetParams):
         eval_df = evaluate(
             df=forecast_df,
             train_df=train_cv_splits,
-            metrics=[partial_mase],
+            metrics=[partial_mase,mae,rmse],
             models=models,
             id_col="id_cutoff",
         )

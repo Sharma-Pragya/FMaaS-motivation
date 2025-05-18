@@ -113,6 +113,11 @@ class Chronos(Forecaster):
         gpu_before = get_gpu_memory_and_util(self.handle)
         cpu_before = get_cpu_memory_and_util()
         for batch in tqdm(dataset):
+            print(f"Batch shape: {batch.shape}")  # Add this line
+            print(f"Batch (first series, trimmed NaNs): {batch[0][~torch.isnan(batch[0])]}")  # Optional: to see one time series
+            context_lengths = (~torch.isnan(batch)).sum(dim=1)
+            print(f"Context lengths per series: {context_lengths}")
+            print(self.model.model.config)
             start = perf_counter()
 
             pred = self.model.predict(batch, prediction_length=h)

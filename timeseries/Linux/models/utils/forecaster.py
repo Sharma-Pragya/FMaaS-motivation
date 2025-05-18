@@ -75,11 +75,13 @@ class Forecaster:
                 raise NotImplementedError(
                     "Cross validation with exogenous variables is not yet supported."
                 )
+
             y_pred,average_batch_time,avg_gpu_util,avg_gpu_mem,avg_cpu_util,avg_cpu_mem = self.forecast(
                 df=train,
                 h=h,
                 freq=freq,
             )
+            
             y_pred = join(y_pred, cutoffs, on="unique_id", how="left")
             result = join(
                 valid[["unique_id", "ds", "y"]],

@@ -24,3 +24,4 @@ protobuf==3.19.6 #timesfm error flax
 pytest
 prophet
 pynvml #
+seaborn
