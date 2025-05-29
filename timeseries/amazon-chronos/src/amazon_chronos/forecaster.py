@@ -6,6 +6,8 @@ import pandas as pd
 import torch
 from chronos import ChronosPipeline
 from utilsforecast.processing import make_future_dataframe
+from ..utils import *
+from time import perf_counter
 
 logging.basicConfig(level=logging.INFO)
 main_logger = logging.getLogger(__name__)
@@ -76,11 +78,16 @@ class TimeSeriesDataset:
 class AmazonChronos:
     def __init__(self, model_name: str):
         self.model_name = model_name
+        self.handle = init_nvml()
+        start = perf_counter()
+        self.load_memory_before = get_gpu_memory_and_util(self.handle)["gpu_mem_used_mb"]
         self.model = ChronosPipeline.from_pretrained(
             model_name,
             device_map="auto",
             torch_dtype=torch.bfloat16,
         )
+        self.load_duration = perf_counter() - start
+        self.load_memory = get_gpu_memory_and_util(self.handle)["gpu_mem_used_mb"]-self.load_memory_before
 
     def forecast(
         self,
@@ -92,9 +99,40 @@ class AmazonChronos:
         **predict_kwargs,
     ) -> pd.DataFrame:
         main_logger.info("transforming dataframe to tensor")
+        
+
         dataset = TimeSeriesDataset.from_df(df, batch_size=batch_size)
+
+        inference_times=[]
+        inference_times=[]
+        fcsts=[]
+        total_gpu_util = 0
+        total_gpu_mem = 0
+        total_cpu_util=0
+        total_cpu_mem=0
+        gpu_before = get_gpu_memory_and_util(self.handle)
+        cpu_before = get_cpu_memory_and_util()
         main_logger.info("forecasting")
-        fcsts = [self.model.predict(batch, prediction_length=h, **predict_kwargs) for batch in dataset]
+        for batch in dataset:
+            start = perf_counter()
+            pred = self.model.predict(batch, prediction_length=h, **predict_kwargs)
+
+            inference_times.append(perf_counter() - start)
+            gpu_after = get_gpu_memory_and_util(self.handle)
+            cpu_after = get_cpu_memory_and_util()
+
+            fcsts.append(pred)
+            gpu_mem_delta = gpu_after["gpu_mem_used_mb"] - gpu_before["gpu_mem_used_mb"]
+            gpu_util_delta = gpu_after["gpu_util_percent"] - gpu_before["gpu_util_percent"]
+            cpu_mem_delta = cpu_after["cpu_mem_used_mb"] - cpu_before["cpu_mem_used_mb"]
+            cpu_util_delta = cpu_after["cpu_util_percent"] - cpu_before["cpu_util_percent"]
+            print(f"CPU util: {cpu_after['cpu_util_percent']}%, Mem used: Δ{cpu_mem_delta:.2f} MB")
+            print(f"GPU util: {gpu_after['gpu_util_percent']}%, Mem used: Δ{gpu_mem_delta:.2f} MB")
+            total_gpu_util += gpu_after["gpu_util_percent"]
+            total_gpu_mem += gpu_mem_delta
+            total_cpu_util += cpu_after["cpu_util_percent"]
+            total_cpu_mem += cpu_mem_delta
+
         fcst = torch.cat(fcsts)
         main_logger.info("transforming forecast to dataframe")
         fcst = fcst.numpy()
@@ -104,7 +142,19 @@ class AmazonChronos:
             for q in quantiles:
                 q_col = f"{self.model_name}-q-{q}"
                 fcst_df[q_col] = np.quantile(fcst, q, axis=1).reshape(-1, 1)
-        return fcst_df
+        
+                inference_time = sum(inference_times)
+
+        average_batch_time = inference_time / len(inference_times)
+        avg_gpu_util = total_gpu_util / len(inference_times)
+        avg_gpu_mem = total_gpu_mem / len(inference_times)
+        avg_cpu_util = total_cpu_util / len(inference_times)
+        avg_cpu_mem = total_cpu_mem / len(inference_times)
+
+        print(f"GPU util: {avg_gpu_util}%, Mem used: Δ{avg_gpu_mem} MB")
+        print(f"Avg per batch: {average_batch_time}s")
+        
+        return fcst_df,average_batch_time,avg_gpu_util,avg_gpu_mem,avg_cpu_util,avg_cpu_mem
 
 
 if __name__ == "__main__":

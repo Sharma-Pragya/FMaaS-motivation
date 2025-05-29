@@ -11,8 +11,40 @@ from gluonts.dataset.repository.datasets import (
 )
 from gluonts.time_feature.seasonality import get_seasonality
 from utilsforecast.evaluation import evaluate
-from utilsforecast.losses import mase, smape
+from utilsforecast.losses import mase, smape,mae, rmse
 
+import time
+import threading
+import os
+import json
+from pynvml import *
+import psutil
+import torch
+
+LOG_INTERVAL = 0.001  # Logging interval in seconds
+stop_logging = threading.Event()  # Stop signal
+
+def init_nvml():
+    nvmlInit()
+    handle = nvmlDeviceGetHandleByIndex(0)  # assuming single-GPU
+    return handle
+
+def get_gpu_memory_and_util(handle):
+    mem_info = nvmlDeviceGetMemoryInfo(handle)
+    util = nvmlDeviceGetUtilizationRates(handle)
+    return {
+        "gpu_mem_used_mb": mem_info.used / 1024**2,
+        "gpu_util_percent": util.gpu,
+    }
+
+def get_cpu_memory_and_util():
+    process = psutil.Process()
+    cpu_mem = process.memory_info().rss / 1024**2  # in MB
+    cpu_util = psutil.cpu_percent(interval=1)     # in %
+    return {
+        "cpu_mem_used_mb": cpu_mem,
+        "cpu_util_percent": cpu_util,
+    }
 
 def quantile_loss(
     df: pd.DataFrame,
@@ -133,7 +165,7 @@ class ExperimentHandler:
         print(f"Saving {file_name} to {self.results_dir}")
         df.to_csv(f"{self.results_dir}/{file_name}", index=False)
 
-    def save_results(self, fcst_df: pd.DataFrame, total_time: float, model_name: str):
+    def save_results(self, fcst_df: pd.DataFrame, model_name: str, total_time: float,load_memory,load_duration,average_batch_time,average_gpu_util,average_gpu_mem,average_cpu_util,average_cpu_mem):
         self.save_dataframe(
             fcst_df,
             f"{model_name}-{self.dataset}-fcst.csv",
@@ -143,6 +175,46 @@ class ExperimentHandler:
             time_df,
             f"{model_name}-{self.dataset}-time.csv",
         )
+        output_csv_path="evaluation_results.csv"
+        eval_df=self.evaluate_models([model_name])
+        eval_df = eval_df.groupby(["metric"], as_index=False).mean(numeric_only=True)
+        mae = eval_df.loc[eval_df["metric"] == "mae","value"].values[0]
+        rmse = eval_df.loc[eval_df["metric"] == "rmse","value"].values[0]
+        mase = eval_df.loc[eval_df["metric"] == "mase", "value"].values[0]
+        scaled_crps = eval_df.loc[eval_df["metric"] == "scaled_crps", "value"].values[0]
+        smape = eval_df.loc[eval_df["metric"] == "smape", "value"].values[0]
+        
+        flat_metrics = {
+        "model_name": model_name,
+        "dataset_name": self.dataset,
+        "device":  torch.cuda.get_device_name(0) if torch.cuda.is_available() else "cpu",
+        "num_samples": fcst_df["unique_id"].nunique(),
+        "mae": mae,
+        "rmse": rmse,
+        "mase": mase,
+        "scaled_crps": scaled_crps,
+        "smape": smape,
+        "total_inference_time_sec": total_time,
+        "average_latency_ms": average_batch_time,
+        "model_load_duration_sec": load_duration,
+        "gpu_load_memory_mb": load_memory,
+        "avg_cpu_usage_percent": average_cpu_util,
+        "avg_cpu_memory_usage_mb": average_cpu_mem,
+        "avg_gpu_usage_percent": average_gpu_util,
+        "avg_gpu_memory_usage_mb": average_gpu_mem,
+        }
+
+        flat_df = pd.DataFrame([flat_metrics])
+
+        # Append or create file
+        output_path = Path(output_csv_path)
+        if output_path.exists():
+            existing_df = pd.read_csv(output_path)
+            updated_df = pd.concat([existing_df, flat_df], ignore_index=True)
+        else:
+            updated_df = flat_df
+
+        updated_df.to_csv(output_path, index=False)
 
     def fcst_from_level_to_quantiles(
         self,
@@ -191,7 +263,7 @@ class ExperimentHandler:
         eval_df = evaluate(
             test_df[point_fcsts_cols],
             train_df=train_df,
-            metrics=[smape, mase_seas],
+            metrics=[mae,rmse,smape,mase_seas],
         )
         # probabilistic evaluation
         eval_prob_df = []
@@ -210,10 +282,10 @@ class ExperimentHandler:
         eval_df = pd.concat([eval_df, eval_prob_df]).reset_index(drop=True)
         eval_df = eval_df.groupby("metric").mean(numeric_only=True).reset_index()
         eval_df = eval_df.melt(id_vars="metric", value_name="value", var_name="model")
-        times_df.insert(0, "metric", "time")
-        times_df = times_df.rename(columns={"time": "value"})
-        eval_df = pd.concat([eval_df, times_df])
-        eval_df.insert(0, "dataset", self.dataset)
-        eval_df = eval_df.sort_values(["dataset", "metric", "model"])
-        eval_df = eval_df.reset_index(drop=True)
+        # times_df.insert(0, "metric", "time")
+        # times_df = times_df.rename(columns={"time": "value"})
+        # eval_df = pd.concat([eval_df, times_df])
+        # eval_df.insert(0, "dataset", self.dataset)
+        # eval_df = eval_df.sort_values(["dataset", "metric", "model"])
+        # eval_df = eval_df.reset_index(drop=True)
         return eval_df

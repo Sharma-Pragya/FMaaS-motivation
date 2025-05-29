@@ -19,11 +19,11 @@ def run_amazon_chronos(
 ) -> Tuple[pd.DataFrame, float, str]:
     ac = AmazonChronos(model_name)
     init_time = time()
-    fcsts_df = ac.forecast(
+    fcsts_df,average_batch_time,avg_gpu_util,avg_gpu_mem,avg_cpu_util,avg_cpu_mem = ac.forecast(
         df=train_df,
         h=horizon,
         freq=freq,
-        batch_size=8,
+        batch_size=1,
         quantiles=quantiles,
         # parameters as in https://github.com/amazon-science/chronos-forecasting/blob/73be25042f5f587823d46106d372ba133152fb00/README.md?plain=1#L62-L65
         num_samples=20,
@@ -32,19 +32,19 @@ def run_amazon_chronos(
         top_p=1.0,
     )
     total_time = time() - init_time
-    return fcsts_df, total_time, model_name
+    return fcsts_df,total_time,ac.load_memory,ac.load_duration, average_batch_time,avg_gpu_util,avg_gpu_mem,avg_cpu_util,avg_cpu_mem
 
 
 def main(dataset: str, model_name: str):
     exp = ExperimentHandler(dataset)
-    fcst_df, total_time, model_name = run_amazon_chronos(
+    fcst_df, total_time,load_memory,load_duration,average_batch_time,avg_gpu_util,avg_gpu_mem,avg_cpu_util,avg_cpu_mem = run_amazon_chronos(
         train_df=exp.train_df,
         model_name=model_name,
         horizon=exp.horizon,
         freq=exp.freq,
         quantiles=exp.quantiles,
     )
-    exp.save_results(fcst_df, total_time, model_name)
+    exp.save_results(fcst_df,model_name,total_time,load_memory,load_duration,average_batch_time,avg_gpu_util,avg_gpu_mem,avg_cpu_util,avg_cpu_mem)
 
 
 if __name__ == "__main__":

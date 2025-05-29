@@ -10,18 +10,18 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 datasets = [
-    # "m1_yearly",
-    # "m1_quarterly",
-    # "m1_monthly",
-    # "m3_yearly",
-    # "m3_quarterly",
-    # "m3_monthly",
-    # "m3_other",
-    # "tourism_yearly",
-    # "tourism_quarterly",
+    "m1_yearly",
+    "m1_quarterly",
+    "m1_monthly",
+    "m3_yearly",
+    "m3_quarterly",
+    "m3_monthly",
+    "m3_other",
+    "tourism_yearly",
+    "tourism_quarterly",
     "tourism_monthly",
-    "m4_yearly",
-    "m4_quarterly",
+    # "m4_yearly",
+    # "m4_quarterly",
 ]
 
 amazon_chronos_models = [
