@@ -17,17 +17,22 @@ datasets = [
     # "m3_quarterly",
     # "m3_monthly",
     # "m3_other",
-    "m4_yearly",
-    "m4_quarterly",
-    "m4_monthly",
-    "m4_weekly",
-    "m4_daily",
-    "m4_hourly",
+    # "m4_yearly",
+    # "m4_quarterly",
+    # "m4_monthly",
+    # "m4_weekly",
+    # "m4_daily",
+    # "m4_hourly",
     "tourism_yearly",
     "tourism_quarterly",
     "tourism_monthly",
 ]
 
+moirai_models=[
+    "Salesforce/moirai-1.0-R-small",
+    "Salesforce/moirai-1.0-R-base",
+    "Salesforce/moirai-1.0-R-large"
+    ]
 
 def main(mode: Literal["fcst_statsforecast", "fcst_moirai`", "evaluation"]):
     prefix_process = ["python", "-m"]
@@ -44,8 +49,12 @@ def main(mode: Literal["fcst_statsforecast", "fcst_moirai`", "evaluation"]):
                 logger.info("Running StatisticalEnsemble")
                 subprocess.run(process(["src.statsforecast_pipeline"]))
             elif mode == "fcst_moirai":
-                logger.info("Running SalesforceMoirai")
-                subprocess.run(process(["src.moirai_pipeline"]))
+                for model in moirai_models:
+                    logger.info(f"Running SalesforceMoirai {model}")
+                    moirai_process = process(["src.moirai_pipeline"])
+                    moirai_process.extend(["--model_name", model])
+                    subprocess.run(moirai_process)
+
     elif mode == "evaluation":
         from src.utils import ExperimentHandler
 
@@ -57,8 +66,8 @@ def main(mode: Literal["fcst_statsforecast", "fcst_moirai`", "evaluation"]):
                 eval_dataset_df = exp.evaluate_models(
                     [
                         "SalesforceMoirai",
-                        "StatisticalEnsemble",
-                        "SeasonalNaive",
+                        # "StatisticalEnsemble",
+                        # "SeasonalNaive",
                     ]
                 )
                 print(eval_dataset_df)
