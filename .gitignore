@@ -10,4 +10,5 @@ timeseries/Linux/log.txt
 timeseries/amazon-chronos/results/amazon
 timeseries/salesforce-moirai/results/Salesforce
 timeseries/amazon-chronos/data
+timeseries/moment-main/data
 *.ipynb_checkpoints
