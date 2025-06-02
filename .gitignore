@@ -11,4 +11,5 @@ timeseries/amazon-chronos/results/amazon
 timeseries/salesforce-moirai/results/Salesforce
 timeseries/amazon-chronos/data
 timeseries/moment-main/data
+timeseries/Linux/nixtla-foundational-time-series/data
 *.ipynb_checkpoints
