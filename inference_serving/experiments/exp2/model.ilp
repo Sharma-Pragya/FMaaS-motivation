@@ -1,0 +1,1518 @@
+\ Model Our_MIQP_copy
+\ LP format - for model browsing. Use MPS format to capture full model detail.
+\ Signature: 0x879c5ee69439ded6
+Minimize
+ 
+Subject To
+ c1_d1: x[d1,llama3] + x[d1,mistral] + x[d1,t5] + x[d1,bart]
+   + x[d1,whisper] + x[d1,wav2vec2] + x[d1,vggish] + x[d1,sam] + x[d1,clip]
+   + x[d1,blip2] + x[d1,flamingo] + x[d1,imagebind] + x[d1,clipseg]
+   + x[d1,yolov8] + x[d1,dinov2] + x[d1,stable_diffusion] + x[d1,tesseract]
+   + x[d1,donut] + x[d1,bark] + x[d1,valle] + x[d1,codellama]
+   + x[d1,starcoder] + x[d1,gemma] + x[d1,phi3] + x[d1,Qwen2.5]
+   + x[d1,Llama-Vision] + x[d1,palm2] + x[d1,chronos] + x[d1,moment]
+   + x[d1,TimesFM] + x[d1,Lag-Llama] <= 1
+ c1_d2: x[d2,llama3] + x[d2,mistral] + x[d2,t5] + x[d2,bart]
+   + x[d2,whisper] + x[d2,wav2vec2] + x[d2,vggish] + x[d2,sam] + x[d2,clip]
+   + x[d2,blip2] + x[d2,flamingo] + x[d2,imagebind] + x[d2,clipseg]
+   + x[d2,yolov8] + x[d2,dinov2] + x[d2,stable_diffusion] + x[d2,tesseract]
+   + x[d2,donut] + x[d2,bark] + x[d2,valle] + x[d2,codellama]
+   + x[d2,starcoder] + x[d2,gemma] + x[d2,phi3] + x[d2,Qwen2.5]
+   + x[d2,Llama-Vision] + x[d2,palm2] + x[d2,chronos] + x[d2,moment]
+   + x[d2,TimesFM] + x[d2,Lag-Llama] <= 1
+ c1_d3: x[d3,llama3] + x[d3,mistral] + x[d3,t5] + x[d3,bart]
+   + x[d3,whisper] + x[d3,wav2vec2] + x[d3,vggish] + x[d3,sam] + x[d3,clip]
+   + x[d3,blip2] + x[d3,flamingo] + x[d3,imagebind] + x[d3,clipseg]
+   + x[d3,yolov8] + x[d3,dinov2] + x[d3,stable_diffusion] + x[d3,tesseract]
+   + x[d3,donut] + x[d3,bark] + x[d3,valle] + x[d3,codellama]
+   + x[d3,starcoder] + x[d3,gemma] + x[d3,phi3] + x[d3,Qwen2.5]
+   + x[d3,Llama-Vision] + x[d3,palm2] + x[d3,chronos] + x[d3,moment]
+   + x[d3,TimesFM] + x[d3,Lag-Llama] <= 1
+ c1_d4: x[d4,llama3] + x[d4,mistral] + x[d4,t5] + x[d4,bart]
+   + x[d4,whisper] + x[d4,wav2vec2] + x[d4,vggish] + x[d4,sam] + x[d4,clip]
+   + x[d4,blip2] + x[d4,flamingo] + x[d4,imagebind] + x[d4,clipseg]
+   + x[d4,yolov8] + x[d4,dinov2] + x[d4,stable_diffusion] + x[d4,tesseract]
+   + x[d4,donut] + x[d4,bark] + x[d4,valle] + x[d4,codellama]
+   + x[d4,starcoder] + x[d4,gemma] + x[d4,phi3] + x[d4,Qwen2.5]
+   + x[d4,Llama-Vision] + x[d4,palm2] + x[d4,chronos] + x[d4,moment]
+   + x[d4,TimesFM] + x[d4,Lag-Llama] <= 1
+ c1_d5: x[d5,llama3] + x[d5,mistral] + x[d5,t5] + x[d5,bart]
+   + x[d5,whisper] + x[d5,wav2vec2] + x[d5,vggish] + x[d5,sam] + x[d5,clip]
+   + x[d5,blip2] + x[d5,flamingo] + x[d5,imagebind] + x[d5,clipseg]
+   + x[d5,yolov8] + x[d5,dinov2] + x[d5,stable_diffusion] + x[d5,tesseract]
+   + x[d5,donut] + x[d5,bark] + x[d5,valle] + x[d5,codellama]
+   + x[d5,starcoder] + x[d5,gemma] + x[d5,phi3] + x[d5,Qwen2.5]
+   + x[d5,Llama-Vision] + x[d5,palm2] + x[d5,chronos] + x[d5,moment]
+   + x[d5,TimesFM] + x[d5,Lag-Llama] <= 1
+ c1_d6: x[d6,llama3] + x[d6,mistral] + x[d6,t5] + x[d6,bart]
+   + x[d6,whisper] + x[d6,wav2vec2] + x[d6,vggish] + x[d6,sam] + x[d6,clip]
+   + x[d6,blip2] + x[d6,flamingo] + x[d6,imagebind] + x[d6,clipseg]
+   + x[d6,yolov8] + x[d6,dinov2] + x[d6,stable_diffusion] + x[d6,tesseract]
+   + x[d6,donut] + x[d6,bark] + x[d6,valle] + x[d6,codellama]
+   + x[d6,starcoder] + x[d6,gemma] + x[d6,phi3] + x[d6,Qwen2.5]
+   + x[d6,Llama-Vision] + x[d6,palm2] + x[d6,chronos] + x[d6,moment]
+   + x[d6,TimesFM] + x[d6,Lag-Llama] <= 1
+ c1_d7: x[d7,llama3] + x[d7,mistral] + x[d7,t5] + x[d7,bart]
+   + x[d7,whisper] + x[d7,wav2vec2] + x[d7,vggish] + x[d7,sam] + x[d7,clip]
+   + x[d7,blip2] + x[d7,flamingo] + x[d7,imagebind] + x[d7,clipseg]
+   + x[d7,yolov8] + x[d7,dinov2] + x[d7,stable_diffusion] + x[d7,tesseract]
+   + x[d7,donut] + x[d7,bark] + x[d7,valle] + x[d7,codellama]
+   + x[d7,starcoder] + x[d7,gemma] + x[d7,phi3] + x[d7,Qwen2.5]
+   + x[d7,Llama-Vision] + x[d7,palm2] + x[d7,chronos] + x[d7,moment]
+   + x[d7,TimesFM] + x[d7,Lag-Llama] <= 1
+ c1_d8: x[d8,llama3] + x[d8,mistral] + x[d8,t5] + x[d8,bart]
+   + x[d8,whisper] + x[d8,wav2vec2] + x[d8,vggish] + x[d8,sam] + x[d8,clip]
+   + x[d8,blip2] + x[d8,flamingo] + x[d8,imagebind] + x[d8,clipseg]
+   + x[d8,yolov8] + x[d8,dinov2] + x[d8,stable_diffusion] + x[d8,tesseract]
+   + x[d8,donut] + x[d8,bark] + x[d8,valle] + x[d8,codellama]
+   + x[d8,starcoder] + x[d8,gemma] + x[d8,phi3] + x[d8,Qwen2.5]
+   + x[d8,Llama-Vision] + x[d8,palm2] + x[d8,chronos] + x[d8,moment]
+   + x[d8,TimesFM] + x[d8,Lag-Llama] <= 1
+ c1_d9: x[d9,llama3] + x[d9,mistral] + x[d9,t5] + x[d9,bart]
+   + x[d9,whisper] + x[d9,wav2vec2] + x[d9,vggish] + x[d9,sam] + x[d9,clip]
+   + x[d9,blip2] + x[d9,flamingo] + x[d9,imagebind] + x[d9,clipseg]
+   + x[d9,yolov8] + x[d9,dinov2] + x[d9,stable_diffusion] + x[d9,tesseract]
+   + x[d9,donut] + x[d9,bark] + x[d9,valle] + x[d9,codellama]
+   + x[d9,starcoder] + x[d9,gemma] + x[d9,phi3] + x[d9,Qwen2.5]
+   + x[d9,Llama-Vision] + x[d9,palm2] + x[d9,chronos] + x[d9,moment]
+   + x[d9,TimesFM] + x[d9,Lag-Llama] <= 1
+ c1_d10: x[d10,llama3] + x[d10,mistral] + x[d10,t5] + x[d10,bart]
+   + x[d10,whisper] + x[d10,wav2vec2] + x[d10,vggish] + x[d10,sam]
+   + x[d10,clip] + x[d10,blip2] + x[d10,flamingo] + x[d10,imagebind]
+   + x[d10,clipseg] + x[d10,yolov8] + x[d10,dinov2]
+   + x[d10,stable_diffusion] + x[d10,tesseract] + x[d10,donut]
+   + x[d10,bark] + x[d10,valle] + x[d10,codellama] + x[d10,starcoder]
+   + x[d10,gemma] + x[d10,phi3] + x[d10,Qwen2.5] + x[d10,Llama-Vision]
+   + x[d10,palm2] + x[d10,chronos] + x[d10,moment] + x[d10,TimesFM]
+   + x[d10,Lag-Llama] <= 1
+ c1_d11: x[d11,llama3] + x[d11,mistral] + x[d11,t5] + x[d11,bart]
+   + x[d11,whisper] + x[d11,wav2vec2] + x[d11,vggish] + x[d11,sam]
+   + x[d11,clip] + x[d11,blip2] + x[d11,flamingo] + x[d11,imagebind]
+   + x[d11,clipseg] + x[d11,yolov8] + x[d11,dinov2]
+   + x[d11,stable_diffusion] + x[d11,tesseract] + x[d11,donut]
+   + x[d11,bark] + x[d11,valle] + x[d11,codellama] + x[d11,starcoder]
+   + x[d11,gemma] + x[d11,phi3] + x[d11,Qwen2.5] + x[d11,Llama-Vision]
+   + x[d11,palm2] + x[d11,chronos] + x[d11,moment] + x[d11,TimesFM]
+   + x[d11,Lag-Llama] <= 1
+ c1_d12: x[d12,llama3] + x[d12,mistral] + x[d12,t5] + x[d12,bart]
+   + x[d12,whisper] + x[d12,wav2vec2] + x[d12,vggish] + x[d12,sam]
+   + x[d12,clip] + x[d12,blip2] + x[d12,flamingo] + x[d12,imagebind]
+   + x[d12,clipseg] + x[d12,yolov8] + x[d12,dinov2]
+   + x[d12,stable_diffusion] + x[d12,tesseract] + x[d12,donut]
+   + x[d12,bark] + x[d12,valle] + x[d12,codellama] + x[d12,starcoder]
+   + x[d12,gemma] + x[d12,phi3] + x[d12,Qwen2.5] + x[d12,Llama-Vision]
+   + x[d12,palm2] + x[d12,chronos] + x[d12,moment] + x[d12,TimesFM]
+   + x[d12,Lag-Llama] <= 1
+ c2_semantic_search: y[d1,semantic_search] + y[d2,semantic_search]
+   + y[d3,semantic_search] + y[d4,semantic_search] + y[d5,semantic_search]
+   + y[d6,semantic_search] + y[d7,semantic_search] + y[d8,semantic_search]
+   + y[d9,semantic_search] + y[d10,semantic_search]
+   + y[d11,semantic_search] + y[d12,semantic_search] = 2
+ c2_text_to_speech: y[d1,text_to_speech] + y[d2,text_to_speech]
+   + y[d3,text_to_speech] + y[d4,text_to_speech] + y[d5,text_to_speech]
+   + y[d6,text_to_speech] + y[d7,text_to_speech] + y[d8,text_to_speech]
+   + y[d9,text_to_speech] + y[d10,text_to_speech] + y[d11,text_to_speech]
+   + y[d12,text_to_speech] = 2
+ c2_eeg_anamoly_detection: y[d1,eeg_anamoly_detection]
+   + y[d2,eeg_anamoly_detection] + y[d3,eeg_anamoly_detection]
+   + y[d4,eeg_anamoly_detection] + y[d5,eeg_anamoly_detection]
+   + y[d6,eeg_anamoly_detection] + y[d7,eeg_anamoly_detection]
+   + y[d8,eeg_anamoly_detection] + y[d9,eeg_anamoly_detection]
+   + y[d10,eeg_anamoly_detection] + y[d11,eeg_anamoly_detection]
+   + y[d12,eeg_anamoly_detection] = 2
+ c2_question_answering: y[d1,question_answering] + y[d2,question_answering]
+   + y[d3,question_answering] + y[d4,question_answering]
+   + y[d5,question_answering] + y[d6,question_answering]
+   + y[d7,question_answering] + y[d8,question_answering]
+   + y[d9,question_answering] + y[d10,question_answering]
+   + y[d11,question_answering] + y[d12,question_answering] = 2
+ c2_named_entity_recognition: y[d1,named_entity_recognition]
+   + y[d2,named_entity_recognition] + y[d3,named_entity_recognition]
+   + y[d4,named_entity_recognition] + y[d5,named_entity_recognition]
+   + y[d6,named_entity_recognition] + y[d7,named_entity_recognition]
+   + y[d8,named_entity_recognition] + y[d9,named_entity_recognition]
+   + y[d10,named_entity_recognition] + y[d11,named_entity_recognition]
+   + y[d12,named_entity_recognition] = 2
+ c2_document_retrieval: y[d1,document_retrieval] + y[d2,document_retrieval]
+   + y[d3,document_retrieval] + y[d4,document_retrieval]
+   + y[d5,document_retrieval] + y[d6,document_retrieval]
+   + y[d7,document_retrieval] + y[d8,document_retrieval]
+   + y[d9,document_retrieval] + y[d10,document_retrieval]
+   + y[d11,document_retrieval] + y[d12,document_retrieval] = 2
+ c2_language_translation: y[d1,language_translation]
+   + y[d2,language_translation] + y[d3,language_translation]
+   + y[d4,language_translation] + y[d5,language_translation]
+   + y[d6,language_translation] + y[d7,language_translation]
+   + y[d8,language_translation] + y[d9,language_translation]
+   + y[d10,language_translation] + y[d11,language_translation]
+   + y[d12,language_translation] = 2
+ c2_visual_question_answering: y[d1,visual_question_answering]
+   + y[d2,visual_question_answering] + y[d3,visual_question_answering]
+   + y[d4,visual_question_answering] + y[d5,visual_question_answering]
+   + y[d6,visual_question_answering] + y[d7,visual_question_answering]
+   + y[d8,visual_question_answering] + y[d9,visual_question_answering]
+   + y[d10,visual_question_answering] + y[d11,visual_question_answering]
+   + y[d12,visual_question_answering] = 2
+ c4_d1: 16 x[d1,llama3] + 14 x[d1,mistral] + 3 x[d1,t5] + 2 x[d1,bart]
+   + 1.5 x[d1,whisper] + 1.5 x[d1,wav2vec2] + x[d1,vggish] + 6 x[d1,sam]
+   + 2.5 x[d1,clip] + 8 x[d1,blip2] + 18 x[d1,flamingo] + 5 x[d1,imagebind]
+   + 2 x[d1,clipseg] + 2.5 x[d1,yolov8] + 9 x[d1,dinov2]
+   + 6.5 x[d1,stable_diffusion] + 0.5 x[d1,tesseract] + 6 x[d1,donut]
+   + 7 x[d1,bark] + 8 x[d1,valle] + 14 x[d1,codellama] + 30 x[d1,starcoder]
+   + 14 x[d1,gemma] + 8 x[d1,phi3] + 5.2 x[d1,Qwen2.5]
+   + 7.8 x[d1,Llama-Vision] + 16 x[d1,palm2] + 0.3 x[d1,chronos]
+   + 0.3 x[d1,moment] + 0.3 x[d1,TimesFM] + 0.3 x[d1,Lag-Llama] <= 16
+ c4_d2: 16 x[d2,llama3] + 14 x[d2,mistral] + 3 x[d2,t5] + 2 x[d2,bart]
+   + 1.5 x[d2,whisper] + 1.5 x[d2,wav2vec2] + x[d2,vggish] + 6 x[d2,sam]
+   + 2.5 x[d2,clip] + 8 x[d2,blip2] + 18 x[d2,flamingo] + 5 x[d2,imagebind]
+   + 2 x[d2,clipseg] + 2.5 x[d2,yolov8] + 9 x[d2,dinov2]
+   + 6.5 x[d2,stable_diffusion] + 0.5 x[d2,tesseract] + 6 x[d2,donut]
+   + 7 x[d2,bark] + 8 x[d2,valle] + 14 x[d2,codellama] + 30 x[d2,starcoder]
+   + 14 x[d2,gemma] + 8 x[d2,phi3] + 5.2 x[d2,Qwen2.5]
+   + 7.8 x[d2,Llama-Vision] + 16 x[d2,palm2] + 0.3 x[d2,chronos]
+   + 0.3 x[d2,moment] + 0.3 x[d2,TimesFM] + 0.3 x[d2,Lag-Llama] <= 16
+ c4_d3: 16 x[d3,llama3] + 14 x[d3,mistral] + 3 x[d3,t5] + 2 x[d3,bart]
+   + 1.5 x[d3,whisper] + 1.5 x[d3,wav2vec2] + x[d3,vggish] + 6 x[d3,sam]
+   + 2.5 x[d3,clip] + 8 x[d3,blip2] + 18 x[d3,flamingo] + 5 x[d3,imagebind]
+   + 2 x[d3,clipseg] + 2.5 x[d3,yolov8] + 9 x[d3,dinov2]
+   + 6.5 x[d3,stable_diffusion] + 0.5 x[d3,tesseract] + 6 x[d3,donut]
+   + 7 x[d3,bark] + 8 x[d3,valle] + 14 x[d3,codellama] + 30 x[d3,starcoder]
+   + 14 x[d3,gemma] + 8 x[d3,phi3] + 5.2 x[d3,Qwen2.5]
+   + 7.8 x[d3,Llama-Vision] + 16 x[d3,palm2] + 0.3 x[d3,chronos]
+   + 0.3 x[d3,moment] + 0.3 x[d3,TimesFM] + 0.3 x[d3,Lag-Llama] <= 16
+ c4_d4: 16 x[d4,llama3] + 14 x[d4,mistral] + 3 x[d4,t5] + 2 x[d4,bart]
+   + 1.5 x[d4,whisper] + 1.5 x[d4,wav2vec2] + x[d4,vggish] + 6 x[d4,sam]
+   + 2.5 x[d4,clip] + 8 x[d4,blip2] + 18 x[d4,flamingo] + 5 x[d4,imagebind]
+   + 2 x[d4,clipseg] + 2.5 x[d4,yolov8] + 9 x[d4,dinov2]
+   + 6.5 x[d4,stable_diffusion] + 0.5 x[d4,tesseract] + 6 x[d4,donut]
+   + 7 x[d4,bark] + 8 x[d4,valle] + 14 x[d4,codellama] + 30 x[d4,starcoder]
+   + 14 x[d4,gemma] + 8 x[d4,phi3] + 5.2 x[d4,Qwen2.5]
+   + 7.8 x[d4,Llama-Vision] + 16 x[d4,palm2] + 0.3 x[d4,chronos]
+   + 0.3 x[d4,moment] + 0.3 x[d4,TimesFM] + 0.3 x[d4,Lag-Llama] <= 16
+ c4_d5: 16 x[d5,llama3] + 14 x[d5,mistral] + 3 x[d5,t5] + 2 x[d5,bart]
+   + 1.5 x[d5,whisper] + 1.5 x[d5,wav2vec2] + x[d5,vggish] + 6 x[d5,sam]
+   + 2.5 x[d5,clip] + 8 x[d5,blip2] + 18 x[d5,flamingo] + 5 x[d5,imagebind]
+   + 2 x[d5,clipseg] + 2.5 x[d5,yolov8] + 9 x[d5,dinov2]
+   + 6.5 x[d5,stable_diffusion] + 0.5 x[d5,tesseract] + 6 x[d5,donut]
+   + 7 x[d5,bark] + 8 x[d5,valle] + 14 x[d5,codellama] + 30 x[d5,starcoder]
+   + 14 x[d5,gemma] + 8 x[d5,phi3] + 5.2 x[d5,Qwen2.5]
+   + 7.8 x[d5,Llama-Vision] + 16 x[d5,palm2] + 0.3 x[d5,chronos]
+   + 0.3 x[d5,moment] + 0.3 x[d5,TimesFM] + 0.3 x[d5,Lag-Llama] <= 16
+ c4_d6: 16 x[d6,llama3] + 14 x[d6,mistral] + 3 x[d6,t5] + 2 x[d6,bart]
+   + 1.5 x[d6,whisper] + 1.5 x[d6,wav2vec2] + x[d6,vggish] + 6 x[d6,sam]
+   + 2.5 x[d6,clip] + 8 x[d6,blip2] + 18 x[d6,flamingo] + 5 x[d6,imagebind]
+   + 2 x[d6,clipseg] + 2.5 x[d6,yolov8] + 9 x[d6,dinov2]
+   + 6.5 x[d6,stable_diffusion] + 0.5 x[d6,tesseract] + 6 x[d6,donut]
+   + 7 x[d6,bark] + 8 x[d6,valle] + 14 x[d6,codellama] + 30 x[d6,starcoder]
+   + 14 x[d6,gemma] + 8 x[d6,phi3] + 5.2 x[d6,Qwen2.5]
+   + 7.8 x[d6,Llama-Vision] + 16 x[d6,palm2] + 0.3 x[d6,chronos]
+   + 0.3 x[d6,moment] + 0.3 x[d6,TimesFM] + 0.3 x[d6,Lag-Llama] <= 16
+ c4_d7: 16 x[d7,llama3] + 14 x[d7,mistral] + 3 x[d7,t5] + 2 x[d7,bart]
+   + 1.5 x[d7,whisper] + 1.5 x[d7,wav2vec2] + x[d7,vggish] + 6 x[d7,sam]
+   + 2.5 x[d7,clip] + 8 x[d7,blip2] + 18 x[d7,flamingo] + 5 x[d7,imagebind]
+   + 2 x[d7,clipseg] + 2.5 x[d7,yolov8] + 9 x[d7,dinov2]
+   + 6.5 x[d7,stable_diffusion] + 0.5 x[d7,tesseract] + 6 x[d7,donut]
+   + 7 x[d7,bark] + 8 x[d7,valle] + 14 x[d7,codellama] + 30 x[d7,starcoder]
+   + 14 x[d7,gemma] + 8 x[d7,phi3] + 5.2 x[d7,Qwen2.5]
+   + 7.8 x[d7,Llama-Vision] + 16 x[d7,palm2] + 0.3 x[d7,chronos]
+   + 0.3 x[d7,moment] + 0.3 x[d7,TimesFM] + 0.3 x[d7,Lag-Llama] <= 16
+ c4_d8: 16 x[d8,llama3] + 14 x[d8,mistral] + 3 x[d8,t5] + 2 x[d8,bart]
+   + 1.5 x[d8,whisper] + 1.5 x[d8,wav2vec2] + x[d8,vggish] + 6 x[d8,sam]
+   + 2.5 x[d8,clip] + 8 x[d8,blip2] + 18 x[d8,flamingo] + 5 x[d8,imagebind]
+   + 2 x[d8,clipseg] + 2.5 x[d8,yolov8] + 9 x[d8,dinov2]
+   + 6.5 x[d8,stable_diffusion] + 0.5 x[d8,tesseract] + 6 x[d8,donut]
+   + 7 x[d8,bark] + 8 x[d8,valle] + 14 x[d8,codellama] + 30 x[d8,starcoder]
+   + 14 x[d8,gemma] + 8 x[d8,phi3] + 5.2 x[d8,Qwen2.5]
+   + 7.8 x[d8,Llama-Vision] + 16 x[d8,palm2] + 0.3 x[d8,chronos]
+   + 0.3 x[d8,moment] + 0.3 x[d8,TimesFM] + 0.3 x[d8,Lag-Llama] <= 16
+ c4_d9: 16 x[d9,llama3] + 14 x[d9,mistral] + 3 x[d9,t5] + 2 x[d9,bart]
+   + 1.5 x[d9,whisper] + 1.5 x[d9,wav2vec2] + x[d9,vggish] + 6 x[d9,sam]
+   + 2.5 x[d9,clip] + 8 x[d9,blip2] + 18 x[d9,flamingo] + 5 x[d9,imagebind]
+   + 2 x[d9,clipseg] + 2.5 x[d9,yolov8] + 9 x[d9,dinov2]
+   + 6.5 x[d9,stable_diffusion] + 0.5 x[d9,tesseract] + 6 x[d9,donut]
+   + 7 x[d9,bark] + 8 x[d9,valle] + 14 x[d9,codellama] + 30 x[d9,starcoder]
+   + 14 x[d9,gemma] + 8 x[d9,phi3] + 5.2 x[d9,Qwen2.5]
+   + 7.8 x[d9,Llama-Vision] + 16 x[d9,palm2] + 0.3 x[d9,chronos]
+   + 0.3 x[d9,moment] + 0.3 x[d9,TimesFM] + 0.3 x[d9,Lag-Llama] <= 16
+ c4_d10: 16 x[d10,llama3] + 14 x[d10,mistral] + 3 x[d10,t5] + 2 x[d10,bart]
+   + 1.5 x[d10,whisper] + 1.5 x[d10,wav2vec2] + x[d10,vggish]
+   + 6 x[d10,sam] + 2.5 x[d10,clip] + 8 x[d10,blip2] + 18 x[d10,flamingo]
+   + 5 x[d10,imagebind] + 2 x[d10,clipseg] + 2.5 x[d10,yolov8]
+   + 9 x[d10,dinov2] + 6.5 x[d10,stable_diffusion] + 0.5 x[d10,tesseract]
+   + 6 x[d10,donut] + 7 x[d10,bark] + 8 x[d10,valle] + 14 x[d10,codellama]
+   + 30 x[d10,starcoder] + 14 x[d10,gemma] + 8 x[d10,phi3]
+   + 5.2 x[d10,Qwen2.5] + 7.8 x[d10,Llama-Vision] + 16 x[d10,palm2]
+   + 0.3 x[d10,chronos] + 0.3 x[d10,moment] + 0.3 x[d10,TimesFM]
+   + 0.3 x[d10,Lag-Llama] <= 16
+ c4_d11: 16 x[d11,llama3] + 14 x[d11,mistral] + 3 x[d11,t5] + 2 x[d11,bart]
+   + 1.5 x[d11,whisper] + 1.5 x[d11,wav2vec2] + x[d11,vggish]
+   + 6 x[d11,sam] + 2.5 x[d11,clip] + 8 x[d11,blip2] + 18 x[d11,flamingo]
+   + 5 x[d11,imagebind] + 2 x[d11,clipseg] + 2.5 x[d11,yolov8]
+   + 9 x[d11,dinov2] + 6.5 x[d11,stable_diffusion] + 0.5 x[d11,tesseract]
+   + 6 x[d11,donut] + 7 x[d11,bark] + 8 x[d11,valle] + 14 x[d11,codellama]
+   + 30 x[d11,starcoder] + 14 x[d11,gemma] + 8 x[d11,phi3]
+   + 5.2 x[d11,Qwen2.5] + 7.8 x[d11,Llama-Vision] + 16 x[d11,palm2]
+   + 0.3 x[d11,chronos] + 0.3 x[d11,moment] + 0.3 x[d11,TimesFM]
+   + 0.3 x[d11,Lag-Llama] <= 16
+ c4_d12: 16 x[d12,llama3] + 14 x[d12,mistral] + 3 x[d12,t5] + 2 x[d12,bart]
+   + 1.5 x[d12,whisper] + 1.5 x[d12,wav2vec2] + x[d12,vggish]
+   + 6 x[d12,sam] + 2.5 x[d12,clip] + 8 x[d12,blip2] + 18 x[d12,flamingo]
+   + 5 x[d12,imagebind] + 2 x[d12,clipseg] + 2.5 x[d12,yolov8]
+   + 9 x[d12,dinov2] + 6.5 x[d12,stable_diffusion] + 0.5 x[d12,tesseract]
+   + 6 x[d12,donut] + 7 x[d12,bark] + 8 x[d12,valle] + 14 x[d12,codellama]
+   + 30 x[d12,starcoder] + 14 x[d12,gemma] + 8 x[d12,phi3]
+   + 5.2 x[d12,Qwen2.5] + 7.8 x[d12,Llama-Vision] + 16 x[d12,palm2]
+   + 0.3 x[d12,chronos] + 0.3 x[d12,moment] + 0.3 x[d12,TimesFM]
+   + 0.3 x[d12,Lag-Llama] <= 16
+ c3_semantic_search: - y[d1,semantic_search] - y[d2,semantic_search]
+   - y[d3,semantic_search] - y[d4,semantic_search] - y[d5,semantic_search]
+   - y[d6,semantic_search] - y[d7,semantic_search] - y[d8,semantic_search]
+   - y[d9,semantic_search] - y[d10,semantic_search]
+   - y[d11,semantic_search] - y[d12,semantic_search] + [
+   x[d1,clip] * y[d1,semantic_search] + x[d1,palm2] * y[d1,semantic_search]
+   + x[d2,clip] * y[d2,semantic_search]
+   + x[d2,palm2] * y[d2,semantic_search]
+   + x[d3,clip] * y[d3,semantic_search]
+   + x[d3,palm2] * y[d3,semantic_search]
+   + x[d4,clip] * y[d4,semantic_search]
+   + x[d4,palm2] * y[d4,semantic_search]
+   + x[d5,clip] * y[d5,semantic_search]
+   + x[d5,palm2] * y[d5,semantic_search]
+   + x[d6,clip] * y[d6,semantic_search]
+   + x[d6,palm2] * y[d6,semantic_search]
+   + x[d7,clip] * y[d7,semantic_search]
+   + x[d7,palm2] * y[d7,semantic_search]
+   + x[d8,clip] * y[d8,semantic_search]
+   + x[d8,palm2] * y[d8,semantic_search]
+   + x[d9,clip] * y[d9,semantic_search]
+   + x[d9,palm2] * y[d9,semantic_search]
+   + x[d10,clip] * y[d10,semantic_search]
+   + x[d10,palm2] * y[d10,semantic_search]
+   + x[d11,clip] * y[d11,semantic_search]
+   + x[d11,palm2] * y[d11,semantic_search]
+   + x[d12,clip] * y[d12,semantic_search]
+   + x[d12,palm2] * y[d12,semantic_search] ] = 0
+ c3_dialogue_generation: - y[d1,dialogue_generation]
+   - y[d2,dialogue_generation] - y[d3,dialogue_generation]
+   - y[d4,dialogue_generation] - y[d5,dialogue_generation]
+   - y[d6,dialogue_generation] - y[d7,dialogue_generation]
+   - y[d8,dialogue_generation] - y[d9,dialogue_generation]
+   - y[d10,dialogue_generation] - y[d11,dialogue_generation]
+   - y[d12,dialogue_generation] + [
+   x[d1,llama3] * y[d1,dialogue_generation]
+   + x[d1,mistral] * y[d1,dialogue_generation]
+   + x[d1,bart] * y[d1,dialogue_generation]
+   + x[d1,flamingo] * y[d1,dialogue_generation]
+   + x[d1,gemma] * y[d1,dialogue_generation]
+   + x[d1,palm2] * y[d1,dialogue_generation]
+   + x[d2,llama3] * y[d2,dialogue_generation]
+   + x[d2,mistral] * y[d2,dialogue_generation]
+   + x[d2,bart] * y[d2,dialogue_generation]
+   + x[d2,flamingo] * y[d2,dialogue_generation]
+   + x[d2,gemma] * y[d2,dialogue_generation]
+   + x[d2,palm2] * y[d2,dialogue_generation]
+   + x[d3,llama3] * y[d3,dialogue_generation]
+   + x[d3,mistral] * y[d3,dialogue_generation]
+   + x[d3,bart] * y[d3,dialogue_generation]
+   + x[d3,flamingo] * y[d3,dialogue_generation]
+   + x[d3,gemma] * y[d3,dialogue_generation]
+   + x[d3,palm2] * y[d3,dialogue_generation]
+   + x[d4,llama3] * y[d4,dialogue_generation]
+   + x[d4,mistral] * y[d4,dialogue_generation]
+   + x[d4,bart] * y[d4,dialogue_generation]
+   + x[d4,flamingo] * y[d4,dialogue_generation]
+   + x[d4,gemma] * y[d4,dialogue_generation]
+   + x[d4,palm2] * y[d4,dialogue_generation]
+   + x[d5,llama3] * y[d5,dialogue_generation]
+   + x[d5,mistral] * y[d5,dialogue_generation]
+   + x[d5,bart] * y[d5,dialogue_generation]
+   + x[d5,flamingo] * y[d5,dialogue_generation]
+   + x[d5,gemma] * y[d5,dialogue_generation]
+   + x[d5,palm2] * y[d5,dialogue_generation]
+   + x[d6,llama3] * y[d6,dialogue_generation]
+   + x[d6,mistral] * y[d6,dialogue_generation]
+   + x[d6,bart] * y[d6,dialogue_generation]
+   + x[d6,flamingo] * y[d6,dialogue_generation]
+   + x[d6,gemma] * y[d6,dialogue_generation]
+   + x[d6,palm2] * y[d6,dialogue_generation]
+   + x[d7,llama3] * y[d7,dialogue_generation]
+   + x[d7,mistral] * y[d7,dialogue_generation]
+   + x[d7,bart] * y[d7,dialogue_generation]
+   + x[d7,flamingo] * y[d7,dialogue_generation]
+   + x[d7,gemma] * y[d7,dialogue_generation]
+   + x[d7,palm2] * y[d7,dialogue_generation]
+   + x[d8,llama3] * y[d8,dialogue_generation]
+   + x[d8,mistral] * y[d8,dialogue_generation]
+   + x[d8,bart] * y[d8,dialogue_generation]
+   + x[d8,flamingo] * y[d8,dialogue_generation]
+   + x[d8,gemma] * y[d8,dialogue_generation]
+   + x[d8,palm2] * y[d8,dialogue_generation]
+   + x[d9,llama3] * y[d9,dialogue_generation]
+   + x[d9,mistral] * y[d9,dialogue_generation]
+   + x[d9,bart] * y[d9,dialogue_generation]
+   + x[d9,flamingo] * y[d9,dialogue_generation]
+   + x[d9,gemma] * y[d9,dialogue_generation]
+   + x[d9,palm2] * y[d9,dialogue_generation]
+   + x[d10,llama3] * y[d10,dialogue_generation]
+   + x[d10,mistral] * y[d10,dialogue_generation]
+   + x[d10,bart] * y[d10,dialogue_generation]
+   + x[d10,flamingo] * y[d10,dialogue_generation]
+   + x[d10,gemma] * y[d10,dialogue_generation]
+   + x[d10,palm2] * y[d10,dialogue_generation]
+   + x[d11,llama3] * y[d11,dialogue_generation]
+   + x[d11,mistral] * y[d11,dialogue_generation]
+   + x[d11,bart] * y[d11,dialogue_generation]
+   + x[d11,flamingo] * y[d11,dialogue_generation]
+   + x[d11,gemma] * y[d11,dialogue_generation]
+   + x[d11,palm2] * y[d11,dialogue_generation]
+   + x[d12,llama3] * y[d12,dialogue_generation]
+   + x[d12,mistral] * y[d12,dialogue_generation]
+   + x[d12,bart] * y[d12,dialogue_generation]
+   + x[d12,flamingo] * y[d12,dialogue_generation]
+   + x[d12,gemma] * y[d12,dialogue_generation]
+   + x[d12,palm2] * y[d12,dialogue_generation] ] = 0
+ c3_text_to_speech: - y[d1,text_to_speech] - y[d2,text_to_speech]
+   - y[d3,text_to_speech] - y[d4,text_to_speech] - y[d5,text_to_speech]
+   - y[d6,text_to_speech] - y[d7,text_to_speech] - y[d8,text_to_speech]
+   - y[d9,text_to_speech] - y[d10,text_to_speech] - y[d11,text_to_speech]
+   - y[d12,text_to_speech] + [ x[d1,bark] * y[d1,text_to_speech]
+   + x[d1,valle] * y[d1,text_to_speech] + x[d2,bark] * y[d2,text_to_speech]
+   + x[d2,valle] * y[d2,text_to_speech] + x[d3,bark] * y[d3,text_to_speech]
+   + x[d3,valle] * y[d3,text_to_speech] + x[d4,bark] * y[d4,text_to_speech]
+   + x[d4,valle] * y[d4,text_to_speech] + x[d5,bark] * y[d5,text_to_speech]
+   + x[d5,valle] * y[d5,text_to_speech] + x[d6,bark] * y[d6,text_to_speech]
+   + x[d6,valle] * y[d6,text_to_speech] + x[d7,bark] * y[d7,text_to_speech]
+   + x[d7,valle] * y[d7,text_to_speech] + x[d8,bark] * y[d8,text_to_speech]
+   + x[d8,valle] * y[d8,text_to_speech] + x[d9,bark] * y[d9,text_to_speech]
+   + x[d9,valle] * y[d9,text_to_speech]
+   + x[d10,bark] * y[d10,text_to_speech]
+   + x[d10,valle] * y[d10,text_to_speech]
+   + x[d11,bark] * y[d11,text_to_speech]
+   + x[d11,valle] * y[d11,text_to_speech]
+   + x[d12,bark] * y[d12,text_to_speech]
+   + x[d12,valle] * y[d12,text_to_speech] ] = 0
+ c3_eeg_anamoly_detection: - y[d1,eeg_anamoly_detection]
+   - y[d2,eeg_anamoly_detection] - y[d3,eeg_anamoly_detection]
+   - y[d4,eeg_anamoly_detection] - y[d5,eeg_anamoly_detection]
+   - y[d6,eeg_anamoly_detection] - y[d7,eeg_anamoly_detection]
+   - y[d8,eeg_anamoly_detection] - y[d9,eeg_anamoly_detection]
+   - y[d10,eeg_anamoly_detection] - y[d11,eeg_anamoly_detection]
+   - y[d12,eeg_anamoly_detection] + [
+   x[d1,chronos] * y[d1,eeg_anamoly_detection]
+   + x[d1,moment] * y[d1,eeg_anamoly_detection]
+   + x[d1,TimesFM] * y[d1,eeg_anamoly_detection]
+   + x[d1,Lag-Llama] * y[d1,eeg_anamoly_detection]
+   + x[d2,chronos] * y[d2,eeg_anamoly_detection]
+   + x[d2,moment] * y[d2,eeg_anamoly_detection]
+   + x[d2,TimesFM] * y[d2,eeg_anamoly_detection]
+   + x[d2,Lag-Llama] * y[d2,eeg_anamoly_detection]
+   + x[d3,chronos] * y[d3,eeg_anamoly_detection]
+   + x[d3,moment] * y[d3,eeg_anamoly_detection]
+   + x[d3,TimesFM] * y[d3,eeg_anamoly_detection]
+   + x[d3,Lag-Llama] * y[d3,eeg_anamoly_detection]
+   + x[d4,chronos] * y[d4,eeg_anamoly_detection]
+   + x[d4,moment] * y[d4,eeg_anamoly_detection]
+   + x[d4,TimesFM] * y[d4,eeg_anamoly_detection]
+   + x[d4,Lag-Llama] * y[d4,eeg_anamoly_detection]
+   + x[d5,chronos] * y[d5,eeg_anamoly_detection]
+   + x[d5,moment] * y[d5,eeg_anamoly_detection]
+   + x[d5,TimesFM] * y[d5,eeg_anamoly_detection]
+   + x[d5,Lag-Llama] * y[d5,eeg_anamoly_detection]
+   + x[d6,chronos] * y[d6,eeg_anamoly_detection]
+   + x[d6,moment] * y[d6,eeg_anamoly_detection]
+   + x[d6,TimesFM] * y[d6,eeg_anamoly_detection]
+   + x[d6,Lag-Llama] * y[d6,eeg_anamoly_detection]
+   + x[d7,chronos] * y[d7,eeg_anamoly_detection]
+   + x[d7,moment] * y[d7,eeg_anamoly_detection]
+   + x[d7,TimesFM] * y[d7,eeg_anamoly_detection]
+   + x[d7,Lag-Llama] * y[d7,eeg_anamoly_detection]
+   + x[d8,chronos] * y[d8,eeg_anamoly_detection]
+   + x[d8,moment] * y[d8,eeg_anamoly_detection]
+   + x[d8,TimesFM] * y[d8,eeg_anamoly_detection]
+   + x[d8,Lag-Llama] * y[d8,eeg_anamoly_detection]
+   + x[d9,chronos] * y[d9,eeg_anamoly_detection]
+   + x[d9,moment] * y[d9,eeg_anamoly_detection]
+   + x[d9,TimesFM] * y[d9,eeg_anamoly_detection]
+   + x[d9,Lag-Llama] * y[d9,eeg_anamoly_detection]
+   + x[d10,chronos] * y[d10,eeg_anamoly_detection]
+   + x[d10,moment] * y[d10,eeg_anamoly_detection]
+   + x[d10,TimesFM] * y[d10,eeg_anamoly_detection]
+   + x[d10,Lag-Llama] * y[d10,eeg_anamoly_detection]
+   + x[d11,chronos] * y[d11,eeg_anamoly_detection]
+   + x[d11,moment] * y[d11,eeg_anamoly_detection]
+   + x[d11,TimesFM] * y[d11,eeg_anamoly_detection]
+   + x[d11,Lag-Llama] * y[d11,eeg_anamoly_detection]
+   + x[d12,chronos] * y[d12,eeg_anamoly_detection]
+   + x[d12,moment] * y[d12,eeg_anamoly_detection]
+   + x[d12,TimesFM] * y[d12,eeg_anamoly_detection]
+   + x[d12,Lag-Llama] * y[d12,eeg_anamoly_detection] ] = 0
+ c3_question_answering: - y[d1,question_answering]
+   - y[d2,question_answering] - y[d3,question_answering]
+   - y[d4,question_answering] - y[d5,question_answering]
+   - y[d6,question_answering] - y[d7,question_answering]
+   - y[d8,question_answering] - y[d9,question_answering]
+   - y[d10,question_answering] - y[d11,question_answering]
+   - y[d12,question_answering] + [ x[d1,llama3] * y[d1,question_answering]
+   + x[d1,mistral] * y[d1,question_answering]
+   + x[d1,t5] * y[d1,question_answering]
+   + x[d1,bart] * y[d1,question_answering]
+   + x[d1,gemma] * y[d1,question_answering]
+   + x[d1,palm2] * y[d1,question_answering]
+   + x[d2,llama3] * y[d2,question_answering]
+   + x[d2,mistral] * y[d2,question_answering]
+   + x[d2,t5] * y[d2,question_answering]
+   + x[d2,bart] * y[d2,question_answering]
+   + x[d2,gemma] * y[d2,question_answering]
+   + x[d2,palm2] * y[d2,question_answering]
+   + x[d3,llama3] * y[d3,question_answering]
+   + x[d3,mistral] * y[d3,question_answering]
+   + x[d3,t5] * y[d3,question_answering]
+   + x[d3,bart] * y[d3,question_answering]
+   + x[d3,gemma] * y[d3,question_answering]
+   + x[d3,palm2] * y[d3,question_answering]
+   + x[d4,llama3] * y[d4,question_answering]
+   + x[d4,mistral] * y[d4,question_answering]
+   + x[d4,t5] * y[d4,question_answering]
+   + x[d4,bart] * y[d4,question_answering]
+   + x[d4,gemma] * y[d4,question_answering]
+   + x[d4,palm2] * y[d4,question_answering]
+   + x[d5,llama3] * y[d5,question_answering]
+   + x[d5,mistral] * y[d5,question_answering]
+   + x[d5,t5] * y[d5,question_answering]
+   + x[d5,bart] * y[d5,question_answering]
+   + x[d5,gemma] * y[d5,question_answering]
+   + x[d5,palm2] * y[d5,question_answering]
+   + x[d6,llama3] * y[d6,question_answering]
+   + x[d6,mistral] * y[d6,question_answering]
+   + x[d6,t5] * y[d6,question_answering]
+   + x[d6,bart] * y[d6,question_answering]
+   + x[d6,gemma] * y[d6,question_answering]
+   + x[d6,palm2] * y[d6,question_answering]
+   + x[d7,llama3] * y[d7,question_answering]
+   + x[d7,mistral] * y[d7,question_answering]
+   + x[d7,t5] * y[d7,question_answering]
+   + x[d7,bart] * y[d7,question_answering]
+   + x[d7,gemma] * y[d7,question_answering]
+   + x[d7,palm2] * y[d7,question_answering]
+   + x[d8,llama3] * y[d8,question_answering]
+   + x[d8,mistral] * y[d8,question_answering]
+   + x[d8,t5] * y[d8,question_answering]
+   + x[d8,bart] * y[d8,question_answering]
+   + x[d8,gemma] * y[d8,question_answering]
+   + x[d8,palm2] * y[d8,question_answering]
+   + x[d9,llama3] * y[d9,question_answering]
+   + x[d9,mistral] * y[d9,question_answering]
+   + x[d9,t5] * y[d9,question_answering]
+   + x[d9,bart] * y[d9,question_answering]
+   + x[d9,gemma] * y[d9,question_answering]
+   + x[d9,palm2] * y[d9,question_answering]
+   + x[d10,llama3] * y[d10,question_answering]
+   + x[d10,mistral] * y[d10,question_answering]
+   + x[d10,t5] * y[d10,question_answering]
+   + x[d10,bart] * y[d10,question_answering]
+   + x[d10,gemma] * y[d10,question_answering]
+   + x[d10,palm2] * y[d10,question_answering]
+   + x[d11,llama3] * y[d11,question_answering]
+   + x[d11,mistral] * y[d11,question_answering]
+   + x[d11,t5] * y[d11,question_answering]
+   + x[d11,bart] * y[d11,question_answering]
+   + x[d11,gemma] * y[d11,question_answering]
+   + x[d11,palm2] * y[d11,question_answering]
+   + x[d12,llama3] * y[d12,question_answering]
+   + x[d12,mistral] * y[d12,question_answering]
+   + x[d12,t5] * y[d12,question_answering]
+   + x[d12,bart] * y[d12,question_answering]
+   + x[d12,gemma] * y[d12,question_answering]
+   + x[d12,palm2] * y[d12,question_answering] ] = 0
+ c3_named_entity_recognition: - y[d1,named_entity_recognition]
+   - y[d2,named_entity_recognition] - y[d3,named_entity_recognition]
+   - y[d4,named_entity_recognition] - y[d5,named_entity_recognition]
+   - y[d6,named_entity_recognition] - y[d7,named_entity_recognition]
+   - y[d8,named_entity_recognition] - y[d9,named_entity_recognition]
+   - y[d10,named_entity_recognition] - y[d11,named_entity_recognition]
+   - y[d12,named_entity_recognition] + [
+   x[d1,llama3] * y[d1,named_entity_recognition]
+   + x[d1,palm2] * y[d1,named_entity_recognition]
+   + x[d2,llama3] * y[d2,named_entity_recognition]
+   + x[d2,palm2] * y[d2,named_entity_recognition]
+   + x[d3,llama3] * y[d3,named_entity_recognition]
+   + x[d3,palm2] * y[d3,named_entity_recognition]
+   + x[d4,llama3] * y[d4,named_entity_recognition]
+   + x[d4,palm2] * y[d4,named_entity_recognition]
+   + x[d5,llama3] * y[d5,named_entity_recognition]
+   + x[d5,palm2] * y[d5,named_entity_recognition]
+   + x[d6,llama3] * y[d6,named_entity_recognition]
+   + x[d6,palm2] * y[d6,named_entity_recognition]
+   + x[d7,llama3] * y[d7,named_entity_recognition]
+   + x[d7,palm2] * y[d7,named_entity_recognition]
+   + x[d8,llama3] * y[d8,named_entity_recognition]
+   + x[d8,palm2] * y[d8,named_entity_recognition]
+   + x[d9,llama3] * y[d9,named_entity_recognition]
+   + x[d9,palm2] * y[d9,named_entity_recognition]
+   + x[d10,llama3] * y[d10,named_entity_recognition]
+   + x[d10,palm2] * y[d10,named_entity_recognition]
+   + x[d11,llama3] * y[d11,named_entity_recognition]
+   + x[d11,palm2] * y[d11,named_entity_recognition]
+   + x[d12,llama3] * y[d12,named_entity_recognition]
+   + x[d12,palm2] * y[d12,named_entity_recognition] ] = 0
+ c3_document_retrieval: - y[d1,document_retrieval]
+   - y[d2,document_retrieval] - y[d3,document_retrieval]
+   - y[d4,document_retrieval] - y[d5,document_retrieval]
+   - y[d6,document_retrieval] - y[d7,document_retrieval]
+   - y[d8,document_retrieval] - y[d9,document_retrieval]
+   - y[d10,document_retrieval] - y[d11,document_retrieval]
+   - y[d12,document_retrieval] + [ x[d1,donut] * y[d1,document_retrieval]
+   + x[d2,donut] * y[d2,document_retrieval]
+   + x[d3,donut] * y[d3,document_retrieval]
+   + x[d4,donut] * y[d4,document_retrieval]
+   + x[d5,donut] * y[d5,document_retrieval]
+   + x[d6,donut] * y[d6,document_retrieval]
+   + x[d7,donut] * y[d7,document_retrieval]
+   + x[d8,donut] * y[d8,document_retrieval]
+   + x[d9,donut] * y[d9,document_retrieval]
+   + x[d10,donut] * y[d10,document_retrieval]
+   + x[d11,donut] * y[d11,document_retrieval]
+   + x[d12,donut] * y[d12,document_retrieval] ] = 0
+ c3_language_translation: - y[d1,language_translation]
+   - y[d2,language_translation] - y[d3,language_translation]
+   - y[d4,language_translation] - y[d5,language_translation]
+   - y[d6,language_translation] - y[d7,language_translation]
+   - y[d8,language_translation] - y[d9,language_translation]
+   - y[d10,language_translation] - y[d11,language_translation]
+   - y[d12,language_translation] + [ x[d1,t5] * y[d1,language_translation]
+   + x[d1,palm2] * y[d1,language_translation]
+   + x[d2,t5] * y[d2,language_translation]
+   + x[d2,palm2] * y[d2,language_translation]
+   + x[d3,t5] * y[d3,language_translation]
+   + x[d3,palm2] * y[d3,language_translation]
+   + x[d4,t5] * y[d4,language_translation]
+   + x[d4,palm2] * y[d4,language_translation]
+   + x[d5,t5] * y[d5,language_translation]
+   + x[d5,palm2] * y[d5,language_translation]
+   + x[d6,t5] * y[d6,language_translation]
+   + x[d6,palm2] * y[d6,language_translation]
+   + x[d7,t5] * y[d7,language_translation]
+   + x[d7,palm2] * y[d7,language_translation]
+   + x[d8,t5] * y[d8,language_translation]
+   + x[d8,palm2] * y[d8,language_translation]
+   + x[d9,t5] * y[d9,language_translation]
+   + x[d9,palm2] * y[d9,language_translation]
+   + x[d10,t5] * y[d10,language_translation]
+   + x[d10,palm2] * y[d10,language_translation]
+   + x[d11,t5] * y[d11,language_translation]
+   + x[d11,palm2] * y[d11,language_translation]
+   + x[d12,t5] * y[d12,language_translation]
+   + x[d12,palm2] * y[d12,language_translation] ] = 0
+ c3_visual_question_answering: - y[d1,visual_question_answering]
+   - y[d2,visual_question_answering] - y[d3,visual_question_answering]
+   - y[d4,visual_question_answering] - y[d5,visual_question_answering]
+   - y[d6,visual_question_answering] - y[d7,visual_question_answering]
+   - y[d8,visual_question_answering] - y[d9,visual_question_answering]
+   - y[d10,visual_question_answering] - y[d11,visual_question_answering]
+   - y[d12,visual_question_answering] + [
+   x[d1,blip2] * y[d1,visual_question_answering]
+   + x[d1,flamingo] * y[d1,visual_question_answering]
+   + x[d1,Qwen2.5] * y[d1,visual_question_answering]
+   + x[d1,Llama-Vision] * y[d1,visual_question_answering]
+   + x[d2,blip2] * y[d2,visual_question_answering]
+   + x[d2,flamingo] * y[d2,visual_question_answering]
+   + x[d2,Qwen2.5] * y[d2,visual_question_answering]
+   + x[d2,Llama-Vision] * y[d2,visual_question_answering]
+   + x[d3,blip2] * y[d3,visual_question_answering]
+   + x[d3,flamingo] * y[d3,visual_question_answering]
+   + x[d3,Qwen2.5] * y[d3,visual_question_answering]
+   + x[d3,Llama-Vision] * y[d3,visual_question_answering]
+   + x[d4,blip2] * y[d4,visual_question_answering]
+   + x[d4,flamingo] * y[d4,visual_question_answering]
+   + x[d4,Qwen2.5] * y[d4,visual_question_answering]
+   + x[d4,Llama-Vision] * y[d4,visual_question_answering]
+   + x[d5,blip2] * y[d5,visual_question_answering]
+   + x[d5,flamingo] * y[d5,visual_question_answering]
+   + x[d5,Qwen2.5] * y[d5,visual_question_answering]
+   + x[d5,Llama-Vision] * y[d5,visual_question_answering]
+   + x[d6,blip2] * y[d6,visual_question_answering]
+   + x[d6,flamingo] * y[d6,visual_question_answering]
+   + x[d6,Qwen2.5] * y[d6,visual_question_answering]
+   + x[d6,Llama-Vision] * y[d6,visual_question_answering]
+   + x[d7,blip2] * y[d7,visual_question_answering]
+   + x[d7,flamingo] * y[d7,visual_question_answering]
+   + x[d7,Qwen2.5] * y[d7,visual_question_answering]
+   + x[d7,Llama-Vision] * y[d7,visual_question_answering]
+   + x[d8,blip2] * y[d8,visual_question_answering]
+   + x[d8,flamingo] * y[d8,visual_question_answering]
+   + x[d8,Qwen2.5] * y[d8,visual_question_answering]
+   + x[d8,Llama-Vision] * y[d8,visual_question_answering]
+   + x[d9,blip2] * y[d9,visual_question_answering]
+   + x[d9,flamingo] * y[d9,visual_question_answering]
+   + x[d9,Qwen2.5] * y[d9,visual_question_answering]
+   + x[d9,Llama-Vision] * y[d9,visual_question_answering]
+   + x[d10,blip2] * y[d10,visual_question_answering]
+   + x[d10,flamingo] * y[d10,visual_question_answering]
+   + x[d10,Qwen2.5] * y[d10,visual_question_answering]
+   + x[d10,Llama-Vision] * y[d10,visual_question_answering]
+   + x[d11,blip2] * y[d11,visual_question_answering]
+   + x[d11,flamingo] * y[d11,visual_question_answering]
+   + x[d11,Qwen2.5] * y[d11,visual_question_answering]
+   + x[d11,Llama-Vision] * y[d11,visual_question_answering]
+   + x[d12,blip2] * y[d12,visual_question_answering]
+   + x[d12,flamingo] * y[d12,visual_question_answering]
+   + x[d12,Qwen2.5] * y[d12,visual_question_answering]
+   + x[d12,Llama-Vision] * y[d12,visual_question_answering] ] = 0
+ c3_ocr: - y[d1,ocr] - y[d2,ocr] - y[d3,ocr] - y[d4,ocr] - y[d5,ocr]
+   - y[d6,ocr] - y[d7,ocr] - y[d8,ocr] - y[d9,ocr] - y[d10,ocr]
+   - y[d11,ocr] - y[d12,ocr] + [ x[d1,tesseract] * y[d1,ocr]
+   + x[d1,donut] * y[d1,ocr] + x[d2,tesseract] * y[d2,ocr]
+   + x[d2,donut] * y[d2,ocr] + x[d3,tesseract] * y[d3,ocr]
+   + x[d3,donut] * y[d3,ocr] + x[d4,tesseract] * y[d4,ocr]
+   + x[d4,donut] * y[d4,ocr] + x[d5,tesseract] * y[d5,ocr]
+   + x[d5,donut] * y[d5,ocr] + x[d6,tesseract] * y[d6,ocr]
+   + x[d6,donut] * y[d6,ocr] + x[d7,tesseract] * y[d7,ocr]
+   + x[d7,donut] * y[d7,ocr] + x[d8,tesseract] * y[d8,ocr]
+   + x[d8,donut] * y[d8,ocr] + x[d9,tesseract] * y[d9,ocr]
+   + x[d9,donut] * y[d9,ocr] + x[d10,tesseract] * y[d10,ocr]
+   + x[d10,donut] * y[d10,ocr] + x[d11,tesseract] * y[d11,ocr]
+   + x[d11,donut] * y[d11,ocr] + x[d12,tesseract] * y[d12,ocr]
+   + x[d12,donut] * y[d12,ocr] ] = 0
+ c5_d1_clip_semantic_search: [ 240 x[d1,clip] * y[d1,semantic_search] ]
+   <= 400
+ c5_d1_palm2_semantic_search: [ 375 x[d1,palm2] * y[d1,semantic_search] ]
+   <= 400
+ c5_d1_llama3_dialogue_generation: [
+   420 x[d1,llama3] * y[d1,dialogue_generation] ] <= 500
+ c5_d1_mistral_dialogue_generation: [
+   395 x[d1,mistral] * y[d1,dialogue_generation] ] <= 500
+ c5_d1_bart_dialogue_generation: [
+   360 x[d1,bart] * y[d1,dialogue_generation] ] <= 500
+ c5_d1_flamingo_dialogue_generation: [
+   980 x[d1,flamingo] * y[d1,dialogue_generation] ] <= 500
+ c5_d1_gemma_dialogue_generation: [
+   410 x[d1,gemma] * y[d1,dialogue_generation] ] <= 500
+ c5_d1_palm2_dialogue_generation: [
+   450 x[d1,palm2] * y[d1,dialogue_generation] ] <= 500
+ c5_d1_bark_text_to_speech: [ 580 x[d1,bark] * y[d1,text_to_speech] ]
+   <= 600
+ c5_d1_valle_text_to_speech: [ 620 x[d1,valle] * y[d1,text_to_speech] ]
+   <= 600
+ c5_d1_chronos_eeg_anamoly_detection: [
+   200 x[d1,chronos] * y[d1,eeg_anamoly_detection] ] <= 350
+ c5_d1_moment_eeg_anamoly_detection: [
+   210 x[d1,moment] * y[d1,eeg_anamoly_detection] ] <= 350
+ c5_d1_TimesFM_eeg_anamoly_detection: [
+   220 x[d1,TimesFM] * y[d1,eeg_anamoly_detection] ] <= 350
+ c5_d1_Lag-Llama_eeg_anamoly_detection: [
+   250 x[d1,Lag-Llama] * y[d1,eeg_anamoly_detection] ] <= 350
+ c5_d1_llama3_question_answering: [
+   410 x[d1,llama3] * y[d1,question_answering] ] <= 350
+ c5_d1_mistral_question_answering: [
+   380 x[d1,mistral] * y[d1,question_answering] ] <= 350
+ c5_d1_t5_question_answering: [ 315 x[d1,t5] * y[d1,question_answering] ]
+   <= 350
+ c5_d1_bart_question_answering: [ 340 x[d1,bart] * y[d1,question_answering]
+   ] <= 350
+ c5_d1_gemma_question_answering: [
+   400 x[d1,gemma] * y[d1,question_answering] ] <= 350
+ c5_d1_palm2_question_answering: [
+   430 x[d1,palm2] * y[d1,question_answering] ] <= 350
+ c5_d1_llama3_named_entity_recognition: [
+   390 x[d1,llama3] * y[d1,named_entity_recognition] ] <= 400
+ c5_d1_palm2_named_entity_recognition: [
+   405 x[d1,palm2] * y[d1,named_entity_recognition] ] <= 400
+ c5_d1_donut_document_retrieval: [
+   550 x[d1,donut] * y[d1,document_retrieval] ] <= 600
+ c5_d1_t5_language_translation: [ 295 x[d1,t5] * y[d1,language_translation]
+   ] <= 400
+ c5_d1_palm2_language_translation: [
+   390 x[d1,palm2] * y[d1,language_translation] ] <= 400
+ c5_d1_blip2_visual_question_answering: [
+   700 x[d1,blip2] * y[d1,visual_question_answering] ] <= 700
+ c5_d1_flamingo_visual_question_answering: [
+   1050 x[d1,flamingo] * y[d1,visual_question_answering] ] <= 700
+ c5_d1_Qwen2.5_visual_question_answering: [
+   550 x[d1,Qwen2.5] * y[d1,visual_question_answering] ] <= 700
+ c5_d1_Llama-Vision_visual_question_answering: [
+   580 x[d1,Llama-Vision] * y[d1,visual_question_answering] ] <= 700
+ c5_d1_tesseract_ocr: [ 280 x[d1,tesseract] * y[d1,ocr] ] <= 600
+ c5_d1_donut_ocr: [ 500 x[d1,donut] * y[d1,ocr] ] <= 600
+ c5_d2_clip_semantic_search: [ 240 x[d2,clip] * y[d2,semantic_search] ]
+   <= 400
+ c5_d2_palm2_semantic_search: [ 375 x[d2,palm2] * y[d2,semantic_search] ]
+   <= 400
+ c5_d2_llama3_dialogue_generation: [
+   420 x[d2,llama3] * y[d2,dialogue_generation] ] <= 500
+ c5_d2_mistral_dialogue_generation: [
+   395 x[d2,mistral] * y[d2,dialogue_generation] ] <= 500
+ c5_d2_bart_dialogue_generation: [
+   360 x[d2,bart] * y[d2,dialogue_generation] ] <= 500
+ c5_d2_flamingo_dialogue_generation: [
+   980 x[d2,flamingo] * y[d2,dialogue_generation] ] <= 500
+ c5_d2_gemma_dialogue_generation: [
+   410 x[d2,gemma] * y[d2,dialogue_generation] ] <= 500
+ c5_d2_palm2_dialogue_generation: [
+   450 x[d2,palm2] * y[d2,dialogue_generation] ] <= 500
+ c5_d2_bark_text_to_speech: [ 580 x[d2,bark] * y[d2,text_to_speech] ]
+   <= 600
+ c5_d2_valle_text_to_speech: [ 620 x[d2,valle] * y[d2,text_to_speech] ]
+   <= 600
+ c5_d2_chronos_eeg_anamoly_detection: [
+   200 x[d2,chronos] * y[d2,eeg_anamoly_detection] ] <= 350
+ c5_d2_moment_eeg_anamoly_detection: [
+   210 x[d2,moment] * y[d2,eeg_anamoly_detection] ] <= 350
+ c5_d2_TimesFM_eeg_anamoly_detection: [
+   220 x[d2,TimesFM] * y[d2,eeg_anamoly_detection] ] <= 350
+ c5_d2_Lag-Llama_eeg_anamoly_detection: [
+   250 x[d2,Lag-Llama] * y[d2,eeg_anamoly_detection] ] <= 350
+ c5_d2_llama3_question_answering: [
+   410 x[d2,llama3] * y[d2,question_answering] ] <= 350
+ c5_d2_mistral_question_answering: [
+   380 x[d2,mistral] * y[d2,question_answering] ] <= 350
+ c5_d2_t5_question_answering: [ 315 x[d2,t5] * y[d2,question_answering] ]
+   <= 350
+ c5_d2_bart_question_answering: [ 340 x[d2,bart] * y[d2,question_answering]
+   ] <= 350
+ c5_d2_gemma_question_answering: [
+   400 x[d2,gemma] * y[d2,question_answering] ] <= 350
+ c5_d2_palm2_question_answering: [
+   430 x[d2,palm2] * y[d2,question_answering] ] <= 350
+ c5_d2_llama3_named_entity_recognition: [
+   390 x[d2,llama3] * y[d2,named_entity_recognition] ] <= 400
+ c5_d2_palm2_named_entity_recognition: [
+   405 x[d2,palm2] * y[d2,named_entity_recognition] ] <= 400
+ c5_d2_donut_document_retrieval: [
+   550 x[d2,donut] * y[d2,document_retrieval] ] <= 600
+ c5_d2_t5_language_translation: [ 295 x[d2,t5] * y[d2,language_translation]
+   ] <= 400
+ c5_d2_palm2_language_translation: [
+   390 x[d2,palm2] * y[d2,language_translation] ] <= 400
+ c5_d2_blip2_visual_question_answering: [
+   700 x[d2,blip2] * y[d2,visual_question_answering] ] <= 700
+ c5_d2_flamingo_visual_question_answering: [
+   1050 x[d2,flamingo] * y[d2,visual_question_answering] ] <= 700
+ c5_d2_Qwen2.5_visual_question_answering: [
+   550 x[d2,Qwen2.5] * y[d2,visual_question_answering] ] <= 700
+ c5_d2_Llama-Vision_visual_question_answering: [
+   580 x[d2,Llama-Vision] * y[d2,visual_question_answering] ] <= 700
+ c5_d2_tesseract_ocr: [ 280 x[d2,tesseract] * y[d2,ocr] ] <= 600
+ c5_d2_donut_ocr: [ 500 x[d2,donut] * y[d2,ocr] ] <= 600
+ c5_d3_clip_semantic_search: [ 240 x[d3,clip] * y[d3,semantic_search] ]
+   <= 400
+ c5_d3_palm2_semantic_search: [ 375 x[d3,palm2] * y[d3,semantic_search] ]
+   <= 400
+ c5_d3_llama3_dialogue_generation: [
+   420 x[d3,llama3] * y[d3,dialogue_generation] ] <= 500
+ c5_d3_mistral_dialogue_generation: [
+   395 x[d3,mistral] * y[d3,dialogue_generation] ] <= 500
+ c5_d3_bart_dialogue_generation: [
+   360 x[d3,bart] * y[d3,dialogue_generation] ] <= 500
+ c5_d3_flamingo_dialogue_generation: [
+   980 x[d3,flamingo] * y[d3,dialogue_generation] ] <= 500
+ c5_d3_gemma_dialogue_generation: [
+   410 x[d3,gemma] * y[d3,dialogue_generation] ] <= 500
+ c5_d3_palm2_dialogue_generation: [
+   450 x[d3,palm2] * y[d3,dialogue_generation] ] <= 500
+ c5_d3_bark_text_to_speech: [ 580 x[d3,bark] * y[d3,text_to_speech] ]
+   <= 600
+ c5_d3_valle_text_to_speech: [ 620 x[d3,valle] * y[d3,text_to_speech] ]
+   <= 600
+ c5_d3_chronos_eeg_anamoly_detection: [
+   200 x[d3,chronos] * y[d3,eeg_anamoly_detection] ] <= 350
+ c5_d3_moment_eeg_anamoly_detection: [
+   210 x[d3,moment] * y[d3,eeg_anamoly_detection] ] <= 350
+ c5_d3_TimesFM_eeg_anamoly_detection: [
+   220 x[d3,TimesFM] * y[d3,eeg_anamoly_detection] ] <= 350
+ c5_d3_Lag-Llama_eeg_anamoly_detection: [
+   250 x[d3,Lag-Llama] * y[d3,eeg_anamoly_detection] ] <= 350
+ c5_d3_llama3_question_answering: [
+   410 x[d3,llama3] * y[d3,question_answering] ] <= 350
+ c5_d3_mistral_question_answering: [
+   380 x[d3,mistral] * y[d3,question_answering] ] <= 350
+ c5_d3_t5_question_answering: [ 315 x[d3,t5] * y[d3,question_answering] ]
+   <= 350
+ c5_d3_bart_question_answering: [ 340 x[d3,bart] * y[d3,question_answering]
+   ] <= 350
+ c5_d3_gemma_question_answering: [
+   400 x[d3,gemma] * y[d3,question_answering] ] <= 350
+ c5_d3_palm2_question_answering: [
+   430 x[d3,palm2] * y[d3,question_answering] ] <= 350
+ c5_d3_llama3_named_entity_recognition: [
+   390 x[d3,llama3] * y[d3,named_entity_recognition] ] <= 400
+ c5_d3_palm2_named_entity_recognition: [
+   405 x[d3,palm2] * y[d3,named_entity_recognition] ] <= 400
+ c5_d3_donut_document_retrieval: [
+   550 x[d3,donut] * y[d3,document_retrieval] ] <= 600
+ c5_d3_t5_language_translation: [ 295 x[d3,t5] * y[d3,language_translation]
+   ] <= 400
+ c5_d3_palm2_language_translation: [
+   390 x[d3,palm2] * y[d3,language_translation] ] <= 400
+ c5_d3_blip2_visual_question_answering: [
+   700 x[d3,blip2] * y[d3,visual_question_answering] ] <= 700
+ c5_d3_flamingo_visual_question_answering: [
+   1050 x[d3,flamingo] * y[d3,visual_question_answering] ] <= 700
+ c5_d3_Qwen2.5_visual_question_answering: [
+   550 x[d3,Qwen2.5] * y[d3,visual_question_answering] ] <= 700
+ c5_d3_Llama-Vision_visual_question_answering: [
+   580 x[d3,Llama-Vision] * y[d3,visual_question_answering] ] <= 700
+ c5_d3_tesseract_ocr: [ 280 x[d3,tesseract] * y[d3,ocr] ] <= 600
+ c5_d3_donut_ocr: [ 500 x[d3,donut] * y[d3,ocr] ] <= 600
+ c5_d4_clip_semantic_search: [ 240 x[d4,clip] * y[d4,semantic_search] ]
+   <= 400
+ c5_d4_palm2_semantic_search: [ 375 x[d4,palm2] * y[d4,semantic_search] ]
+   <= 400
+ c5_d4_llama3_dialogue_generation: [
+   420 x[d4,llama3] * y[d4,dialogue_generation] ] <= 500
+ c5_d4_mistral_dialogue_generation: [
+   395 x[d4,mistral] * y[d4,dialogue_generation] ] <= 500
+ c5_d4_bart_dialogue_generation: [
+   360 x[d4,bart] * y[d4,dialogue_generation] ] <= 500
+ c5_d4_flamingo_dialogue_generation: [
+   980 x[d4,flamingo] * y[d4,dialogue_generation] ] <= 500
+ c5_d4_gemma_dialogue_generation: [
+   410 x[d4,gemma] * y[d4,dialogue_generation] ] <= 500
+ c5_d4_palm2_dialogue_generation: [
+   450 x[d4,palm2] * y[d4,dialogue_generation] ] <= 500
+ c5_d4_bark_text_to_speech: [ 580 x[d4,bark] * y[d4,text_to_speech] ]
+   <= 600
+ c5_d4_valle_text_to_speech: [ 620 x[d4,valle] * y[d4,text_to_speech] ]
+   <= 600
+ c5_d4_chronos_eeg_anamoly_detection: [
+   200 x[d4,chronos] * y[d4,eeg_anamoly_detection] ] <= 350
+ c5_d4_moment_eeg_anamoly_detection: [
+   210 x[d4,moment] * y[d4,eeg_anamoly_detection] ] <= 350
+ c5_d4_TimesFM_eeg_anamoly_detection: [
+   220 x[d4,TimesFM] * y[d4,eeg_anamoly_detection] ] <= 350
+ c5_d4_Lag-Llama_eeg_anamoly_detection: [
+   250 x[d4,Lag-Llama] * y[d4,eeg_anamoly_detection] ] <= 350
+ c5_d4_llama3_question_answering: [
+   410 x[d4,llama3] * y[d4,question_answering] ] <= 350
+ c5_d4_mistral_question_answering: [
+   380 x[d4,mistral] * y[d4,question_answering] ] <= 350
+ c5_d4_t5_question_answering: [ 315 x[d4,t5] * y[d4,question_answering] ]
+   <= 350
+ c5_d4_bart_question_answering: [ 340 x[d4,bart] * y[d4,question_answering]
+   ] <= 350
+ c5_d4_gemma_question_answering: [
+   400 x[d4,gemma] * y[d4,question_answering] ] <= 350
+ c5_d4_palm2_question_answering: [
+   430 x[d4,palm2] * y[d4,question_answering] ] <= 350
+ c5_d4_llama3_named_entity_recognition: [
+   390 x[d4,llama3] * y[d4,named_entity_recognition] ] <= 400
+ c5_d4_palm2_named_entity_recognition: [
+   405 x[d4,palm2] * y[d4,named_entity_recognition] ] <= 400
+ c5_d4_donut_document_retrieval: [
+   550 x[d4,donut] * y[d4,document_retrieval] ] <= 600
+ c5_d4_t5_language_translation: [ 295 x[d4,t5] * y[d4,language_translation]
+   ] <= 400
+ c5_d4_palm2_language_translation: [
+   390 x[d4,palm2] * y[d4,language_translation] ] <= 400
+ c5_d4_blip2_visual_question_answering: [
+   700 x[d4,blip2] * y[d4,visual_question_answering] ] <= 700
+ c5_d4_flamingo_visual_question_answering: [
+   1050 x[d4,flamingo] * y[d4,visual_question_answering] ] <= 700
+ c5_d4_Qwen2.5_visual_question_answering: [
+   550 x[d4,Qwen2.5] * y[d4,visual_question_answering] ] <= 700
+ c5_d4_Llama-Vision_visual_question_answering: [
+   580 x[d4,Llama-Vision] * y[d4,visual_question_answering] ] <= 700
+ c5_d4_tesseract_ocr: [ 280 x[d4,tesseract] * y[d4,ocr] ] <= 600
+ c5_d4_donut_ocr: [ 500 x[d4,donut] * y[d4,ocr] ] <= 600
+ c5_d5_clip_semantic_search: [ 240 x[d5,clip] * y[d5,semantic_search] ]
+   <= 400
+ c5_d5_palm2_semantic_search: [ 375 x[d5,palm2] * y[d5,semantic_search] ]
+   <= 400
+ c5_d5_llama3_dialogue_generation: [
+   420 x[d5,llama3] * y[d5,dialogue_generation] ] <= 500
+ c5_d5_mistral_dialogue_generation: [
+   395 x[d5,mistral] * y[d5,dialogue_generation] ] <= 500
+ c5_d5_bart_dialogue_generation: [
+   360 x[d5,bart] * y[d5,dialogue_generation] ] <= 500
+ c5_d5_flamingo_dialogue_generation: [
+   980 x[d5,flamingo] * y[d5,dialogue_generation] ] <= 500
+ c5_d5_gemma_dialogue_generation: [
+   410 x[d5,gemma] * y[d5,dialogue_generation] ] <= 500
+ c5_d5_palm2_dialogue_generation: [
+   450 x[d5,palm2] * y[d5,dialogue_generation] ] <= 500
+ c5_d5_bark_text_to_speech: [ 580 x[d5,bark] * y[d5,text_to_speech] ]
+   <= 600
+ c5_d5_valle_text_to_speech: [ 620 x[d5,valle] * y[d5,text_to_speech] ]
+   <= 600
+ c5_d5_chronos_eeg_anamoly_detection: [
+   200 x[d5,chronos] * y[d5,eeg_anamoly_detection] ] <= 350
+ c5_d5_moment_eeg_anamoly_detection: [
+   210 x[d5,moment] * y[d5,eeg_anamoly_detection] ] <= 350
+ c5_d5_TimesFM_eeg_anamoly_detection: [
+   220 x[d5,TimesFM] * y[d5,eeg_anamoly_detection] ] <= 350
+ c5_d5_Lag-Llama_eeg_anamoly_detection: [
+   250 x[d5,Lag-Llama] * y[d5,eeg_anamoly_detection] ] <= 350
+ c5_d5_llama3_question_answering: [
+   410 x[d5,llama3] * y[d5,question_answering] ] <= 350
+ c5_d5_mistral_question_answering: [
+   380 x[d5,mistral] * y[d5,question_answering] ] <= 350
+ c5_d5_t5_question_answering: [ 315 x[d5,t5] * y[d5,question_answering] ]
+   <= 350
+ c5_d5_bart_question_answering: [ 340 x[d5,bart] * y[d5,question_answering]
+   ] <= 350
+ c5_d5_gemma_question_answering: [
+   400 x[d5,gemma] * y[d5,question_answering] ] <= 350
+ c5_d5_palm2_question_answering: [
+   430 x[d5,palm2] * y[d5,question_answering] ] <= 350
+ c5_d5_llama3_named_entity_recognition: [
+   390 x[d5,llama3] * y[d5,named_entity_recognition] ] <= 400
+ c5_d5_palm2_named_entity_recognition: [
+   405 x[d5,palm2] * y[d5,named_entity_recognition] ] <= 400
+ c5_d5_donut_document_retrieval: [
+   550 x[d5,donut] * y[d5,document_retrieval] ] <= 600
+ c5_d5_t5_language_translation: [ 295 x[d5,t5] * y[d5,language_translation]
+   ] <= 400
+ c5_d5_palm2_language_translation: [
+   390 x[d5,palm2] * y[d5,language_translation] ] <= 400
+ c5_d5_blip2_visual_question_answering: [
+   700 x[d5,blip2] * y[d5,visual_question_answering] ] <= 700
+ c5_d5_flamingo_visual_question_answering: [
+   1050 x[d5,flamingo] * y[d5,visual_question_answering] ] <= 700
+ c5_d5_Qwen2.5_visual_question_answering: [
+   550 x[d5,Qwen2.5] * y[d5,visual_question_answering] ] <= 700
+ c5_d5_Llama-Vision_visual_question_answering: [
+   580 x[d5,Llama-Vision] * y[d5,visual_question_answering] ] <= 700
+ c5_d5_tesseract_ocr: [ 280 x[d5,tesseract] * y[d5,ocr] ] <= 600
+ c5_d5_donut_ocr: [ 500 x[d5,donut] * y[d5,ocr] ] <= 600
+ c5_d6_clip_semantic_search: [ 240 x[d6,clip] * y[d6,semantic_search] ]
+   <= 400
+ c5_d6_palm2_semantic_search: [ 375 x[d6,palm2] * y[d6,semantic_search] ]
+   <= 400
+ c5_d6_llama3_dialogue_generation: [
+   420 x[d6,llama3] * y[d6,dialogue_generation] ] <= 500
+ c5_d6_mistral_dialogue_generation: [
+   395 x[d6,mistral] * y[d6,dialogue_generation] ] <= 500
+ c5_d6_bart_dialogue_generation: [
+   360 x[d6,bart] * y[d6,dialogue_generation] ] <= 500
+ c5_d6_flamingo_dialogue_generation: [
+   980 x[d6,flamingo] * y[d6,dialogue_generation] ] <= 500
+ c5_d6_gemma_dialogue_generation: [
+   410 x[d6,gemma] * y[d6,dialogue_generation] ] <= 500
+ c5_d6_palm2_dialogue_generation: [
+   450 x[d6,palm2] * y[d6,dialogue_generation] ] <= 500
+ c5_d6_bark_text_to_speech: [ 580 x[d6,bark] * y[d6,text_to_speech] ]
+   <= 600
+ c5_d6_valle_text_to_speech: [ 620 x[d6,valle] * y[d6,text_to_speech] ]
+   <= 600
+ c5_d6_chronos_eeg_anamoly_detection: [
+   200 x[d6,chronos] * y[d6,eeg_anamoly_detection] ] <= 350
+ c5_d6_moment_eeg_anamoly_detection: [
+   210 x[d6,moment] * y[d6,eeg_anamoly_detection] ] <= 350
+ c5_d6_TimesFM_eeg_anamoly_detection: [
+   220 x[d6,TimesFM] * y[d6,eeg_anamoly_detection] ] <= 350
+ c5_d6_Lag-Llama_eeg_anamoly_detection: [
+   250 x[d6,Lag-Llama] * y[d6,eeg_anamoly_detection] ] <= 350
+ c5_d6_llama3_question_answering: [
+   410 x[d6,llama3] * y[d6,question_answering] ] <= 350
+ c5_d6_mistral_question_answering: [
+   380 x[d6,mistral] * y[d6,question_answering] ] <= 350
+ c5_d6_t5_question_answering: [ 315 x[d6,t5] * y[d6,question_answering] ]
+   <= 350
+ c5_d6_bart_question_answering: [ 340 x[d6,bart] * y[d6,question_answering]
+   ] <= 350
+ c5_d6_gemma_question_answering: [
+   400 x[d6,gemma] * y[d6,question_answering] ] <= 350
+ c5_d6_palm2_question_answering: [
+   430 x[d6,palm2] * y[d6,question_answering] ] <= 350
+ c5_d6_llama3_named_entity_recognition: [
+   390 x[d6,llama3] * y[d6,named_entity_recognition] ] <= 400
+ c5_d6_palm2_named_entity_recognition: [
+   405 x[d6,palm2] * y[d6,named_entity_recognition] ] <= 400
+ c5_d6_donut_document_retrieval: [
+   550 x[d6,donut] * y[d6,document_retrieval] ] <= 600
+ c5_d6_t5_language_translation: [ 295 x[d6,t5] * y[d6,language_translation]
+   ] <= 400
+ c5_d6_palm2_language_translation: [
+   390 x[d6,palm2] * y[d6,language_translation] ] <= 400
+ c5_d6_blip2_visual_question_answering: [
+   700 x[d6,blip2] * y[d6,visual_question_answering] ] <= 700
+ c5_d6_flamingo_visual_question_answering: [
+   1050 x[d6,flamingo] * y[d6,visual_question_answering] ] <= 700
+ c5_d6_Qwen2.5_visual_question_answering: [
+   550 x[d6,Qwen2.5] * y[d6,visual_question_answering] ] <= 700
+ c5_d6_Llama-Vision_visual_question_answering: [
+   580 x[d6,Llama-Vision] * y[d6,visual_question_answering] ] <= 700
+ c5_d6_tesseract_ocr: [ 280 x[d6,tesseract] * y[d6,ocr] ] <= 600
+ c5_d6_donut_ocr: [ 500 x[d6,donut] * y[d6,ocr] ] <= 600
+ c5_d7_clip_semantic_search: [ 240 x[d7,clip] * y[d7,semantic_search] ]
+   <= 400
+ c5_d7_palm2_semantic_search: [ 375 x[d7,palm2] * y[d7,semantic_search] ]
+   <= 400
+ c5_d7_llama3_dialogue_generation: [
+   420 x[d7,llama3] * y[d7,dialogue_generation] ] <= 500
+ c5_d7_mistral_dialogue_generation: [
+   395 x[d7,mistral] * y[d7,dialogue_generation] ] <= 500
+ c5_d7_bart_dialogue_generation: [
+   360 x[d7,bart] * y[d7,dialogue_generation] ] <= 500
+ c5_d7_flamingo_dialogue_generation: [
+   980 x[d7,flamingo] * y[d7,dialogue_generation] ] <= 500
+ c5_d7_gemma_dialogue_generation: [
+   410 x[d7,gemma] * y[d7,dialogue_generation] ] <= 500
+ c5_d7_palm2_dialogue_generation: [
+   450 x[d7,palm2] * y[d7,dialogue_generation] ] <= 500
+ c5_d7_bark_text_to_speech: [ 580 x[d7,bark] * y[d7,text_to_speech] ]
+   <= 600
+ c5_d7_valle_text_to_speech: [ 620 x[d7,valle] * y[d7,text_to_speech] ]
+   <= 600
+ c5_d7_chronos_eeg_anamoly_detection: [
+   200 x[d7,chronos] * y[d7,eeg_anamoly_detection] ] <= 350
+ c5_d7_moment_eeg_anamoly_detection: [
+   210 x[d7,moment] * y[d7,eeg_anamoly_detection] ] <= 350
+ c5_d7_TimesFM_eeg_anamoly_detection: [
+   220 x[d7,TimesFM] * y[d7,eeg_anamoly_detection] ] <= 350
+ c5_d7_Lag-Llama_eeg_anamoly_detection: [
+   250 x[d7,Lag-Llama] * y[d7,eeg_anamoly_detection] ] <= 350
+ c5_d7_llama3_question_answering: [
+   410 x[d7,llama3] * y[d7,question_answering] ] <= 350
+ c5_d7_mistral_question_answering: [
+   380 x[d7,mistral] * y[d7,question_answering] ] <= 350
+ c5_d7_t5_question_answering: [ 315 x[d7,t5] * y[d7,question_answering] ]
+   <= 350
+ c5_d7_bart_question_answering: [ 340 x[d7,bart] * y[d7,question_answering]
+   ] <= 350
+ c5_d7_gemma_question_answering: [
+   400 x[d7,gemma] * y[d7,question_answering] ] <= 350
+ c5_d7_llama3_named_entity_recognition: [
+   390 x[d7,llama3] * y[d7,named_entity_recognition] ] <= 400
+ c5_d7_palm2_named_entity_recognition: [
+   405 x[d7,palm2] * y[d7,named_entity_recognition] ] <= 400
+ c5_d7_donut_document_retrieval: [
+   550 x[d7,donut] * y[d7,document_retrieval] ] <= 600
+ c5_d7_t5_language_translation: [ 295 x[d7,t5] * y[d7,language_translation]
+   ] <= 400
+ c5_d7_palm2_language_translation: [
+   390 x[d7,palm2] * y[d7,language_translation] ] <= 400
+ c5_d7_blip2_visual_question_answering: [
+   700 x[d7,blip2] * y[d7,visual_question_answering] ] <= 700
+ c5_d7_flamingo_visual_question_answering: [
+   1050 x[d7,flamingo] * y[d7,visual_question_answering] ] <= 700
+ c5_d7_Qwen2.5_visual_question_answering: [
+   550 x[d7,Qwen2.5] * y[d7,visual_question_answering] ] <= 700
+ c5_d7_Llama-Vision_visual_question_answering: [
+   580 x[d7,Llama-Vision] * y[d7,visual_question_answering] ] <= 700
+ c5_d7_tesseract_ocr: [ 280 x[d7,tesseract] * y[d7,ocr] ] <= 600
+ c5_d7_donut_ocr: [ 500 x[d7,donut] * y[d7,ocr] ] <= 600
+ c5_d8_clip_semantic_search: [ 240 x[d8,clip] * y[d8,semantic_search] ]
+   <= 400
+ c5_d8_palm2_semantic_search: [ 375 x[d8,palm2] * y[d8,semantic_search] ]
+   <= 400
+ c5_d8_llama3_dialogue_generation: [
+   420 x[d8,llama3] * y[d8,dialogue_generation] ] <= 500
+ c5_d8_mistral_dialogue_generation: [
+   395 x[d8,mistral] * y[d8,dialogue_generation] ] <= 500
+ c5_d8_bart_dialogue_generation: [
+   360 x[d8,bart] * y[d8,dialogue_generation] ] <= 500
+ c5_d8_flamingo_dialogue_generation: [
+   980 x[d8,flamingo] * y[d8,dialogue_generation] ] <= 500
+ c5_d8_gemma_dialogue_generation: [
+   410 x[d8,gemma] * y[d8,dialogue_generation] ] <= 500
+ c5_d8_palm2_dialogue_generation: [
+   450 x[d8,palm2] * y[d8,dialogue_generation] ] <= 500
+ c5_d8_bark_text_to_speech: [ 580 x[d8,bark] * y[d8,text_to_speech] ]
+   <= 600
+ c5_d8_valle_text_to_speech: [ 620 x[d8,valle] * y[d8,text_to_speech] ]
+   <= 600
+ c5_d8_chronos_eeg_anamoly_detection: [
+   200 x[d8,chronos] * y[d8,eeg_anamoly_detection] ] <= 350
+ c5_d8_moment_eeg_anamoly_detection: [
+   210 x[d8,moment] * y[d8,eeg_anamoly_detection] ] <= 350
+ c5_d8_TimesFM_eeg_anamoly_detection: [
+   220 x[d8,TimesFM] * y[d8,eeg_anamoly_detection] ] <= 350
+ c5_d8_Lag-Llama_eeg_anamoly_detection: [
+   250 x[d8,Lag-Llama] * y[d8,eeg_anamoly_detection] ] <= 350
+ c5_d8_llama3_question_answering: [
+   410 x[d8,llama3] * y[d8,question_answering] ] <= 350
+ c5_d8_mistral_question_answering: [
+   380 x[d8,mistral] * y[d8,question_answering] ] <= 350
+ c5_d8_t5_question_answering: [ 315 x[d8,t5] * y[d8,question_answering] ]
+   <= 350
+ c5_d8_bart_question_answering: [ 340 x[d8,bart] * y[d8,question_answering]
+   ] <= 350
+ c5_d8_gemma_question_answering: [
+   400 x[d8,gemma] * y[d8,question_answering] ] <= 350
+ c5_d8_palm2_question_answering: [
+   430 x[d8,palm2] * y[d8,question_answering] ] <= 350
+ c5_d8_llama3_named_entity_recognition: [
+   390 x[d8,llama3] * y[d8,named_entity_recognition] ] <= 400
+ c5_d8_palm2_named_entity_recognition: [
+   405 x[d8,palm2] * y[d8,named_entity_recognition] ] <= 400
+ c5_d8_donut_document_retrieval: [
+   550 x[d8,donut] * y[d8,document_retrieval] ] <= 600
+ c5_d8_t5_language_translation: [ 295 x[d8,t5] * y[d8,language_translation]
+   ] <= 400
+ c5_d8_palm2_language_translation: [
+   390 x[d8,palm2] * y[d8,language_translation] ] <= 400
+ c5_d8_blip2_visual_question_answering: [
+   700 x[d8,blip2] * y[d8,visual_question_answering] ] <= 700
+ c5_d8_flamingo_visual_question_answering: [
+   1050 x[d8,flamingo] * y[d8,visual_question_answering] ] <= 700
+ c5_d8_Qwen2.5_visual_question_answering: [
+   550 x[d8,Qwen2.5] * y[d8,visual_question_answering] ] <= 700
+ c5_d8_Llama-Vision_visual_question_answering: [
+   580 x[d8,Llama-Vision] * y[d8,visual_question_answering] ] <= 700
+ c5_d8_tesseract_ocr: [ 280 x[d8,tesseract] * y[d8,ocr] ] <= 600
+ c5_d8_donut_ocr: [ 500 x[d8,donut] * y[d8,ocr] ] <= 600
+ c5_d9_clip_semantic_search: [ 240 x[d9,clip] * y[d9,semantic_search] ]
+   <= 400
+ c5_d9_palm2_semantic_search: [ 375 x[d9,palm2] * y[d9,semantic_search] ]
+   <= 400
+ c5_d9_llama3_dialogue_generation: [
+   420 x[d9,llama3] * y[d9,dialogue_generation] ] <= 500
+ c5_d9_mistral_dialogue_generation: [
+   395 x[d9,mistral] * y[d9,dialogue_generation] ] <= 500
+ c5_d9_bart_dialogue_generation: [
+   360 x[d9,bart] * y[d9,dialogue_generation] ] <= 500
+ c5_d9_flamingo_dialogue_generation: [
+   980 x[d9,flamingo] * y[d9,dialogue_generation] ] <= 500
+ c5_d9_gemma_dialogue_generation: [
+   410 x[d9,gemma] * y[d9,dialogue_generation] ] <= 500
+ c5_d9_palm2_dialogue_generation: [
+   450 x[d9,palm2] * y[d9,dialogue_generation] ] <= 500
+ c5_d9_bark_text_to_speech: [ 580 x[d9,bark] * y[d9,text_to_speech] ]
+   <= 600
+ c5_d9_valle_text_to_speech: [ 620 x[d9,valle] * y[d9,text_to_speech] ]
+   <= 600
+ c5_d9_chronos_eeg_anamoly_detection: [
+   200 x[d9,chronos] * y[d9,eeg_anamoly_detection] ] <= 350
+ c5_d9_moment_eeg_anamoly_detection: [
+   210 x[d9,moment] * y[d9,eeg_anamoly_detection] ] <= 350
+ c5_d9_TimesFM_eeg_anamoly_detection: [
+   220 x[d9,TimesFM] * y[d9,eeg_anamoly_detection] ] <= 350
+ c5_d9_Lag-Llama_eeg_anamoly_detection: [
+   250 x[d9,Lag-Llama] * y[d9,eeg_anamoly_detection] ] <= 350
+ c5_d9_llama3_question_answering: [
+   410 x[d9,llama3] * y[d9,question_answering] ] <= 350
+ c5_d9_mistral_question_answering: [
+   380 x[d9,mistral] * y[d9,question_answering] ] <= 350
+ c5_d9_t5_question_answering: [ 315 x[d9,t5] * y[d9,question_answering] ]
+   <= 350
+ c5_d9_bart_question_answering: [ 340 x[d9,bart] * y[d9,question_answering]
+   ] <= 350
+ c5_d9_gemma_question_answering: [
+   400 x[d9,gemma] * y[d9,question_answering] ] <= 350
+ c5_d9_palm2_question_answering: [
+   430 x[d9,palm2] * y[d9,question_answering] ] <= 350
+ c5_d9_llama3_named_entity_recognition: [
+   390 x[d9,llama3] * y[d9,named_entity_recognition] ] <= 400
+ c5_d9_palm2_named_entity_recognition: [
+   405 x[d9,palm2] * y[d9,named_entity_recognition] ] <= 400
+ c5_d9_donut_document_retrieval: [
+   550 x[d9,donut] * y[d9,document_retrieval] ] <= 600
+ c5_d9_t5_language_translation: [ 295 x[d9,t5] * y[d9,language_translation]
+   ] <= 400
+ c5_d9_palm2_language_translation: [
+   390 x[d9,palm2] * y[d9,language_translation] ] <= 400
+ c5_d9_blip2_visual_question_answering: [
+   700 x[d9,blip2] * y[d9,visual_question_answering] ] <= 700
+ c5_d9_flamingo_visual_question_answering: [
+   1050 x[d9,flamingo] * y[d9,visual_question_answering] ] <= 700
+ c5_d9_Qwen2.5_visual_question_answering: [
+   550 x[d9,Qwen2.5] * y[d9,visual_question_answering] ] <= 700
+ c5_d9_Llama-Vision_visual_question_answering: [
+   580 x[d9,Llama-Vision] * y[d9,visual_question_answering] ] <= 700
+ c5_d9_tesseract_ocr: [ 280 x[d9,tesseract] * y[d9,ocr] ] <= 600
+ c5_d9_donut_ocr: [ 500 x[d9,donut] * y[d9,ocr] ] <= 600
+ c5_d10_clip_semantic_search: [ 240 x[d10,clip] * y[d10,semantic_search] ]
+   <= 400
+ c5_d10_palm2_semantic_search: [ 375 x[d10,palm2] * y[d10,semantic_search]
+   ] <= 400
+ c5_d10_llama3_dialogue_generation: [
+   420 x[d10,llama3] * y[d10,dialogue_generation] ] <= 500
+ c5_d10_mistral_dialogue_generation: [
+   395 x[d10,mistral] * y[d10,dialogue_generation] ] <= 500
+ c5_d10_bart_dialogue_generation: [
+   360 x[d10,bart] * y[d10,dialogue_generation] ] <= 500
+ c5_d10_flamingo_dialogue_generation: [
+   980 x[d10,flamingo] * y[d10,dialogue_generation] ] <= 500
+ c5_d10_gemma_dialogue_generation: [
+   410 x[d10,gemma] * y[d10,dialogue_generation] ] <= 500
+ c5_d10_palm2_dialogue_generation: [
+   450 x[d10,palm2] * y[d10,dialogue_generation] ] <= 500
+ c5_d10_bark_text_to_speech: [ 580 x[d10,bark] * y[d10,text_to_speech] ]
+   <= 600
+ c5_d10_valle_text_to_speech: [ 620 x[d10,valle] * y[d10,text_to_speech] ]
+   <= 600
+ c5_d10_chronos_eeg_anamoly_detection: [
+   200 x[d10,chronos] * y[d10,eeg_anamoly_detection] ] <= 350
+ c5_d10_moment_eeg_anamoly_detection: [
+   210 x[d10,moment] * y[d10,eeg_anamoly_detection] ] <= 350
+ c5_d10_TimesFM_eeg_anamoly_detection: [
+   220 x[d10,TimesFM] * y[d10,eeg_anamoly_detection] ] <= 350
+ c5_d10_Lag-Llama_eeg_anamoly_detection: [
+   250 x[d10,Lag-Llama] * y[d10,eeg_anamoly_detection] ] <= 350
+ c5_d10_llama3_question_answering: [
+   410 x[d10,llama3] * y[d10,question_answering] ] <= 350
+ c5_d10_mistral_question_answering: [
+   380 x[d10,mistral] * y[d10,question_answering] ] <= 350
+ c5_d10_t5_question_answering: [ 315 x[d10,t5] * y[d10,question_answering]
+   ] <= 350
+ c5_d10_bart_question_answering: [
+   340 x[d10,bart] * y[d10,question_answering] ] <= 350
+ c5_d10_gemma_question_answering: [
+   400 x[d10,gemma] * y[d10,question_answering] ] <= 350
+ c5_d10_palm2_question_answering: [
+   430 x[d10,palm2] * y[d10,question_answering] ] <= 350
+ c5_d10_llama3_named_entity_recognition: [
+   390 x[d10,llama3] * y[d10,named_entity_recognition] ] <= 400
+ c5_d10_palm2_named_entity_recognition: [
+   405 x[d10,palm2] * y[d10,named_entity_recognition] ] <= 400
+ c5_d10_donut_document_retrieval: [
+   550 x[d10,donut] * y[d10,document_retrieval] ] <= 600
+ c5_d10_t5_language_translation: [
+   295 x[d10,t5] * y[d10,language_translation] ] <= 400
+ c5_d10_palm2_language_translation: [
+   390 x[d10,palm2] * y[d10,language_translation] ] <= 400
+ c5_d10_blip2_visual_question_answering: [
+   700 x[d10,blip2] * y[d10,visual_question_answering] ] <= 700
+ c5_d10_flamingo_visual_question_answering: [
+   1050 x[d10,flamingo] * y[d10,visual_question_answering] ] <= 700
+ c5_d10_Qwen2.5_visual_question_answering: [
+   550 x[d10,Qwen2.5] * y[d10,visual_question_answering] ] <= 700
+ c5_d10_Llama-Vision_visual_question_answering: [
+   580 x[d10,Llama-Vision] * y[d10,visual_question_answering] ] <= 700
+ c5_d10_tesseract_ocr: [ 280 x[d10,tesseract] * y[d10,ocr] ] <= 600
+ c5_d10_donut_ocr: [ 500 x[d10,donut] * y[d10,ocr] ] <= 600
+ c5_d11_clip_semantic_search: [ 240 x[d11,clip] * y[d11,semantic_search] ]
+   <= 400
+ c5_d11_palm2_semantic_search: [ 375 x[d11,palm2] * y[d11,semantic_search]
+   ] <= 400
+ c5_d11_llama3_dialogue_generation: [
+   420 x[d11,llama3] * y[d11,dialogue_generation] ] <= 500
+ c5_d11_mistral_dialogue_generation: [
+   395 x[d11,mistral] * y[d11,dialogue_generation] ] <= 500
+ c5_d11_bart_dialogue_generation: [
+   360 x[d11,bart] * y[d11,dialogue_generation] ] <= 500
+ c5_d11_flamingo_dialogue_generation: [
+   980 x[d11,flamingo] * y[d11,dialogue_generation] ] <= 500
+ c5_d11_gemma_dialogue_generation: [
+   410 x[d11,gemma] * y[d11,dialogue_generation] ] <= 500
+ c5_d11_palm2_dialogue_generation: [
+   450 x[d11,palm2] * y[d11,dialogue_generation] ] <= 500
+ c5_d11_bark_text_to_speech: [ 580 x[d11,bark] * y[d11,text_to_speech] ]
+   <= 600
+ c5_d11_valle_text_to_speech: [ 620 x[d11,valle] * y[d11,text_to_speech] ]
+   <= 600
+ c5_d11_chronos_eeg_anamoly_detection: [
+   200 x[d11,chronos] * y[d11,eeg_anamoly_detection] ] <= 350
+ c5_d11_moment_eeg_anamoly_detection: [
+   210 x[d11,moment] * y[d11,eeg_anamoly_detection] ] <= 350
+ c5_d11_TimesFM_eeg_anamoly_detection: [
+   220 x[d11,TimesFM] * y[d11,eeg_anamoly_detection] ] <= 350
+ c5_d11_Lag-Llama_eeg_anamoly_detection: [
+   250 x[d11,Lag-Llama] * y[d11,eeg_anamoly_detection] ] <= 350
+ c5_d11_llama3_question_answering: [
+   410 x[d11,llama3] * y[d11,question_answering] ] <= 350
+ c5_d11_mistral_question_answering: [
+   380 x[d11,mistral] * y[d11,question_answering] ] <= 350
+ c5_d11_t5_question_answering: [ 315 x[d11,t5] * y[d11,question_answering]
+   ] <= 350
+ c5_d11_bart_question_answering: [
+   340 x[d11,bart] * y[d11,question_answering] ] <= 350
+ c5_d11_gemma_question_answering: [
+   400 x[d11,gemma] * y[d11,question_answering] ] <= 350
+ c5_d11_palm2_question_answering: [
+   430 x[d11,palm2] * y[d11,question_answering] ] <= 350
+ c5_d11_llama3_named_entity_recognition: [
+   390 x[d11,llama3] * y[d11,named_entity_recognition] ] <= 400
+ c5_d11_palm2_named_entity_recognition: [
+   405 x[d11,palm2] * y[d11,named_entity_recognition] ] <= 400
+ c5_d11_donut_document_retrieval: [
+   550 x[d11,donut] * y[d11,document_retrieval] ] <= 600
+ c5_d11_t5_language_translation: [
+   295 x[d11,t5] * y[d11,language_translation] ] <= 400
+ c5_d11_palm2_language_translation: [
+   390 x[d11,palm2] * y[d11,language_translation] ] <= 400
+ c5_d11_blip2_visual_question_answering: [
+   700 x[d11,blip2] * y[d11,visual_question_answering] ] <= 700
+ c5_d11_flamingo_visual_question_answering: [
+   1050 x[d11,flamingo] * y[d11,visual_question_answering] ] <= 700
+ c5_d11_Qwen2.5_visual_question_answering: [
+   550 x[d11,Qwen2.5] * y[d11,visual_question_answering] ] <= 700
+ c5_d11_Llama-Vision_visual_question_answering: [
+   580 x[d11,Llama-Vision] * y[d11,visual_question_answering] ] <= 700
+ c5_d11_tesseract_ocr: [ 280 x[d11,tesseract] * y[d11,ocr] ] <= 600
+ c5_d11_donut_ocr: [ 500 x[d11,donut] * y[d11,ocr] ] <= 600
+ c5_d12_clip_semantic_search: [ 240 x[d12,clip] * y[d12,semantic_search] ]
+   <= 400
+ c5_d12_palm2_semantic_search: [ 375 x[d12,palm2] * y[d12,semantic_search]
+   ] <= 400
+ c5_d12_llama3_dialogue_generation: [
+   420 x[d12,llama3] * y[d12,dialogue_generation] ] <= 500
+ c5_d12_mistral_dialogue_generation: [
+   395 x[d12,mistral] * y[d12,dialogue_generation] ] <= 500
+ c5_d12_bart_dialogue_generation: [
+   360 x[d12,bart] * y[d12,dialogue_generation] ] <= 500
+ c5_d12_flamingo_dialogue_generation: [
+   980 x[d12,flamingo] * y[d12,dialogue_generation] ] <= 500
+ c5_d12_gemma_dialogue_generation: [
+   410 x[d12,gemma] * y[d12,dialogue_generation] ] <= 500
+ c5_d12_palm2_dialogue_generation: [
+   450 x[d12,palm2] * y[d12,dialogue_generation] ] <= 500
+ c5_d12_bark_text_to_speech: [ 580 x[d12,bark] * y[d12,text_to_speech] ]
+   <= 600
+ c5_d12_valle_text_to_speech: [ 620 x[d12,valle] * y[d12,text_to_speech] ]
+   <= 600
+ c5_d12_chronos_eeg_anamoly_detection: [
+   200 x[d12,chronos] * y[d12,eeg_anamoly_detection] ] <= 350
+ c5_d12_moment_eeg_anamoly_detection: [
+   210 x[d12,moment] * y[d12,eeg_anamoly_detection] ] <= 350
+ c5_d12_TimesFM_eeg_anamoly_detection: [
+   220 x[d12,TimesFM] * y[d12,eeg_anamoly_detection] ] <= 350
+ c5_d12_Lag-Llama_eeg_anamoly_detection: [
+   250 x[d12,Lag-Llama] * y[d12,eeg_anamoly_detection] ] <= 350
+ c5_d12_llama3_question_answering: [
+   410 x[d12,llama3] * y[d12,question_answering] ] <= 350
+ c5_d12_mistral_question_answering: [
+   380 x[d12,mistral] * y[d12,question_answering] ] <= 350
+ c5_d12_t5_question_answering: [ 315 x[d12,t5] * y[d12,question_answering]
+   ] <= 350
+ c5_d12_bart_question_answering: [
+   340 x[d12,bart] * y[d12,question_answering] ] <= 350
+ c5_d12_gemma_question_answering: [
+   400 x[d12,gemma] * y[d12,question_answering] ] <= 350
+ c5_d12_palm2_question_answering: [
+   430 x[d12,palm2] * y[d12,question_answering] ] <= 350
+ c5_d12_llama3_named_entity_recognition: [
+   390 x[d12,llama3] * y[d12,named_entity_recognition] ] <= 400
+ c5_d12_palm2_named_entity_recognition: [
+   405 x[d12,palm2] * y[d12,named_entity_recognition] ] <= 400
+ c5_d12_donut_document_retrieval: [
+   550 x[d12,donut] * y[d12,document_retrieval] ] <= 600
+ c5_d12_t5_language_translation: [
+   295 x[d12,t5] * y[d12,language_translation] ] <= 400
+ c5_d12_palm2_language_translation: [
+   390 x[d12,palm2] * y[d12,language_translation] ] <= 400
+ c5_d12_blip2_visual_question_answering: [
+   700 x[d12,blip2] * y[d12,visual_question_answering] ] <= 700
+ c5_d12_flamingo_visual_question_answering: [
+   1050 x[d12,flamingo] * y[d12,visual_question_answering] ] <= 700
+ c5_d12_Qwen2.5_visual_question_answering: [
+   550 x[d12,Qwen2.5] * y[d12,visual_question_answering] ] <= 700
+ c5_d12_Llama-Vision_visual_question_answering: [
+   580 x[d12,Llama-Vision] * y[d12,visual_question_answering] ] <= 700
+ c5_d12_tesseract_ocr: [ 280 x[d12,tesseract] * y[d12,ocr] ] <= 600
+ c5_d12_donut_ocr: [ 500 x[d12,donut] * y[d12,ocr] ] <= 600
+Bounds
+Binaries
+ x[d1,llama3] x[d1,mistral] x[d1,t5] x[d1,bart] x[d1,whisper]
+ x[d1,wav2vec2] x[d1,vggish] x[d1,sam] x[d1,clip] x[d1,blip2]
+ x[d1,flamingo] x[d1,imagebind] x[d1,clipseg] x[d1,yolov8] x[d1,dinov2]
+ x[d1,stable_diffusion] x[d1,tesseract] x[d1,donut] x[d1,bark] x[d1,valle]
+ x[d1,codellama] x[d1,starcoder] x[d1,gemma] x[d1,phi3] x[d1,Qwen2.5]
+ x[d1,Llama-Vision] x[d1,palm2] x[d1,chronos] x[d1,moment] x[d1,TimesFM]
+ x[d1,Lag-Llama] x[d2,llama3] x[d2,mistral] x[d2,t5] x[d2,bart]
+ x[d2,whisper] x[d2,wav2vec2] x[d2,vggish] x[d2,sam] x[d2,clip] x[d2,blip2]
+ x[d2,flamingo] x[d2,imagebind] x[d2,clipseg] x[d2,yolov8] x[d2,dinov2]
+ x[d2,stable_diffusion] x[d2,tesseract] x[d2,donut] x[d2,bark] x[d2,valle]
+ x[d2,codellama] x[d2,starcoder] x[d2,gemma] x[d2,phi3] x[d2,Qwen2.5]
+ x[d2,Llama-Vision] x[d2,palm2] x[d2,chronos] x[d2,moment] x[d2,TimesFM]
+ x[d2,Lag-Llama] x[d3,llama3] x[d3,mistral] x[d3,t5] x[d3,bart]
+ x[d3,whisper] x[d3,wav2vec2] x[d3,vggish] x[d3,sam] x[d3,clip] x[d3,blip2]
+ x[d3,flamingo] x[d3,imagebind] x[d3,clipseg] x[d3,yolov8] x[d3,dinov2]
+ x[d3,stable_diffusion] x[d3,tesseract] x[d3,donut] x[d3,bark] x[d3,valle]
+ x[d3,codellama] x[d3,starcoder] x[d3,gemma] x[d3,phi3] x[d3,Qwen2.5]
+ x[d3,Llama-Vision] x[d3,palm2] x[d3,chronos] x[d3,moment] x[d3,TimesFM]
+ x[d3,Lag-Llama] x[d4,llama3] x[d4,mistral] x[d4,t5] x[d4,bart]
+ x[d4,whisper] x[d4,wav2vec2] x[d4,vggish] x[d4,sam] x[d4,clip] x[d4,blip2]
+ x[d4,flamingo] x[d4,imagebind] x[d4,clipseg] x[d4,yolov8] x[d4,dinov2]
+ x[d4,stable_diffusion] x[d4,tesseract] x[d4,donut] x[d4,bark] x[d4,valle]
+ x[d4,codellama] x[d4,starcoder] x[d4,gemma] x[d4,phi3] x[d4,Qwen2.5]
+ x[d4,Llama-Vision] x[d4,palm2] x[d4,chronos] x[d4,moment] x[d4,TimesFM]
+ x[d4,Lag-Llama] x[d5,llama3] x[d5,mistral] x[d5,t5] x[d5,bart]
+ x[d5,whisper] x[d5,wav2vec2] x[d5,vggish] x[d5,sam] x[d5,clip] x[d5,blip2]
+ x[d5,flamingo] x[d5,imagebind] x[d5,clipseg] x[d5,yolov8] x[d5,dinov2]
+ x[d5,stable_diffusion] x[d5,tesseract] x[d5,donut] x[d5,bark] x[d5,valle]
+ x[d5,codellama] x[d5,starcoder] x[d5,gemma] x[d5,phi3] x[d5,Qwen2.5]
+ x[d5,Llama-Vision] x[d5,palm2] x[d5,chronos] x[d5,moment] x[d5,TimesFM]
+ x[d5,Lag-Llama] x[d6,llama3] x[d6,mistral] x[d6,t5] x[d6,bart]
+ x[d6,whisper] x[d6,wav2vec2] x[d6,vggish] x[d6,sam] x[d6,clip] x[d6,blip2]
+ x[d6,flamingo] x[d6,imagebind] x[d6,clipseg] x[d6,yolov8] x[d6,dinov2]
+ x[d6,stable_diffusion] x[d6,tesseract] x[d6,donut] x[d6,bark] x[d6,valle]
+ x[d6,codellama] x[d6,starcoder] x[d6,gemma] x[d6,phi3] x[d6,Qwen2.5]
+ x[d6,Llama-Vision] x[d6,palm2] x[d6,chronos] x[d6,moment] x[d6,TimesFM]
+ x[d6,Lag-Llama] x[d7,llama3] x[d7,mistral] x[d7,t5] x[d7,bart]
+ x[d7,whisper] x[d7,wav2vec2] x[d7,vggish] x[d7,sam] x[d7,clip] x[d7,blip2]
+ x[d7,flamingo] x[d7,imagebind] x[d7,clipseg] x[d7,yolov8] x[d7,dinov2]
+ x[d7,stable_diffusion] x[d7,tesseract] x[d7,donut] x[d7,bark] x[d7,valle]
+ x[d7,codellama] x[d7,starcoder] x[d7,gemma] x[d7,phi3] x[d7,Qwen2.5]
+ x[d7,Llama-Vision] x[d7,palm2] x[d7,chronos] x[d7,moment] x[d7,TimesFM]
+ x[d7,Lag-Llama] x[d8,llama3] x[d8,mistral] x[d8,t5] x[d8,bart]
+ x[d8,whisper] x[d8,wav2vec2] x[d8,vggish] x[d8,sam] x[d8,clip] x[d8,blip2]
+ x[d8,flamingo] x[d8,imagebind] x[d8,clipseg] x[d8,yolov8] x[d8,dinov2]
+ x[d8,stable_diffusion] x[d8,tesseract] x[d8,donut] x[d8,bark] x[d8,valle]
+ x[d8,codellama] x[d8,starcoder] x[d8,gemma] x[d8,phi3] x[d8,Qwen2.5]
+ x[d8,Llama-Vision] x[d8,palm2] x[d8,chronos] x[d8,moment] x[d8,TimesFM]
+ x[d8,Lag-Llama] x[d9,llama3] x[d9,mistral] x[d9,t5] x[d9,bart]
+ x[d9,whisper] x[d9,wav2vec2] x[d9,vggish] x[d9,sam] x[d9,clip] x[d9,blip2]
+ x[d9,flamingo] x[d9,imagebind] x[d9,clipseg] x[d9,yolov8] x[d9,dinov2]
+ x[d9,stable_diffusion] x[d9,tesseract] x[d9,donut] x[d9,bark] x[d9,valle]
+ x[d9,codellama] x[d9,starcoder] x[d9,gemma] x[d9,phi3] x[d9,Qwen2.5]
+ x[d9,Llama-Vision] x[d9,palm2] x[d9,chronos] x[d9,moment] x[d9,TimesFM]
+ x[d9,Lag-Llama] x[d10,llama3] x[d10,mistral] x[d10,t5] x[d10,bart]
+ x[d10,whisper] x[d10,wav2vec2] x[d10,vggish] x[d10,sam] x[d10,clip]
+ x[d10,blip2] x[d10,flamingo] x[d10,imagebind] x[d10,clipseg] x[d10,yolov8]
+ x[d10,dinov2] x[d10,stable_diffusion] x[d10,tesseract] x[d10,donut]
+ x[d10,bark] x[d10,valle] x[d10,codellama] x[d10,starcoder] x[d10,gemma]
+ x[d10,phi3] x[d10,Qwen2.5] x[d10,Llama-Vision] x[d10,palm2] x[d10,chronos]
+ x[d10,moment] x[d10,TimesFM] x[d10,Lag-Llama] x[d11,llama3] x[d11,mistral]
+ x[d11,t5] x[d11,bart] x[d11,whisper] x[d11,wav2vec2] x[d11,vggish]
+ x[d11,sam] x[d11,clip] x[d11,blip2] x[d11,flamingo] x[d11,imagebind]
+ x[d11,clipseg] x[d11,yolov8] x[d11,dinov2] x[d11,stable_diffusion]
+ x[d11,tesseract] x[d11,donut] x[d11,bark] x[d11,valle] x[d11,codellama]
+ x[d11,starcoder] x[d11,gemma] x[d11,phi3] x[d11,Qwen2.5]
+ x[d11,Llama-Vision] x[d11,palm2] x[d11,chronos] x[d11,moment]
+ x[d11,TimesFM] x[d11,Lag-Llama] x[d12,llama3] x[d12,mistral] x[d12,t5]
+ x[d12,bart] x[d12,whisper] x[d12,wav2vec2] x[d12,vggish] x[d12,sam]
+ x[d12,clip] x[d12,blip2] x[d12,flamingo] x[d12,imagebind] x[d12,clipseg]
+ x[d12,yolov8] x[d12,dinov2] x[d12,stable_diffusion] x[d12,tesseract]
+ x[d12,donut] x[d12,bark] x[d12,valle] x[d12,codellama] x[d12,starcoder]
+ x[d12,gemma] x[d12,phi3] x[d12,Qwen2.5] x[d12,Llama-Vision] x[d12,palm2]
+ x[d12,chronos] x[d12,moment] x[d12,TimesFM] x[d12,Lag-Llama]
+ y[d1,semantic_search] y[d1,dialogue_generation] y[d1,text_to_speech]
+ y[d1,eeg_anamoly_detection] y[d1,question_answering]
+ y[d1,named_entity_recognition] y[d1,document_retrieval]
+ y[d1,language_translation] y[d1,visual_question_answering] y[d1,ocr]
+ y[d2,semantic_search] y[d2,dialogue_generation] y[d2,text_to_speech]
+ y[d2,eeg_anamoly_detection] y[d2,question_answering]
+ y[d2,named_entity_recognition] y[d2,document_retrieval]
+ y[d2,language_translation] y[d2,visual_question_answering] y[d2,ocr]
+ y[d3,semantic_search] y[d3,dialogue_generation] y[d3,text_to_speech]
+ y[d3,eeg_anamoly_detection] y[d3,question_answering]
+ y[d3,named_entity_recognition] y[d3,document_retrieval]
+ y[d3,language_translation] y[d3,visual_question_answering] y[d3,ocr]
+ y[d4,semantic_search] y[d4,dialogue_generation] y[d4,text_to_speech]
+ y[d4,eeg_anamoly_detection] y[d4,question_answering]
+ y[d4,named_entity_recognition] y[d4,document_retrieval]
+ y[d4,language_translation] y[d4,visual_question_answering] y[d4,ocr]
+ y[d5,semantic_search] y[d5,dialogue_generation] y[d5,text_to_speech]
+ y[d5,eeg_anamoly_detection] y[d5,question_answering]
+ y[d5,named_entity_recognition] y[d5,document_retrieval]
+ y[d5,language_translation] y[d5,visual_question_answering] y[d5,ocr]
+ y[d6,semantic_search] y[d6,dialogue_generation] y[d6,text_to_speech]
+ y[d6,eeg_anamoly_detection] y[d6,question_answering]
+ y[d6,named_entity_recognition] y[d6,document_retrieval]
+ y[d6,language_translation] y[d6,visual_question_answering] y[d6,ocr]
+ y[d7,semantic_search] y[d7,dialogue_generation] y[d7,text_to_speech]
+ y[d7,eeg_anamoly_detection] y[d7,question_answering]
+ y[d7,named_entity_recognition] y[d7,document_retrieval]
+ y[d7,language_translation] y[d7,visual_question_answering] y[d7,ocr]
+ y[d8,semantic_search] y[d8,dialogue_generation] y[d8,text_to_speech]
+ y[d8,eeg_anamoly_detection] y[d8,question_answering]
+ y[d8,named_entity_recognition] y[d8,document_retrieval]
+ y[d8,language_translation] y[d8,visual_question_answering] y[d8,ocr]
+ y[d9,semantic_search] y[d9,dialogue_generation] y[d9,text_to_speech]
+ y[d9,eeg_anamoly_detection] y[d9,question_answering]
+ y[d9,named_entity_recognition] y[d9,document_retrieval]
+ y[d9,language_translation] y[d9,visual_question_answering] y[d9,ocr]
+ y[d10,semantic_search] y[d10,dialogue_generation] y[d10,text_to_speech]
+ y[d10,eeg_anamoly_detection] y[d10,question_answering]
+ y[d10,named_entity_recognition] y[d10,document_retrieval]
+ y[d10,language_translation] y[d10,visual_question_answering] y[d10,ocr]
+ y[d11,semantic_search] y[d11,dialogue_generation] y[d11,text_to_speech]
+ y[d11,eeg_anamoly_detection] y[d11,question_answering]
+ y[d11,named_entity_recognition] y[d11,document_retrieval]
+ y[d11,language_translation] y[d11,visual_question_answering] y[d11,ocr]
+ y[d12,semantic_search] y[d12,dialogue_generation] y[d12,text_to_speech]
+ y[d12,eeg_anamoly_detection] y[d12,question_answering]
+ y[d12,named_entity_recognition] y[d12,document_retrieval]
+ y[d12,language_translation] y[d12,visual_question_answering] y[d12,ocr]
+End

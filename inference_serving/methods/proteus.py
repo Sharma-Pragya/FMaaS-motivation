@@ -1,7 +1,7 @@
 import gurobipy as gp
 from gurobipy import GRB
-from ..config import *
-from ..profiler import *
+from inference_serving.config import *
+from inference_serving.profiler import *
 
 def proteus():
     # Create model

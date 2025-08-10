@@ -1,0 +1,44 @@
+\ Model Our_MIQP_copy
+\ LP format - for model browsing. Use MPS format to capture full model detail.
+\ Signature: 0xfd18cf88558b93cf
+Minimize
+ 
+Subject To
+ c2_energy_forecastingobject_detection:
+   y[d1,energy_forecastingobject_detection]
+   + y[d2,energy_forecastingobject_detection]
+   + y[d3,energy_forecastingobject_detection]
+   + y[d4,energy_forecastingobject_detection]
+   + y[d5,energy_forecastingobject_detection]
+   + y[d6,energy_forecastingobject_detection]
+   + y[d7,energy_forecastingobject_detection]
+   + y[d8,energy_forecastingobject_detection]
+   + y[d9,energy_forecastingobject_detection]
+   + y[d10,energy_forecastingobject_detection]
+   + y[d11,energy_forecastingobject_detection] = 1
+ c3_energy_forecastingobject_detection:
+   - y[d1,energy_forecastingobject_detection]
+   - y[d2,energy_forecastingobject_detection]
+   - y[d3,energy_forecastingobject_detection]
+   - y[d4,energy_forecastingobject_detection]
+   - y[d5,energy_forecastingobject_detection]
+   - y[d6,energy_forecastingobject_detection]
+   - y[d7,energy_forecastingobject_detection]
+   - y[d8,energy_forecastingobject_detection]
+   - y[d9,energy_forecastingobject_detection]
+   - y[d10,energy_forecastingobject_detection]
+   - y[d11,energy_forecastingobject_detection] = 0
+Bounds
+Binaries
+ y[d1,energy_forecastingobject_detection]
+ y[d2,energy_forecastingobject_detection]
+ y[d3,energy_forecastingobject_detection]
+ y[d4,energy_forecastingobject_detection]
+ y[d5,energy_forecastingobject_detection]
+ y[d6,energy_forecastingobject_detection]
+ y[d7,energy_forecastingobject_detection]
+ y[d8,energy_forecastingobject_detection]
+ y[d9,energy_forecastingobject_detection]
+ y[d10,energy_forecastingobject_detection]
+ y[d11,energy_forecastingobject_detection]
+End
