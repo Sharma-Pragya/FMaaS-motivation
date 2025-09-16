@@ -44,12 +44,14 @@ def our(devices,models,tasks,redundancy=1):
         for q in tasks.keys():
             for m_name in models:
                 if (m_name, q) in can_serve:
-                    lhs=latency[devices[d]['type'], m_name, q] * can_serve[m_name, q] * x[d, m_name] * y[d, q]
-                    rhs=tasks[q] + Q*(1 - can_serve[m_name, q] * x[d, m_name] * y[d, q])
-                    m.addConstr(
-                        lhs<= rhs,
-                        f"c5_{d}_{m_name}_{q}"
-                    )
+                    if (devices[d]['type'], m_name, q) in latency:
+                        lhs=latency[devices[d]['type'], m_name, q] * can_serve[m_name, q] * x[d, m_name] * y[d, q]
+                        rhs=tasks[q] + Q*(1 - can_serve[m_name, q] * x[d, m_name] * y[d, q])
+                        m.addConstr(
+                            lhs<= rhs,
+                            f"c5_{d}_{m_name}_{q}"
+                        )
+
 
     # Objective: maximize effective accuracy
     m.setObjective(

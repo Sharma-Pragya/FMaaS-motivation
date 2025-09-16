@@ -45,6 +45,7 @@ can_serve = {
 
     ("sam", "image_segmentation"): 1,
     ("sam", "object_detection"): 1,
+    ('sam',"robot traking"):1,
 
     ("clip", "image_captioning"): 1,
     ("clip", "image_classification"): 1,
@@ -66,10 +67,22 @@ can_serve = {
 
     ('Qwen2.5',"image_captioning"):1,
     ('Qwen2.5',"visual_question_answering"):1,
+    ('Qwen2.5',"traffic identification"):1,
+    ('Qwen2.5',"traffic prediction"):1,
+    ('Qwen2.5',"car counting"):1,
+    ('Qwen2.5',"crop classification"):1,
+    ('Qwen2.5',"crowd counting"):1,
+    ('Qwen2.5',"robot traking"):1,
 
     ('Molmo',"image_captioning"):1,
     ('Molmo',"visual_question_answering"):1,
-
+    ('Molmo',"traffic identification"):1,
+    ('Molmo',"traffic prediction"):1,
+    ('Molmo',"car counting"):1,
+    ('Molmo',"crop classification"):1,
+    ('Molmo',"crowd counting"):1,
+    ('Molmo',"robot traking"):1,
+    
     ('Llama-Vision',"image_captioning"):1,
     ('Llama-Vision',"visual_question_answering"):1,
 
@@ -135,21 +148,38 @@ can_serve = {
     ('chronos','ppg_anamoly_detection'):1,
     ('chronos','eeg_classification'):1,
     ('chronos','energy_forecasting'):1,
+    ('chronos','ppg_classification'):1,
+    ('chronos','weather forecasting'):1,
+    ('chronos','noise forecasting'):1,
+    ('chronos','weight forecasting'):1,
+
 
     ('moment','eeg_anamoly_detection'):1,
     ('moment','ppg_anamoly_detection'):1,
     ('moment','eeg_classification'):1,
     ('moment','energy_forecasting'):1,
+    ('moment','ppg_classification'):1,
+    ('moment','weather forecasting'):1,
+    ('moment','noise forecasting'):1,
+    ('moment','weight forecasting'):1,
 
     ('TimesFM','eeg_anamoly_detection'):1,
     ('TimesFM','ppg_anamoly_detection'):1,
     ('TimesFM','eeg_classification'):1,
     ('TimesFM','energy_forecasting'):1,
+    ('TimesFM','ppg_classification'):1,
+    ('TimesFM','weather forecasting'):1,
+    ('TimesFM','noise forecasting'):1,
+    ('TimesFM','weight forecasting'):1,
 
     ('Lag-Llama','eeg_anamoly_detection'):1,
     ('Lag-Llama','ppg_anamoly_detection'):1,
     ('Lag-Llama','eeg_classification'):1,
     ('Lag-Llama','energy_forecasting'):1,
+    ('Lag-Llama','ppg_classification'):1,
+    ('Lag-Llama','weather forecasting'):1,
+    ('Lag-Llama','noise forecasting'):1,
+    ('Lag-Llama','weight forecasting'):1,
 }
 
 latency = {

@@ -97,3 +97,15 @@ tasks = {
     "energy_forecasting": 500               # often batch or interval based
 }
 
+unknown_task={
+    'ppg_classification':0,
+    'weather forecasting':0,
+    'traffic identification':0,
+    'noise forecasting':0,
+    'traffic prediction':0,
+    'car counting':0,
+    'crop classification':0,
+    'crowd counting':0,
+    'weight forecasting':0,
+    'robot traking':0,
+}
