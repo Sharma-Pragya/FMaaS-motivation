@@ -1,6 +1,6 @@
 import gurobipy as gp
 from gurobipy import GRB
-from inference_serving.profiler import *
+from ILP.profiler import *
 
 def our(devices,models,tasks,redundancy=1):
     # Create model

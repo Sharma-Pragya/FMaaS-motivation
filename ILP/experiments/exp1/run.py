@@ -1,5 +1,5 @@
-from inference_serving.config import *
-from inference_serving.methods import proteus, our
+from ILP.config import *
+from ILP.methods import proteus, our
 import os
 os.environ["GRB_LICENSE_FILE"] = "../../gurobi/gurobi.lic"
 import random
