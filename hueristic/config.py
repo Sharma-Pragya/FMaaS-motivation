@@ -35,10 +35,10 @@ tasks={
     'latency':10,
     'metric':0.9            
     },
-    'ecg_classification':
-    {
-    'peak_workload':5,
-    'latency':10,
-    'metric':0.9         
-    }
+    # 'ecg_classification':
+    # {
+    # 'peak_workload':5,
+    # 'latency':10,
+    # 'metric':0.9         
+    # }
 }
