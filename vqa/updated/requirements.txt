@@ -9,10 +9,21 @@ moondream
 sentencepiece
 protobuf
 wheel
-flash-attn
 qwen-vl-utils
 torchvision
 accelerate
 pandas
 matplotlib
 seaborn
+
+# Missing dependencies
+exceptiongroup; python_version < "3.11"
+tabulate
+termcolor>=1.1
+decorator<6.0,>=4.0.2
+python-dotenv>=0.10
+
+#added dependency
+flash-attn
+einops #for molmo
+tensorflow #for molmo

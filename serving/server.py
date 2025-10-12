@@ -27,20 +27,18 @@ class EncodedArray(BaseModel):
 
 class PredictRequest(BaseModel):
     task: Literal["etth1", "weather", "rate", "hr","ecg_class","gesture_class","diasbp","sysbp","ecl","traffic","illness"]
+    req_id: int
     x: EncodedArray
     mask: Optional[EncodedArray] = None
     y: EncodedArray
     return_pred: bool = False
 
 class PredictResponse(BaseModel):
-    task: str
+    req_id: int
     y_pred: Optional[List] = None
-    wait_time: float
-    decode_time: float
-    arrival_time: float
-    infer_time: float
-    server_compute_time: float
-    server_total_time: float
+    device_wait_time: float
+    device_infer_time: float
+
 
 def _build_pipeline_and_decoders(device: torch.device):
     P = Pipeline(MomentModel(device, "large"))
@@ -105,7 +103,7 @@ def _build_pipeline_and_decoders(device: torch.device):
 
     return P, d1, d2, d3, d4, d5, d6, d7, d8, d9, d10
 
-def _predict_one_batch(pipeline, tasks: list ,bx: torch.Tensor, mask: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+def _predict_one_batch(pipeline, tasks: list ,req_ids: list ,bx: torch.Tensor, mask: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
     feats=pipeline.model_instance.forward(bx, mask)
     results={}
     for i,task in enumerate(tasks):
@@ -141,7 +139,7 @@ def _predict_one_batch(pipeline, tasks: list ,bx: torch.Tensor, mask: torch.Tens
         #     print("yooooo")
         #     print(logits.shape, y_out.shape)
         
-        results[task] = {
+        results[req_ids[i]] = {
             "pred": logits,
         }
     return results
@@ -172,7 +170,7 @@ async def _gpu_worker():
         except asyncio.TimeoutError:
             pass
         start_infer = time.time()
-        bxs, bys, masks, tasks = [], [], [], []
+        bxs, bys, masks, tasks, req_ids = [], [], [], [], []
         for _, req, _, _ in batch_reqs:
             bxs.append(torch.from_numpy(decode_raw(req.x.model_dump())))
             bys.append(torch.from_numpy(decode_raw(req.y.model_dump())))
@@ -182,24 +180,21 @@ async def _gpu_worker():
             else:
                 masks.append(None)
             tasks.append(req.task)
+            req_ids.append(req.req_id)
         bx = torch.cat(bxs, dim=0)
         mask = torch.cat([m for m in masks if m is not None], dim=0) if any(masks) else None
         decode_finish = time.time()
-        results = _predict_one_batch(_pipeline, tasks, bx, mask if mask is not None else None)
+        results = _predict_one_batch(_pipeline, tasks,req_ids, bx, mask if mask is not None else None)
         end_infer = time.time()
 
         for batch_req in batch_reqs:
             fut, req, arrival_time, server_start = batch_req
-            task_results = results[req.task]
+            task_results = results[req.req_id]
 
             resp = {
-                "task": req.task,
-                "y_pred": task_results["pred"].detach().cpu().tolist() if req.return_pred else None,
-                "arrival_time": arrival_time,
-                "wait_time": start_infer - arrival_time,
-                "decode_time": decode_finish - start_infer,
-                "infer_time": end_infer - decode_finish,
-                "server_compute_time": end_infer - start_infer,
+                "req_id": req.req_id,
+                "device_wait_time": start_infer - arrival_time,
+                "device_infer_time": end_infer - decode_finish,
             }
             fut.set_result(resp)
             request_queue.task_done()
