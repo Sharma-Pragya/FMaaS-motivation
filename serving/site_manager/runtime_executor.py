@@ -13,6 +13,7 @@ from timeseries.datasets.ppg import PPGDataset
 from timeseries.datasets.illness import IllnessDataset
 from timeseries.datasets.ecl import ECLDataset
 from timeseries.datasets.traffic import TrafficDataset
+from timeseries.datasets.vqa import VQADataset
 from site_manager.config import DATASET_DIR, DEFAULT_BATCH_SIZE
 
 request_queue: asyncio.Queue = asyncio.Queue()
@@ -21,7 +22,7 @@ DATASET_LOADERS = {}
 # --------- SCHEMAS ----------
 class PredictRequest(BaseModel):
     req_id: int
-    task: Literal["etth1","weather","rate","hr","ecg_class","gesture_class","diasbp","sysbp","ecl","traffic","illness"]
+    task: Literal["etth1","weather","rate","hr","ecg_class","gesture_class","diasbp","sysbp","ecl","traffic","illness","vqa"]
     device: str
     return_pred: bool = False
 
@@ -35,11 +36,22 @@ class PredictResponse(BaseModel):
 
 # --------- HELPERS ----------
 def encode_raw(arr) -> dict:
-    return {
-        "shape": arr.shape,
-        "dtype": str(arr.dtype),
-        "data": base64.b64encode(arr.tobytes()).decode("utf-8"),
-    }
+    if isinstance(arr, np.ndarray):
+        return {
+            "shape": arr.shape,
+            "dtype": str(arr.dtype),
+            "data": base64.b64encode(arr.tobytes()).decode("utf-8"),
+        }
+    elif isinstance(arr, str):
+        return {
+            "type": "text",
+            "data": arr,
+        }
+    elif isinstance(arr, (list, tuple)) and all(isinstance(x, str) for x in arr):
+        return {
+            "type": "text_list",
+            "data": arr,
+        }
 
 async def send_request(i, server, payload):
     st = time.time()
@@ -61,17 +73,18 @@ def initialize_dataloaders():
     d = DATASET_DIR
     # create test dataloaders
     DATASET_LOADERS = {
-        "ecg_class": DataLoader(ECG5000Dataset({"dataset_path": f"{d}/ECG5000"}, {"task_type": "classification"}, "test"), **inference_config),
-        "gesture_class": DataLoader(UWaveGestureLibraryALLDataset({"dataset_path": f"{d}/UWaveGestureLibraryAll"}, {"task_type": "classification"}, "test"), **inference_config),
-        "hr": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"hr"}, "test"), **inference_config),
-        "diasbp": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"diasbp"}, "test"), **inference_config),
-        "sysbp": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"sysbp"}, "test"), **inference_config),
-        "ecl": DataLoader(ECLDataset({"dataset_path": f"{d}/ElectricityLoad-data"}, {"task_type": "forecasting"}, "test"), **inference_config),
-        "traffic": DataLoader(TrafficDataset({"dataset_path": f"{d}/Traffic"}, {"task_type": "forecasting"}, "test"), **inference_config),
-        "illness": DataLoader(IllnessDataset({"dataset_path": f"{d}/ILLNESS"}, {"task_type": "forecasting"}, "test", forecast_horizon=192), **inference_config),
-        "etth1": DataLoader(ETTh1Dataset({"dataset_path": f"{d}/ETTh1"}, {"task_type": "forecasting"}, "test"), **inference_config),
-        "weather": DataLoader(WeatherDataset({"dataset_path": f"{d}/Weather"}, {"task_type": "forecasting"}, "test"), **inference_config),
-        "rate": DataLoader(ExchangeDataset({"dataset_path": f"{d}/Exchange"}, {"task_type": "forecasting"}, "test"), **inference_config),
+        # "ecg_class": DataLoader(ECG5000Dataset({"dataset_path": f"{d}/ECG5000"}, {"task_type": "classification"}, "test"), **inference_config),
+        # "gesture_class": DataLoader(UWaveGestureLibraryALLDataset({"dataset_path": f"{d}/UWaveGestureLibraryAll"}, {"task_type": "classification"}, "test"), **inference_config),
+        # "hr": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"hr"}, "test"), **inference_config),
+        # "diasbp": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"diasbp"}, "test"), **inference_config),
+        # "sysbp": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"sysbp"}, "test"), **inference_config),
+        # "ecl": DataLoader(ECLDataset({"dataset_path": f"{d}/ElectricityLoad-data"}, {"task_type": "forecasting"}, "test"), **inference_config),
+        # "traffic": DataLoader(TrafficDataset({"dataset_path": f"{d}/Traffic"}, {"task_type": "forecasting"}, "test"), **inference_config),
+        # "illness": DataLoader(IllnessDataset({"dataset_path": f"{d}/ILLNESS"}, {"task_type": "forecasting"}, "test", forecast_horizon=192), **inference_config),
+        # "etth1": DataLoader(ETTh1Dataset({"dataset_path": f"{d}/ETTh1"}, {"task_type": "forecasting"}, "test"), **inference_config),
+        # "weather": DataLoader(WeatherDataset({"dataset_path": f"{d}/Weather"}, {"task_type": "forecasting"}, "test"), **inference_config),
+        # "rate": DataLoader(ExchangeDataset({"dataset_path": f"{d}/Exchange"}, {"task_type": "forecasting"}, "test"), **inference_config),
+        'vqa': DataLoader(VQADataset({"dataset_path": f"{d}/val2014"}, {"task_type": "forecasting"}, "test") ,  **inference_config)
     }
     print(f"[RuntimeExecutor] Initialized {len(DATASET_LOADERS)} dataloaders.")
 
@@ -85,11 +98,18 @@ async def _gpu_worker():
     while True:
         fut, req, dataloader, arrival_time, server_start = await request_queue.get()
         batch = next(iter(dataloader))
+        # payload = {
+        #     "task": req.task, "req_id": req.req_id,
+        #     "x": encode_raw(batch[0].numpy()),
+        #     "mask": encode_raw(batch[1].numpy()) if len(batch)==3 else None,
+        #     "y": encode_raw(batch[-1].numpy())
+        # }
         payload = {
-            "task": req.task, "req_id": req.req_id,
-            "x": encode_raw(batch[0].numpy()),
-            "mask": encode_raw(batch[1].numpy()) if len(batch)==3 else None,
-            "y": encode_raw(batch[-1].numpy())
+            "task": req.task, 
+            "req_id": req.req_id,
+            "x": encode_raw(batch['image'].numpy()),
+            "mask": encode_raw(batch['question']),
+            "y": encode_raw(batch['gt_answer'])
         }
         i, total, data = await send_request(req.req_id, req.device, payload)
         resp = {

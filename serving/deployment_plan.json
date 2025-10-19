@@ -1,16 +1,13 @@
+
 {
   "sites": [
     {
-      "site_manager_url": "http://10.100.1.3:8000",
+      "site_manager_url": "http://10.100.1.2:8000",
       "deployments": [
         {
           "device": "http://10.100.20.18:8000",
-          "backbone": "moment_large",
-          "decoders": [
-            {"task": "hr", "type": "regression", "path": "heartrate_momentlarge_mlp"},
-            {"task": "diasbp", "type": "regression", "path": "diasbp_momentlarge_mlp"},
-            {"task": "sysbp", "type": "regression", "path": "sysbp_momentlarge_mlp"}
-          ]
+          "backbone": "llava",
+          "decoders": []
         }
       ]
     }

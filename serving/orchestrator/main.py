@@ -27,7 +27,7 @@ if __name__ == "__main__":
         asyncio.run(deploy_to_sites())
     elif args.run_exp:
         from orchestrator.runtime_executor import run_experiment
-        config = (1, 1, 6, 1, 120)
+        config = (1, 1, 6, 1, 1)
         asyncio.run(run_experiment(config))
     else:
         uvicorn.run("orchestrator.main:app", host="0.0.0.0", port=ORCHESTRATOR_PORT)

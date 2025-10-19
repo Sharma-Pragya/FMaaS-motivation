@@ -1,7 +1,7 @@
 # device/main.py
 import asyncio, time, uvicorn
 from fastapi import FastAPI, Request
-from typing import List, Optional, Literal
+from typing import List, Optional, Literal, Union
 from pydantic import BaseModel
 from device.model_loader import load_models, unload_models
 from device.inference_engine import request_queue, _gpu_worker
@@ -24,12 +24,21 @@ class EncodedArray(BaseModel):
     dtype: str
     data: str
 
+class EncodedText(BaseModel):
+    type: Literal["text"] = "text"
+    data: str
+
+class EncodedTextList(BaseModel):
+    type: Literal["text_list"] = "text_list"
+    data: List[str]
+
+
 class PredictRequest(BaseModel):
     req_id: int
     task: str
     x: EncodedArray
-    mask: Optional[EncodedArray] = None
-    y: Optional[EncodedArray] = None
+    mask: Optional[Union[EncodedArray, EncodedText, EncodedTextList]] = None
+    y: Optional[Union[EncodedArray, EncodedText, EncodedTextList]] = None
 
 class PredictResponse(BaseModel):
     req_id: int

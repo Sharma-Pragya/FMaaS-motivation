@@ -21,6 +21,7 @@ async def startup_event():
 
 @app.post("/deploy")
 async def deploy(specs: list[DeploySpec]):
+    print("I am here ")
     return await deploy_models(specs)
 
 @app.post("/predict", response_model=PredictResponse)

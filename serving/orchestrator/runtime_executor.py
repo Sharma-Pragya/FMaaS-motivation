@@ -67,7 +67,7 @@ async def run_experiment(config, seed=42):
 
     # print("[Orchestrator] Deployment complete. Starting runtime benchmark...")
     tasks = []
-    for task_name in ["hr", "diasbp", "sysbp"]:
+    for task_name in ["vqa"]:
         site_manager, device = get_route(task_name)
         tasks.append((task_name, site_manager, device))
 

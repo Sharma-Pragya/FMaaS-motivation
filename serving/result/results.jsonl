@@ -1,1 +1,9 @@
 {"config": {"num_tasks": 1, "alpha": 1, "req_rate": 6, "cv": 1, "duration": 120}, "result": {"total_time": 121.16510701179504, "throughput": 5.942304824852837, "avg_latency": 0.07034546136856079}}
+{"config": {"num_tasks": 1, "alpha": 1, "req_rate": 6, "cv": 1, "duration": 120}, "result": {"total_time": 254.69537830352783, "throughput": 2.826906419722918, "avg_latency": 134.42172341677878}}
+{"config": {"num_tasks": 1, "alpha": 1, "req_rate": 6, "cv": 1, "duration": 120}, "result": {"total_time": 121.12315154075623, "throughput": 5.944363161304717, "avg_latency": 16.848236268427637}}
+{"config": {"num_tasks": 1, "alpha": 1, "req_rate": 6, "cv": 1, "duration": 120}, "result": {"total_time": 150.7960774898529, "throughput": 4.774660004325702, "avg_latency": 22.03563336233298}}
+{"config": {"num_tasks": 1, "alpha": 1, "req_rate": 6, "cv": 1, "duration": 120}, "result": {"total_time": 492.48567509651184, "throughput": 1.461971457055888, "avg_latency": 432.2645500706302}}
+{"config": {"num_tasks": 1, "alpha": 1, "req_rate": 6, "cv": 1, "duration": 120}, "result": {"total_time": 311.39574432373047, "throughput": 2.312170327066127, "avg_latency": 31.32060470018122}}
+{"config": {"num_tasks": 1, "alpha": 1, "req_rate": 6, "cv": 1, "duration": 120}, "result": {"total_time": 121.1516227722168, "throughput": 5.942966206517166, "avg_latency": 9.884293154213164}}
+{"config": {"num_tasks": 1, "alpha": 1, "req_rate": 6, "cv": 1, "duration": 1}, "result": {"total_time": 24.28750467300415, "throughput": 0.24704061124356966, "avg_latency": 23.676320870717365}}
+{"config": {"num_tasks": 1, "alpha": 1, "req_rate": 6, "cv": 1, "duration": 1}, "result": {"total_time": 2.4977777004241943, "throughput": 2.402135305708361, "avg_latency": 1.4147135019302368}}
