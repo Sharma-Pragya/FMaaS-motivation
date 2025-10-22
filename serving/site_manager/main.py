@@ -4,7 +4,7 @@ from site_manager.config import BROKER, PORT, SITE_ID
 from site_manager.storage import store_plan_and_requests, get_requests
 from site_manager.runtime_executor import handle_runtime_request, initialize_dataloaders
 from site_manager.deployment_handler import deploy_models
-
+import ssl
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
         print(f"[MQTT] Site {SITE_ID} connected to broker")
@@ -52,7 +52,9 @@ async def execute_cached_requests(client):
 
 def start_site_mqtt_agent():
     client = mqtt.Client(client_id=SITE_ID, transport="websockets")
-    client.tls_set()
+    # client.tls_set()
+    client.tls_set(cert_reqs=ssl.CERT_NONE)
+    client.tls_insecure_set(True)
     client.on_connect = on_connect
     client.on_message = on_message
     client.connect(BROKER, PORT, 60)

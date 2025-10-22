@@ -4,15 +4,15 @@ from typing import List, Optional, Literal
 from torch.utils.data import DataLoader
 from site_manager.config import DATASET_DIR, DEFAULT_BATCH_SIZE
 
-# from timeseries.datasets.etth1 import ETTh1Dataset
-# from timeseries.datasets.weather import WeatherDataset
-# from timeseries.datasets.exchange import ExchangeDataset
-# from timeseries.datasets.ecg5000 import ECG5000Dataset
-# from timeseries.datasets.uwavegesture import UWaveGestureLibraryALLDataset
+from timeseries.datasets.etth1 import ETTh1Dataset
+from timeseries.datasets.weather import WeatherDataset
+from timeseries.datasets.exchange import ExchangeDataset
+from timeseries.datasets.ecg5000 import ECG5000Dataset
+from timeseries.datasets.uwavegesture import UWaveGestureLibraryALLDataset
 from timeseries.datasets.ppg import PPGDataset
-# from timeseries.datasets.illness import IllnessDataset
-# from timeseries.datasets.ecl import ECLDataset
-# from timeseries.datasets.traffic import TrafficDataset
+from timeseries.datasets.illness import IllnessDataset
+from timeseries.datasets.ecl import ECLDataset
+from timeseries.datasets.traffic import TrafficDataset
 from timeseries.datasets.vqa import VQADataset
 
 
@@ -27,7 +27,7 @@ def initialize_dataloaders():
     DATASET_LOADERS = {
         # "ecg_class": DataLoader(ECG5000Dataset({"dataset_path": f"{d}/ECG5000"}, {"task_type": "classification"}, "test"), **inference_config),
         # "gesture_class": DataLoader(UWaveGestureLibraryALLDataset({"dataset_path": f"{d}/UWaveGestureLibraryAll"}, {"task_type": "classification"}, "test"), **inference_config),
-        "hr": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"hr"}, "test"), **inference_config),
+        # "hr": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"hr"}, "test"), **inference_config),
         # "diasbp": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"diasbp"}, "test"), **inference_config),
         # "sysbp": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"sysbp"}, "test"), **inference_config),
         # "ecl": DataLoader(ECLDataset({"dataset_path": f"{d}/ElectricityLoad-data"}, {"task_type": "forecasting"}, "test"), **inference_config),
@@ -36,7 +36,7 @@ def initialize_dataloaders():
         # "etth1": DataLoader(ETTh1Dataset({"dataset_path": f"{d}/ETTh1"}, {"task_type": "forecasting"}, "test"), **inference_config),
         # "weather": DataLoader(WeatherDataset({"dataset_path": f"{d}/Weather"}, {"task_type": "forecasting"}, "test"), **inference_config),
         # "rate": DataLoader(ExchangeDataset({"dataset_path": f"{d}/Exchange"}, {"task_type": "forecasting"}, "test"), **inference_config),
-        # 'vqa': DataLoader(VQADataset({"dataset_path": f"{d}/val2014"}, {"task_type": "forecasting"}, "test") ,  **inference_config)
+        'vqa': DataLoader(VQADataset({"dataset_path": f"{d}/val2014"}, {"task_type": "forecasting"}, "test") ,  **inference_config)
     }
     print(f"[RuntimeExecutor] Initialized {len(DATASET_LOADERS)} dataloaders.")
 

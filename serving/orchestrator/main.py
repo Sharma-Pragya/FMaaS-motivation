@@ -37,8 +37,8 @@ def publish_deployments(client, plan, config, seed):
         ## need to work on this make common workload 
         ## and send the appropriate request to the deployment
         tasks = []
-        for task_name in ["hr"]:
-        # for task_name in ["vqa"]:
+        # for task_name in ["hr"]:
+        for task_name in ["vqa"]:
             site_manager, device = get_route(task_name)
             tasks.append((task_name, site_manager, device))
         requests = generate_requests(num_tasks, alpha, req_rate, cv, duration, tasks, seed)

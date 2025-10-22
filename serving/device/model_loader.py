@@ -1,8 +1,6 @@
 # device/model_loader.py
 import torch
 from timeseries.pipeline import Pipeline
-from timeseries.components.backbones.moment import MomentModel
-# from timeseries.components.backbones.llava import LlavaModel
 from timeseries.components.decoders.regression.mlp import MLPDecoder as RegressionMLP
 from timeseries.components.decoders.classification.mlp import MLPDecoder as ClassificationMLP
 from timeseries.components.decoders.forecasting.mlp import MLPDecoder as ForecastingMLP
@@ -32,12 +30,14 @@ def load_models(backbone: str, decoders: list):
     """
     global _pipeline, _decoders, _loaded
 
-    unload_models()
+    # unload_models()
 
     print(f"[ModelLoader] Loading backbone: {backbone}")
     if backbone == "moment_large":
+        from timeseries.components.backbones.moment import MomentModel
         _pipeline = Pipeline(MomentModel(DEVICE, "large"))
     elif backbone == "llava":
+        from timeseries.components.backbones.llava import LlavaModel
         _pipeline = Pipeline(LlavaModel(DEVICE, "llava-1.5-7b-hf"))
     else:
         raise ValueError(f"Unsupported backbone type: {backbone}")
