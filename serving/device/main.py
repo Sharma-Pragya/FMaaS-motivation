@@ -38,6 +38,7 @@ class PredictRequest(BaseModel):
     task: str
     x: EncodedArray
     mask: Optional[Union[EncodedArray, EncodedText, EncodedTextList]] = None
+    question: Optional[Union[EncodedArray, EncodedText, EncodedTextList]] = None
     y: Optional[Union[EncodedArray, EncodedText, EncodedTextList]] = None
 
 class PredictResponse(BaseModel):

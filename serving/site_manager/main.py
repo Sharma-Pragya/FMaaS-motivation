@@ -1,44 +1,63 @@
-# site_manager/main.py
-import asyncio, time, uvicorn
-from fastapi import FastAPI
-from site_manager.runtime_executor import (
-    PredictRequest, PredictResponse,
-    request_queue, _gpu_worker,
-    initialize_dataloaders, load_dataloader
-)
-from site_manager.deployment_handler import deploy_models, DeploySpec
-from site_manager.health_monitor import heartbeat
-from site_manager.config import DEFAULT_PORT
+import json, asyncio, time
+import paho.mqtt.client as mqtt
+from site_manager.config import BROKER, PORT, SITE_ID
+from site_manager.storage import store_plan_and_requests, get_requests
+from site_manager.runtime_executor import handle_runtime_request, initialize_dataloaders
+from site_manager.deployment_handler import deploy_models
 
-app = FastAPI()
+def on_connect(client, userdata, flags, rc):
+    if rc == 0:
+        print(f"[MQTT] Site {SITE_ID} connected to broker")
+        client.subscribe(f"fmaas/deploy/site/{SITE_ID}")
+        client.subscribe(f"fmaas/runtime/start/site/{SITE_ID}")
+    else:
+        print(f"[MQTT] Connection failed with code {rc}")
 
-@app.on_event("startup")
-async def startup_event():
+def on_message(client, userdata, msg):
+    topic = msg.topic
+    payload = json.loads(msg.payload.decode())
+    if topic.endswith(f"deploy/site/{SITE_ID}"):
+        print(f"[MQTT] Received deployment + runtime plan for {SITE_ID}")
+        print(payload)
+        store_plan_and_requests(payload)
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(deploy_models(payload["deployments"]))
+        except RuntimeError:
+            asyncio.run(deploy_models(payload["deployments"]))
+        client.publish(f"fmaas/runtime/ack/site/{SITE_ID}", json.dumps({'site':'site1','deploy':'done'}))
+    elif topic.endswith(f"runtime/start/site/{SITE_ID}"):
+        print(f"[MQTT] Start signal received for {SITE_ID}")
+        asyncio.run(execute_cached_requests(client))
+
+async def execute_cached_requests(client):
+    start = time.time()
+    reqs = get_requests()
+    success = 0
+    for req in reqs:
+        try:
+            await handle_runtime_request(req)
+            success += 1
+        except Exception as e:
+            print(f"[MQTT] Request {req['req_id']} failed: {e}")
+    ack = {
+        "site": SITE_ID,
+        "status": "completed",
+        "num_success": success,
+        "total_requests": len(reqs),
+        "runtime_duration": time.time() - start,
+    }
+    client.publish(f"fmaas/runtime/ack/site/{SITE_ID}", json.dumps(ack))
+    print(f"[MQTT] Sent runtime ACK for {SITE_ID}")
+
+def start_site_mqtt_agent():
+    client = mqtt.Client(client_id=SITE_ID, transport="websockets")
+    client.tls_set()
+    client.on_connect = on_connect
+    client.on_message = on_message
+    client.connect(BROKER, PORT, 60)
     initialize_dataloaders()
-    asyncio.create_task(_gpu_worker())
-    # asyncio.create_task(heartbeat("http://orchestrator:8000", "site_1"))
-    print("[SiteManager] Startup complete.")
-
-@app.post("/deploy")
-async def deploy(specs: list[DeploySpec]):
-    print("I am here ")
-    return await deploy_models(specs)
-
-@app.post("/predict", response_model=PredictResponse)
-async def predict(req: PredictRequest):
-    fut = asyncio.get_event_loop().create_future()
-    arrival = time.time()
-    dataloader = load_dataloader(req.task)
-    await request_queue.put((fut, req, dataloader, arrival, time.time()))
-    return await fut
-
-@app.get("/health")
-def health():
-    return {"status": "ok"}
+    client.loop_forever()
 
 if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--port", type=int, default=DEFAULT_PORT)
-    args = parser.parse_args()
-    uvicorn.run("site_manager.main:app", host="0.0.0.0", port=args.port, workers=1)
+    start_site_mqtt_agent()

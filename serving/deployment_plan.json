@@ -6,7 +6,7 @@
       "site_manager_url": "http://10.100.20.2:8000",
       "deployments": [
         {
-          "device": "http://10.100.20.14:8000",
+          "device": "http://10.100.20.48:8000",
           "backbone": "llava",
           "decoders": []
         }

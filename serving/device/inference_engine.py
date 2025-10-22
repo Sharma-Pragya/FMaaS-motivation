@@ -25,6 +25,7 @@ async def _gpu_worker():
         pipeline, decoders = get_loaded_pipeline()
         bx = decode_raw(req.x.model_dump())
         mask = decode_raw(req.mask.model_dump()) if req.mask else None
+        question = decode_raw(req.question.model_dump()) if req.question else None
 
         ## change this from pipeline.py even not considered post or pre processing 
         if pipeline.active_decoder:
@@ -46,7 +47,7 @@ async def _gpu_worker():
             # For pipelines without an active decoder, run the model instance end-to-end.
             # Ensure we measure inference time for this path as well.
             start_infer = time.time()
-            embeddings = pipeline.model_instance.forward((bx, mask))
+            embeddings = pipeline.model_instance.forward((bx, question))
             logits = pipeline.model_instance.postprocess(embeddings)
             
         end_infer = time.time()

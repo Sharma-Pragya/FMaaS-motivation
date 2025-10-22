@@ -24,6 +24,14 @@ class Request:
                f"task={self.task}, dataloader={self.dataloader}, "  \
                f"req_time={self.req_time}"
 
+    def to_dict(self):
+        return {
+            'req_id': self.req_id,
+            'task': self.task,
+            'site_manager': self.site_manager,
+            'device': self.device,
+            'req_time': self.req_time
+        }
 
 def generate_requests(num_tasks, alpha, req_rate, cv, duration,
                       tasks, # (base_dir, adapter_dir)
@@ -45,6 +53,7 @@ def generate_requests(num_tasks, alpha, req_rate, cv, duration,
     intervals = np.random.gamma(shape, scale, tot_req)
     for i in range(tot_req):
         tic += intervals[i]
+        print(tasks)
         requests.append(Request(i, tasks[ind[i]][0], tasks[ind[i]][1], tasks[ind[i]][2], tic))
     return requests
 
