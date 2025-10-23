@@ -144,6 +144,8 @@ def build_and_solve(
             name=f"E_split_{tt}"
         )
 
+    # TODO: Redundancy and demand constraint same?
+
     # (F) Endpoint capacity:
     #     sum_t lambda_t * r_{t,m,d} <= P_{m,d} * x_{m,d}     ∀ (m,d)
     #     (Interpretation: SLO-feasible sustained throughput limit of endpoint (m,d).)
