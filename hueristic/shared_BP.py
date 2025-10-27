@@ -18,8 +18,8 @@ def create_tree():
             covered_backbones.update({backbone:root})            
         else:
             root=covered_backbones[backbone]
-        decoder=TreeNode(pipeline['architecture'][1],components[pipeline['architecture'][1]]['mem'])
-        task=TreeNode(pipeline['architecture'][2],components[pipeline['architecture'][2]]['mem'])
+        decoder=TreeNode(f"{pipeline['architecture'][1]}_{pipeline['architecture'][2]}",components[f"{pipeline['architecture'][1]}_{pipeline['architecture'][2]}"]['mem'])
+        task=TreeNode(f"{pipeline['architecture'][2]}_{pipeline['architecture'][1]}",components[f"{pipeline['architecture'][1]}_{pipeline['architecture'][2]}"]['mem'])
         decoder.add_child(task)
         root.add_child(decoder)
     return covered_backbones
@@ -48,8 +48,6 @@ def lower_bound_mem(node, P, ancestors_weight=0,ancestor_size={},child_size={},c
 
 
 def first_fit_binpack(ancestor,children,capacity):
-    print('ancestor')
-    print(ancestor)
     bins=[ancestor.copy()]
     for child in children:
         placed = False
@@ -72,10 +70,10 @@ def first_fit_binpack(ancestor,children,capacity):
 
 
 def greedy_pack(root,P,ancestor_size,child_size,count):
+    print(root.data)
     servers=[]
     if count[root.data]==1:
         print(child_size)
-
         servers.append(child_size)
 
         return servers
@@ -133,7 +131,6 @@ def generate_redundancy(servers):
         cap=0
         for t,l in task_latency.items():
             cap+=l*tasks[t]['peak_workload']
-        print(cap)
         if cap>1:
             redundant_servers=math.ceil(cap)
             for i in range(redundant_servers):
@@ -147,14 +144,16 @@ def generate_redundancy(servers):
     return workload_server       
     
 def shared_packing():
-    P=16000
+    P=80000
+    #Only create tree such that tasks are satisfying latency and accuracy. Task on one single tree
     shared_trees=create_tree()
+    # print(shared_trees)
     for backbone,root in shared_trees.items():
         ancestor_size,child_size,count=lower_bound_mem(root,P)
-
+        print(count)
         servers = greedy_pack(root, P,ancestor_size,child_size, count)
-        workload_server=generate_redundancy(servers)
+        # workload_server=generate_redundancy(servers)
         print(servers)
-        print(workload_server)
+        # print(workload_server)
 
 shared_packing()

@@ -39,10 +39,23 @@ components={
     'heartrate_prediction':{'mem':55.3127836098}
 }
 pipelines={
-    'p1':{'architecture':['MOMENT-1-large','mlp_momentlarge_ecgclass','ecg_classification'],'latency':0.02587,'metric':93.43},
-    'p2':{'architecture':['MOMENT-1-large','mlp_momentlarge_diasbp','diastolicBP'],'latency':0.03216,'metric':9.39},
-    'p3':{'architecture':['MOMENT-1-large','mlp_momentlarge_sysbp','systolicBP'],'latency':0.03284,'metric':15.55},
-    'p4':{'architecture':['MOMENT-1-large','mlp_momentlarge_hrbp','heartrate_prediction'],'latency':0.03117,'metric':5.62},
+    'p1':['MOMENT-1-large','mlp_momentlarge_ecgclass','ecg_classification'],
+    'p2':['MOMENT-1-large','mlp_momentlarge_diasbp','diastolicBP'],
+    'p3':['MOMENT-1-large','mlp_momentlarge_sysbp','systolicBP'],
+    'p4':['MOMENT-1-large','mlp_momentlarge_hrbp','heartrate_prediction'],
+}
+
+latency={
+    'p1':{'A100':0.02587},
+    'p2':{'A100':0.03216},
+    'p3':{'A100':0.03284},
+    'p4':{'A100':0.03117},
+}
+accuracy={
+    'p1':93.43,
+    'p2':9.39,
+    'p3':15.55,    
+    'p4':5.62,
 }
 
 tasks={
