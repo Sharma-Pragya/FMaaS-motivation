@@ -5,7 +5,7 @@ ROUTING_TABLE = {
     # "sysbp": ("http://10.100.1.3:8000/predict", "http://10.100.20.18:8000/predict"),
     # "etth1": ("http://10.100.1.3:8000/predict", "http://10.100.115.7:8000/predict"),
     # "weather": ("http://10.100.1.3:8000/predict", "http://10.100.115.7:8000/predict"),
-    "vqa": ("http://10.100.1.2:8000/predict", "http://10.100.20.48:8000/predict")
+    "vqa": ("http://10.100.1.2:8000/predict", "http://10.100.20.16:8000/predict")
 }
 
 def get_route(task: str):

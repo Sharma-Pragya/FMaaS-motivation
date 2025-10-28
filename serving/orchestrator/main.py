@@ -2,7 +2,7 @@ import json, time, threading
 import paho.mqtt.client as mqtt
 from orchestrator.config import BROKER, PORT, DEPLOYMENT_PLAN_PATH, TIMEOUT
 from traces.gamma import generate_requests
-from orchestrator.router import get_route
+from router import get_route
 import argparse
 
 acks = {}
