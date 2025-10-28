@@ -1,78 +1,99 @@
+
 devices = {
-  'A100': {
+  'device1': {
     'type': 'A100',
-    'mem': 80000  # in MB
+    'mem': 80000,  # in MB
+    'ip': 'http://10.100.20.13',
+    'site_manager':'site1'
   },
-  'A16': {
+  'device2': {
     'type': 'A16',
-    'mem': 16000  # in MB
+    'mem': 16000,  # in MB
+    'ip': 'http://10.100.20.14',
+    'site_manager':'site1',
   },
-  'A163': {
-    'type': 'A16',
-    'mem': 16000  # in MB
+  'device3': {
+    'type': 'A100',
+    'mem': 16000,  # in MB
+    'ip': 'http://10.100.20.15',
+    'site_manager':'site1'
   },
-    'A162': {
-    'type': 'A16',
-    'mem': 16000  # in MB
+  'device4': {
+    'type': 'A100',
+    'mem': 16000,  # in MB
+    'ip': 'http://10.100.20.16',
+    'site_manager':'site1'
   },
-    'A161': {
-    'type': 'A16',
-    'mem': 16000  # in MB
+  'device5': {
+    'type': 'A100',
+    'mem': 40000,  # in MB
+    'ip': 'http://10.100.20.17',
+    'site_manager':'site1'
   },
-  'A6000': {
-    'type': 'A6000',
-    'mem': 40000  # in MB
-  }
-}
-
-# servers=[['A100',80000],['A16',16000],['A6000',40000]]
-
-components={
-    'MOMENT-1-large':{'mem':1462.480384},
-    'mlp_momentlarge_ecgclass':{'mem':0.527872},
-    'mlp_momentlarge_diasbp':{'mem':0.525824},
-    'mlp_momentlarge_sysbp':{'mem':0.525824},
-    'mlp_momentlarge_hrbp':{'mem':0.525824},
-    'ecg_classification':{'mem':22.215650816}, #inference memory
-    'diastolicBP':{'mem':55.3127836098}, #inference memory
-    'systolicBP':{'mem':55.3127836098},
-    'heartrate_prediction':{'mem':55.3127836098}
-}
-pipelines={
-    'p1':{'architecture':['MOMENT-1-large','mlp_momentlarge_ecgclass','ecg_classification'],'latency':0.02587,'metric':93.43},
-    'p2':{'architecture':['MOMENT-1-large','mlp_momentlarge_diasbp','diastolicBP'],'latency':0.03216,'metric':9.39},
-    'p3':{'architecture':['MOMENT-1-large','mlp_momentlarge_sysbp','systolicBP'],'latency':0.03284,'metric':15.55},
-    'p4':{'architecture':['MOMENT-1-large','mlp_momentlarge_hrbp','heartrate_prediction'],'latency':0.03117,'metric':5.62},
+  'device6': {
+    'type': 'A100',
+    'mem': 40000,  # in MB
+    'ip': 'http://10.100.20.17',
+    'site_manager':'site1'
+  },
+  'device7': {
+    'type': 'A100',
+    'mem': 40000,  # in MB
+    'ip': 'http://10.100.20.17',
+    'site_manager':'site1'
+  },
+  'device8': {
+    'type': 'A100',
+    'mem': 40000,  # in MB
+    'ip': 'http://10.100.20.17',
+    'site_manager':'site1'
+  },
+  'device9': {
+    'type': 'A100',
+    'mem': 40000,  # in MB
+    'ip': 'http://10.100.20.17',
+    'site_manager':'site1'
+  },
+  'device10': {
+    'type': 'A100',
+    'mem': 40000,  # in MB
+    'ip': 'http://10.100.20.17',
+    'site_manager':'site1'
+  },
 }
 
 tasks={
-    'heartrate_prediction':
+    'heartrate':
     {
-    'peak_workload':100,
+    'type':'regression',
+    'peak_workload':168,
     'latency':10,
     'metric':'mae',
-    'value':6
+    'value':100
 
     },
-    'systolicBP':
+    'sysbp':
     {
+    'type':'regression',
     'peak_workload':5,
     'latency':10,
     'metric':'mae',
-    'value': 16   
+    'value': 100   
     },
-    'diastolicBP':
+    'diasbp':
     {
+    'type':'regression',
     'peak_workload':5,
     'latency':10,
     'metric':'mae',
-    'value':10         
+    'value':10       
     },
-    'ecg_classification':
+    'ecgclass':
     {
+    'type':'classification',
     'peak_workload':5,
     'latency':10,
     'metric':'accuracy',
-    'value':91        
+    'value':0.7        
     }
 }

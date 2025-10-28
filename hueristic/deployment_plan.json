@@ -1,0 +1,71 @@
+{
+  "sites": [
+    {
+      "id": "site1",
+      "deployments": [
+        {
+          "device": "http://10.100.20.16:8001",
+          "device_type": "A100",
+          "backbone": "chronostiny",
+          "decoders": [
+            {
+              "task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageissvri_mlp",
+              "requests_per_sec": 2.5
+            },
+            {
+              "task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageissvri_mlp",
+              "requests_per_sec": 2.5
+            },
+            {
+              "task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_papageissvri_mlp",
+              "requests_per_sec": 2.5
+            },
+            {
+              "task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_papageissvri_mlp",
+              "requests_per_sec": 84.0
+            }
+          ]
+        },
+        {
+          "device": "http://10.100.20.15:8002",
+          "device_type": "A100",
+          "backbone": "chronostiny",
+          "decoders": [
+            {
+              "task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageissvri_mlp",
+              "requests_per_sec": 2.5
+            },
+            {
+              "task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageissvri_mlp",
+              "requests_per_sec": 2.5
+            },
+            {
+              "task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_papageissvri_mlp",
+              "requests_per_sec": 2.5
+            },
+            {
+              "task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_papageissvri_mlp",
+              "requests_per_sec": 84.0
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

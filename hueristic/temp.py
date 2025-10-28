@@ -1,5 +1,6 @@
-from config import *
+from parser.profiler import *
 import math
+from config import devices, tasks
 
 class TreeNode:
     """Node for representing a component in the pipeline tree."""
@@ -13,22 +14,23 @@ class TreeNode:
 def create_tree():
     """Create a tree for each backbone, representing the pipeline architecture."""
     covered_backbones = {}
-    for _, pipeline in pipelines.items():
-        backbone = pipeline['architecture'][0]
+    for id, pipeline in pipelines.items():
+        backbone = pipeline['backbone']
         if backbone not in covered_backbones:
             root = TreeNode(backbone, components[backbone]['mem'])
             covered_backbones[backbone] = root
         else:
             root = covered_backbones[backbone]
-        decoder = TreeNode(pipeline['architecture'][1], components[pipeline['architecture'][1]]['mem'])
-        task = TreeNode(pipeline['architecture'][2], components[pipeline['architecture'][2]]['mem'])
-        if tasks[task.data]['metric']=='accuracy' and pipeline['metric'] < tasks[task.data]['value']:
-            continue  # Skip if pipeline metric is less than task requirement
-        elif tasks[task.data]['metric']=='mae' and pipeline['metric'] > tasks[task.data]['value']:
-            continue  # Skip if pipeline metric is less than task requirement
-        print(f"Adding task {task.data} under backbone {backbone}")
-        decoder.add_child(task)
-        root.add_child(decoder)
+        decoder = TreeNode(f"{pipeline['decoder']}_{pipeline['backbone']}_{pipeline['task']}", components[f"{pipeline['decoder']}_{pipeline['backbone']}_{pipeline['task']}"]['mem'])
+        task = TreeNode(pipeline['task'], components[f"{pipeline['task']}_{pipeline['backbone']}_{pipeline['decoder']}"]['mem'])
+        if task.data in tasks:
+            if tasks[task.data]['metric']=='accuracy' and metric[id] < tasks[task.data]['value']:
+                continue  # Skip if pipeline metric is less than task requirement
+            elif tasks[task.data]['metric']=='mae' and metric[id] > tasks[task.data]['value']:
+                continue  # Skip if pipeline metric is less than task requirement
+            print(f"Adding task {task.data} under backbone {backbone}")
+            decoder.add_child(task)
+            root.add_child(decoder)
     return covered_backbones
 
 def lower_bound_mem(node, P, ancestor_size=None, child_size=None, count=None, cap=None):
@@ -42,7 +44,7 @@ def lower_bound_mem(node, P, ancestor_size=None, child_size=None, count=None, ca
 
     # Leaf node
     if not node.children:
-        child_size[node.data] = components[node.data]['mem']
+        child_size[node.data] = node.mem
         cap[node.data] = P - ancestor_size[node.data]
         count[node.data] = 1
         return ancestor_size,child_size, count
@@ -51,15 +53,15 @@ def lower_bound_mem(node, P, ancestor_size=None, child_size=None, count=None, ca
     cap[node.data] = P - ancestor_size[node.data]
 
     for child in node.children:
-        ancestor_size[child.data]=ancestor_size[node.data]+components[node.data]['mem']
+        ancestor_size[child.data]=ancestor_size[node.data]+node.mem
         ancestor_size, child_size, count = lower_bound_mem(child, P, ancestor_size, child_size, count, cap)
         total_size += child_size[child.data]
     
     if total_size == 0:
         count[node.data] = 1
     else:
-        count[node.data] = math.ceil(total_size / (cap[node.data] - components[node.data]['mem']))
-    child_size[node.data] = total_size + (count[node.data] * components[node.data]['mem'])
+        count[node.data] = math.ceil(total_size / (cap[node.data] - node.mem))
+    child_size[node.data] = total_size + (count[node.data] * node.mem)
     return ancestor_size, child_size, count
 
 def first_fit_binpack(bin, children, capacity):
@@ -68,7 +70,7 @@ def first_fit_binpack(bin, children, capacity):
 
     for child in children:
         if child[1] + sum(bin.values()) > capacity:
-            raise ValueError(f"Child {child[0].data} with size {child[1]} cannot fit in the server with ancestor size {sum(ancestor.values())} and capacity {capacity}")
+            raise ValueError(f"Child {child[0].data} with size {child[1]} cannot fit in the server with ancestor size {sum(bin.values())} and capacity {capacity}")
         else:
             bin[child[0].data] = child[0].mem
             for c in child[0].children:
@@ -76,19 +78,25 @@ def first_fit_binpack(bin, children, capacity):
     return [bin]
 
 
-def greedy_pack(root, P, ancestor_size, child_size, count):
+def greedy_pack(root, server, ancestor_size, child_size, count):
     """Greedy packing of nodes into servers using bin packing."""
     servers = []
     server_id = 0
     if count[root.data] == 1:
         # Single server, all components in child_size
-        components_dict = {comp: components[comp]['mem'] for comp in child_size.keys()}
-        mem = sum(components_dict.values())
-        tasks_dict = {task: [info['peak_workload'],100] for task, info in tasks.items() if task in child_size.keys()}
+        # components_dict = {comp: components[comp]['mem'] for comp in child_size.keys()}
+        # mem = sum(components_dict.values())
+        components_dict = [comp for comp in child_size.keys()]
+
+        tasks_dict = {task: [info['peak_workload'],info['peak_workload']] for task, info in tasks.items() if task in child_size.keys()}
+
         servers.append({
-            'name': f'server{server_id}',
+            'site_manager':server['site_manager'],
+            'name': server['name'],
+            'ip': server['ip'],
+            'type': server['type'],
+            'total_memory': server['memory'],
             'tasks': tasks_dict,
-            'memory': mem,
             'components': components_dict
         })
         return servers
@@ -106,17 +114,22 @@ def greedy_pack(root, P, ancestor_size, child_size, count):
             break
         child_subtrees = [[c, child_size[c.data]] for c in bottleneck_node.children]
         bin={bottleneck_node.data: ancestor_size[bottleneck_node.data] + bottleneck_node.mem}
-        bin = first_fit_binpack(bin, child_subtrees, P)
+        bin = first_fit_binpack(bin, child_subtrees, server['memory'])
 
-        components_dict = {comp: components[comp]['mem'] for comp in bin.keys()}
-        mem = sum(bin.values())
+        # components_dict = {comp: components[comp]['mem'] for comp in bin.keys()}
+        # mem = sum(bin.values())
+        components_dict = [comp for comp in child_size.keys()]
+
         tasks_dict = {task: [info['peak_workload'],100] for task, info in tasks.items() if task in bin.keys()}
         servers.append({
-                'name': f'server{server_id}',
-                'tasks': tasks_dict,
-                'memory': mem,
-                'components': components_dict
-            })  
+            'site_manager':server['site_manager'],
+            'name': server['name'],
+            'ip': server['ip'],
+            'type': server['type'],
+            'total_memory': server['memory'],
+            'tasks': tasks_dict,
+            'components': components_dict
+        }) 
           
         # for b in bins:
         #     components_dict = {comp: components[comp]['mem'] for comp in b.keys()}
@@ -141,25 +154,27 @@ def get_task_latency(tasks):
     """Helper to get task latencies for a server."""
     task_latency = {}
     for t in tasks:
-        for pipeline in pipelines.values():
-            if t in pipeline['architecture']:
-                task_latency[t] = pipeline['latency']
+        for id,pipeline in pipelines.items():
+            if t==pipeline['task']:
+                task_latency[t] = latency[id]
     return task_latency
 
 
-def check_workload(task_manifest):
+def check_workload(task_manifest,device_type):
     """Check if for all task in manifest combined sum of all latency*workload <= 1."""
     for srv in task_manifest:
         task_latency = get_task_latency(srv['tasks'])
-        cap = sum(l * srv['tasks'][t][0] for t, l in task_latency.items())
+        # as latency is in ms convert to seconds
+        cap = sum(l[device_type] * srv['tasks'][t][0] for t, l in task_latency.items())/1000
         if cap > 1:
             # print(f"Warning: Server {srv['name']} exceeds capacity with {cap}")
             redundant_servers = math.ceil(cap)
+            print(f"Splitting server {srv['name']} into {redundant_servers} servers to meet workload requirements.")
             # reduce the workload for each task in manifest by dividing by redundant_servers
             # store it in % of total workload for each task in task_manifest
             for t in srv['tasks']:
                 #store it in % of total workload for each task in task_manifest
-                srv['tasks'][t] = [srv['tasks'][t][0],100 / redundant_servers]
+                srv['tasks'][t] = [srv['tasks'][t][0],srv['tasks'][t][0] / redundant_servers]
     return task_manifest
         
 
@@ -171,64 +186,120 @@ def shared_packing():
     # #descending order of devices for config based on memory
     servers = []
     for device_name, device_info in sorted(devices.items(), key=lambda x: x[1]['mem'], reverse=True):
-        servers.append({'name': device_name, 'memory': device_info['mem']})
+        servers.append({'name': device_name,'type':device_info['type'], 'memory': device_info['mem'],'ip':device_info['ip'],'site_manager':device_info['site_manager']})
 
     #sort the trees based on number of tasks (leaves) on root (descending)
     trees = sorted(trees.items(), key=lambda x: sum(1 for decoder in x[1].children for task in decoder.children), reverse=True)
 
     final_task_manifest = []
-    while tasks:
+    tasks_copy = tasks.copy()
+    while tasks_copy and servers:
         server=servers.pop()
         backbone, root=trees[0]
-        print(f"Device: {server['name']}, Memory: {server['memory']} MB")
+        print(f"Device: {server['name']}, Memory: {server['memory']} MB, Type: {server['type']}")
         device_memory = server['memory']
+        device_type = server['type']
+        device_name = server['name']
         
         #based on memory packing
         ancestor_size, child_size, count = lower_bound_mem(root, device_memory)
-        task_manifest = greedy_pack(root, device_memory, ancestor_size, child_size, count)
+        task_manifest = greedy_pack(root, server, ancestor_size, child_size, count)
         #check workload for all task in task_manifest 
-        task_manifest = check_workload(task_manifest)
+        task_manifest = check_workload(task_manifest,device_type)
 
         #only if 100% workload is covered then remove packed tasks from tasks list and trees
         #else update the peak workload of tasks based on packed workload in task_manifest
         packed_tasks = {}
         for srv in task_manifest:
             for t in srv['tasks']:
-                if srv['tasks'][t][1] == 100:
+                if srv['tasks'][t][1] == srv['tasks'][t][0]:
                     packed_tasks[t] = True
                 else:
-                    tasks[t]['peak_workload'] -= srv['tasks'][t][0] * (srv['tasks'][t][1] / 100)
+                    tasks[t]['peak_workload'] -= srv['tasks'][t][1]
         
         #remove packed tasks from tasks and trees
         for t in packed_tasks:
-            if t in tasks:
-                del tasks[t]
+            if t in tasks_copy:
+                del tasks_copy[t]
             #remove from tree not just this root all other roots where this task is present
             for backbone_key, tree_root in trees:
-                root_to_check = tree_root
-                for decoder in root.children:
+                for decoder in tree_root.children:
                     root.children = [d for d in root.children if all(task.data != t for task in d.children)]
         trees[0]=(backbone, root)
         final_task_manifest.extend(task_manifest)
-
+        print(f"Remaining tasks to pack: {list(tasks_copy.keys())}")
     return final_task_manifest
-    # for device in devices:
-    #     print(f"Device: {device['name']}, Memory: {device['memory']} MB")
-    #     device_memory = device['memory']
 
+
+def build_final_json(device_list):
+    """
+    Build deployment JSON grouped by site_manager using pipeline config.
+    Each device's components are matched against pipeline definitions
+    to infer backbone and decoders properly.
+    """
+
+    sites = {}
+
+    # reverse lookup: decoder -> backbone
+    decoder_to_task = {f"{v['decoder']}_{v['backbone']}_{v['task']}": v['task'] for v in pipelines.values()}
+    task_to_task = {f"{v['task']}":f"{v['task']}_{v['backbone']}_{v['decoder']}"  for v in pipelines.values()}
+    decoder_to_backbone = {f"{v['decoder']}_{v['backbone']}_{v['task']}": v['backbone'] for v in pipelines.values()}
+
+    port = 8000
+    for d in device_list:
+        port += 1
+        site_id = d["site_manager"]
+        device_url = f"{d['ip']}:{port}"
+        device_type = d['type']
+
+        components = set(d["components"])
+
+        # find all decoders on this device that match known ones
+        decoders = [dec for dec in components if dec in decoder_to_backbone]
+
+        # infer backbone: any backbone that corresponds to these decoders
+        backbone = None
+        for dec in decoders:
+            possible_backbone = decoder_to_backbone[dec]
+            if possible_backbone in components:
+                backbone = possible_backbone
+                break
         
-    #     for backbone, root in shared_trees.items():
-    #         ancestor_size, child_size, count = lower_bound_mem(root, P)
-    #         servers = greedy_pack(root, P, ancestor_size, child_size, count)
-    #         servers = generate_redundancy(servers)
-    #         print(f"Backbone: {backbone}")
-    #         for server in servers:
-    #             print(server)
+        decoders_list = []
+        for decoder in decoders:
+            task=decoder_to_task[decoder]
+            full_task=task_to_task[task]
+            decoders_list.append({"task": task, "type": tasks[task]['type'], "path":full_task ,"requests_per_sec": d["tasks"][task][1]})
+            # build deployment entry
+        deployment = {
+            "device": device_url,
+            "device_type": device_type,
+            "backbone": backbone,
+            "decoders": decoders_list
+
+        }
+
+        # initialize site entry
+        if site_id not in sites:
+            sites[site_id] = {
+                "id": site_id,
+                "deployments": []
+            }
+
+        sites[site_id]["deployments"].append(deployment)
+
+    final_json = {"sites": list(sites.values())}
+    return final_json
 
 
 if __name__ == "__main__":
+    import json
     task_manifest=shared_packing()
     print(task_manifest)
+    final_json = build_final_json(task_manifest)
+    output_path = "deployment_plan.json"
+    with open(output_path, "w") as f:
+        json.dump(final_json, f, indent=2)
     # print("---\n")
     # normal_packing()
 
