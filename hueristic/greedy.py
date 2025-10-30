@@ -1,5 +1,6 @@
 from parser.profiler import *
 import math
+import copy
 from config import devices, tasks
 
 class TreeNode:
@@ -88,7 +89,7 @@ def greedy_pack(root, server, ancestor_size, child_size, count):
         # mem = sum(components_dict.values())
         components_dict = [comp for comp in child_size.keys()]
 
-        tasks_dict = {task: [info['peak_workload'],info['peak_workload']] for task, info in tasks.items() if task in child_size.keys()}
+        tasks_dict = {task: {'type':info['type'],'total_requested_workload':info['peak_workload'],'request_per_sec':info['peak_workload']} for task, info in tasks.items() if task in child_size.keys()}
 
         servers.append({
             'site_manager':server['site_manager'],
@@ -120,7 +121,7 @@ def greedy_pack(root, server, ancestor_size, child_size, count):
         # mem = sum(bin.values())
         components_dict = [comp for comp in child_size.keys()]
 
-        tasks_dict = {task: [info['peak_workload'],100] for task, info in tasks.items() if task in bin.keys()}
+        tasks_dict = {task: {'type':info['type'],'total_requested_workload':info['peak_workload'],'request_per_sec':info['peak_workload']} for task, info in tasks.items() if task in bin.keys()}
         servers.append({
             'site_manager':server['site_manager'],
             'name': server['name'],
@@ -130,23 +131,7 @@ def greedy_pack(root, server, ancestor_size, child_size, count):
             'tasks': tasks_dict,
             'components': components_dict
         }) 
-          
-        # for b in bins:
-        #     components_dict = {comp: components[comp]['mem'] for comp in b.keys()}
-        #     mem = sum(b.values())
-        #     tasks_dict = {task: info['peak_workload'] for task, info in tasks.items() if task in b.keys()}
-        #     servers.append({
-        #         'name': f'server{server_id}',
-        #         'tasks': tasks_dict,
-        #         'memory': mem,
-        #         'components': components_dict
-        #     })
-        #     server_id += 1
-        # parent = find_parent(root, bottleneck_node)
-        # if parent:
-        #     remove_subtree(bottleneck_node, parent)
-        # else:
-        #     root = None
+
     return servers
 
 
@@ -165,7 +150,7 @@ def check_workload(task_manifest,device_type):
     for srv in task_manifest:
         task_latency = get_task_latency(srv['tasks'])
         # as latency is in ms convert to seconds
-        cap = sum(l[device_type] * srv['tasks'][t][0] for t, l in task_latency.items())/1000
+        cap = sum(l[device_type] * srv['tasks'][t]['total_requested_workload'] for t, l in task_latency.items())/1000
         if cap > 1:
             # print(f"Warning: Server {srv['name']} exceeds capacity with {cap}")
             redundant_servers = math.ceil(cap)
@@ -173,8 +158,11 @@ def check_workload(task_manifest,device_type):
             # reduce the workload for each task in manifest by dividing by redundant_servers
             # store it in % of total workload for each task in task_manifest
             for t in srv['tasks']:
+                print(srv['tasks'][t])
                 #store it in % of total workload for each task in task_manifest
-                srv['tasks'][t] = [srv['tasks'][t][0],srv['tasks'][t][0] / redundant_servers]
+                srv['tasks'][t]['type'] = srv['tasks'][t]['type']
+                srv['tasks'][t]['total_requested_workload'] = srv['tasks'][t]['total_requested_workload']
+                srv['tasks'][t]['request_per_sec'] = srv['tasks'][t]['total_requested_workload'] / redundant_servers
     return task_manifest
         
 
@@ -192,8 +180,10 @@ def shared_packing():
     trees = sorted(trees.items(), key=lambda x: sum(1 for decoder in x[1].children for task in decoder.children), reverse=True)
 
     final_task_manifest = []
-    tasks_copy = tasks.copy()
-    while tasks_copy and servers:
+    # use a deep copy so nested dicts (like per-task dicts) are not shared
+    # between tasks_copy and the original tasks mapping
+    # tasks_copy = copy.deepcopy(tasks)
+    while tasks and servers:
         server=servers.pop()
         backbone, root=trees[0]
         print(f"Device: {server['name']}, Memory: {server['memory']} MB, Type: {server['type']}")
@@ -212,22 +202,22 @@ def shared_packing():
         packed_tasks = {}
         for srv in task_manifest:
             for t in srv['tasks']:
-                if srv['tasks'][t][1] == srv['tasks'][t][0]:
+                if srv['tasks'][t]['total_requested_workload'] == srv['tasks'][t]['request_per_sec']:
                     packed_tasks[t] = True
                 else:
-                    tasks[t]['peak_workload'] -= srv['tasks'][t][1]
+                    tasks[t]['peak_workload'] -= srv['tasks'][t]['request_per_sec']
         
         #remove packed tasks from tasks and trees
         for t in packed_tasks:
-            if t in tasks_copy:
-                del tasks_copy[t]
+            if t in tasks:
+                del tasks[t]
             #remove from tree not just this root all other roots where this task is present
             for backbone_key, tree_root in trees:
                 for decoder in tree_root.children:
                     root.children = [d for d in root.children if all(task.data != t for task in d.children)]
         trees[0]=(backbone, root)
         final_task_manifest.extend(task_manifest)
-        print(f"Remaining tasks to pack: {list(tasks_copy.keys())}")
+        print(f"Remaining tasks to pack: {list(tasks.keys())}")
     return final_task_manifest
 
 
@@ -251,6 +241,7 @@ def build_final_json(device_list):
         site_id = d["site_manager"]
         device_url = f"{d['ip']}:{port}"
         device_type = d['type']
+        tasks_info = d["tasks"]
 
         components = set(d["components"])
 
@@ -269,13 +260,14 @@ def build_final_json(device_list):
         for decoder in decoders:
             task=decoder_to_task[decoder]
             full_task=task_to_task[task]
-            decoders_list.append({"task": task, "type": tasks[task]['type'], "path":full_task ,"requests_per_sec": d["tasks"][task][1]})
+            decoders_list.append({"task": task, "type": tasks_info[task]['type'], "path":full_task})
             # build deployment entry
         deployment = {
             "device": device_url,
             "device_type": device_type,
             "backbone": backbone,
-            "decoders": decoders_list
+            "decoders": decoders_list,
+            "tasks": tasks_info
 
         }
 

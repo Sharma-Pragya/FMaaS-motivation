@@ -2,8 +2,9 @@ import json, time, threading
 import paho.mqtt.client as mqtt
 from orchestrator.config import BROKER, PORT, DEPLOYMENT_PLAN_PATH, TIMEOUT
 from traces.gamma import generate_requests
-from router import get_route
 import argparse
+from collections import defaultdict
+from router import route_trace
 
 acks = {}
 acks_lock = threading.Lock()
@@ -27,28 +28,37 @@ def load_deployment_plan():
         return json.load(f)
 
 def publish_deployments(client, plan, config, seed):
-    """Send each site's model + runtime requests."""
+    """Send each site's model + routed runtime requests."""
     num_tasks, alpha, req_rate, cv, duration = config
     print("Publishing deployments + requests to all sites...")
+
+    all_task_names = sorted({
+        dec["task"]
+        for site in plan["sites"]
+        for dep in site["deployments"]
+        for dec in dep["decoders"]
+    })
+
+    tasks = [(t, None, None) for t in all_task_names]
+    trace = generate_requests(num_tasks, alpha, req_rate, cv, duration, tasks, seed)
+
+    routed_trace = route_trace(trace, plan, seed)
+    print(routed_trace)
+    site_requests = defaultdict(list)
+    for r in routed_trace:
+        site_requests[r.site_manager].append(r.to_dict())
+    
     for site in plan["sites"]:
         site_id = site["id"]
         site_topic = f"fmaas/deploy/site/{site_id}"
 
-        ## need to work on this make common workload 
-        ## and send the appropriate request to the deployment
-        tasks = []
-        # for task_name in ["hr"]:
-        for task_name in ["vqa"]:
-            site_manager, device = get_route(task_name)
-            tasks.append((task_name, site_manager, device))
-        requests = generate_requests(num_tasks, alpha, req_rate, cv, duration, tasks, seed)
-
         msg = {
             "deployments": site["deployments"],
-            "runtime_requests": [r.to_dict() for r in requests],
+            "runtime_requests": site_requests.get(site_id, []),
         }
+
         client.publish(site_topic, json.dumps(msg))
-        print(f"Sent deployment to {site_topic}")
+        print(f"[MQTT] Sent deployment + {len(site_requests[site_id])} requests to {site_topic}")
         time.sleep(0.1)
 
 def trigger_runtime_start(client, plan):
@@ -90,7 +100,7 @@ if __name__ == "__main__":
         client.connect(BROKER, PORT, 60)
         client.loop_start()
 
-        config = (1, 1, 6, 1, 1)
+        config = (1, 1, 6, 1, 1)  # num_tasks, alpha, req_rate, cv, duration
         seed=42
         publish_deployments(client, plan, config, seed)
         wait_for_acks(site_ids)
