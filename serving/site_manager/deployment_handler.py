@@ -26,7 +26,7 @@ def _parse_hosts(device_url: str) -> tuple[str, str]:
     else:
         ssh_host = device_url
         api_base = f"http://{device_url}:8000"
-    return ssh_host, api_base
+    return ssh_host, api_base,p.port
 
 async def _ssh_start_server(ssh_host: str, conda_env: str, cmd: str,log_path:str):
     """Run remote command on gpu node via SSH (agent forwarding must be enabled)."""
@@ -51,15 +51,14 @@ async def _ssh_start_server(ssh_host: str, conda_env: str, cmd: str,log_path:str
         raise
 
 async def _deploy_one(s: DeploySpec, session: aiohttp.ClientSession):
-    ssh_host, api_base = _parse_hosts(s['device'])
-
+    ssh_host, api_base, port = _parse_hosts(s['device'])
     # choose env + server command
     if s['backbone'] == "llava":
         conda_env = vlm_env
-        server_cmd = f"python device/main.py"
-    elif s['backbone'] == "moment_large":
-        conda_env = conda_env
-        server_cmd = f"python device/main.py"
+        server_cmd = f"python device/main.py --port {port} "
+    elif s['backbone'] == "momentlarge":
+        conda_env = timeseries_env
+        server_cmd = f"python device/main.py --port {port} "
     else:
         print(f"[WARN] Unknown backbone {s['backbone']}; skipping {s['device']}")
         return

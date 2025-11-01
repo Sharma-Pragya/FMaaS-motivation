@@ -5,6 +5,7 @@ from traces.gamma import generate_requests
 import argparse
 from collections import defaultdict
 from router import route_trace
+import os
 
 acks = {}
 acks_lock = threading.Lock()
@@ -60,6 +61,21 @@ def publish_deployments(client, plan, config, seed):
         client.publish(site_topic, json.dumps(msg))
         print(f"[MQTT] Sent deployment + {len(site_requests[site_id])} requests to {site_topic}")
         time.sleep(0.1)
+    # save site_requests in csv file 
+    # request_latency_results.csv with columns site_manager, device, req_id, req_time
+    filename='site_requests.csv'
+    file_exists = os.path.isfile(filename)
+    with open(filename, 'a') as f:
+        if not file_exists:
+            f.write('site_manager,device,req_id,req_time\n')
+        for site in site_requests:
+            for record in site_requests[site]:
+                req_id=record['req_id']
+                req_time=record['req_time']
+                device=record['device']
+                f.write(f'{site},{device},{req_id},{req_time}\n')
+
+
 
 def trigger_runtime_start(client, plan):
     print("Triggering runtime start on all sites...")
@@ -72,11 +88,44 @@ def trigger_runtime_start(client, plan):
 def wait_for_acks(site_ids):
     print(f"Waiting up to {TIMEOUT}s for site ACKs...")
     start = time.time()
+    print(site_ids)
     while time.time() - start < TIMEOUT:
         with acks_lock:
             if all(s in acks for s in site_ids):
                 break
         time.sleep(1)
+    #save the request latency result from site manager acks in a single csv file not separate per site manager
+    #only first time write the header
+    #else just append the data
+    #get site requests from csv file site_requests.csv
+    site_requests = {}
+    with open('site_requests.csv', 'r') as f:
+        next(f)  # skip header
+        for line in f:
+            site_manager, device, req_id, req_time = line.strip().split(',')
+            if site_manager not in site_requests:
+                site_requests[site_manager] = {}
+            site_requests[site_manager][int(req_id)] = {
+                'device': device,
+                'req_time': float(req_time)
+            }
+    for site in site_ids:
+        if site in acks:
+            latency_data=acks[site].get('latency',[])
+            if latency_data:
+                filename='request_latency_results.csv'
+                file_exists = os.path.isfile(filename)
+                with open(filename, 'a') as f:
+                    if not file_exists:
+                        f.write('req_id,req_time,site_manager,device,latency\n')
+                    for record in latency_data:
+                        req_id=record[0]
+                        req_time = site_requests[site][req_id]['req_time']
+                        site_manager=site
+                        device = site_requests[site][req_id]['device']
+                        latency=record[1]*1000  # convert to milliseconds
+                        f.write(f'{req_id},{req_time},{site_manager},{device},{latency}\n')
+                    
     print("\nSummary:")
     for sid in site_ids:
         if sid in acks:
@@ -100,7 +149,7 @@ if __name__ == "__main__":
         client.connect(BROKER, PORT, 60)
         client.loop_start()
 
-        config = (1, 1, 6, 1, 1)  # num_tasks, alpha, req_rate, cv, duration
+        config = (1, 1, 6, 1, 10)  # num_tasks, alpha, req_rate, cv, duration
         seed=42
         publish_deployments(client, plan, config, seed)
         wait_for_acks(site_ids)

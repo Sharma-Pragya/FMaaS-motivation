@@ -33,18 +33,12 @@ def on_message(client, userdata, msg):
 async def execute_cached_requests(client):
     start = time.time()
     reqs = get_requests()
-    success = 0
-    for req in reqs:
-        try:
-            await handle_runtime_request(req)
-            success += 1
-        except Exception as e:
-            print(f"[MQTT] Request {req['req_id']} failed: {e}")
+    reqs_latency =await handle_runtime_request(reqs)
     ack = {
         "site": SITE_ID,
         "status": "completed",
-        "num_success": success,
         "total_requests": len(reqs),
+        "latency": reqs_latency,
         "runtime_duration": time.time() - start,
     }
     client.publish(f"fmaas/runtime/ack/site/{SITE_ID}", json.dumps(ack))

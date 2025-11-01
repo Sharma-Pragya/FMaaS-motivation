@@ -33,7 +33,7 @@ def load_models(backbone: str, decoders: list):
     # unload_models()
 
     print(f"[ModelLoader] Loading backbone: {backbone}")
-    if backbone == "moment_large":
+    if backbone == "momentlarge":
         from timeseries.components.backbones.moment import MomentModel
         _pipeline = Pipeline(MomentModel(DEVICE, "large"))
     elif backbone == "llava":

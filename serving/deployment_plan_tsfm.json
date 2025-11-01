@@ -4,47 +4,18 @@
       "id": "site1",
       "deployments": [
         {
-          "device": "http://10.100.20.16:8001",
+          "device": "http://10.100.70.1:8001",
           "device_type": "A100",
-          "backbone": "chronostiny",
+          "backbone": "momentlarge",
           "decoders": [
-            {
-              "task": "diasbp",
-              "type": "regression",
-              "path": "diasbp_papageissvri_mlp"
-            },
             {
               "task": "ecgclass",
               "type": "classification",
-              "path": "ecgclass_papageissvri_mlp"
-            },
-            {
-              "task": "heartrate",
-              "type": "regression",
-              "path": "heartrate_papageissvri_mlp"
-            },
-            {
-              "task": "sysbp",
-              "type": "regression",
-              "path": "sysbp_papageissvri_mlp"
+              "path": "ecgclass_momentlarge_mlp"
             }
+            
           ],
           "tasks": {
-            "heartrate": {
-              "type": "regression",
-              "total_requested_workload": 168,
-              "request_per_sec": 84.0
-            },
-            "sysbp": {
-              "type": "regression",
-              "total_requested_workload": 5,
-              "request_per_sec": 2.5
-            },
-            "diasbp": {
-              "type": "regression",
-              "total_requested_workload": 5,
-              "request_per_sec": 2.5
-            },
             "ecgclass": {
               "type": "classification",
               "total_requested_workload": 5,
@@ -53,47 +24,17 @@
           }
         },
         {
-          "device": "http://10.100.20.15:8002",
-          "device_type": "A100",
-          "backbone": "chronostiny",
+          "device": "http://10.100.70.2:8002",
+          "device_type": "A16",
+          "backbone": "momentlarge",
           "decoders": [
-            {
-              "task": "diasbp",
-              "type": "regression",
-              "path": "diasbp_papageissvri_mlp"
-            },
             {
               "task": "ecgclass",
               "type": "classification",
-              "path": "ecgclass_papageissvri_mlp"
-            },
-            {
-              "task": "heartrate",
-              "type": "regression",
-              "path": "heartrate_papageissvri_mlp"
-            },
-            {
-              "task": "sysbp",
-              "type": "regression",
-              "path": "sysbp_papageissvri_mlp"
+              "path": "ecgclass_momentlarge_mlp"
             }
           ],
           "tasks": {
-            "heartrate": {
-              "type": "regression",
-              "total_requested_workload": 84.0,
-              "request_per_sec": 84.0
-            },
-            "sysbp": {
-              "type": "regression",
-              "total_requested_workload": 2.5,
-              "request_per_sec": 2.5
-            },
-            "diasbp": {
-              "type": "regression",
-              "total_requested_workload": 2.5,
-              "request_per_sec": 2.5
-            },
             "ecgclass": {
               "type": "classification",
               "total_requested_workload": 2.5,

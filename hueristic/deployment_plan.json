@@ -4,9 +4,9 @@
       "id": "site1",
       "deployments": [
         {
-          "device": "http://10.100.20.16:8001",
+          "device": "http://10.100.135.1:8001",
           "device_type": "A100",
-          "backbone": "chronostiny",
+          "backbone": "momentlarge",
           "decoders": [
             {
               "task": "diasbp",
@@ -53,9 +53,9 @@
           }
         },
         {
-          "device": "http://10.100.20.15:8002",
-          "device_type": "A100",
-          "backbone": "chronostiny",
+          "device": "http://10.100.20.52:8002",
+          "device_type": "A16",
+          "backbone": "momentlarge",
           "decoders": [
             {
               "task": "diasbp",

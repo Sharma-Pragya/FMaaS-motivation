@@ -25,7 +25,7 @@ def initialize_dataloaders():
     d = DATASET_DIR
     # create test dataloaders
     DATASET_LOADERS = {
-        # "ecg_class": DataLoader(ECG5000Dataset({"dataset_path": f"{d}/ECG5000"}, {"task_type": "classification"}, "test"), **inference_config),
+        "ecgclass": DataLoader(ECG5000Dataset({"dataset_path": f"{d}/ECG5000"}, {"task_type": "classification"}, "test"), **inference_config),
         # "gesture_class": DataLoader(UWaveGestureLibraryALLDataset({"dataset_path": f"{d}/UWaveGestureLibraryAll"}, {"task_type": "classification"}, "test"), **inference_config),
         # "hr": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"hr"}, "test"), **inference_config),
         # "diasbp": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"diasbp"}, "test"), **inference_config),
@@ -36,7 +36,7 @@ def initialize_dataloaders():
         # "etth1": DataLoader(ETTh1Dataset({"dataset_path": f"{d}/ETTh1"}, {"task_type": "forecasting"}, "test"), **inference_config),
         # "weather": DataLoader(WeatherDataset({"dataset_path": f"{d}/Weather"}, {"task_type": "forecasting"}, "test"), **inference_config),
         # "rate": DataLoader(ExchangeDataset({"dataset_path": f"{d}/Exchange"}, {"task_type": "forecasting"}, "test"), **inference_config),
-        'vqa': DataLoader(VQADataset({"dataset_path": f"{d}/val2014"}, {"task_type": "forecasting"}, "test") ,  **inference_config)
+        # 'vqa': DataLoader(VQADataset({"dataset_path": f"{d}/val2014"}, {"task_type": "forecasting"}, "test") ,  **inference_config)
     }
     print(f"[RuntimeExecutor] Initialized {len(DATASET_LOADERS)} dataloaders.")
 
@@ -64,6 +64,7 @@ def encode_raw(arr) -> dict:
         }
 
 async def send_request(i, server, payload):
+    
     st = time.time()
     try:
         timeout = aiohttp.ClientTimeout(total=3*3600)
@@ -75,37 +76,37 @@ async def send_request(i, server, payload):
         print(f"Request {i} failed: {e}")
         data = {}
         et = time.time()
+    print(data)
     return (i, et - st, data)
 
-async def handle_runtime_request(req:dict):
-    st=time.time()
-    dataloader=load_dataloader(req['task'])
-    batch=next(iter(dataloader))
-    ## need to work on this for VLM and timeseries
-    # payload = {
-    #     "task": req.task, "req_id": req.req_id,
-    #     "x": encode_raw(batch[0].numpy()),
-    #     "mask": encode_raw(batch[1].numpy()) if len(batch)==3 else None,
-    #     "y": encode_raw(batch[-1].numpy())
-    # }
-    if 'question' in batch:
-        payload = {
-            "task": req['task'], 
-            "req_id": req['req_id'],
-            "x": encode_raw(batch['x'].numpy()),
-            "question": encode_raw(batch['question']),
-            "y": encode_raw(batch['y'])
-        }
-    #timeseries with mask and without
-    else:
-        payload = {
-            "task": req['task'], 
-            "req_id": req['req_id'],
-            "x": encode_raw(batch['x'].numpy()),
-            "mask": encode_raw(batch['mask'].numpy()) if len(batch)==3 else None,
-            "y": encode_raw(batch['y'].numpy())
-        }       
-    print(f"[RuntimeExecutor] Executing {req['task']} on device {req['device']}")
-    i, total_time, data = await send_request(req['req_id'], req['device'], payload)
-    print(f"[RuntimeExecutor] Completed {req['task']} ({i}) in {total_time}")
-    return {'req_id':i,"latency":total_time,'device_info':data}
+async def handle_runtime_request(reqs:dict):
+    tasks: List[asyncio.Task] = []
+    start = time.time()
+    for req in reqs:
+        await asyncio.sleep(start + req['req_time'] - time.time())
+        dataloader=load_dataloader(req['task'])
+        batch=next(iter(dataloader))
+        if 'question' in batch:
+            payload = {
+                "task": req['task'], 
+                "req_id": req['req_id'],
+                "x": encode_raw(batch['x'].numpy()),
+                "question": encode_raw(batch['question']),
+                # "y": encode_raw(batch['y'])
+            }
+        #timeseries with mask and without
+        else:
+            payload = {
+                "task": req['task'], 
+                "req_id": req['req_id'],
+                "x": encode_raw(batch['x'].numpy()),
+                "mask": encode_raw(batch['mask'].numpy()) if len(batch)==3 else None,
+                # "y": encode_raw(batch['y'].numpy())
+            }  
+
+        print(f"[RuntimeExecutor] Executing {req['task']} on device {req['device']}")
+        print(req['device'])
+        task = asyncio.create_task(send_request(req['req_id'], req['device']+'/predict', payload))
+        tasks.append(task)
+    latency = await asyncio.gather(*tasks)
+    return latency
