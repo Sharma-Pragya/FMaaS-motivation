@@ -229,12 +229,13 @@ def build_final_json(device_list):
     """
 
     sites = {}
-
+    print(pipelines)
     # reverse lookup: decoder -> backbone
     decoder_to_task = {f"{v['decoder']}_{v['backbone']}_{v['task']}": v['task'] for v in pipelines.values()}
-    task_to_task = {f"{v['task']}":f"{v['task']}_{v['backbone']}_{v['decoder']}"  for v in pipelines.values()}
+    decoder_to_fulltask = {f"{v['decoder']}_{v['backbone']}_{v['task']}":f"{v['task']}_{v['backbone']}_{v['decoder']}"  for v in pipelines.values()}
     decoder_to_backbone = {f"{v['decoder']}_{v['backbone']}_{v['task']}": v['backbone'] for v in pipelines.values()}
-
+    print(decoder_to_fulltask)
+    print(decoder_to_task)
     port = 8000
     for d in device_list:
         port += 1
@@ -259,7 +260,7 @@ def build_final_json(device_list):
         decoders_list = []
         for decoder in decoders:
             task=decoder_to_task[decoder]
-            full_task=task_to_task[task]
+            full_task=decoder_to_fulltask[decoder]
             decoders_list.append({"task": task, "type": tasks_info[task]['type'], "path":full_task})
             # build deployment entry
         deployment = {
@@ -287,7 +288,6 @@ def build_final_json(device_list):
 if __name__ == "__main__":
     import json
     task_manifest=shared_packing()
-    print(task_manifest)
     final_json = build_final_json(task_manifest)
     output_path = "deployment_plan.json"
     with open(output_path, "w") as f:

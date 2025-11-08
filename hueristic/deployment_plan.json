@@ -4,29 +4,29 @@
       "id": "site1",
       "deployments": [
         {
-          "device": "http://10.100.135.1:8001",
-          "device_type": "A100",
-          "backbone": "momentlarge",
+          "device": "http://10.100.20.16:8001",
+          "device_type": "A16",
+          "backbone": "chronostiny",
           "decoders": [
             {
               "task": "diasbp",
               "type": "regression",
-              "path": "diasbp_papageissvri_mlp"
+              "path": "diasbp_chronostiny_mlp"
             },
             {
               "task": "ecgclass",
               "type": "classification",
-              "path": "ecgclass_papageissvri_mlp"
+              "path": "ecgclass_chronostiny_mlp"
             },
             {
               "task": "heartrate",
               "type": "regression",
-              "path": "heartrate_papageissvri_mlp"
+              "path": "heartrate_chronostiny_mlp"
             },
             {
               "task": "sysbp",
               "type": "regression",
-              "path": "sysbp_papageissvri_mlp"
+              "path": "sysbp_chronostiny_mlp"
             }
           ],
           "tasks": {
@@ -53,29 +53,29 @@
           }
         },
         {
-          "device": "http://10.100.20.52:8002",
+          "device": "http://10.100.20.15:8002",
           "device_type": "A16",
-          "backbone": "momentlarge",
+          "backbone": "chronostiny",
           "decoders": [
             {
               "task": "diasbp",
               "type": "regression",
-              "path": "diasbp_papageissvri_mlp"
+              "path": "diasbp_chronostiny_mlp"
             },
             {
               "task": "ecgclass",
               "type": "classification",
-              "path": "ecgclass_papageissvri_mlp"
+              "path": "ecgclass_chronostiny_mlp"
             },
             {
               "task": "heartrate",
               "type": "regression",
-              "path": "heartrate_papageissvri_mlp"
+              "path": "heartrate_chronostiny_mlp"
             },
             {
               "task": "sysbp",
               "type": "regression",
-              "path": "sysbp_papageissvri_mlp"
+              "path": "sysbp_chronostiny_mlp"
             }
           ],
           "tasks": {
