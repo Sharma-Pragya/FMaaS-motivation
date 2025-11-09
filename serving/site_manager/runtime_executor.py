@@ -26,10 +26,10 @@ def initialize_dataloaders():
     # create test dataloaders
     DATASET_LOADERS = {
         "ecgclass": DataLoader(ECG5000Dataset({"dataset_path": f"{d}/ECG5000"}, {"task_type": "classification"}, "test"), **inference_config),
+        "heartrate": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"hr"}, "test"), **inference_config),
+        "diasbp": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"diasbp"}, "test"), **inference_config),
+        "sysbp": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"sysbp"}, "test"), **inference_config),
         # "gesture_class": DataLoader(UWaveGestureLibraryALLDataset({"dataset_path": f"{d}/UWaveGestureLibraryAll"}, {"task_type": "classification"}, "test"), **inference_config),
-        # "hr": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"hr"}, "test"), **inference_config),
-        # "diasbp": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"diasbp"}, "test"), **inference_config),
-        # "sysbp": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"sysbp"}, "test"), **inference_config),
         # "ecl": DataLoader(ECLDataset({"dataset_path": f"{d}/ElectricityLoad-data"}, {"task_type": "forecasting"}, "test"), **inference_config),
         # "traffic": DataLoader(TrafficDataset({"dataset_path": f"{d}/Traffic"}, {"task_type": "forecasting"}, "test"), **inference_config),
         # "illness": DataLoader(IllnessDataset({"dataset_path": f"{d}/ILLNESS"}, {"task_type": "forecasting"}, "test", forecast_horizon=192), **inference_config),
@@ -92,7 +92,6 @@ async def handle_runtime_request(reqs:dict):
                 "req_id": req['req_id'],
                 "x": encode_raw(batch['x'].numpy()),
                 "question": encode_raw(batch['question']),
-                # "y": encode_raw(batch['y'])
             }
         #timeseries with mask and without
         else:
@@ -101,7 +100,6 @@ async def handle_runtime_request(reqs:dict):
                 "req_id": req['req_id'],
                 "x": encode_raw(batch['x'].numpy()),
                 "mask": encode_raw(batch['mask'].numpy()) if len(batch)==3 else None,
-                # "y": encode_raw(batch['y'].numpy())
             }  
 
         print(f"[RuntimeExecutor] Executing {req['task']} on device {req['device']}")

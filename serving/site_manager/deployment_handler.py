@@ -56,14 +56,14 @@ async def _deploy_one(s: DeploySpec, session: aiohttp.ClientSession):
     if s['backbone'] == "llava":
         conda_env = vlm_env
         server_cmd = f"python device/main.py --port {port} "
-    elif s['backbone'] == "momentlarge":
+    elif s['backbone'] in ["momentlarge","momentbase",'momentsmall',"chronostiny"] :
         conda_env = timeseries_env
         server_cmd = f"python device/main.py --port {port} "
     else:
         print(f"[WARN] Unknown backbone {s['backbone']}; skipping {s['device']}")
         return
 
-    log_path = f"./device/{ssh_host}_{s['backbone']}.log"
+    log_path = f"./device/logs/{ssh_host}_{s['backbone']}.log"
 
     await _ssh_start_server(ssh_host, conda_env, server_cmd, log_path)
     

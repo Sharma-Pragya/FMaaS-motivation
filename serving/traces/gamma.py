@@ -35,7 +35,7 @@ class Request:
         }
 
 def generate_requests(num_tasks, alpha, req_rate, cv, duration,
-                      tasks, # (base_dir, adapter_dir)
+                      tasks, 
                       seed=42)-> List[Request]:
     np.random.seed(seed)
 

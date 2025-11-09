@@ -12,10 +12,11 @@ def parse_plan(plan_json):
         site_manager = site["id"]
         for deploy in site["deployments"]:
             device = deploy["device"]
+            backbone=deploy['backbone']
             for dec in deploy["decoders"]:
                 task = dec["task"]
                 rate = deploy["tasks"][task]['request_per_sec']
-                task_routes.setdefault(task, []).append((site_manager, device, rate))
+                task_routes.setdefault(task, []).append((site_manager, device, backbone, rate))
                 task_totals[task] = task_totals.get(task, 0.0) + rate
     return task_routes, task_totals
 
@@ -35,11 +36,13 @@ def route_trace(trace_requests, plan_json, seed=42):
 
         routes = task_routes[task]
         total_task_rate = task_totals[task]
-        probs = np.array([r[2] for r in routes]) / total_task_rate
+        print(total_task_rate)
+        print(routes)
+        probs = np.array([r[3] for r in routes]) / total_task_rate
         idx = np.random.choice(len(routes), p=probs)
-        site, device, _ = routes[idx]
+        site, device, backbone, _ = routes[idx]
 
-        routed.append(Request(req.req_id, task, site, device, req.req_time))
+        routed.append(Request(req.req_id, task, site, device, backbone, req.req_time))
 
     return routed
 

@@ -4,7 +4,7 @@ from timeseries.pipeline import Pipeline
 from timeseries.components.decoders.regression.mlp import MLPDecoder as RegressionMLP
 from timeseries.components.decoders.classification.mlp import MLPDecoder as ClassificationMLP
 from timeseries.components.decoders.forecasting.mlp import MLPDecoder as ForecastingMLP
-from device.config import DEVICE
+from device.config import DEVICE, DECODERS
 
 _pipeline = None
 _decoders = {}
@@ -36,6 +36,33 @@ def load_models(backbone: str, decoders: list):
     if backbone == "momentlarge":
         from timeseries.components.backbones.moment import MomentModel
         _pipeline = Pipeline(MomentModel(DEVICE, "large"))
+    elif backbone == "momentsmall":
+        from timeseries.components.backbones.moment import MomentModel
+        _pipeline = Pipeline(MomentModel(DEVICE, "small"))
+    elif backbone == "momentbase":
+        from timeseries.components.backbones.moment import MomentModel
+        _pipeline = Pipeline(MomentModel(DEVICE, "base"))
+    elif backbone == "chronostiny":
+        from timeseries.components.backbones.chronos import ChronosModel
+        _pipeline = Pipeline(ChronosModel(DEVICE, "tiny"))
+    elif backbone == "chronosbase":
+        from timeseries.components.backbones.chronos import ChronosModel
+        _pipeline = Pipeline(ChronosModel(DEVICE, "base"))
+    elif backbone == "chronoslarge":
+        from timeseries.components.backbones.chronos import ChronosModel
+        _pipeline = Pipeline(ChronosModel(DEVICE, "large"))
+    elif backbone == "chronosmini": 
+        from timeseries.components.backbones.chronos import ChronosModel
+        _pipeline = Pipeline(ChronosModel(DEVICE, "mini"))
+    elif backbone == "papageis":
+        from timeseries.components.backbones.papagei import PapageiModel
+        _pipeline = Pipeline(PapageiModel(DEVICE, "papagei_p"))
+    elif backbone == "papageip":
+        from timeseries.components.backbones.papagei import PapageiModel
+        _pipeline = Pipeline(PapageiModel(DEVICE, "papagei_s"))
+    elif backbone == "papageissvri":
+        from timeseries.components.backbones.papagei import PapageiModel
+        _pipeline = Pipeline(PapageiModel(DEVICE, "papagei_s_svri"))
     elif backbone == "llava":
         from timeseries.components.backbones.llava import LlavaModel
         _pipeline = Pipeline(LlavaModel(DEVICE, "llava-1.5-7b-hf"))
@@ -45,16 +72,17 @@ def load_models(backbone: str, decoders: list):
     for dec in decoders:
         task, dtype, path = dec["task"], dec["type"], dec["path"]
         print(f"[ModelLoader] Loading decoder: {task} ({dtype}) from {path}")
-
         if dtype == "regression":
-            decoder = RegressionMLP(device=DEVICE, cfg={"input_dim": 1024, "output_dim": 1, "hidden_dim": 128})
+            decoder_config=DECODERS[f'mlp_{backbone}_{dtype}']['decoder_config']
+            decoder = RegressionMLP(device=decoder_config['DEVICE'],cfg=decoder_config['cfg'])
         elif dtype == "classification":
-            output_dim = 5 if "ecg" in task else 10
-            decoder = ClassificationMLP(device=DEVICE, cfg={"input_dim": 1024, "output_dim": output_dim, "hidden_dim": 128})
+            decoder_config=DECODERS[f'mlp_{backbone}_{task}']['decoder_config']
+            decoder = ClassificationMLP(device=decoder_config['DEVICE'],cfg=decoder_config['cfg'])
         elif dtype == "forecasting":
-            decoder = ForecastingMLP(device=DEVICE, cfg={"input_dim": 64 * 1024, "output_dim": 192, "dropout": 0.1})
+            decoder_config=DECODERS[f'mlp_{backbone}_{dtype}']['decoder_config']
+            decoder = ForecastingMLP(device=decoder_config['DEVICE'],cfg=decoder_config['cfg'])
         else:
-            raise ValueError(f"Unknown decoder type: {dtype}")
+            raise ValueError(f"Unknown decoder type: {dtype} or mlp_{backbone}_{dtype} or mlp_{backbone}_{task}")
 
         _decoders[task] = _pipeline.add_decoder(decoder, load=True, trained=True, path=path)
 

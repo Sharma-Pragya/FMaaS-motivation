@@ -1,7 +1,7 @@
-from parser.profiler import *
+from hueristic.parser.profiler import *
 import math
 import copy
-from config import devices, tasks
+import json
 
 class TreeNode:
     """Node for representing a component in the pipeline tree."""
@@ -12,7 +12,7 @@ class TreeNode:
     def add_child(self, child):
         self.children.append(child)
 
-def create_tree():
+def create_tree(tasks):
     """Create a tree for each backbone, representing the pipeline architecture."""
     covered_backbones = {}
     for id, pipeline in pipelines.items():
@@ -79,7 +79,7 @@ def first_fit_binpack(bin, children, capacity):
     return [bin]
 
 
-def greedy_pack(root, server, ancestor_size, child_size, count):
+def greedy_pack(root, tasks, server, ancestor_size, child_size, count):
     """Greedy packing of nodes into servers using bin packing."""
     servers = []
     server_id = 0
@@ -166,10 +166,10 @@ def check_workload(task_manifest,device_type):
     return task_manifest
         
 
-def shared_packing():
+def shared_packing(devices, tasks):
     """Main function to run shared packing and print results."""
     #create trees for each backbone, keep task on backbone which statisfies it.
-    trees = create_tree()
+    trees = create_tree(tasks)
 
     # #descending order of devices for config based on memory
     servers = []
@@ -193,7 +193,7 @@ def shared_packing():
         
         #based on memory packing
         ancestor_size, child_size, count = lower_bound_mem(root, device_memory)
-        task_manifest = greedy_pack(root, server, ancestor_size, child_size, count)
+        task_manifest = greedy_pack(root,tasks, server, ancestor_size, child_size, count)
         #check workload for all task in task_manifest 
         task_manifest = check_workload(task_manifest,device_type)
 
@@ -229,7 +229,6 @@ def build_final_json(device_list):
     """
 
     sites = {}
-    print(pipelines)
     # reverse lookup: decoder -> backbone
     decoder_to_task = {f"{v['decoder']}_{v['backbone']}_{v['task']}": v['task'] for v in pipelines.values()}
     decoder_to_fulltask = {f"{v['decoder']}_{v['backbone']}_{v['task']}":f"{v['task']}_{v['backbone']}_{v['decoder']}"  for v in pipelines.values()}
@@ -286,10 +285,10 @@ def build_final_json(device_list):
 
 
 if __name__ == "__main__":
-    import json
-    task_manifest=shared_packing()
+    from serving.orchestrator.user_config import devices, tasks
+    task_manifest=shared_packing(devices,tasks)
     final_json = build_final_json(task_manifest)
-    output_path = "deployment_plan.json"
+    output_path = "../deployment_plan.json"
     with open(output_path, "w") as f:
         json.dump(final_json, f, indent=2)
     # print("---\n")
