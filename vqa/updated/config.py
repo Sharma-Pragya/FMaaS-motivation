@@ -47,11 +47,25 @@ models_directory = str(MODELS_ROOT.resolve())
 # log_file = "combined_metrics_gesture.csv"
 
 # Activity Recognition Dataset (Human Action Recognition)
-DATASET_ROOT = ROOT / "dataset/activity_recognition"
+# DATASET_ROOT = ROOT / "dataset/activity_recognition"
+# dataset_directory = str(DATASET_ROOT.resolve())
+# dataset = str(DATASET_ROOT.resolve())
+# dataset_json = str((DATASET_ROOT / "labels.json").resolve())
+# log_file = "combined_metrics_activity.csv"
+
+# Crowd Counting Dataset (VisDrone/DroneCrowd)
+# DATASET_ROOT = ROOT / "dataset/crowd_counting"
+# dataset_directory = str(DATASET_ROOT.resolve())
+# dataset = str(DATASET_ROOT.resolve())
+# dataset_json = str((DATASET_ROOT / "labels.json").resolve())
+# log_file = "combined_metrics_crowd.csv"
+
+# Scene Classification Dataset (SUN397)
+DATASET_ROOT = ROOT / "dataset/scene_classification"
 dataset_directory = str(DATASET_ROOT.resolve())
 dataset = str(DATASET_ROOT.resolve())
 dataset_json = str((DATASET_ROOT / "labels.json").resolve())
-log_file = "combined_metrics_activity.csv"
+log_file = "combined_metrics_scene.csv"
 
 hf_token_path = "../../hf-token.txt"
 
@@ -66,7 +80,7 @@ hf_token_path = "../../hf-token.txt"
 # allenai/Molmo-7B-D-0924
 # meta-llama/Llama-3.2-11B-Vision-Instruct
 # openbmb/MiniCPM-V-2_6
-model_name = ['vikhyatk/moondream2',
+model_name = ['vikhyatk/moondream2', 
                 "llava-hf/llava-1.5-7b-hf",
                 "llava-hf/llava-1.5-13b-hf",
                 "llava-hf/llava-v1.6-vicuna-13b-hf",

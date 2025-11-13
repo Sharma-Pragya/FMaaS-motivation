@@ -82,7 +82,7 @@ def main():
     for model in model_list:
         print(f"\nRunning model: {model}")
         subprocess.run([
-            "python", "gpu_run_model_inference_gesture.py",
+            "python", "gpu_run_model_inference_scene.py",
             "--model_name", model,
             "--log_file", log_file
         ], check=True)
