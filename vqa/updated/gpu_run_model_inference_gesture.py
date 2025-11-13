@@ -269,6 +269,7 @@ def run_inference(model, processor, data, handle):
         try:
             with torch.no_grad():
                 if is_moondream:
+                    print(PROMPT_TEXT)
                     answer = model.query(image, question + " Please answer in a few words.")["answer"]
                     input_tokens = len(question.split())
                     generated_tokens = len(answer.split())

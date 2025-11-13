@@ -109,6 +109,7 @@ def load_model(model_name, task_name, handle):
                 model_name,
                 cache_dir=models_directory,
                 torch_dtype=dtype,
+                attn_implementation="flash_attention_2",
                 device_map={"": "cuda:0"} if device.startswith("cuda") else None
             ).to(device)
 
@@ -120,6 +121,7 @@ def load_model(model_name, task_name, handle):
                 model_name,
                 cache_dir=models_directory,
                 torch_dtype=dtype,
+                attn_implementation="flash_attention_2",
                 device_map={"": "cuda:0"} if device.startswith("cuda") else None
             ).to(device)
 
@@ -173,6 +175,7 @@ def load_model(model_name, task_name, handle):
                 model_name,
                 cache_dir=models_directory,
                 torch_dtype=dtype,
+                attn_implementation="flash_attention_2",
                 device_map={"": "cuda:0"} if device.startswith("cuda") else None,
                 trust_remote_code=True
             ).to(device)
@@ -215,7 +218,22 @@ def load_model(model_name, task_name, handle):
             processor = tokenizer
 
         else:
-            raise ValueError(f"Unsupported model: {model_name}")
+            # Generic fallback for unsupported models
+            print(f"⚠️  Model '{model_name}' not explicitly supported. Attempting generic loading with flash_attention_2...")
+            processor = AutoProcessor.from_pretrained(
+                model_name,
+                cache_dir=models_directory,
+                trust_remote_code=True,
+                use_fast=True
+            )
+            model = AutoModelForCausalLM.from_pretrained(
+                model_name,
+                cache_dir=models_directory,
+                torch_dtype=dtype,
+                attn_implementation="flash_attention_2",
+                device_map={"": "cuda:0"} if device.startswith("cuda") else None,
+                trust_remote_code=True
+            ).to(device)
 
     except Exception as e:
         raise RuntimeError(f"Failed to load model {model_name}: {e}")
@@ -244,6 +262,7 @@ def run_inference(model, processor, image, prompt, model_name, task_name):
     # ============= MOONDREAM =============
     if "moondream" in mname:
         # Same for ALL tasks - Moondream has unique API
+        print(prompt)
         answer = model.query(image, prompt)["answer"]
         input_tokens = len(prompt.split())
         generated_tokens = len(answer.split())

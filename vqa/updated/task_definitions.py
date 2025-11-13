@@ -3,6 +3,8 @@ Task definitions: prompts, parsers, and evaluation logic
 All task-specific code in ONE place
 """
 from pathlib import Path
+import re
+from typing import Optional
 
 ROOT = Path(__file__).resolve().parent
 
@@ -50,11 +52,12 @@ TASK_REGISTRY = {
         "dataset_root": ROOT / "dataset/ocr",
         "dataset_json": "labels.json",
         "prompt": (
-            "Read all the text visible in this image. "
-            "Provide only the text content, nothing else. "
+            "You are given an image of a single handwritten digit. "
+            "Answer with exactly one character that is a digit from 0 to 9. "
+            "Do not include any extra words."
             "Please answer in one word."
         ),
-        "parser": "parse_ocr_label",
+        "parser": "parse_ocr_digit",
         "evaluator": "evaluate_ocr",
     },
 
@@ -74,7 +77,7 @@ TASK_REGISTRY = {
             "Answer with the sign type only (e.g., 'stop sign', 'speed limit', 'yield', etc.). "
             "Please answer in a few words."
         ),
-        "parser": "parse_classification_label",
+        "parser": "parse_traffic_label",
         "evaluator": "evaluate_substring_match",
     },
 
@@ -83,10 +86,11 @@ TASK_REGISTRY = {
         "dataset_json": "labels.json",
         "prompt": (
             "What hand gesture is being shown in this image? "
-            "Answer with the gesture name only. "
+            "Answer with the gesture name only, without any explanation. "
+            "Use simple terms like 'thumbs up', 'peace', 'stop', 'ok', 'fist', 'call', etc. "
             "Please answer in a few words."
         ),
-        "parser": "parse_classification_label",
+        "parser": "parse_gesture_label",
         "evaluator": "evaluate_substring_match",
     },
 
@@ -95,10 +99,11 @@ TASK_REGISTRY = {
         "dataset_json": "labels.json",
         "prompt": (
             "What activity is the person doing in this image? "
-            "Answer with the activity name only. "
-            "Please answer in a few words."
+            "Answer with the activity name only, without any explanation. "
+            "Choose from: calling, clapping, cycling, dancing, drinking, eating, fighting, "
+            "hugging, laughing, listening to music, running, sitting, sleeping, texting, or using laptop."
         ),
-        "parser": "parse_classification_label",
+        "parser": "parse_activity_label",
         "evaluator": "evaluate_substring_match",
     },
 
@@ -109,7 +114,6 @@ TASK_REGISTRY = {
             "What is the main object in this image? "
             "Answer with one object name from the COCO dataset. "
             "Provide only the object name without any explanation. "
-            "Please answer in one word."
         ),
         "parser": "parse_object_detection_label",
         "evaluator": "evaluate_object_detection",
@@ -120,8 +124,8 @@ TASK_REGISTRY = {
         "dataset_json": "labels.json",
         "prompt": (
             "What is the main object or subject in this image? "
-            "Answer with a single word or short phrase. "
-            "Please answer in one word."
+            "Answer with one class name from ImageNet-1k. "
+            "Provide only the class name without any explanation."
         ),
         "parser": "parse_classification_label",
         "evaluator": "evaluate_image_classification",
@@ -177,8 +181,29 @@ def parse_scene_label(text: str) -> str:
 
     return text
 
+# Word to digit mapping for OCR
+_WORD2DIGIT = {
+    "zero": "0", "one": "1", "two": "2", "three": "3", "four": "4",
+    "five": "5", "six": "6", "seven": "7", "eight": "8", "nine": "9",
+}
+
+def parse_ocr_digit(text: str) -> str:
+    """Parse OCR digit - matches individual workflow exactly"""
+    if not text:
+        return ""
+    t = text.strip().lower()
+    # Extract digit using regex
+    m = re.search(r"\b([0-9])\b", t)
+    if m:
+        return m.group(1)
+    # Convert words to digits ("one" → "1")
+    for w, d in _WORD2DIGIT.items():
+        if re.search(rf"\b{re.escape(w)}\b", t):
+            return d
+    return ""
+
 def parse_ocr_label(text: str) -> str:
-    """Parse OCR text"""
+    """Parse OCR text - generic whitespace normalization"""
     if not text:
         return ""
     # Normalize whitespace but preserve text
@@ -188,10 +213,44 @@ def parse_vqa_label(text: str) -> str:
     """Parse VQA answer"""
     if not text:
         return ""
-    # Simple cleanup
+    # Just lowercase - no punctuation removal to match individual workflow
+    return text.lower()
+
+def parse_traffic_label(text: str) -> str:
+    """Parse traffic sign label - matches individual workflow exactly"""
+    if not text:
+        return ""
+    # Strip and lowercase
     text = text.strip().lower()
+    # Remove common punctuation
     text = text.strip('.,!?;:"\'"')
-    return ' '.join(text.split())
+    # Remove extra whitespace
+    text = ' '.join(text.split())
+    return text
+
+def parse_gesture_label(text: str) -> str:
+    """Parse gesture label - matches individual workflow exactly"""
+    if not text:
+        return ""
+    # Strip and lowercase
+    text = text.strip().lower()
+    # Remove common punctuation
+    text = text.strip('.,!?;:"\'"')
+    # Remove extra whitespace
+    text = ' '.join(text.split())
+    return text
+
+def parse_activity_label(text: str) -> str:
+    """Parse activity label - matches individual workflow exactly"""
+    if not text:
+        return ""
+    # Strip and lowercase
+    text = text.strip().lower()
+    # Remove common punctuation
+    text = text.strip('.,!?;:"\'"')
+    # Remove extra whitespace
+    text = ' '.join(text.split())
+    return text
 
 def parse_classification_label(text: str) -> str:
     """Generic classification label parser"""
@@ -298,7 +357,11 @@ def get_parser(parser_name: str):
         "parse_crowd_label": parse_crowd_label,
         "parse_scene_label": parse_scene_label,
         "parse_ocr_label": parse_ocr_label,
+        "parse_ocr_digit": parse_ocr_digit,
         "parse_vqa_label": parse_vqa_label,
+        "parse_traffic_label": parse_traffic_label,
+        "parse_gesture_label": parse_gesture_label,
+        "parse_activity_label": parse_activity_label,
         "parse_classification_label": parse_classification_label,
         "parse_object_detection_label": parse_object_detection_label,
     }

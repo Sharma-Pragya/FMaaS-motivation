@@ -47,11 +47,11 @@ models_directory = str(MODELS_ROOT.resolve())
 # log_file = "combined_metrics_gesture.csv"
 
 # Activity Recognition Dataset (Human Action Recognition)
-# DATASET_ROOT = ROOT / "dataset/activity_recognition"
-# dataset_directory = str(DATASET_ROOT.resolve())
-# dataset = str(DATASET_ROOT.resolve())
-# dataset_json = str((DATASET_ROOT / "labels.json").resolve())
-# log_file = "combined_metrics_activity.csv"
+DATASET_ROOT = ROOT / "dataset/activity_recognition"
+dataset_directory = str(DATASET_ROOT.resolve())
+dataset = str(DATASET_ROOT.resolve())
+dataset_json = str((DATASET_ROOT / "labels.json").resolve())
+log_file = "combined_metrics_activity.csv"
 
 # Crowd Counting Dataset (VisDrone/DroneCrowd)
 # DATASET_ROOT = ROOT / "dataset/crowd_counting"
@@ -61,11 +61,11 @@ models_directory = str(MODELS_ROOT.resolve())
 # log_file = "combined_metrics_crowd.csv"
 
 # Scene Classification Dataset (SUN397)
-DATASET_ROOT = ROOT / "dataset/scene_classification"
-dataset_directory = str(DATASET_ROOT.resolve())
-dataset = str(DATASET_ROOT.resolve())
-dataset_json = str((DATASET_ROOT / "labels.json").resolve())
-log_file = "combined_metrics_scene.csv"
+# DATASET_ROOT = ROOT / "dataset/scene_classification"
+# dataset_directory = str(DATASET_ROOT.resolve())
+# dataset = str(DATASET_ROOT.resolve())
+# dataset_json = str((DATASET_ROOT / "labels.json").resolve())
+# log_file = "combined_metrics_scene.csv"
 
 hf_token_path = "../../hf-token.txt"
 

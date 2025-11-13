@@ -24,12 +24,12 @@ MODELS = [
 
 # Define all tasks to evaluate
 TASKS = [
+    'gesture',
     'crowd',
     'scene',
     'ocr',
     'vqa',
     'traffic',
-    'gesture',
     'activity',
     'object_detection',
     'image_classification',
