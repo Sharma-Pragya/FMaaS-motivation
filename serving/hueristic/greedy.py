@@ -158,7 +158,6 @@ def check_workload(task_manifest,device_type):
             # reduce the workload for each task in manifest by dividing by redundant_servers
             # store it in % of total workload for each task in task_manifest
             for t in srv['tasks']:
-                print(srv['tasks'][t])
                 #store it in % of total workload for each task in task_manifest
                 srv['tasks'][t]['type'] = srv['tasks'][t]['type']
                 srv['tasks'][t]['total_requested_workload'] = srv['tasks'][t]['total_requested_workload']
@@ -233,8 +232,6 @@ def build_final_json(device_list):
     decoder_to_task = {f"{v['decoder']}_{v['backbone']}_{v['task']}": v['task'] for v in pipelines.values()}
     decoder_to_fulltask = {f"{v['decoder']}_{v['backbone']}_{v['task']}":f"{v['task']}_{v['backbone']}_{v['decoder']}"  for v in pipelines.values()}
     decoder_to_backbone = {f"{v['decoder']}_{v['backbone']}_{v['task']}": v['backbone'] for v in pipelines.values()}
-    print(decoder_to_fulltask)
-    print(decoder_to_task)
     port = 8000
     for d in device_list:
         port += 1

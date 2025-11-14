@@ -1,0 +1,58 @@
+{
+  "sites": [
+    {
+      "id": "site2",
+      "deployments": [
+        {
+          "device": "http://10.100.20.53:8001",
+          "device_type": "A16",
+          "backbone": "chronostiny",
+          "decoders": [
+            {
+              "task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_chronostiny_mlp"
+            },
+            {
+              "task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_chronostiny_mlp"
+            },
+            {
+              "task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_chronostiny_mlp"
+            },
+            {
+              "task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_chronostiny_mlp"
+            }
+          ],
+          "tasks": {
+            "heartrate": {
+              "type": "regression",
+              "total_requested_workload": 13.246666666666666,
+              "request_per_sec": 13.246666666666666
+            },
+            "sysbp": {
+              "type": "regression",
+              "total_requested_workload": 11.206666666666667,
+              "request_per_sec": 11.206666666666667
+            },
+            "diasbp": {
+              "type": "regression",
+              "total_requested_workload": 13.066666666666666,
+              "request_per_sec": 13.066666666666666
+            },
+            "ecgclass": {
+              "type": "classification",
+              "total_requested_workload": 12.48,
+              "request_per_sec": 12.48
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

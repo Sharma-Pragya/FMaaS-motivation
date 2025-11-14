@@ -4,4 +4,4 @@ RESULTS_DIR = "result/"
 DEPLOYMENT_PLAN_PATH = "deployment_plan.json"
 BROKER = "broker.emqx.io"
 PORT = 8084
-TIMEOUT = 300  # in milliseconds
+TIMEOUT = 600  # in milliseconds
