@@ -1,17 +1,23 @@
 
 devices = {
-  'device1': {
-    'type': 'A16',
-    'mem': 16000,  # in MB
-    'ip': 'http://10.100.20.50',
-    'site_manager':'site1'
-  },
+  # 'device1': {
+  #   'type': 'A16',
+  #   'mem': 16000,  # in MB
+  #   'ip': 'http://10.100.20.54',
+  #   'site_manager':'site2'
+  # },
   # 'device2': {
   #   'type': 'A16',
   #   'mem': 16000,  # in MB
-  #   'ip': 'http://10.100.20.14',
-  #   'site_manager':'site1',
+  #   'ip': 'http://10.100.20.48',
+  #   'site_manager':'site2',
   # },
+  'device3': {
+    'type': 'A16',
+    'mem': 16000,  # in MB
+    'ip': 'http://10.100.20.53',
+    'site_manager':'site2',
+  },
   # 'device3': {
   #   'type': 'A16',
   #   'mem': 16000,  # in MB

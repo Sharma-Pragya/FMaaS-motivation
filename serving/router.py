@@ -36,8 +36,6 @@ def route_trace(trace_requests, plan_json, seed=42):
 
         routes = task_routes[task]
         total_task_rate = task_totals[task]
-        print(total_task_rate)
-        print(routes)
         probs = np.array([r[3] for r in routes]) / total_task_rate
         idx = np.random.choice(len(routes), p=probs)
         site, device, backbone, _ = routes[idx]

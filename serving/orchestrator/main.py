@@ -6,24 +6,65 @@ from collections import defaultdict
 from router import route_trace
 import os
 from hueristic.greedy import shared_packing, build_final_json
-
+import ssl
+from storage import write_data_to_file
 acks = {}
 acks_lock = threading.Lock()
+all_acks_event = threading.Event()
+connected_event = threading.Event()
 
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
         print("Orchestrator connected to MQTT broker")
-        client.subscribe("fmaas/runtime/ack/#")
+        client.subscribe("fmaas/deploytime/ack/#",qos=1)
+        client.subscribe("fmaas/runtime/ack/#", qos=1)
+        connected_event.set()
     else:
         print(f"MQTT connection failed (code {rc})")
 
 def on_message(client, userdata, msg):
+    topic = msg.topic
     payload = json.loads(msg.payload.decode())
-    site = payload.get("site", "unknown")
-    with acks_lock:
-        acks[site] = payload
-    print(f"ACK from {site}: {payload}")
+    if topic.startswith("fmaas/deploytime/ack"):
+        site = payload.get("site", "unknown")
+        with acks_lock:
+            acks[site] = payload
+            if all(s in acks for s in site_ids):
+                all_acks_event.set()  # signal done
+        print(f"ACK from {site}: {payload}")
+            
+    elif topic.startswith("fmaas/runtime/ack"):
+        site = payload["site"]
 
+        with acks_lock:
+            if site not in acks:
+                acks[site] = {
+                    "total_requests": payload["total_requests"],
+                    "latency": []
+                }
+            
+            acks[site]["latency"].extend(payload["latency"])
+
+            print(acks[site]["total_requests"], len(acks[site]["latency"]))
+
+            # === Check completion correctly ===
+            done = True
+            for s in site_ids:
+                if s not in acks:
+                    done = False
+                    break
+                if len(acks[s]["latency"]) != acks[s]["total_requests"]:
+                    done = False
+                    break
+            
+            if done:
+                print("All sites complete! Waiting to flush...")
+                time.sleep(2)
+                for s in site_ids:
+                    write_data_to_file(s, acks[s])
+                all_acks_event.set()
+            
+    
 def run_deployment_plan(devices, tasks_slo):
     task_manifest=shared_packing(devices,tasks_slo)
     final_json = build_final_json(task_manifest)
@@ -33,29 +74,37 @@ def run_deployment_plan(devices, tasks_slo):
 
 def publish_deployments(client, plan, routed_trace):
     """Send each site's model + routed runtime requests."""
-
     site_requests = defaultdict(list)
     for r in routed_trace:
         site_requests[r.site_manager].append(r.to_dict())
     
     for site in plan["sites"]:
         site_id = site["id"]
-        site_topic = f"fmaas/deploy/site/{site_id}"
-
-        msg = {
+        reqs=site_requests.get(site_id, [])
+        chunk_length=3000
+        i=0
+        while i<len(reqs):
+            request_msg = {
+            "runtime_requests": reqs[i:i+chunk_length],
+            }
+            print(f"[MQTT] Sent request chunck {i} to {i+chunk_length} {site_id}")
+            client.publish(f"fmaas/deploy/site/{site_id}/req", json.dumps(request_msg),qos=1)
+            i+=chunk_length
+            time.sleep(5)
+        deploy_msg = {
             "deployments": site["deployments"],
-            "runtime_requests": site_requests.get(site_id, []),
         }
-        client.publish(site_topic, json.dumps(msg))
-        print(f"[MQTT] Sent deployment + {len(site_requests[site_id])} requests to {site_topic}")
+        client.publish(f"fmaas/deploy/site/{site_id}", json.dumps(deploy_msg),qos=1)
+        print(f"[MQTT] Sent deployment to {site_id}")
         time.sleep(0.1)
+
     # save site_requests in csv file 
     # request_latency_results.csv with columns site_manager, device, req_id, req_time
     filename='site_requests.csv'
     file_exists = os.path.isfile(filename)
     with open(filename, 'a') as f:
         if not file_exists:
-            f.write('site_manager,device,backbone,req_id,task,req_time,\n')
+            f.write('site_manager,device,backbone,req_id,task,req_time\n')
         for site in site_requests:
             for record in site_requests[site]:
                 req_id=record['req_id']
@@ -66,67 +115,30 @@ def publish_deployments(client, plan, routed_trace):
                 f.write(f'{site},{device},{backbone},{req_id},{task},{req_time}\n')
 
 
+    # save site_requests in csv file 
+    # request_latency_results.csv with columns site_manager, device, req_id, req_time
+    filename='site_requests.csv'
+    file_exists = os.path.isfile(filename)
+    with open(filename, 'a') as f:
+        if not file_exists:
+            f.write('site_manager,device,backbone,req_id,task,req_time\n')
+        for site in site_requests:
+            for record in site_requests[site]:
+                req_id=record['req_id']
+                req_time=record['req_time']
+                device=record['device']
+                backbone=record['backbone']
+                task=record['task']
+                f.write(f'{site},{device},{backbone},{req_id},{task},{req_time}\n')
+
 
 def trigger_runtime_start(client, plan):
     print("Triggering runtime start on all sites...")
     for site in plan["sites"]:
         topic = f"fmaas/runtime/start/site/{site['id']}"
-        client.publish(topic, json.dumps({"command": "start"}))
+        client.publish(topic, json.dumps({"command": "start"}),qos=1)
         print(f"Runtime start published to {topic}")
         time.sleep(0.05)
-
-def wait_for_acks(site_ids):
-    print(f"Waiting up to {TIMEOUT}s for site ACKs...")
-    start = time.time()
-    print(site_ids)
-    while time.time() - start < TIMEOUT:
-        with acks_lock:
-            if all(s in acks for s in site_ids):
-                break
-        time.sleep(1)
-    #save the request latency result from site manager acks in a single csv file not separate per site manager
-    #only first time write the header
-    #else just append the data
-    #get site requests from csv file site_requests.csv
-    site_requests = {}
-    with open('site_requests.csv', 'r') as f:
-        next(f)  # skip header
-        for line in f:
-            site_manager, device, backbone, req_id, task, req_time = line.strip().split(',')
-            if site_manager not in site_requests:
-                site_requests[site_manager] = {}
-            site_requests[site_manager][int(req_id)] = {
-                'device': device,
-                'backbone': backbone,
-                'task':task,
-                'req_time': float(req_time)
-
-            }
-    for site in site_ids:
-        if site in acks:
-            latency_data=acks[site].get('latency',[])
-            if latency_data:
-                filename='request_latency_results.csv'
-                file_exists = os.path.isfile(filename)
-                with open(filename, 'a') as f:
-                    if not file_exists:
-                        f.write('req_id,req_time,site_manager,device,backbone,task,latency\n')
-                    for record in latency_data:
-                        req_id=record[0]
-                        req_time = site_requests[site][req_id]['req_time']
-                        site_manager=site
-                        device = site_requests[site][req_id]['device']
-                        backbone=site_requests[site][req_id]['backbone']
-                        task= site_requests[site][req_id]['task']
-                        latency=record[1]*1000  # convert to milliseconds
-                        f.write(f'{req_id},{req_time},{site_manager},{device},{backbone},{task},{latency}\n')
-                    
-    print("\nSummary:")
-    for sid in site_ids:
-        if sid in acks:
-            print(f"{sid}: {acks[sid]}")
-        else:
-            print(f"No ACK from {sid} (timeout)")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -136,7 +148,6 @@ if __name__ == "__main__":
 
     #extract tasks and devices from config.py
     from user_config import devices, tasks 
-    print("Publishing deployments + requests to all sites...")
     all_task_names = sorted({t for t in tasks.keys()})
     routed_tasks = [(t, None, None, None) for t in all_task_names] #task, site, device, backbone
     seed=42
@@ -158,7 +169,7 @@ if __name__ == "__main__":
     # print("Updated tasks:", tasks)
 
     from traces.chatbotarena import generate_requests
-    req_rate, duration = (10, 10) #max (200,300)
+    req_rate, duration = (10,300) #max (50,300), (100,300), (150,300), (200,300)
     trace,avg_workload_per_task,peak_workload_per_task = generate_requests(req_rate, duration, routed_tasks, seed)
 
     #update tasks dict with peak workload based on real world trace
@@ -172,31 +183,43 @@ if __name__ == "__main__":
 
     site_ids = [s["id"] for s in plan["sites"]]
     if args.deploy_only:
+        acks.clear()
+        all_acks_event.clear()
         client = mqtt.Client(client_id="orchestrator", transport="websockets")
-        client.tls_set()
+        client.enable_logger()
+        # client.tls_set()
+        client.tls_set(cert_reqs=ssl.CERT_NONE)
+        client.tls_insecure_set(True)
         client.on_connect = on_connect
         client.on_message = on_message
         print(f"Connecting to {BROKER}:{PORT} ...")
         client.connect(BROKER, PORT, 60)
-        client.loop_start()
+        client.loop_start() 
+        # WAIT until we are actually subscribed
+        if not connected_event.wait(timeout=10):
+            raise RuntimeError("MQTT not connected/subscribed in time.")
+        print("Publishing deployments + requests to all sites...")
         publish_deployments(client, plan, routed_trace)
-        wait_for_acks(site_ids)
-        client.loop_stop()
+        all_acks_event.wait(timeout=TIMEOUT)
         client.disconnect()
+        client.loop_stop()        
         print("Deployment phase complete.")
 
     elif args.run_only:
+        acks.clear()
+        all_acks_event.clear()
         client = mqtt.Client(client_id="orchestrator", transport="websockets")
-        client.tls_set()
+        client.enable_logger()
+        # client.tls_set()
+        client.tls_set(cert_reqs=ssl.CERT_NONE)
+        client.tls_insecure_set(True)
         client.on_connect = on_connect
         client.on_message = on_message
         print(f"Connecting to {BROKER}:{PORT} ...")
         client.connect(BROKER, PORT, 60)
         client.loop_start()
-
         trigger_runtime_start(client, plan)
-        wait_for_acks(site_ids)
-
-        client.loop_stop()
+        all_acks_event.wait(timeout=TIMEOUT)
         client.disconnect()
+        client.loop_stop()
         print("Runtime phase complete.")

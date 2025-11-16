@@ -1,10 +1,10 @@
 {
   "sites": [
     {
-      "id": "site1",
+      "id": "site2",
       "deployments": [
         {
-          "device": "http://10.100.20.50:8001",
+          "device": "http://10.100.20.53:8001",
           "device_type": "A16",
           "backbone": "chronostiny",
           "decoders": [
@@ -32,23 +32,23 @@
           "tasks": {
             "heartrate": {
               "type": "regression",
-              "total_requested_workload": 2.6,
-              "request_per_sec": 2.6
+              "total_requested_workload": 2.25,
+              "request_per_sec": 2.25
             },
             "sysbp": {
               "type": "regression",
-              "total_requested_workload": 2.5,
-              "request_per_sec": 2.5
+              "total_requested_workload": 2.3466666666666667,
+              "request_per_sec": 2.3466666666666667
             },
             "diasbp": {
               "type": "regression",
-              "total_requested_workload": 2.1,
-              "request_per_sec": 2.1
+              "total_requested_workload": 2.8033333333333332,
+              "request_per_sec": 2.8033333333333332
             },
             "ecgclass": {
               "type": "classification",
-              "total_requested_workload": 2.8,
-              "request_per_sec": 2.8
+              "total_requested_workload": 2.6,
+              "request_per_sec": 2.6
             }
           }
         }

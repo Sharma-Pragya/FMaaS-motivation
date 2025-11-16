@@ -76,7 +76,6 @@ async def send_request(i, server, payload):
         print(f"Request {i} failed: {e}")
         data = {}
         et = time.time()
-    print(data)
     return (i, et - st, data)
 
 async def handle_runtime_request(reqs:dict):
@@ -102,8 +101,7 @@ async def handle_runtime_request(reqs:dict):
                 "mask": encode_raw(batch['mask'].numpy()) if len(batch)==3 else None,
             }  
 
-        print(f"[RuntimeExecutor] Executing {req['task']} on device {req['device']}")
-        print(req['device'])
+        # print(f"[RuntimeExecutor] Executing {req['task']} on device {req['device']}")
         task = asyncio.create_task(send_request(req['req_id'], req['device']+'/predict', payload))
         tasks.append(task)
     latency = await asyncio.gather(*tasks)
