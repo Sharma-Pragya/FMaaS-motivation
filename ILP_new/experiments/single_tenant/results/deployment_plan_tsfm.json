@@ -1,0 +1,199 @@
+{
+  "sites": [
+    {
+      "id": "site1",
+      "deployments": [
+        {
+          "device": "10.100.20.23",
+          "device_type": "A16",
+          "backbone": "papageissvri",
+          "decoders": [
+            {
+              "task": "trafficfore",
+              "type": "classification",
+              "path": "trafficfore_papageissvri_mlp"
+            }
+          ],
+          "tasks": {
+            "trafficfore": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            }
+          }
+        },
+        {
+          "device": "10.100.20.18",
+          "device_type": "A16",
+          "backbone": "papageissvri",
+          "decoders": [
+            {
+              "task": "weatherfore",
+              "type": "classification",
+              "path": "weatherfore_papageissvri_mlp"
+            }
+          ],
+          "tasks": {
+            "weatherfore": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            }
+          }
+        },
+        {
+          "device": "10.100.20.19",
+          "device_type": "A16",
+          "backbone": "chronosmini",
+          "decoders": [
+            {
+              "task": "diasbp",
+              "type": "classification",
+              "path": "diasbp_chronosmini_mlp"
+            }
+          ],
+          "tasks": {
+            "diasbp": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            }
+          }
+        },
+        {
+          "device": "10.100.20.20",
+          "device_type": "A16",
+          "backbone": "chronossmall",
+          "decoders": [
+            {
+              "task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_chronossmall_mlp"
+            }
+          ],
+          "tasks": {
+            "gestureclass": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            }
+          }
+        },
+        {
+          "device": "10.100.20.22",
+          "device_type": "A16",
+          "backbone": "chronossmall",
+          "decoders": [
+            {
+              "task": "heartrate",
+              "type": "classification",
+              "path": "heartrate_chronossmall_mlp"
+            }
+          ],
+          "tasks": {
+            "heartrate": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            }
+          }
+        },
+        {
+          "device": "10.100.20.17",
+          "device_type": "A100",
+          "backbone": "chronostiny",
+          "decoders": [
+            {
+              "task": "sysbp",
+              "type": "classification",
+              "path": "sysbp_chronostiny_mlp"
+            }
+          ],
+          "tasks": {
+            "sysbp": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            }
+          }
+        },
+        {
+          "device": "10.100.20.21",
+          "device_type": "A16",
+          "backbone": "momentlarge",
+          "decoders": [
+            {
+              "task": "etth1fore",
+              "type": "classification",
+              "path": "etth1fore_momentlarge_mlp"
+            }
+          ],
+          "tasks": {
+            "etth1fore": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            }
+          }
+        },
+        {
+          "device": "10.100.20.25",
+          "device_type": "A16",
+          "backbone": "momentsmall",
+          "decoders": [
+            {
+              "task": "elecfore",
+              "type": "classification",
+              "path": "elecfore_momentsmall_mlp"
+            }
+          ],
+          "tasks": {
+            "elecfore": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            }
+          }
+        },
+        {
+          "device": "10.100.20.24",
+          "device_type": "A16",
+          "backbone": "momentsmall",
+          "decoders": [
+            {
+              "task": "ratefore",
+              "type": "classification",
+              "path": "ratefore_momentsmall_mlp"
+            }
+          ],
+          "tasks": {
+            "ratefore": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            }
+          }
+        },
+        {
+          "device": "10.100.20.16",
+          "device_type": "A100",
+          "backbone": "papageis",
+          "decoders": [
+            {
+              "task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_papageis_mlp"
+            }
+          ],
+          "tasks": {
+            "ecgclass": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

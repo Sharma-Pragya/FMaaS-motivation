@@ -1,0 +1,116 @@
+{
+  "config": {
+    "name": "mixed_multi_tenant_baseline",
+    "description": "Single-tenant ILP experiment with mixed VLM and TSFM workloads",
+    "sites": {
+      "site1": {
+        "devices": {
+          "10.100.20.16": {
+            "type": "A6000",
+            "vram_mb": 48000
+          },
+          "10.100.20.17": {
+            "type": "A6000",
+            "vram_mb": 48000
+          },
+          "10.100.20.18": {
+            "type": "A6000",
+            "vram_mb": 48000
+          },
+          "10.100.20.19": {
+            "type": "A6000",
+            "vram_mb": 48000
+          },
+          "10.100.20.20": {
+            "type": "A16",
+            "vram_mb": 16000
+          },
+          "10.100.20.21": {
+            "type": "A16",
+            "vram_mb": 16000
+          },
+          "10.100.20.22": {
+            "type": "A16",
+            "vram_mb": 16000
+          },
+          "10.100.20.23": {
+            "type": "A16",
+            "vram_mb": 16000
+          }
+        }
+      }
+    },
+    "tasks": {
+      "activity_recognition": {
+        "latency_slo_ms": 1000,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      },
+      "object_detection": {
+        "latency_slo_ms": 1500,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      },
+      "vqa": {
+        "latency_slo_ms": 1500,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      },
+      "ocr": {
+        "latency_slo_ms": 800,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      },
+      "heartrate": {
+        "latency_slo_ms": 100,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      },
+      "diasbp": {
+        "latency_slo_ms": 100,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      },
+      "ecgclass": {
+        "latency_slo_ms": 100,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      },
+      "sysbp": {
+        "latency_slo_ms": 100,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      }
+    },
+    "solver": {
+      "time_limit_s": 60,
+      "log_to_console": false
+    }
+  },
+  "status": "OPTIMAL",
+  "objective": 5.0,
+  "deployments": 5,
+  "devices_used": 4,
+  "deployed_models": [
+    {
+      "model": "vikhyatk/moondream2",
+      "device": "10.100.20.18"
+    },
+    {
+      "model": "tsfm_p1",
+      "device": "10.100.20.22"
+    },
+    {
+      "model": "tsfm_p12",
+      "device": "10.100.20.21"
+    },
+    {
+      "model": "tsfm_p38",
+      "device": "10.100.20.20"
+    },
+    {
+      "model": "tsfm_p96",
+      "device": "10.100.20.22"
+    }
+  ]
+}

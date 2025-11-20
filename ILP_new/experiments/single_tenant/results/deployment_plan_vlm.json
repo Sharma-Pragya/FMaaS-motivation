@@ -1,0 +1,115 @@
+{
+  "sites": [
+    {
+      "id": "site1",
+      "deployments": [
+        {
+          "device": "10.100.20.22",
+          "device_type": "A6000",
+          "backbone": "vikhyatk/moondream2",
+          "decoders": [],
+          "tasks": {
+            "activity_recognition": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.1508356821359893
+            },
+            "crowd_counting": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.1508356821359893
+            },
+            "gesture_recognition": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.1508356821359893
+            },
+            "image_classification": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.1508356821359893
+            },
+            "object_detection": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.1508356821359893
+            },
+            "ocr": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.1508356821359893
+            },
+            "scene_classification": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.1508356821359893
+            },
+            "traffic_classification": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.1508356821359893
+            },
+            "vqa": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.1508356821359893
+            }
+          }
+        },
+        {
+          "device": "10.100.20.24",
+          "device_type": "A6000",
+          "backbone": "vikhyatk/moondream2",
+          "decoders": [],
+          "tasks": {
+            "activity_recognition": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.8491643178640108
+            },
+            "crowd_counting": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.8491643178640107
+            },
+            "gesture_recognition": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.8491643178640107
+            },
+            "image_classification": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.8491643178640107
+            },
+            "object_detection": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.8491643178640107
+            },
+            "ocr": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.8491643178640107
+            },
+            "scene_classification": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.8491643178640107
+            },
+            "traffic_classification": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.8491643178640107
+            },
+            "vqa": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.8491643178640107
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
