@@ -12,7 +12,7 @@ class TreeNode:
     def add_child(self, child):
         self.children.append(child)
 
-def create_tree(tasks):
+def create_tree(tasks,server_type):
     """Create a tree for each backbone, representing the pipeline architecture."""
     covered_backbones = {}
     for id, pipeline in pipelines.items():
@@ -29,6 +29,8 @@ def create_tree(tasks):
                 continue  # Skip if pipeline metric is less than task requirement
             elif tasks[task.data]['metric']=='mae' and metric[id] > tasks[task.data]['value']:
                 continue  # Skip if pipeline metric is less than task requirement
+            elif latency[id][server_type]>tasks[task.data]['latency']:
+                continue
             print(f"Adding task {task.data} under backbone {backbone}")
             decoder.add_child(task)
             root.add_child(decoder)
@@ -167,16 +169,10 @@ def check_workload(task_manifest,device_type):
 
 def shared_packing(devices, tasks):
     """Main function to run shared packing and print results."""
-    #create trees for each backbone, keep task on backbone which statisfies it.
-    trees = create_tree(tasks)
-
     # #descending order of devices for config based on memory
     servers = []
     for device_name, device_info in sorted(devices.items(), key=lambda x: x[1]['mem'], reverse=True):
         servers.append({'name': device_name,'type':device_info['type'], 'memory': device_info['mem'],'ip':device_info['ip'],'site_manager':device_info['site_manager']})
-
-    #sort the trees based on number of tasks (leaves) on root (descending)
-    trees = sorted(trees.items(), key=lambda x: sum(1 for decoder in x[1].children for task in decoder.children), reverse=True)
 
     final_task_manifest = []
     # use a deep copy so nested dicts (like per-task dicts) are not shared
@@ -184,11 +180,17 @@ def shared_packing(devices, tasks):
     # tasks_copy = copy.deepcopy(tasks)
     while tasks and servers:
         server=servers.pop()
-        backbone, root=trees[0]
         print(f"Device: {server['name']}, Memory: {server['memory']} MB, Type: {server['type']}")
         device_memory = server['memory']
         device_type = server['type']
         device_name = server['name']
+        #create trees for each backbone, keep task on backbone which statisfies it.
+        trees = create_tree(tasks,device_type)
+
+        #sort the trees based on number of tasks (leaves) on root (descending)
+        trees = sorted(trees.items(), key=lambda x: sum(1 for decoder in x[1].children for task in decoder.children), reverse=True)
+        
+        backbone, root=trees[0]
         
         #based on memory packing
         ancestor_size, child_size, count = lower_bound_mem(root, device_memory)
@@ -211,10 +213,10 @@ def shared_packing(devices, tasks):
             if t in tasks:
                 del tasks[t]
             #remove from tree not just this root all other roots where this task is present
-            for backbone_key, tree_root in trees:
-                for decoder in tree_root.children:
-                    root.children = [d for d in root.children if all(task.data != t for task in d.children)]
-        trees[0]=(backbone, root)
+            for _, tree_root in trees:
+                tree_root.children = [d for d in tree_root.children if all(task.data != t for task in d.children)]
+
+        trees = [t for t in trees if t[1].children]
         final_task_manifest.extend(task_manifest)
         print(f"Remaining tasks to pack: {list(tasks.keys())}")
     return final_task_manifest
