@@ -419,6 +419,15 @@ def main():
         choices=["vlm", "tsfm", "mixed"],
         help="Pipeline data source",
     )
+    parser.add_argument(
+        "--minimize",
+        type=str,
+        nargs="+",
+        default=["all"],
+        choices=["all", "deployments", "deployments_devices",
+                 "deployments_devices_waste", "deployments_devices_waste_modelsize"],
+        help="Objective mode(s) to run (default: all)",
+    )
     args = parser.parse_args()
 
     # Resolve config path
@@ -442,6 +451,19 @@ def main():
 
     print(f"Experiment: {config['name']}")
 
+    # Expand "all" into all minimize modes
+    if "all" in args.minimize:
+        minimize_modes = [
+            "deployments",
+            "deployments_devices",
+            "deployments_devices_waste",
+            "deployments_devices_waste_modelsize"
+        ]
+    else:
+        minimize_modes = args.minimize
+
+    print(f"Will run {len(minimize_modes)} objective mode(s): {', '.join(minimize_modes)}")
+
     # Load pipeline data
     print(f"Loading {args.data.upper()} pipeline data...")
     components, pipelines, latency_data, metric_data = load_pipeline_data(args.data)
@@ -458,150 +480,223 @@ def main():
     # Get solver settings
     solver_settings = get_solver_settings(config)
 
-    # Run ILP
-    print(f"\n--- Running Multi-Tenant ILP (time_limit={solver_settings['time_limit']}s) ---")
+    # Store results for all modes
+    all_results = {}
 
-    result = build_and_solve(
-        devices=ilp_inputs["devices"],
-        models=ilp_inputs["models"],
-        tasks=ilp_inputs["tasks"],
-        demands=ilp_inputs["demands"],
-        support=ilp_inputs["support"],
-        accuracy=ilp_inputs["accuracy"],
-        latency=ilp_inputs["latency"],
-        vram_model=ilp_inputs["vram_model"],
-        vram_device=ilp_inputs["vram_device"],
-        Ptmd=ilp_inputs["Ptmd"],
-        Amin=ilp_inputs["Amin"],
-        minimize="deployments",
-        time_limit=solver_settings["time_limit"],
-        log_to_console=solver_settings["log_to_console"],
-    )
+    # Loop through each minimize mode
+    for minimize_mode in minimize_modes:
+        print(f"\n{'='*70}")
+        print(f"Running Multi-Tenant ILP with minimize='{minimize_mode}'")
+        print(f"{'='*70}")
 
-    # Print results
-    print(f"\n--- Results ---")
-    print(f"Status: {result['status']}")
-    print(f"Objective (deployments): {result.get('obj')}")
+        result = build_and_solve(
+            devices=ilp_inputs["devices"],
+            models=ilp_inputs["models"],
+            tasks=ilp_inputs["tasks"],
+            demands=ilp_inputs["demands"],
+            support=ilp_inputs["support"],
+            accuracy=ilp_inputs["accuracy"],
+            latency=ilp_inputs["latency"],
+            vram_model=ilp_inputs["vram_model"],
+            vram_device=ilp_inputs["vram_device"],
+            Ptmd=ilp_inputs["Ptmd"],
+            Amin=ilp_inputs["Amin"],
+            minimize=minimize_mode,
+            time_limit=solver_settings["time_limit"],
+            log_to_console=solver_settings["log_to_console"],
+        )
 
-    if result['status'] in ('OPTIMAL', 'TIME_LIMIT'):
-        x = result.get('x', {})
-        deployed = [(m, d) for (m, d), v in x.items() if v > 0.5]
-        print(f"Deployed models: {len(deployed)}")
+        # Store result
+        all_results[minimize_mode] = result
 
-        # Group by device
-        by_device = {}
-        for m, d in deployed:
-            by_device.setdefault(d, []).append(m)
+        # Print results
+        print(f"\n--- Results ({minimize_mode}) ---")
+        print(f"Status: {result['status']}")
+        print(f"Objective Value: {result.get('obj')}")
 
-        print(f"Devices used: {len(by_device)}")
+        # Print objective breakdown
+        if "objective_components" in result:
+            comp = result["objective_components"]
+            print(f"  O1 (Deployments):     {comp['O1_deployments']}")
+            print(f"  O2 (Devices Used):    {comp['O2_devices']}")
+            print(f"  O3 (Wasted Memory):   {comp['O3_waste_mb']:.1f} MB")
+            print(f"  O4 (Total Model Mem): {comp['O4_total_mem_mb']:.1f} MB")
 
-        # Show deployments
-        print("\nDeployments:")
-        for d in sorted(by_device.keys()):
-            device_type = ilp_inputs["devices"][d]["type"]
-            models_on_device = by_device[d]
+        if result['status'] in ('OPTIMAL', 'TIME_LIMIT'):
+            x = result.get('x', {})
+            deployed = [(m, d) for (m, d), v in x.items() if v > 0.5]
+            print(f"Deployed models: {len(deployed)}")
 
-            # Calculate total memory on this device
-            total_mem = sum(ilp_inputs["vram_model"].get(m, 0) for m in models_on_device)
-            device_cap = ilp_inputs["vram_device"].get(device_type, 0)
+            # Group by device
+            by_device = {}
+            for m, d in deployed:
+                by_device.setdefault(d, []).append(m)
 
-            print(f"  {d} ({device_type}): {len(models_on_device)} models, {total_mem:.1f}/{device_cap:.1f} MB")
+            print(f"Devices used: {len(by_device)}")
 
-            for model_id in models_on_device:
-                # Handle both VLM (backbone names) and TSFM (pipeline IDs)
-                if model_id in pipelines:
-                    # TSFM mode: model_id is pipeline ID
-                    task = pipelines[model_id]['task']
-                    backbone = pipelines[model_id]['backbone'].split('/')[-1][:20]
-                    mem = ilp_inputs["vram_model"].get(model_id, 0)
-                    print(f"    - {model_id}: {backbone} -> {task} ({mem:.1f} MB)")
-                else:
-                    # VLM mode: model_id is backbone name
-                    tasks_served = [info['task'] for info in pipelines.values()
-                                   if info['backbone'] == model_id]
-                    backbone_short = model_id.split('/')[-1][:20]
-                    mem = ilp_inputs["vram_model"].get(model_id, 0)
-                    print(f"    - {backbone_short} -> {len(tasks_served)} tasks ({mem:.1f} MB)")
+            # Show deployments
+            print("\nDeployments:")
+            for d in sorted(by_device.keys()):
+                device_type = ilp_inputs["devices"][d]["type"]
+                models_on_device = by_device[d]
 
-        # Save results
-        results_dir = os.path.join(os.path.dirname(__file__), "results")
-        os.makedirs(results_dir, exist_ok=True)
+                # Calculate total memory on this device
+                total_mem = sum(ilp_inputs["vram_model"].get(m, 0) for m in models_on_device)
+                device_cap = ilp_inputs["vram_device"].get(device_type, 0)
 
-        results_file = os.path.join(results_dir, f"{config['name']}.json")
-        with open(results_file, 'w') as f:
-            json.dump({
+                print(f"  {d} ({device_type}): {len(models_on_device)} models, {total_mem:.1f}/{device_cap:.1f} MB")
+
+                for model_id in models_on_device:
+                    # Handle both VLM (backbone names) and TSFM (pipeline IDs)
+                    if model_id in pipelines:
+                        # TSFM mode: model_id is pipeline ID
+                        task = pipelines[model_id]['task']
+                        backbone = pipelines[model_id]['backbone'].split('/')[-1][:20]
+                        mem = ilp_inputs["vram_model"].get(model_id, 0)
+                        print(f"    - {model_id}: {backbone} -> {task} ({mem:.1f} MB)")
+                    else:
+                        # VLM mode: model_id is backbone name
+                        tasks_served = [info['task'] for info in pipelines.values()
+                                       if info['backbone'] == model_id]
+                        backbone_short = model_id.split('/')[-1][:20]
+                        mem = ilp_inputs["vram_model"].get(model_id, 0)
+                        print(f"    - {backbone_short} -> {len(tasks_served)} tasks ({mem:.1f} MB)")
+
+            # Save results
+            results_dir = os.path.join(os.path.dirname(__file__), "results")
+            os.makedirs(results_dir, exist_ok=True)
+
+            results_file = os.path.join(results_dir, f"{config['name']}_{minimize_mode}.json")
+            result_data = {
                 "config": config,
+                "minimize_mode": minimize_mode,
                 "status": result["status"],
                 "objective": result.get("obj"),
                 "deployments": len(deployed),
                 "devices_used": len(by_device),
                 "deployed_models": [{"model": m, "device": d} for m, d in deployed],
-            }, f, indent=2)
-        print(f"\nSaved results to: {results_file}")
+            }
 
-        # Save deployment plan in serving format
-        r = result.get('r', {})
-        deployment_entries = []
+            # Add objective breakdown if available
+            if "objective_components" in result:
+                result_data["objective_components"] = result["objective_components"]
 
-        for device in by_device:
-            models_on_device = by_device[device]
-            device_type = ilp_inputs["devices"][device]["type"]
+            with open(results_file, 'w') as f:
+                json.dump(result_data, f, indent=2)
+            print(f"\nSaved results to: {results_file}")
 
-            for model_id in models_on_device:
-                # Calculate request rates for each task routed to this deployment
-                task_routing = {}
-                for (task, model, dev), fraction in r.items():
-                    if model == model_id and dev == device and fraction > 0.001:
-                        demand = float(ilp_inputs['demands'].get(task, 1.0))
-                        req_per_sec = demand * fraction
-                        task_routing[task] = {
-                            "type": "classification",
-                            "total_requested_workload": demand,
-                            "request_per_sec": req_per_sec
+            # Save deployment plan in serving format
+            r = result.get('r', {})
+            deployment_entries = []
+
+            for device in by_device:
+                models_on_device = by_device[device]
+                device_type = ilp_inputs["devices"][device]["type"]
+
+                for model_id in models_on_device:
+                    # Calculate request rates for each task routed to this deployment
+                    task_routing = {}
+                    for (task, model, dev), fraction in r.items():
+                        if model == model_id and dev == device and fraction > 0.001:
+                            demand = float(ilp_inputs['demands'].get(task, 1.0))
+                            req_per_sec = demand * fraction
+                            task_routing[task] = {
+                                "type": "classification",
+                                "total_requested_workload": demand,
+                                "request_per_sec": req_per_sec
+                            }
+
+                    if model_id in pipelines:
+                        # TSFM mode: model_id is pipeline ID
+                        info = pipelines[model_id]
+                        entry = {
+                            "device": device,
+                            "device_type": device_type,
+                            "backbone": info['backbone'],
+                            "decoders": [{
+                                "task": info['task'],
+                                "type": "classification",
+                                "path": f"{info['task']}_{info['backbone']}_{info['decoder']}"
+                            }],
+                            "tasks": task_routing
                         }
+                    else:
+                        # VLM mode: model_id is backbone name
+                        entry = {
+                            "device": device,
+                            "device_type": device_type,
+                            "backbone": model_id,
+                            "decoders": [],
+                            "tasks": task_routing
+                        }
+                    deployment_entries.append(entry)
 
-                if model_id in pipelines:
-                    # TSFM mode: model_id is pipeline ID
-                    info = pipelines[model_id]
-                    entry = {
-                        "device": device,
-                        "device_type": device_type,
-                        "backbone": info['backbone'],
-                        "decoders": [{
-                            "task": info['task'],
-                            "type": "classification",
-                            "path": f"{info['task']}_{info['backbone']}_{info['decoder']}"
-                        }],
-                        "tasks": task_routing
-                    }
-                else:
-                    # VLM mode: model_id is backbone name
-                    entry = {
-                        "device": device,
-                        "device_type": device_type,
-                        "backbone": model_id,
-                        "decoders": [],
-                        "tasks": task_routing
-                    }
-                deployment_entries.append(entry)
+            deployment_plan = {
+                "sites": [{
+                    "id": "site1",
+                    "deployments": deployment_entries
+                }]
+            }
 
-        deployment_plan = {
-            "sites": [{
-                "id": "site1",
-                "deployments": deployment_entries
-            }]
+            # Save deployment plan to results directory
+            plan_file = os.path.join(results_dir, f"deployment_plan_{args.data}_{minimize_mode}.json")
+            with open(plan_file, 'w') as f:
+                json.dump(deployment_plan, f, indent=2)
+            print(f"Saved deployment plan to: {plan_file}")
+
+        elif result['status'] == 'INFEASIBLE':
+            print("\nModel is INFEASIBLE!")
+            if result.get('tasks_with_no_feasible_triple'):
+                print(f"Tasks with no feasible options: {result['tasks_with_no_feasible_triple']}")
+
+    # Print summary comparison table
+    print(f"\n{'='*70}")
+    print("SUMMARY: Comparison Across All Objective Modes")
+    print(f"{'='*70}")
+
+    if all_results:
+        # Print header
+        print(f"{'Mode':<40} | {'O1':>4} | {'O2':>4} | {'O3 (MB)':>10} | {'O4 (MB)':>12} | {'Status':<10}")
+        print("-" * 95)
+
+        # Print each mode's results
+        for mode in minimize_modes:
+            result = all_results.get(mode, {})
+            status = result.get('status', 'N/A')
+            comp = result.get('objective_components', {})
+            O1 = comp.get('O1_deployments', 0)
+            O2 = comp.get('O2_devices', 0)
+            O3 = comp.get('O3_waste_mb', 0.0)
+            O4 = comp.get('O4_total_mem_mb', 0.0)
+
+            print(f"{mode:<40} | {O1:>4} | {O2:>4} | {O3:>10.1f} | {O4:>12.1f} | {status:<10}")
+
+        # Save summary
+        results_dir = os.path.join(os.path.dirname(__file__), "results")
+        summary_file = os.path.join(results_dir, f"{config['name']}_summary.json")
+        summary_data = {
+            "config_name": config.get('name', 'unnamed'),
+            "data_source": args.data,
+            "modes_run": minimize_modes,
+            "results_by_mode": {}
         }
 
-        # Save deployment plan to results directory
-        plan_file = os.path.join(results_dir, f"deployment_plan_{args.data}.json")
-        with open(plan_file, 'w') as f:
-            json.dump(deployment_plan, f, indent=2)
-        print(f"Saved deployment plan to: {plan_file}")
+        for mode, result in all_results.items():
+            comp = result.get('objective_components', {})
+            summary_data["results_by_mode"][mode] = {
+                "status": result.get('status'),
+                "objective_total": result.get('obj'),
+                "O1_deployments": comp.get('O1_deployments', 0),
+                "O2_devices": comp.get('O2_devices', 0),
+                "O3_waste_mb": comp.get('O3_waste_mb', 0.0),
+                "O4_total_mem_mb": comp.get('O4_total_mem_mb', 0.0)
+            }
 
-    elif result['status'] == 'INFEASIBLE':
-        print("\nModel is INFEASIBLE!")
-        if result.get('tasks_with_no_feasible_triple'):
-            print(f"Tasks with no feasible options: {result['tasks_with_no_feasible_triple']}")
+        with open(summary_file, 'w') as f:
+            json.dump(summary_data, f, indent=2)
+        print(f"\nSaved summary to: {summary_file}")
+    else:
+        print("No results to summarize.")
 
 
 if __name__ == "__main__":

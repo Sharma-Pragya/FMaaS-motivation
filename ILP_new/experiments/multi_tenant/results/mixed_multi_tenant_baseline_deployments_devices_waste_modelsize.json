@@ -1,0 +1,123 @@
+{
+  "config": {
+    "name": "mixed_multi_tenant_baseline",
+    "description": "Single-tenant ILP experiment with mixed VLM and TSFM workloads",
+    "sites": {
+      "site1": {
+        "devices": {
+          "10.100.20.16": {
+            "type": "A6000",
+            "vram_mb": 48000
+          },
+          "10.100.20.17": {
+            "type": "A6000",
+            "vram_mb": 48000
+          },
+          "10.100.20.18": {
+            "type": "A6000",
+            "vram_mb": 48000
+          },
+          "10.100.20.19": {
+            "type": "A6000",
+            "vram_mb": 48000
+          },
+          "10.100.20.20": {
+            "type": "A16",
+            "vram_mb": 16000
+          },
+          "10.100.20.21": {
+            "type": "A16",
+            "vram_mb": 16000
+          },
+          "10.100.20.22": {
+            "type": "A16",
+            "vram_mb": 16000
+          },
+          "10.100.20.23": {
+            "type": "A16",
+            "vram_mb": 16000
+          }
+        }
+      }
+    },
+    "tasks": {
+      "activity_recognition": {
+        "latency_slo_ms": 1000,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      },
+      "object_detection": {
+        "latency_slo_ms": 1500,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      },
+      "vqa": {
+        "latency_slo_ms": 1500,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      },
+      "ocr": {
+        "latency_slo_ms": 800,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      },
+      "heartrate": {
+        "latency_slo_ms": 100,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      },
+      "diasbp": {
+        "latency_slo_ms": 100,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      },
+      "ecgclass": {
+        "latency_slo_ms": 100,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      },
+      "sysbp": {
+        "latency_slo_ms": 100,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      }
+    },
+    "solver": {
+      "time_limit_s": 60,
+      "log_to_console": false
+    }
+  },
+  "minimize_mode": "deployments_devices_waste_modelsize",
+  "status": "OPTIMAL",
+  "objective": 5041043.600279702,
+  "deployments": 5,
+  "devices_used": 2,
+  "deployed_models": [
+    {
+      "model": "meta-llama/Llama-3.2-11B-Vision-Instruct",
+      "device": "10.100.20.17"
+    },
+    {
+      "model": "tsfm_p1",
+      "device": "10.100.20.20"
+    },
+    {
+      "model": "tsfm_p12",
+      "device": "10.100.20.20"
+    },
+    {
+      "model": "tsfm_p6",
+      "device": "10.100.20.20"
+    },
+    {
+      "model": "tsfm_p8",
+      "device": "10.100.20.20"
+    }
+  ],
+  "objective_components": {
+    "O1_deployments": 5,
+    "O2_devices": 2,
+    "O3_waste_mb": 39018.6188986,
+    "O4_total_mem_mb": 24981.3811014
+  }
+}

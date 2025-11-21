@@ -1,0 +1,199 @@
+{
+  "sites": [
+    {
+      "id": "site1",
+      "deployments": [
+        {
+          "device": "10.100.20.17",
+          "device_type": "A100",
+          "backbone": "chronosbase",
+          "decoders": [
+            {
+              "task": "weatherfore",
+              "type": "classification",
+              "path": "weatherfore_chronosbase_mlp"
+            }
+          ],
+          "tasks": {
+            "weatherfore": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            }
+          }
+        },
+        {
+          "device": "10.100.20.17",
+          "device_type": "A100",
+          "backbone": "papageissvri",
+          "decoders": [
+            {
+              "task": "diasbp",
+              "type": "classification",
+              "path": "diasbp_papageissvri_mlp"
+            }
+          ],
+          "tasks": {
+            "diasbp": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            }
+          }
+        },
+        {
+          "device": "10.100.20.17",
+          "device_type": "A100",
+          "backbone": "papageissvri",
+          "decoders": [
+            {
+              "task": "heartrate",
+              "type": "classification",
+              "path": "heartrate_papageissvri_mlp"
+            }
+          ],
+          "tasks": {
+            "heartrate": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            }
+          }
+        },
+        {
+          "device": "10.100.20.17",
+          "device_type": "A100",
+          "backbone": "chronoslarge",
+          "decoders": [
+            {
+              "task": "etth1fore",
+              "type": "classification",
+              "path": "etth1fore_chronoslarge_mlp"
+            }
+          ],
+          "tasks": {
+            "etth1fore": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            }
+          }
+        },
+        {
+          "device": "10.100.20.17",
+          "device_type": "A100",
+          "backbone": "chronostiny",
+          "decoders": [
+            {
+              "task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_chronostiny_mlp"
+            }
+          ],
+          "tasks": {
+            "gestureclass": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            }
+          }
+        },
+        {
+          "device": "10.100.20.17",
+          "device_type": "A100",
+          "backbone": "chronosbase",
+          "decoders": [
+            {
+              "task": "sysbp",
+              "type": "classification",
+              "path": "sysbp_chronosbase_mlp"
+            }
+          ],
+          "tasks": {
+            "sysbp": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            }
+          }
+        },
+        {
+          "device": "10.100.20.17",
+          "device_type": "A100",
+          "backbone": "papageis",
+          "decoders": [
+            {
+              "task": "elecfore",
+              "type": "classification",
+              "path": "elecfore_papageis_mlp"
+            }
+          ],
+          "tasks": {
+            "elecfore": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            }
+          }
+        },
+        {
+          "device": "10.100.20.16",
+          "device_type": "A100",
+          "backbone": "chronostiny",
+          "decoders": [
+            {
+              "task": "trafficfore",
+              "type": "classification",
+              "path": "trafficfore_chronostiny_mlp"
+            }
+          ],
+          "tasks": {
+            "trafficfore": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            }
+          }
+        },
+        {
+          "device": "10.100.20.16",
+          "device_type": "A100",
+          "backbone": "papageis",
+          "decoders": [
+            {
+              "task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_papageis_mlp"
+            }
+          ],
+          "tasks": {
+            "ecgclass": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            }
+          }
+        },
+        {
+          "device": "10.100.20.16",
+          "device_type": "A100",
+          "backbone": "papageis",
+          "decoders": [
+            {
+              "task": "ratefore",
+              "type": "classification",
+              "path": "ratefore_papageis_mlp"
+            }
+          ],
+          "tasks": {
+            "ratefore": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

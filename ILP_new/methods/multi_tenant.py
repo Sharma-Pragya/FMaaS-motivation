@@ -1,10 +1,15 @@
 # ILP_new/methods/our_multitenant.py
-# Multi tenant ILP (many models per device) aligned with the current non sharing ILP:
-#   - SLO pre filtering over (t, m, d)
-#   - Device level compute capacity with task specific throughput P_{t,m,d}
+# Multi-tenant ILP (many models per device) aligned with the current non-sharing ILP:
+#   - SLO pre-filtering over (t, m, d)
+#   - Device-level compute capacity with task-specific throughput P_{t,m,d}
 #   - Device memory capacity
+#   - Multiple objective modes:
+#       * "deployments"
+#       * "deployments_devices"
+#       * "deployments_devices_waste"
+#       * "deployments_devices_waste_modelsize"
 #
-# This is the multi tenant specialization of the non sharing ILP in the paper.
+# This is the multi-tenant specialization of the non-sharing ILP in the paper.
 
 from gurobipy import Model, GRB, quicksum
 
@@ -14,7 +19,7 @@ def build_and_solve_from_pipelines(
     components,         # dict: component_name -> {'mem': MB}
     pipelines,          # dict: pid -> {'backbone': ..., 'decoder': ..., 'task': ...}
     latency_config,     # dict: pid -> {device_type: latency_ms}
-    metric_config,      # dict: pid -> accuracy or metric value
+    metric_config,      # dict: pid -> accuracy/metric value
     device_type="A6000",
     device_name="gpu0",
     vram_device_cap_mb=48000.0,
@@ -26,11 +31,13 @@ def build_and_solve_from_pipelines(
     log_to_console=True,
 ):
     """
-    Wrapper that accepts VLM or TSFM style pipeline format and converts to ILP format.
-    Each pipeline becomes a model in the ILP for this non sharing multi tenant case.
+    Wrapper that accepts VLM/TSFM pipeline format and converts to ILP format.
+    Each pipeline becomes a "model" in the ILP (no architectural sharing here).
+
+    This calls build_and_solve() with converted inputs.
     """
 
-    # 1. Models are pipeline IDs
+    # 1. Models = pipeline IDs
     models = sorted(pipelines.keys())
 
     # 2. Collect unique tasks
@@ -41,13 +48,13 @@ def build_and_solve_from_pipelines(
     devices = {device_name: {"type": device_type}}
     vram_device = {device_type: float(vram_device_cap_mb)}
 
-    # 4. Tasks dict (SLOs)
+    # 4. Tasks dict (per-task latency SLOs)
     tasks = {}
     if task_latency_slo_ms is not None:
         for t in tasks_list:
             tasks[t] = float(task_latency_slo_ms.get(t, 1e9))
     else:
-        # Derive as 1.5 times maximum observed latency per task
+        # Derive per-task SLO as 1.5x max observed latency on that task
         task_lat_values = {t: [] for t in tasks_list}
         for pid, info in pipelines.items():
             t = info["task"]
@@ -75,19 +82,19 @@ def build_and_solve_from_pipelines(
         for t in tasks_list:
             support[(pid, t)] = 1 if t == pipeline_task else 0
 
-    # 7. Accuracy: (task, model) -> metric
+    # 7. Accuracy: (task, pipeline) -> metric
     accuracy = {}
     for pid, info in pipelines.items():
         t = info["task"]
         accuracy[(t, pid)] = float(metric_config.get(pid, 0.0))
 
-    # 8. Amin
+    # 8. Amin: per-task minimum accuracy
     if task_accuracy_slo is not None:
         Amin = {t: float(task_accuracy_slo[t]) for t in tasks_list}
     else:
         Amin = None
 
-    # 9. Latency: (task, model, device) -> ms
+    # 9. Latency: (task, pipeline, device) -> ms
     latency_ilp = {}
     for pid, info in pipelines.items():
         t = info["task"]
@@ -100,7 +107,7 @@ def build_and_solve_from_pipelines(
         if L_ms > 0:
             Ptmd[key] = 1000.0 / L_ms
 
-    # 11. vram_model: full pipeline memory (backbone plus decoder plus task head)
+    # 11. vram_model: full pipeline memory (backbone + decoder + task component)
     vram_model = {}
     for pid, info in pipelines.items():
         backbone = info["backbone"]
@@ -110,9 +117,11 @@ def build_and_solve_from_pipelines(
         # Backbone memory
         bb_mem = components.get(backbone, {}).get("mem", 0.0)
 
-        # Decoder memory, allow for two naming patterns
+        # Decoder memory - allow for multiple naming patterns
         dec_mem = 0.0
+        # TSFM-like: decoder_backbone_task
         dec_key1 = f"{decoder}_{backbone}_{task}"
+        # Direct decoder entry
         dec_key2 = decoder
 
         if dec_key1 in components:
@@ -120,7 +129,7 @@ def build_and_solve_from_pipelines(
         elif dec_key2 in components:
             dec_mem = components[dec_key2].get("mem", 0.0)
 
-        # Task specific component memory
+        # Task component memory in VLM-style: task_backbone_decoder
         task_key = f"{task}_{backbone}_{decoder}"
         task_mem = components.get(task_key, {}).get("mem", 0.0)
 
@@ -151,44 +160,58 @@ def build_and_solve(
     models,             # list of model names
     tasks,              # dict: task -> Lmax_t (ms)
     demands,            # dict: task -> lambda_t (req/s)
-    support,            # dict: (model, task) -> 1 or 0
-    accuracy,           # dict: (task, model) -> A_{t,m}
+    support,            # dict: (model, task) -> 1/0
+    accuracy,           # dict: (task, model) -> A_{t,m} (device-agnostic)
     latency,            # dict: (task, model, device) -> L_{t,m,d} (ms)
     vram_model,         # dict: model -> C_m (MB)
     vram_device,        # dict: device_type -> M_cap(d) (MB)
     Ptmd,               # dict: (task, model, device) -> P_{t,m,d} (req/s)
     Amin=None,          # dict: task -> A_min_t   (or None to ignore accuracy)
-    minimize="deployments",
+    minimize="deployments",  # objective mode
     time_limit=60,
     log_to_console=True,
 ):
     """
-    Multi tenant non sharing ILP.
+    Multi-tenant non-sharing ILP.
 
     Decision variables
-      x[m,d] in {0,1}       model m is deployed on device d
-      r[t,m,d] in [0,1]     fraction of task t demand routed to (m,d)
+      x[m,d] ∈ {0,1}        model m is deployed on device d
+      z[d]   ∈ {0,1}        device d is used by any model
+      r[t,m,d] ∈ [0,1]      fraction of task t's demand routed to (m,d)
 
-    SLO pre filtering:
+    SLO pre-filtering:
       We only create routing variables for triples (t,m,d) that satisfy:
-        support(m,t) = 1
-        latency L_{t,m,d} <= Lmax_t
-        optional accuracy A_{t,m} >= A_min_t
-        throughput Ptmd[(t,m,d)] is defined and positive
+        - support(m,t) = 1
+        - latency L_{t,m,d} ≤ Lmax_t
+        - (optional) accuracy A_{t,m} ≥ A_min_t
+        - throughput Ptmd[(t,m,d)] is defined and > 0
 
     Constraints
       (1) Demand conservation:
-            sum_{(m,d) in F_t} r[t,m,d] = 1          for all t
+            ∑_{(m,d) : (t,m,d)∈F} r[t,m,d] = 1                  ∀ t
       (2) Routing only via deployed endpoints:
-            r[t,m,d] <= x[m,d]                       for all (t,m,d) in F
-      (3) Device level compute capacity:
-            sum_{(t,m) in F_d} lambda_t r[t,m,d] / P_{t,m,d] <= 1   for all d
+            r[t,m,d] ≤ x[m,d]                                   ∀ (t,m,d) ∈ F
+      (3) Device-level compute capacity:
+            ∑_{(t,m) : (t,m,d)∈F} (λ_t r[t,m,d] / P_{t,m,d}) ≤ 1 ∀ d
       (4) Device memory capacity:
-            sum_m C_m x[m,d] <= M_cap(d)             for all d
+            ∑_m C_m x[m,d] ≤ M_cap(d)                          ∀ d
+      (5) Device usage:
+            x[m,d] ≤ z[d]                                      ∀ m,d
 
-    Objective
-      Minimize the total number of deployments:
-        sum_{m,d} x[m,d]
+    Objectives (weighted lexicographic style)
+      O1: Minimize deployments  ∑_{m,d} x[m,d]
+      O2: Minimize devices      ∑_d z[d]
+      O3: Minimize wasted memory ∑_d (z[d] M_cap(d) - ∑_m C_m x[m,d])
+      O4: Minimize total model memory ∑_{m,d} C_m x[m,d]
+
+      Combined objective:
+        O = α O1 + β O2 + γ O3 + δ O4
+
+      with weights chosen according to `minimize`:
+        - "deployments"
+        - "deployments_devices"
+        - "deployments_devices_waste"
+        - "deployments_devices_waste_modelsize"
     """
 
     m = Model("nonsharing_ilp_multitenant")
@@ -197,14 +220,20 @@ def build_and_solve(
     if time_limit is not None:
         m.Params.TimeLimit = time_limit
 
-    # Sets
+    # ---------- Sets ----------
     D = list(devices.keys())
     M = list(models)
     T = list(tasks.keys())
 
-    # Feasibility predicate
+    # Per-device capacity (MB) derived from device type
+    cap_d = {}
+    for d in D:
+        dtype = devices[d]["type"]
+        cap_d[d] = float(vram_device.get(dtype, 0.0))
+
+    # ---------- Feasibility predicate ----------
     def feasible_triple(t, mm, d):
-        # model must support task
+        # support(m,t) must be 1
         if support.get((mm, t), 0) != 1:
             return False
 
@@ -227,13 +256,20 @@ def build_and_solve(
 
         return True
 
-    # Feasible triples
+    # Set of feasible triples F
     F = [(t, mm, d) for t in T for mm in M for d in D if feasible_triple(t, mm, d)]
 
+    # Tasks with no feasible triple (diagnostic only)
     tasks_with_no_feasible_triple = [t for t in T if not any(tt == t for (tt, _, _) in F)]
 
-    # Decision variables
+    # ---------- Decision variables ----------
+    # Deployment: x[m,d]
     x = {(mm, d): m.addVar(vtype=GRB.BINARY, name=f"x[{mm},{d}]") for mm in M for d in D}
+
+    # Device usage: z[d]
+    z = {d: m.addVar(vtype=GRB.BINARY, name=f"z[{d}]") for d in D}
+
+    # Routing fractions: r[t,m,d] only for (t,m,d) in F
     r = {
         (t, mm, d): m.addVar(
             lb=0.0,
@@ -246,21 +282,23 @@ def build_and_solve(
 
     m.update()
 
-    # Constraint (1) demand conservation
+    # ---------- Constraints ----------
+
+    # (1) Demand conservation: route all of each task's demand across feasible endpoints
     for t in T:
         m.addConstr(
             quicksum(r[(tt, mm, d)] for (tt, mm, d) in F if tt == t) == 1.0,
             name=f"demand_conservation[{t}]",
         )
 
-    # Constraint (2) routing only via deployed endpoints
+    # (2) Routing only via deployed endpoints
     for (t, mm, d) in F:
         m.addConstr(
             r[(t, mm, d)] <= x[(mm, d)],
             name=f"route_implies_deploy[{t},{mm},{d}]",
         )
 
-    # Constraint (3) device compute capacity
+    # (3) Device-level compute capacity (normalized utilization ≤ 1)
     for d in D:
         utilization_terms = []
         for (t, mm, dd) in F:
@@ -268,6 +306,7 @@ def build_and_solve(
                 continue
             lam = float(demands.get(t, 0.0))
             P = float(Ptmd[(t, mm, d)])
+            # contribution: λ_t r[t,m,d] / P_{t,m,d}
             utilization_terms.append((lam / P, (t, mm, d)))
 
         if utilization_terms:
@@ -276,26 +315,67 @@ def build_and_solve(
                 name=f"compute_capacity[{d}]",
             )
 
-    # Constraint (4) device memory capacity
+    # (4) Device memory capacity
     for d in D:
-        dtype = devices[d]["type"]
-        cap_mb = float(vram_device.get(dtype, 0.0))
         m.addConstr(
-            quicksum(float(vram_model.get(mm, 0.0)) * x[(mm, d)] for mm in M) <= cap_mb,
+            quicksum(float(vram_model.get(mm, 0.0)) * x[(mm, d)] for mm in M) <= cap_d[d],
             name=f"vram[{d}]",
         )
 
-    # Objective: minimize number of deployments
+    # (5) Device usage indicator: x[m,d] implies z[d]
+    for d in D:
+        # Lower bound: if any x[m,d] is 1 then z[d] must be 1
+        for mm in M:
+            m.addConstr(
+                x[(mm, d)] <= z[d],
+                name=f"device_used_lb[{mm},{d}]",
+            )
+        # Upper bound: if no model is deployed then z[d] must be 0
+        m.addConstr(
+            z[d] <= quicksum(x[(mm, d)] for mm in M),
+            name=f"device_used_ub[{d}]",
+        )
+
+    # ---------- Objective ----------
+
+    # Base components
+    O1 = quicksum(x[(mm, d)] for mm in M for d in D)  # deployments
+    O2 = quicksum(z[d] for d in D)                    # devices
+
+    # Wasted memory: z[d]*cap_d[d] - sum_m C_m x[m,d]
+    O3_terms = []
+    for d in D:
+        used_cap = quicksum(float(vram_model.get(mm, 0.0)) * x[(mm, d)] for mm in M)
+        O3_terms.append(z[d] * cap_d[d] - used_cap)
+    O3 = quicksum(O3_terms)
+
+    # Total model memory deployed
+    O4 = quicksum(float(vram_model.get(mm, 0.0)) * x[(mm, d)] for mm in M for d in D)
+
+    # Weights (α » β » γ » δ) to approximate lexicographic priority
+    alpha = 1e6
+    beta = 1e3
+    gamma = 1.0
+    delta = 1e-3
+
     if minimize == "deployments":
-        obj = quicksum(x[(mm, d)] for mm in M for d in D)
+        obj = alpha * O1
+    elif minimize == "deployments_devices":
+        obj = alpha * O1 + beta * O2
+    elif minimize == "deployments_devices_waste":
+        obj = alpha * O1 + beta * O2 + gamma * O3
+    elif minimize == "deployments_devices_waste_modelsize":
+        obj = alpha * O1 + beta * O2 + gamma * O3 + delta * O4
     else:
-        obj = quicksum(x[(mm, d)] for mm in M for d in D)
+        # Fallback to deployments only
+        obj = alpha * O1
 
     m.setObjective(obj, GRB.MINIMIZE)
 
-    # Solve
+    # ---------- Solve ----------
     m.optimize()
 
+    # ---------- Extract solution ----------
     status_code = m.Status
     status = {
         GRB.OPTIMAL: "OPTIMAL",
@@ -308,6 +388,7 @@ def build_and_solve(
         "status": status,
         "obj": None,
         "x": {},
+        "z": {},
         "r": {},
         "used_devices": {},
         "tasks_with_no_feasible_triple": tasks_with_no_feasible_triple,
@@ -319,18 +400,46 @@ def build_and_solve(
         except Exception:
             pass
 
+        # deployment decisions
         for (mm, d), var in x.items():
             val = var.X if var.X is not None else 0.0
             result["x"][(mm, d)] = int(round(val))
 
+        # device usage
+        for d, var in z.items():
+            val = var.X if var.X is not None else 0.0
+            result["z"][d] = int(round(val))
+
+        # routing decisions
         for key, var in r.items():
             val = var.X if var.X is not None else 0.0
             result["r"][key] = float(val)
 
+        # used devices: directly from z
         used = {}
         for d in D:
-            used[d] = 1 if any(result["x"][(mm, d)] > 0.5 for mm in M) else 0
+            used[d] = result["z"].get(d, 0)
         result["used_devices"] = used
+
+        # Calculate objective components from solution
+        O1_val = sum(result["x"][(mm, d)] for mm in M for d in D)
+        O2_val = sum(result["z"][d] for d in D)
+
+        # O3: wasted memory
+        O3_val = 0.0
+        for d in D:
+            used_mem = sum(float(vram_model.get(mm, 0.0)) * result["x"][(mm, d)] for mm in M)
+            O3_val += cap_d[d] * result["z"][d] - used_mem
+
+        # O4: total model memory
+        O4_val = sum(float(vram_model.get(mm, 0.0)) * result["x"][(mm, d)] for mm in M for d in D)
+
+        result["objective_components"] = {
+            "O1_deployments": int(O1_val),
+            "O2_devices": int(O2_val),
+            "O3_waste_mb": float(O3_val),
+            "O4_total_mem_mb": float(O4_val)
+        }
 
     elif status == "INFEASIBLE":
         try:

@@ -1,0 +1,18 @@
+{
+  "workload_type": "vlm",
+  "num_tasks": 4,
+  "req_rate": 8.0,
+  "objective_mode": "deployments_devices_waste",
+  "task_list": [
+    "activity_recognition",
+    "crowd_counting",
+    "gesture_recognition",
+    "image_classification"
+  ],
+  "metrics": null,
+  "ilp_result": {
+    "status": "INFEASIBLE",
+    "objective": null,
+    "objective_components": {}
+  }
+}

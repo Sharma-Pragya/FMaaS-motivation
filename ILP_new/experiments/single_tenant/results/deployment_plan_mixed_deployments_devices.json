@@ -1,0 +1,113 @@
+{
+  "sites": [
+    {
+      "id": "site1",
+      "deployments": [
+        {
+          "device": "10.100.20.18",
+          "device_type": "A6000",
+          "backbone": "vikhyatk/moondream2",
+          "decoders": [],
+          "tasks": {
+            "activity_recognition": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            },
+            "object_detection": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            },
+            "vqa": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            },
+            "ocr": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            }
+          }
+        },
+        {
+          "device": "10.100.20.22",
+          "device_type": "A16",
+          "backbone": "chronossmall",
+          "decoders": [
+            {
+              "task": "heartrate",
+              "type": "classification",
+              "path": "heartrate_chronossmall_mlp"
+            }
+          ],
+          "tasks": {
+            "heartrate": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            }
+          }
+        },
+        {
+          "device": "10.100.20.21",
+          "device_type": "A16",
+          "backbone": "chronostiny",
+          "decoders": [
+            {
+              "task": "diasbp",
+              "type": "classification",
+              "path": "diasbp_chronostiny_mlp"
+            }
+          ],
+          "tasks": {
+            "diasbp": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            }
+          }
+        },
+        {
+          "device": "10.100.20.20",
+          "device_type": "A16",
+          "backbone": "momentsmall",
+          "decoders": [
+            {
+              "task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentsmall_mlp"
+            }
+          ],
+          "tasks": {
+            "ecgclass": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            }
+          }
+        },
+        {
+          "device": "10.100.20.23",
+          "device_type": "A16",
+          "backbone": "momentsmall",
+          "decoders": [
+            {
+              "task": "sysbp",
+              "type": "classification",
+              "path": "sysbp_momentsmall_mlp"
+            }
+          ],
+          "tasks": {
+            "sysbp": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

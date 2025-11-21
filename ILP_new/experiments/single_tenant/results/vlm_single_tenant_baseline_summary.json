@@ -1,0 +1,44 @@
+{
+  "config_name": "vlm_single_tenant_baseline",
+  "data_source": "vlm",
+  "modes_run": [
+    "deployments",
+    "deployments_devices",
+    "deployments_devices_waste",
+    "deployments_devices_waste_modelsize"
+  ],
+  "results_by_mode": {
+    "deployments": {
+      "status": "OPTIMAL",
+      "objective_total": 2000000.0,
+      "O1_deployments": 2,
+      "O2_devices": 2,
+      "O3_waste_mb": 73806.525,
+      "O4_total_mem_mb": 22193.475000000002
+    },
+    "deployments_devices": {
+      "status": "OPTIMAL",
+      "objective_total": 2002000.0,
+      "O1_deployments": 2,
+      "O2_devices": 2,
+      "O3_waste_mb": 73806.525,
+      "O4_total_mem_mb": 22193.475000000002
+    },
+    "deployments_devices_waste": {
+      "status": "OPTIMAL",
+      "objective_total": 2039198.947194,
+      "O1_deployments": 2,
+      "O2_devices": 2,
+      "O3_waste_mb": 37198.94719399999,
+      "O4_total_mem_mb": 58801.05280600001
+    },
+    "deployments_devices_waste_modelsize": {
+      "status": "OPTIMAL",
+      "objective_total": 2039257.748246806,
+      "O1_deployments": 2,
+      "O2_devices": 2,
+      "O3_waste_mb": 37198.94719399999,
+      "O4_total_mem_mb": 58801.05280600001
+    }
+  }
+}

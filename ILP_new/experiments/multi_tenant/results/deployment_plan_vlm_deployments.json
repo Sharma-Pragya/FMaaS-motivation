@@ -1,0 +1,70 @@
+{
+  "sites": [
+    {
+      "id": "site1",
+      "deployments": [
+        {
+          "device": "10.100.20.17",
+          "device_type": "A6000",
+          "backbone": "vikhyatk/moondream2",
+          "decoders": [],
+          "tasks": {
+            "activity_recognition": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            },
+            "gesture_recognition": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            },
+            "ocr": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            }
+          }
+        },
+        {
+          "device": "10.100.20.24",
+          "device_type": "A6000",
+          "backbone": "vikhyatk/moondream2",
+          "decoders": [],
+          "tasks": {
+            "crowd_counting": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            },
+            "image_classification": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            },
+            "object_detection": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            },
+            "scene_classification": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            },
+            "traffic_classification": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            },
+            "vqa": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

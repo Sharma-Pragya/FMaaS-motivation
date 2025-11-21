@@ -1,0 +1,44 @@
+{
+  "config_name": "mixed_multi_tenant_baseline",
+  "data_source": "mixed",
+  "modes_run": [
+    "deployments",
+    "deployments_devices",
+    "deployments_devices_waste",
+    "deployments_devices_waste_modelsize"
+  ],
+  "results_by_mode": {
+    "deployments": {
+      "status": "OPTIMAL",
+      "objective_total": 5000000.0,
+      "O1_deployments": 5,
+      "O2_devices": 4,
+      "O3_waste_mb": 88229.916191434,
+      "O4_total_mem_mb": 7770.083808566001
+    },
+    "deployments_devices": {
+      "status": "OPTIMAL",
+      "objective_total": 5002000.0,
+      "O1_deployments": 5,
+      "O2_devices": 2,
+      "O3_waste_mb": 56605.088293682,
+      "O4_total_mem_mb": 7394.911706318
+    },
+    "deployments_devices_waste": {
+      "status": "OPTIMAL",
+      "objective_total": 5041018.6188986,
+      "O1_deployments": 5,
+      "O2_devices": 2,
+      "O3_waste_mb": 39018.6188986,
+      "O4_total_mem_mb": 24981.3811014
+    },
+    "deployments_devices_waste_modelsize": {
+      "status": "OPTIMAL",
+      "objective_total": 5041043.600279702,
+      "O1_deployments": 5,
+      "O2_devices": 2,
+      "O3_waste_mb": 39018.6188986,
+      "O4_total_mem_mb": 24981.3811014
+    }
+  }
+}

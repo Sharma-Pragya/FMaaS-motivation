@@ -1,0 +1,143 @@
+{
+  "workload_type": "vlm",
+  "num_tasks": 4,
+  "req_rates": [
+    2,
+    4,
+    6,
+    8,
+    10
+  ],
+  "objective_modes": [
+    "deployments",
+    "deployments_devices",
+    "deployments_devices_waste",
+    "deployments_devices_waste_modelsize"
+  ],
+  "results": {
+    "deployments": {
+      "2": {
+        "memory_mb": 14308.595000000001,
+        "throughput_req_s": 57.149162664928795,
+        "total_demand_req_s": 8.0,
+        "avg_latency_ms": 141.91668500000003,
+        "num_deployments": 2,
+        "num_devices": 2,
+        "status": "OPTIMAL"
+      },
+      "4": {
+        "memory_mb": 21462.8925,
+        "throughput_req_s": 85.7237439973932,
+        "total_demand_req_s": 16.0,
+        "avg_latency_ms": 141.91668500000003,
+        "num_deployments": 3,
+        "num_devices": 3,
+        "status": "OPTIMAL"
+      },
+      "6": {
+        "memory_mb": 40500.216061,
+        "throughput_req_s": 101.3841469013118,
+        "total_demand_req_s": 24.0,
+        "avg_latency_ms": 141.9635975,
+        "num_deployments": 4,
+        "num_devices": 4,
+        "status": "OPTIMAL"
+      },
+      "8": null,
+      "10": null
+    },
+    "deployments_devices": {
+      "2": {
+        "memory_mb": 23689.235,
+        "throughput_req_s": 49.56163985961412,
+        "total_demand_req_s": 8.0,
+        "avg_latency_ms": 148.70686374619493,
+        "num_deployments": 2,
+        "num_devices": 2,
+        "status": "OPTIMAL"
+      },
+      "4": {
+        "memory_mb": 21462.8925,
+        "throughput_req_s": 85.7237439973932,
+        "total_demand_req_s": 16.0,
+        "avg_latency_ms": 141.916685,
+        "num_deployments": 3,
+        "num_devices": 3,
+        "status": "OPTIMAL"
+      },
+      "6": {
+        "memory_mb": 40500.216061,
+        "throughput_req_s": 101.3841469013118,
+        "total_demand_req_s": 24.0,
+        "avg_latency_ms": 141.9635975,
+        "num_deployments": 4,
+        "num_devices": 4,
+        "status": "OPTIMAL"
+      },
+      "8": null,
+      "10": null
+    },
+    "deployments_devices_waste": {
+      "2": {
+        "memory_mb": 55045.155,
+        "throughput_req_s": 32.92387698474028,
+        "total_demand_req_s": 8.0,
+        "avg_latency_ms": 231.71040430994603,
+        "num_deployments": 2,
+        "num_devices": 2,
+        "status": "OPTIMAL"
+      },
+      "4": {
+        "memory_mb": 64701.838561,
+        "throughput_req_s": 56.171802693973575,
+        "total_demand_req_s": 16.0,
+        "avg_latency_ms": 161.71573393549497,
+        "num_deployments": 3,
+        "num_devices": 3,
+        "status": "OPTIMAL"
+      },
+      "6": {
+        "memory_mb": 71856.136061,
+        "throughput_req_s": 84.74638402643797,
+        "total_demand_req_s": 24.0,
+        "avg_latency_ms": 152.27997081638492,
+        "num_deployments": 4,
+        "num_devices": 4,
+        "status": "OPTIMAL"
+      },
+      "8": null,
+      "10": null
+    },
+    "deployments_devices_waste_modelsize": {
+      "2": {
+        "memory_mb": 55045.155,
+        "throughput_req_s": 32.92387698474028,
+        "total_demand_req_s": 8.0,
+        "avg_latency_ms": 231.71040431002152,
+        "num_deployments": 2,
+        "num_devices": 2,
+        "status": "OPTIMAL"
+      },
+      "4": {
+        "memory_mb": 64701.838561,
+        "throughput_req_s": 56.171802693973575,
+        "total_demand_req_s": 16.0,
+        "avg_latency_ms": 180.37819407098203,
+        "num_deployments": 3,
+        "num_devices": 3,
+        "status": "OPTIMAL"
+      },
+      "6": {
+        "memory_mb": 71856.136061,
+        "throughput_req_s": 84.74638402643797,
+        "total_demand_req_s": 24.0,
+        "avg_latency_ms": 152.27997081638475,
+        "num_deployments": 4,
+        "num_devices": 4,
+        "status": "OPTIMAL"
+      },
+      "8": null,
+      "10": null
+    }
+  }
+}

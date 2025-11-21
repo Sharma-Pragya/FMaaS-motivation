@@ -1,0 +1,75 @@
+{
+  "sites": [
+    {
+      "id": "site1",
+      "deployments": [
+        {
+          "device": "10.100.20.24",
+          "device_type": "A6000",
+          "backbone": "Qwen/Qwen2.5-VL-7B-Instruct",
+          "decoders": [],
+          "tasks": {
+            "gesture_recognition": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            },
+            "image_classification": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            },
+            "object_detection": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            },
+            "ocr": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            },
+            "scene_classification": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.22252047448663304
+            },
+            "traffic_classification": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            },
+            "vqa": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            }
+          }
+        },
+        {
+          "device": "10.100.20.19",
+          "device_type": "A6000",
+          "backbone": "llava-hf/llava-1.5-13b-hf",
+          "decoders": [],
+          "tasks": {
+            "activity_recognition": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            },
+            "crowd_counting": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            },
+            "scene_classification": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.7774795255133669
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

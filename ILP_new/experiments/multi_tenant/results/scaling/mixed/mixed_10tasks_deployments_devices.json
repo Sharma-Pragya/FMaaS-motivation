@@ -1,0 +1,36 @@
+{
+  "workload_type": "mixed",
+  "num_tasks": 10,
+  "objective_mode": "deployments_devices",
+  "task_list": [
+    "activity_recognition",
+    "crowd_counting",
+    "gesture_recognition",
+    "image_classification",
+    "object_detection",
+    "diasbp",
+    "ecgclass",
+    "elecfore",
+    "etth1fore",
+    "gestureclass"
+  ],
+  "metrics": {
+    "memory_mb": 8377.0463419045,
+    "throughput_req_s": 723.8380079068371,
+    "total_demand_req_s": 10.0,
+    "avg_latency_ms": 77.90169700000001,
+    "num_deployments": 6,
+    "num_devices": 2,
+    "status": "OPTIMAL"
+  },
+  "ilp_result": {
+    "status": "OPTIMAL",
+    "objective": 6002000.0,
+    "objective_components": {
+      "O1_deployments": 6,
+      "O2_devices": 2,
+      "O3_waste_mb": 55622.953658095495,
+      "O4_total_mem_mb": 8377.0463419045
+    }
+  }
+}

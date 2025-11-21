@@ -1,0 +1,124 @@
+{
+  "config": {
+    "name": "vlm_multi_tenant_baseline",
+    "description": "Single-tenant ILP experiment with VLM workloads",
+    "sites": {
+      "site1": {
+        "devices": {
+          "10.100.20.16": {
+            "type": "A6000",
+            "vram_mb": 48000
+          },
+          "10.100.20.17": {
+            "type": "A6000",
+            "vram_mb": 48000
+          },
+          "10.100.20.18": {
+            "type": "A6000",
+            "vram_mb": 48000
+          },
+          "10.100.20.19": {
+            "type": "A6000",
+            "vram_mb": 48000
+          },
+          "10.100.20.20": {
+            "type": "A6000",
+            "vram_mb": 48000
+          },
+          "10.100.20.21": {
+            "type": "A6000",
+            "vram_mb": 48000
+          },
+          "10.100.20.22": {
+            "type": "A6000",
+            "vram_mb": 48000
+          },
+          "10.100.20.23": {
+            "type": "A6000",
+            "vram_mb": 48000
+          },
+          "10.100.20.24": {
+            "type": "A6000",
+            "vram_mb": 48000
+          },
+          "10.100.20.25": {
+            "type": "A6000",
+            "vram_mb": 48000
+          }
+        }
+      }
+    },
+    "tasks": {
+      "activity_recognition": {
+        "latency_slo_ms": 1000,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      },
+      "crowd_counting": {
+        "latency_slo_ms": 2000,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      },
+      "gesture_recognition": {
+        "latency_slo_ms": 1000,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      },
+      "image_classification": {
+        "latency_slo_ms": 1000,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      },
+      "object_detection": {
+        "latency_slo_ms": 1500,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      },
+      "ocr": {
+        "latency_slo_ms": 800,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      },
+      "scene_classification": {
+        "latency_slo_ms": 1500,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      },
+      "traffic_classification": {
+        "latency_slo_ms": 800,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      },
+      "vqa": {
+        "latency_slo_ms": 1500,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      }
+    },
+    "solver": {
+      "time_limit_s": 60,
+      "log_to_console": false
+    }
+  },
+  "minimize_mode": "deployments_devices",
+  "status": "OPTIMAL",
+  "objective": 2002000.0,
+  "deployments": 2,
+  "devices_used": 2,
+  "deployed_models": [
+    {
+      "model": "vikhyatk/moondream2",
+      "device": "10.100.20.17"
+    },
+    {
+      "model": "vikhyatk/moondream2",
+      "device": "10.100.20.23"
+    }
+  ],
+  "objective_components": {
+    "O1_deployments": 2,
+    "O2_devices": 2,
+    "O3_waste_mb": 73806.525,
+    "O4_total_mem_mb": 22193.475000000002
+  }
+}

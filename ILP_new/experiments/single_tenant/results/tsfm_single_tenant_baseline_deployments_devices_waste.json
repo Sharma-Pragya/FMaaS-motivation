@@ -1,0 +1,161 @@
+{
+  "config": {
+    "name": "tsfm_single_tenant_baseline",
+    "description": "Single-tenant ILP experiment with TSFM workloads",
+    "sites": {
+      "site1": {
+        "devices": {
+          "10.100.20.16": {
+            "type": "A100",
+            "vram_mb": 80000
+          },
+          "10.100.20.17": {
+            "type": "A100",
+            "vram_mb": 80000
+          },
+          "10.100.20.18": {
+            "type": "A16",
+            "vram_mb": 16000
+          },
+          "10.100.20.19": {
+            "type": "A16",
+            "vram_mb": 16000
+          },
+          "10.100.20.20": {
+            "type": "A16",
+            "vram_mb": 16000
+          },
+          "10.100.20.21": {
+            "type": "A16",
+            "vram_mb": 16000
+          },
+          "10.100.20.22": {
+            "type": "A16",
+            "vram_mb": 16000
+          },
+          "10.100.20.23": {
+            "type": "A16",
+            "vram_mb": 16000
+          },
+          "10.100.20.24": {
+            "type": "A16",
+            "vram_mb": 16000
+          },
+          "10.100.20.25": {
+            "type": "A16",
+            "vram_mb": 16000
+          }
+        }
+      }
+    },
+    "tasks": {
+      "diasbp": {
+        "latency_slo_ms": 100,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      },
+      "ecgclass": {
+        "latency_slo_ms": 100,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      },
+      "elecfore": {
+        "latency_slo_ms": 100,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      },
+      "etth1fore": {
+        "latency_slo_ms": 100,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      },
+      "gestureclass": {
+        "latency_slo_ms": 100,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      },
+      "heartrate": {
+        "latency_slo_ms": 100,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      },
+      "ratefore": {
+        "latency_slo_ms": 100,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      },
+      "sysbp": {
+        "latency_slo_ms": 100,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      },
+      "trafficfore": {
+        "latency_slo_ms": 100,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      },
+      "weatherfore": {
+        "latency_slo_ms": 100,
+        "accuracy_min": 0.0,
+        "demand_req_s": 1.0
+      }
+    },
+    "solver": {
+      "time_limit_s": 60,
+      "log_to_console": false
+    }
+  },
+  "minimize_mode": "deployments_devices_waste",
+  "status": "OPTIMAL",
+  "objective": 10280718.35141234,
+  "deployments": 10,
+  "devices_used": 10,
+  "deployed_pipelines": [
+    {
+      "pipeline": "p11",
+      "device": "10.100.20.16"
+    },
+    {
+      "pipeline": "p12",
+      "device": "10.100.20.20"
+    },
+    {
+      "pipeline": "p13",
+      "device": "10.100.20.21"
+    },
+    {
+      "pipeline": "p14",
+      "device": "10.100.20.24"
+    },
+    {
+      "pipeline": "p15",
+      "device": "10.100.20.18"
+    },
+    {
+      "pipeline": "p16",
+      "device": "10.100.20.17"
+    },
+    {
+      "pipeline": "p17",
+      "device": "10.100.20.25"
+    },
+    {
+      "pipeline": "p19",
+      "device": "10.100.20.19"
+    },
+    {
+      "pipeline": "p20",
+      "device": "10.100.20.23"
+    },
+    {
+      "pipeline": "p8",
+      "device": "10.100.20.22"
+    }
+  ],
+  "objective_components": {
+    "O1_deployments": 10,
+    "O2_devices": 10,
+    "O3_waste_mb": 270718.35141234007,
+    "O4_total_mem_mb": 17281.648587659998
+  }
+}

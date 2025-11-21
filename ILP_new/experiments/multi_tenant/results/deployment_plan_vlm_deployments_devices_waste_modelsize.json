@@ -1,0 +1,105 @@
+{
+  "sites": [
+    {
+      "id": "site1",
+      "deployments": [
+        {
+          "device": "10.100.20.22",
+          "device_type": "A6000",
+          "backbone": "Qwen/Qwen2.5-VL-7B-Instruct",
+          "decoders": [],
+          "tasks": {
+            "activity_recognition": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.9012633294390154
+            },
+            "gesture_recognition": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.9012633294390154
+            },
+            "image_classification": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.9012633294390154
+            },
+            "object_detection": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.9012633294390154
+            },
+            "ocr": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.9012633294390154
+            },
+            "traffic_classification": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.9012633294390154
+            },
+            "vqa": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.40360587276443294
+            }
+          }
+        },
+        {
+          "device": "10.100.20.16",
+          "device_type": "A6000",
+          "backbone": "llava-hf/llava-1.5-13b-hf",
+          "decoders": [],
+          "tasks": {
+            "activity_recognition": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.09873667056098456
+            },
+            "crowd_counting": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            },
+            "gesture_recognition": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.0987366705608234
+            },
+            "image_classification": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.09873667056098456
+            },
+            "object_detection": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.09873667056098456
+            },
+            "ocr": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.09873667056098456
+            },
+            "scene_classification": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
+            },
+            "traffic_classification": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.0987366705577004
+            },
+            "vqa": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 0.5963941272355671
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
