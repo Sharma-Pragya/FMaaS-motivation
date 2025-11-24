@@ -1,0 +1,33 @@
+{
+  "workload_type": "tsfm",
+  "num_tasks": 6,
+  "objective_mode": "deployments_devices_modelsize",
+  "task_list": [
+    "diasbp",
+    "ecgclass",
+    "elecfore",
+    "etth1fore",
+    "gestureclass",
+    "heartrate"
+  ],
+  "metrics": {
+    "memory_mb": 3722.1603814615005,
+    "throughput_req_s": 721.8147293183622,
+    "total_demand_req_s": 6.0,
+    "avg_latency_ms": 9.140618333333332,
+    "utilization": 0.05484371,
+    "num_deployments": 6,
+    "num_devices": 6,
+    "status": "OPTIMAL"
+  },
+  "ilp_result": {
+    "status": "OPTIMAL",
+    "objective": 6006003.722160381,
+    "objective_components": {
+      "O1_deployments": 6,
+      "O2_devices": 6,
+      "O3_waste_mb": 476277.8396185385,
+      "O4_total_mem_mb": 3722.1603814615005
+    }
+  }
+}

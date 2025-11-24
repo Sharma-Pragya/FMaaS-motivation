@@ -1,0 +1,28 @@
+Scaling Experiment Plan:
+  Workloads: ['tsfm']
+  Task counts: [2, 4, 6, 8, 10, 12, 14, 16]
+  Objectives: ['deployments_devices', 'deployments_devices_modelsize']
+  Total runs: 16
+  Device pool: 16 devices (8× A100, 4× A6000)
+
+
+======================================================================
+Workload: TSFM
+======================================================================
+Loading TSFM pipeline data...
+  Pipelines: 110
+
+[1/16] tsfm | 2 tasks | deployments_devices
+  Tasks (2): diasbp, ecgclass
+Restricted license - for non-production use only - expires 2027-11-29
+Traceback (most recent call last):
+  File "/home/pragya/Desktop/FMaaS-motivation/ILP_new/experiments/single_tenant/run_scaling_experiments.py", line 734, in <module>
+    main()
+  File "/home/pragya/Desktop/FMaaS-motivation/ILP_new/experiments/single_tenant/run_scaling_experiments.py", line 685, in main
+    exp_result = run_single_experiment(
+  File "/home/pragya/Desktop/FMaaS-motivation/ILP_new/experiments/single_tenant/run_scaling_experiments.py", line 580, in run_single_experiment
+    result = build_and_solve(
+  File "/home/pragya/Desktop/FMaaS-motivation/ILP_new/experiments/single_tenant/../../methods/single_tenant.py", line 404, in build_and_solve
+    model.optimize()
+  File "src/gurobipy/_model.pyx", line 926, in gurobipy._model.Model.optimize
+gurobipy._exception.GurobiError: Model too large for size-limited license; visit https://gurobi.com/unrestricted for more information

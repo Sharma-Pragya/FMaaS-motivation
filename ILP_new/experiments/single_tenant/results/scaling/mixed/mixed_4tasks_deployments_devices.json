@@ -9,10 +9,11 @@
     "ecgclass"
   ],
   "metrics": {
-    "memory_mb": 5907.63274594,
-    "throughput_req_s": 119.09053516205574,
+    "memory_mb": 5937.98123999,
+    "throughput_req_s": 376.8129776198763,
     "total_demand_req_s": 4.0,
-    "avg_latency_ms": 86.1590075,
+    "avg_latency_ms": 79.037435,
+    "utilization": 0.31614974,
     "num_deployments": 3,
     "num_devices": 3,
     "status": "OPTIMAL"
@@ -23,8 +24,8 @@
     "objective_components": {
       "O1_deployments": 3,
       "O2_devices": 3,
-      "O3_waste_mb": 74092.36725406,
-      "O4_total_mem_mb": 5907.63274594
+      "O3_waste_mb": 202062.01876001002,
+      "O4_total_mem_mb": 5937.98123999
     }
   }
 }

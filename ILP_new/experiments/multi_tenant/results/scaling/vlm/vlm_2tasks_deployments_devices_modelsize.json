@@ -1,0 +1,28 @@
+{
+  "workload_type": "vlm",
+  "num_tasks": 2,
+  "objective_mode": "deployments_devices_modelsize",
+  "task_list": [
+    "activity_recognition",
+    "crowd_counting"
+  ],
+  "metrics": {
+    "memory_mb": 5350.9375,
+    "throughput_req_s": 6.369811374597651,
+    "total_demand_req_s": 2.0,
+    "avg_latency_ms": 150.79166,
+    "num_deployments": 1,
+    "num_devices": 1,
+    "status": "OPTIMAL"
+  },
+  "ilp_result": {
+    "status": "OPTIMAL",
+    "objective": 1001005.3509375,
+    "objective_components": {
+      "O1_deployments": 1,
+      "O2_devices": 1,
+      "O3_waste_mb": 42649.0625,
+      "O4_total_mem_mb": 5350.9375
+    }
+  }
+}

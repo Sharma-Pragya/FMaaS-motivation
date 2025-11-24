@@ -28,16 +28,20 @@ from experiments.config_loader import (
     get_solver_settings,
 )
 
-# Fixed device pool for ALL scaling experiments (from mixed config)
+# Fixed device pool for ALL scaling experiments (4 A6000 + 8 A100)
 CANONICAL_DEVICES = {
     "10.100.20.16": {"type": "A6000", "vram_mb": 48000},
     "10.100.20.17": {"type": "A6000", "vram_mb": 48000},
     "10.100.20.18": {"type": "A6000", "vram_mb": 48000},
     "10.100.20.19": {"type": "A6000", "vram_mb": 48000},
-    "10.100.20.20": {"type": "A16", "vram_mb": 16000},
-    "10.100.20.21": {"type": "A16", "vram_mb": 16000},
-    "10.100.20.22": {"type": "A16", "vram_mb": 16000},
-    "10.100.20.23": {"type": "A16", "vram_mb": 16000},
+    "10.100.20.20": {"type": "A100", "vram_mb": 80000},
+    "10.100.20.21": {"type": "A100", "vram_mb": 80000},
+    "10.100.20.22": {"type": "A100", "vram_mb": 80000},
+    "10.100.20.23": {"type": "A100", "vram_mb": 80000},
+    "10.100.20.24": {"type": "A100", "vram_mb": 80000},
+    "10.100.20.25": {"type": "A100", "vram_mb": 80000},
+    "10.100.20.26": {"type": "A100", "vram_mb": 80000},
+    "10.100.20.27": {"type": "A100", "vram_mb": 80000},
 }
 
 # Available tasks for each workload type
@@ -144,17 +148,26 @@ def load_pipeline_data(data_source="vlm"):
 
 
 def build_ilp_inputs_vlm(task_list, components, pipelines, latency_data, metric_data):
-    """Build ILP inputs for VLM workload with specified tasks."""
+    """Build ILP inputs for VLM workload with specified tasks.
+
+    Note: task_list may contain duplicates (e.g., ["task1", "task2", "task1"]).
+    Demands are aggregated for duplicate task names.
+    """
     # Devices - use canonical fixed pool
     devices = {k: {"type": v["type"]} for k, v in CANONICAL_DEVICES.items()}
-    vram_device = {"A6000": 48000.0, "A16": 16000.0}
+    vram_device = {"A100": 80000.0, "A6000": 48000.0}
 
     device_types = set(info["type"] for info in devices.values())
 
-    # Task requirements
-    task_slos = {t: DEFAULT_VLM_TASK_CONFIG["latency_slo_ms"] for t in task_list}
-    demands = {t: DEFAULT_VLM_TASK_CONFIG["demand_req_s"] for t in task_list}
-    Amin = {t: DEFAULT_VLM_TASK_CONFIG["accuracy_min"] for t in task_list}
+    # Count task occurrences for demand aggregation
+    from collections import Counter
+    task_counts = Counter(task_list)
+    unique_tasks = list(task_counts.keys())
+
+    # Task requirements (aggregate demands for duplicates)
+    task_slos = {t: DEFAULT_VLM_TASK_CONFIG["latency_slo_ms"] for t in unique_tasks}
+    demands = {t: DEFAULT_VLM_TASK_CONFIG["demand_req_s"] * task_counts[t] for t in unique_tasks}
+    Amin = {t: DEFAULT_VLM_TASK_CONFIG["accuracy_min"] for t in unique_tasks}
 
     # Models = unique backbones
     models = sorted({info["backbone"] for info in pipelines.values()})
@@ -177,19 +190,19 @@ def build_ilp_inputs_vlm(task_list, components, pipelines, latency_data, metric_
     # Support
     support = {}
     for m in models:
-        for t in task_list:
+        for t in unique_tasks:
             support[(m, t)] = 1 if (m, t) in backbone_task_to_pipeline else 0
 
     # Accuracy
     accuracy = {}
     for (backbone, task), pid in backbone_task_to_pipeline.items():
-        if task in task_list:
+        if task in unique_tasks:
             accuracy[(task, backbone)] = float(metric_data.get(pid, 0.0))
 
     # Latency
     latency_ilp = {}
     for (backbone, task), pid in backbone_task_to_pipeline.items():
-        if task not in task_list:
+        if task not in unique_tasks:
             continue
         for d, d_info in devices.items():
             device_type = d_info["type"]
@@ -207,7 +220,7 @@ def build_ilp_inputs_vlm(task_list, components, pipelines, latency_data, metric_
     for m in models:
         total_mem = float(components.get(m, {}).get("mem", 0.0))
         for (backbone, task), pid in backbone_task_to_pipeline.items():
-            if backbone != m or task not in task_list:
+            if backbone != m or task not in unique_tasks:
                 continue
             info = pipelines[pid]
             decoder = info.get("decoder", "none")
@@ -234,15 +247,24 @@ def build_ilp_inputs_vlm(task_list, components, pipelines, latency_data, metric_
 
 
 def build_ilp_inputs_tsfm(task_list, components, pipelines, latency_data, metric_data):
-    """Build ILP inputs for TSFM workload with specified tasks."""
+    """Build ILP inputs for TSFM workload with specified tasks.
+
+    Note: task_list may contain duplicates (e.g., ["task1", "task2", "task1"]).
+    Demands are aggregated for duplicate task names.
+    """
     # Devices - use canonical fixed pool
     devices = {k: {"type": v["type"]} for k, v in CANONICAL_DEVICES.items()}
-    vram_device = {"A6000": 48000.0, "A16": 16000.0}
+    vram_device = {"A100": 80000.0, "A6000": 48000.0}
 
-    # Task requirements
-    task_slos = {t: DEFAULT_TSFM_TASK_CONFIG["latency_slo_ms"] for t in task_list}
-    demands = {t: DEFAULT_TSFM_TASK_CONFIG["demand_req_s"] for t in task_list}
-    Amin = {t: DEFAULT_TSFM_TASK_CONFIG["accuracy_min"] for t in task_list}
+    # Count task occurrences for demand aggregation
+    from collections import Counter
+    task_counts = Counter(task_list)
+    unique_tasks = list(task_counts.keys())
+
+    # Task requirements (aggregate demands for duplicates)
+    task_slos = {t: DEFAULT_TSFM_TASK_CONFIG["latency_slo_ms"] for t in unique_tasks}
+    demands = {t: DEFAULT_TSFM_TASK_CONFIG["demand_req_s"] * task_counts[t] for t in unique_tasks}
+    Amin = {t: DEFAULT_TSFM_TASK_CONFIG["accuracy_min"] for t in unique_tasks}
 
     # Models = pipeline IDs
     models = sorted(pipelines.keys())
@@ -251,21 +273,21 @@ def build_ilp_inputs_tsfm(task_list, components, pipelines, latency_data, metric
     support = {}
     for pid in models:
         pipeline_task = pipelines[pid]["task"]
-        for t in task_list:
+        for t in unique_tasks:
             support[(pid, t)] = 1 if t == pipeline_task else 0
 
     # Accuracy
     accuracy = {}
     for pid, info in pipelines.items():
         t = info["task"]
-        if t in task_list:
+        if t in unique_tasks:
             accuracy[(t, pid)] = float(metric_data.get(pid, 0.0))
 
     # Latency
     latency_ilp = {}
     for pid, info in pipelines.items():
         t = info["task"]
-        if t not in task_list:
+        if t not in unique_tasks:
             continue
         for d, d_info in devices.items():
             device_type = d_info["type"]
@@ -309,10 +331,14 @@ def build_ilp_inputs_tsfm(task_list, components, pipelines, latency_data, metric
 
 
 def build_ilp_inputs_mixed(vlm_tasks, tsfm_tasks, components, pipelines, latency_data, metric_data):
-    """Build ILP inputs for mixed workload with specified VLM and TSFM tasks."""
+    """Build ILP inputs for mixed workload with specified VLM and TSFM tasks.
+
+    Note: vlm_tasks and tsfm_tasks may contain duplicates.
+    Demands are aggregated for duplicate task names.
+    """
     # Devices - use canonical fixed pool
     devices = {k: {"type": v["type"]} for k, v in CANONICAL_DEVICES.items()}
-    vram_device = {"A6000": 48000.0, "A16": 16000.0}
+    vram_device = {"A100": 80000.0, "A6000": 48000.0}
     device_types = set(info["type"] for info in devices.values())
 
     # Separate VLM and TSFM pipelines
@@ -321,19 +347,28 @@ def build_ilp_inputs_mixed(vlm_tasks, tsfm_tasks, components, pipelines, latency
     tsfm_pipelines = {pid: info for pid, info in pipelines.items()
                       if info.get("decoder", "none") != "none"}
 
-    # Task requirements
-    task_list = vlm_tasks + tsfm_tasks
+    # Count task occurrences for demand aggregation
+    from collections import Counter
+    vlm_counts = Counter(vlm_tasks)
+    tsfm_counts = Counter(tsfm_tasks)
+    unique_vlm_tasks = list(vlm_counts.keys())
+    unique_tsfm_tasks = list(tsfm_counts.keys())
+
+    # Task requirements (aggregate demands for duplicates)
     task_slos = {}
     demands = {}
     Amin = {}
-    for t in vlm_tasks:
+    for t in unique_vlm_tasks:
         task_slos[t] = DEFAULT_VLM_TASK_CONFIG["latency_slo_ms"]
-        demands[t] = DEFAULT_VLM_TASK_CONFIG["demand_req_s"]
+        demands[t] = DEFAULT_VLM_TASK_CONFIG["demand_req_s"] * vlm_counts[t]
         Amin[t] = DEFAULT_VLM_TASK_CONFIG["accuracy_min"]
-    for t in tsfm_tasks:
+    for t in unique_tsfm_tasks:
         task_slos[t] = DEFAULT_TSFM_TASK_CONFIG["latency_slo_ms"]
-        demands[t] = DEFAULT_TSFM_TASK_CONFIG["demand_req_s"]
+        demands[t] = DEFAULT_TSFM_TASK_CONFIG["demand_req_s"] * tsfm_counts[t]
         Amin[t] = DEFAULT_TSFM_TASK_CONFIG["accuracy_min"]
+
+    # Combined unique task list
+    unique_task_list = unique_vlm_tasks + unique_tsfm_tasks
 
     # Models: VLM backbones + TSFM pipeline IDs
     vlm_backbones = sorted({info["backbone"] for info in vlm_pipelines.values()})
@@ -350,28 +385,28 @@ def build_ilp_inputs_mixed(vlm_tasks, tsfm_tasks, components, pipelines, latency
     # Support
     support = {}
     for m in vlm_backbones:
-        for t in task_list:
-            support[(m, t)] = 1 if (m, t) in vlm_backbone_task_to_pipeline and t in vlm_tasks else 0
+        for t in unique_task_list:
+            support[(m, t)] = 1 if (m, t) in vlm_backbone_task_to_pipeline and t in unique_vlm_tasks else 0
     for pid in tsfm_models:
         pipeline_task = tsfm_pipelines[pid]["task"]
-        for t in task_list:
+        for t in unique_task_list:
             support[(pid, t)] = 1 if t == pipeline_task else 0
 
     # Accuracy
     accuracy = {}
     for (backbone, task), pid in vlm_backbone_task_to_pipeline.items():
-        if task in vlm_tasks:
+        if task in unique_vlm_tasks:
             accuracy[(task, backbone)] = float(metric_data.get(pid, 0.0))
     for pid, info in tsfm_pipelines.items():
         t = info["task"]
-        if t in tsfm_tasks:
+        if t in unique_tsfm_tasks:
             accuracy[(t, pid)] = float(metric_data.get(pid, 0.0))
 
     # Latency
     latency_ilp = {}
     # VLM
     for (backbone, task), pid in vlm_backbone_task_to_pipeline.items():
-        if task not in vlm_tasks:
+        if task not in unique_vlm_tasks:
             continue
         for d, d_info in devices.items():
             device_type = d_info["type"]
@@ -380,7 +415,7 @@ def build_ilp_inputs_mixed(vlm_tasks, tsfm_tasks, components, pipelines, latency
     # TSFM
     for pid, info in tsfm_pipelines.items():
         t = info["task"]
-        if t not in tsfm_tasks:
+        if t not in unique_tsfm_tasks:
             continue
         for d, d_info in devices.items():
             device_type = d_info["type"]
@@ -399,14 +434,14 @@ def build_ilp_inputs_mixed(vlm_tasks, tsfm_tasks, components, pipelines, latency
     for m in vlm_backbones:
         total_mem = float(components.get(m, {}).get("mem", 0.0))
         for (backbone, task), pid in vlm_backbone_task_to_pipeline.items():
-            if backbone != m or task not in vlm_tasks:
+            if backbone != m or task not in unique_vlm_tasks:
                 continue
             task_key = f"{task}_{backbone}_none"
             total_mem += float(components.get(task_key, {}).get("mem", 0.0))
         vram_model[m] = total_mem
     # TSFM pipelines
     for pid, info in tsfm_pipelines.items():
-        if info["task"] not in tsfm_tasks:
+        if info["task"] not in unique_tsfm_tasks:
             continue
         backbone = info["backbone"]
         decoder = info["decoder"]
@@ -445,30 +480,51 @@ def collect_metrics(result, ilp_inputs):
     x = result.get("x", {})
     deployed = [(m, d) for (m, d), v in x.items() if v > 0.5]
 
-    # Total deployed capacity: sum of throughput capacities for all deployed model-device pairs
+    # Calculate throughput metrics
     Ptmd = ilp_inputs["Ptmd"]
     support = ilp_inputs["support"]
     tasks = list(ilp_inputs["tasks"].keys())
     demands = ilp_inputs["demands"]
+    r = result.get("r", {})
 
+    # Method 1: Actual utilized throughput based on routing and demand
+    # For each deployment, calculate utilization = sum of (demand * routing_fraction) / throughput
+    # Then aggregate across all deployments
+    deployment_utilization = {}  # (m, d) -> utilization (0-1)
+
+    for (m, d) in deployed:
+        utilization = 0.0
+        for (t, mm, dd), frac in r.items():
+            if mm == m and dd == d and frac > 0.001:
+                throughput = Ptmd.get((t, m, d), 0.0)
+                if throughput > 0:
+                    demand = demands.get(t, 0.0)
+                    # Utilization: (demand routed to this deployment) / throughput
+                    utilization += (demand * frac) / throughput
+        deployment_utilization[(m, d)] = utilization
+
+    # Method 2: Representative capacity per deployment (use min throughput as conservative estimate)
+    # This gives us the "capacity" of each deployment
     total_capacity = 0.0
     for (m, d) in deployed:
         # Find tasks this model can serve
         model_tasks = [t for t in tasks if support.get((m, t), 0) == 1]
         if model_tasks:
-            # For each task this model serves, get its throughput capacity
-            # Use the average capacity across tasks (models may have different speeds per task)
+            # Use minimum throughput as conservative capacity estimate
+            # (deployment can serve at least this many req/s regardless of task mix)
             capacities = [Ptmd.get((t, m, d), 0.0) for t in model_tasks]
             capacities = [c for c in capacities if c > 0]
             if capacities:
-                # Sum capacities (each deployed model adds capacity)
-                total_capacity += sum(capacities)
+                # Use min as the conservative capacity
+                total_capacity += min(capacities)
+
+    # Also calculate total utilization across all deployments
+    total_utilization = sum(deployment_utilization.values())
 
     # Total demand being served (input demand, all served if feasible)
     total_demand = sum(demands.values())
 
     # Average latency: weighted by routing fraction and demand
-    r = result.get("r", {})
     latency_ilp = ilp_inputs["latency"]
 
     weighted_latency = 0.0
@@ -484,9 +540,10 @@ def collect_metrics(result, ilp_inputs):
 
     return {
         "memory_mb": float(memory_mb),
-        "throughput_req_s": float(total_capacity),  # Total deployed capacity
+        "throughput_req_s": float(total_capacity),  # Total deployed capacity (conservative: min across tasks)
         "total_demand_req_s": float(total_demand),  # Input demand being served
         "avg_latency_ms": float(avg_latency),
+        "utilization": float(total_utilization),  # Total utilization across all deployments (0-1 per deployment)
         "num_deployments": result.get("objective_components", {}).get("O1_deployments", 0),
         "num_devices": result.get("objective_components", {}).get("O2_devices", 0),
         "status": result["status"],
@@ -572,7 +629,7 @@ def main():
         type=str,
         nargs="+",
         default=["deployments", "deployments_devices", "deployments_devices_waste", "deployments_devices_waste_modelsize"],
-        choices=["deployments", "deployments_devices", "deployments_devices_waste", "deployments_devices_waste_modelsize"],
+        choices=["deployments", "deployments_devices", "deployments_devices_modelsize", "deployments_devices_waste", "deployments_devices_waste_modelsize"],
         help="Objective modes to run",
     )
     parser.add_argument("--dry-run", action="store_true", help="Show what would run without executing")
@@ -586,7 +643,7 @@ def main():
     print(f"  Task counts: {args.tasks}")
     print(f"  Objectives: {args.objective}")
     print(f"  Total runs: {total_runs}")
-    print(f"  Device pool: {len(CANONICAL_DEVICES)} devices (4× A6000, 4× A16)")
+    print(f"  Device pool: {len(CANONICAL_DEVICES)} devices (8× A100, 4× A6000)")
     print()
 
     if args.dry_run:

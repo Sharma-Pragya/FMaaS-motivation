@@ -1,0 +1,417 @@
+Request Rate Scaling Experiment Plan:
+  Workloads: ['vlm', 'tsfm', 'mixed']
+  Request rates: [2, 4, 6, 8, 10] req/s per task
+  Fixed tasks: 4
+  Objectives: ['deployments', 'deployments_devices', 'deployments_devices_modelsize']
+  Total runs: 45
+  Device pool: 8 devices (4× A6000, 4× A16)
+
+
+======================================================================
+Workload: VLM
+======================================================================
+Loading VLM pipeline data...
+  Pipelines: 89
+
+[1/45] vlm | 2 req/s | deployments
+  Tasks (4): activity_recognition, crowd_counting, gesture_recognition, image_classification
+  Request rate per task: 2 req/s
+Restricted license - for non-production use only - expires 2027-11-29
+  Status: OPTIMAL
+  Deployments: 2, Devices: 2
+  Memory: 14308.6 MB
+  Throughput: 12.74 req/s
+  Avg Latency: 141.92 ms
+
+[2/45] vlm | 2 req/s | deployments_devices
+  Tasks (4): activity_recognition, crowd_counting, gesture_recognition, image_classification
+  Request rate per task: 2 req/s
+  Status: OPTIMAL
+  Deployments: 2, Devices: 2
+  Memory: 25110.4 MB
+  Throughput: 8.61 req/s
+  Avg Latency: 204.56 ms
+
+[3/45] vlm | 2 req/s | deployments_devices_modelsize
+  Tasks (4): activity_recognition, crowd_counting, gesture_recognition, image_classification
+  Request rate per task: 2 req/s
+  Status: OPTIMAL
+  Deployments: 2, Devices: 2
+  Memory: 14308.6 MB
+  Throughput: 12.74 req/s
+  Avg Latency: 141.92 ms
+
+[4/45] vlm | 4 req/s | deployments
+  Tasks (4): activity_recognition, crowd_counting, gesture_recognition, image_classification
+  Request rate per task: 4 req/s
+  Status: OPTIMAL
+  Deployments: 3, Devices: 3
+  Memory: 21462.9 MB
+  Throughput: 19.11 req/s
+  Avg Latency: 141.92 ms
+
+[5/45] vlm | 4 req/s | deployments_devices
+  Tasks (4): activity_recognition, crowd_counting, gesture_recognition, image_classification
+  Request rate per task: 4 req/s
+  Status: OPTIMAL
+  Deployments: 3, Devices: 3
+  Memory: 21462.9 MB
+  Throughput: 19.39 req/s
+  Avg Latency: 141.92 ms
+
+[6/45] vlm | 4 req/s | deployments_devices_modelsize
+  Tasks (4): activity_recognition, crowd_counting, gesture_recognition, image_classification
+  Request rate per task: 4 req/s
+  Status: OPTIMAL
+  Deployments: 3, Devices: 3
+  Memory: 21462.9 MB
+  Throughput: 21.37 req/s
+  Avg Latency: 141.92 ms
+
+[7/45] vlm | 6 req/s | deployments
+  Tasks (4): activity_recognition, crowd_counting, gesture_recognition, image_classification
+  Request rate per task: 6 req/s
+  Status: OPTIMAL
+  Deployments: 4, Devices: 4
+  Memory: 40500.2 MB
+  Throughput: 29.10 req/s
+  Avg Latency: 141.96 ms
+
+[8/45] vlm | 6 req/s | deployments_devices
+  Tasks (4): activity_recognition, crowd_counting, gesture_recognition, image_classification
+  Request rate per task: 6 req/s
+  Status: OPTIMAL
+  Deployments: 4, Devices: 4
+  Memory: 40500.2 MB
+  Throughput: 29.10 req/s
+  Avg Latency: 141.96 ms
+
+[9/45] vlm | 6 req/s | deployments_devices_modelsize
+  Tasks (4): activity_recognition, crowd_counting, gesture_recognition, image_classification
+  Request rate per task: 6 req/s
+  Status: OPTIMAL
+  Deployments: 4, Devices: 4
+  Memory: 28617.2 MB
+  Throughput: 28.29 req/s
+  Avg Latency: 141.92 ms
+
+[10/45] vlm | 8 req/s | deployments
+  Tasks (4): activity_recognition, crowd_counting, gesture_recognition, image_classification
+  Request rate per task: 8 req/s
+  Status: INFEASIBLE (no solution)
+
+[11/45] vlm | 8 req/s | deployments_devices
+  Tasks (4): activity_recognition, crowd_counting, gesture_recognition, image_classification
+  Request rate per task: 8 req/s
+  Status: INFEASIBLE (no solution)
+
+[12/45] vlm | 8 req/s | deployments_devices_modelsize
+  Tasks (4): activity_recognition, crowd_counting, gesture_recognition, image_classification
+  Request rate per task: 8 req/s
+  Status: INFEASIBLE (no solution)
+
+[13/45] vlm | 10 req/s | deployments
+  Tasks (4): activity_recognition, crowd_counting, gesture_recognition, image_classification
+  Request rate per task: 10 req/s
+  Status: INFEASIBLE (no solution)
+
+[14/45] vlm | 10 req/s | deployments_devices
+  Tasks (4): activity_recognition, crowd_counting, gesture_recognition, image_classification
+  Request rate per task: 10 req/s
+  Status: INFEASIBLE (no solution)
+
+[15/45] vlm | 10 req/s | deployments_devices_modelsize
+  Tasks (4): activity_recognition, crowd_counting, gesture_recognition, image_classification
+  Request rate per task: 10 req/s
+  Status: INFEASIBLE (no solution)
+
+======================================================================
+Workload: TSFM
+======================================================================
+Loading TSFM pipeline data...
+  Pipelines: 110
+
+[16/45] tsfm | 2 req/s | deployments
+  Tasks (4): diasbp, ecgclass, elecfore, etth1fore
+  Request rate per task: 2 req/s
+  Status: OPTIMAL
+  Deployments: 4, Devices: 4
+  Memory: 1654.9 MB
+  Throughput: 368.08 req/s
+  Avg Latency: 15.26 ms
+
+[17/45] tsfm | 2 req/s | deployments_devices
+  Tasks (4): diasbp, ecgclass, elecfore, etth1fore
+  Request rate per task: 2 req/s
+  Status: OPTIMAL
+  Deployments: 4, Devices: 4
+  Memory: 1654.9 MB
+  Throughput: 368.08 req/s
+  Avg Latency: 15.26 ms
+
+[18/45] tsfm | 2 req/s | deployments_devices_modelsize
+  Tasks (4): diasbp, ecgclass, elecfore, etth1fore
+  Request rate per task: 2 req/s
+  Status: OPTIMAL
+  Deployments: 4, Devices: 4
+  Memory: 1654.9 MB
+  Throughput: 368.08 req/s
+  Avg Latency: 15.26 ms
+
+[19/45] tsfm | 4 req/s | deployments
+  Tasks (4): diasbp, ecgclass, elecfore, etth1fore
+  Request rate per task: 4 req/s
+  Status: OPTIMAL
+  Deployments: 4, Devices: 4
+  Memory: 1654.9 MB
+  Throughput: 368.08 req/s
+  Avg Latency: 15.26 ms
+
+[20/45] tsfm | 4 req/s | deployments_devices
+  Tasks (4): diasbp, ecgclass, elecfore, etth1fore
+  Request rate per task: 4 req/s
+  Status: OPTIMAL
+  Deployments: 4, Devices: 4
+  Memory: 1654.9 MB
+  Throughput: 368.08 req/s
+  Avg Latency: 15.26 ms
+
+[21/45] tsfm | 4 req/s | deployments_devices_modelsize
+  Tasks (4): diasbp, ecgclass, elecfore, etth1fore
+  Request rate per task: 4 req/s
+  Status: OPTIMAL
+  Deployments: 4, Devices: 4
+  Memory: 1654.9 MB
+  Throughput: 368.08 req/s
+  Avg Latency: 15.26 ms
+
+[22/45] tsfm | 6 req/s | deployments
+  Tasks (4): diasbp, ecgclass, elecfore, etth1fore
+  Request rate per task: 6 req/s
+  Status: OPTIMAL
+  Deployments: 4, Devices: 4
+  Memory: 1654.9 MB
+  Throughput: 368.08 req/s
+  Avg Latency: 15.26 ms
+
+[23/45] tsfm | 6 req/s | deployments_devices
+  Tasks (4): diasbp, ecgclass, elecfore, etth1fore
+  Request rate per task: 6 req/s
+  Status: OPTIMAL
+  Deployments: 4, Devices: 4
+  Memory: 1654.9 MB
+  Throughput: 368.08 req/s
+  Avg Latency: 15.26 ms
+
+[24/45] tsfm | 6 req/s | deployments_devices_modelsize
+  Tasks (4): diasbp, ecgclass, elecfore, etth1fore
+  Request rate per task: 6 req/s
+  Status: OPTIMAL
+  Deployments: 4, Devices: 4
+  Memory: 1654.9 MB
+  Throughput: 368.08 req/s
+  Avg Latency: 15.26 ms
+
+[25/45] tsfm | 8 req/s | deployments
+  Tasks (4): diasbp, ecgclass, elecfore, etth1fore
+  Request rate per task: 8 req/s
+  Status: OPTIMAL
+  Deployments: 4, Devices: 4
+  Memory: 1654.9 MB
+  Throughput: 368.08 req/s
+  Avg Latency: 15.26 ms
+
+[26/45] tsfm | 8 req/s | deployments_devices
+  Tasks (4): diasbp, ecgclass, elecfore, etth1fore
+  Request rate per task: 8 req/s
+  Status: OPTIMAL
+  Deployments: 4, Devices: 4
+  Memory: 1654.9 MB
+  Throughput: 368.08 req/s
+  Avg Latency: 15.26 ms
+
+[27/45] tsfm | 8 req/s | deployments_devices_modelsize
+  Tasks (4): diasbp, ecgclass, elecfore, etth1fore
+  Request rate per task: 8 req/s
+  Status: OPTIMAL
+  Deployments: 4, Devices: 4
+  Memory: 1654.9 MB
+  Throughput: 368.08 req/s
+  Avg Latency: 15.26 ms
+
+[28/45] tsfm | 10 req/s | deployments
+  Tasks (4): diasbp, ecgclass, elecfore, etth1fore
+  Request rate per task: 10 req/s
+  Status: OPTIMAL
+  Deployments: 4, Devices: 4
+  Memory: 1229.8 MB
+  Throughput: 441.31 req/s
+  Avg Latency: 14.30 ms
+
+[29/45] tsfm | 10 req/s | deployments_devices
+  Tasks (4): diasbp, ecgclass, elecfore, etth1fore
+  Request rate per task: 10 req/s
+  Status: OPTIMAL
+  Deployments: 4, Devices: 4
+  Memory: 1229.8 MB
+  Throughput: 441.31 req/s
+  Avg Latency: 14.30 ms
+
+[30/45] tsfm | 10 req/s | deployments_devices_modelsize
+  Tasks (4): diasbp, ecgclass, elecfore, etth1fore
+  Request rate per task: 10 req/s
+  Status: OPTIMAL
+  Deployments: 4, Devices: 4
+  Memory: 1229.8 MB
+  Throughput: 441.31 req/s
+  Avg Latency: 14.30 ms
+
+======================================================================
+Workload: MIXED
+======================================================================
+Loading MIXED pipeline data...
+  Pipelines: 199
+
+[31/45] mixed | 2 req/s | deployments
+  Tasks (4): activity_recognition, crowd_counting, diasbp, ecgclass
+  Request rate per task: 2 req/s
+  Status: OPTIMAL
+  Deployments: 3, Devices: 3
+  Memory: 15743.6 MB
+  Throughput: 109.48 req/s
+  Avg Latency: 127.72 ms
+
+[32/45] mixed | 2 req/s | deployments_devices
+  Tasks (4): activity_recognition, crowd_counting, diasbp, ecgclass
+  Request rate per task: 2 req/s
+  Status: OPTIMAL
+  Deployments: 3, Devices: 3
+  Memory: 5907.6 MB
+  Throughput: 112.17 req/s
+  Avg Latency: 86.16 ms
+
+[33/45] mixed | 2 req/s | deployments_devices_modelsize
+  Tasks (4): activity_recognition, crowd_counting, diasbp, ecgclass
+  Request rate per task: 2 req/s
+  Status: OPTIMAL
+  Deployments: 3, Devices: 3
+  Memory: 5478.7 MB
+  Throughput: 336.74 req/s
+  Avg Latency: 79.86 ms
+
+[34/45] mixed | 4 req/s | deployments
+  Tasks (4): activity_recognition, crowd_counting, diasbp, ecgclass
+  Request rate per task: 4 req/s
+  Status: OPTIMAL
+  Deployments: 4, Devices: 4
+  Memory: 11258.6 MB
+  Throughput: 119.09 req/s
+  Avg Latency: 86.16 ms
+
+[35/45] mixed | 4 req/s | deployments_devices
+  Tasks (4): activity_recognition, crowd_counting, diasbp, ecgclass
+  Request rate per task: 4 req/s
+  Status: OPTIMAL
+  Deployments: 4, Devices: 4
+  Memory: 11258.6 MB
+  Throughput: 119.09 req/s
+  Avg Latency: 86.16 ms
+
+[36/45] mixed | 4 req/s | deployments_devices_modelsize
+  Tasks (4): activity_recognition, crowd_counting, diasbp, ecgclass
+  Request rate per task: 4 req/s
+  Status: OPTIMAL
+  Deployments: 4, Devices: 4
+  Memory: 10829.6 MB
+  Throughput: 343.65 req/s
+  Avg Latency: 79.86 ms
+
+[37/45] mixed | 6 req/s | deployments
+  Tasks (4): activity_recognition, crowd_counting, diasbp, ecgclass
+  Request rate per task: 6 req/s
+  Status: OPTIMAL
+  Deployments: 4, Devices: 4
+  Memory: 11258.6 MB
+  Throughput: 119.09 req/s
+  Avg Latency: 86.16 ms
+
+[38/45] mixed | 6 req/s | deployments_devices
+  Tasks (4): activity_recognition, crowd_counting, diasbp, ecgclass
+  Request rate per task: 6 req/s
+  Status: OPTIMAL
+  Deployments: 4, Devices: 4
+  Memory: 11258.6 MB
+  Throughput: 119.09 req/s
+  Avg Latency: 86.16 ms
+
+[39/45] mixed | 6 req/s | deployments_devices_modelsize
+  Tasks (4): activity_recognition, crowd_counting, diasbp, ecgclass
+  Request rate per task: 6 req/s
+  Status: OPTIMAL
+  Deployments: 4, Devices: 4
+  Memory: 10829.6 MB
+  Throughput: 343.65 req/s
+  Avg Latency: 79.86 ms
+
+[40/45] mixed | 8 req/s | deployments
+  Tasks (4): activity_recognition, crowd_counting, diasbp, ecgclass
+  Request rate per task: 8 req/s
+  Status: OPTIMAL
+  Deployments: 5, Devices: 5
+  Memory: 16691.7 MB
+  Throughput: 131.82 req/s
+  Avg Latency: 90.93 ms
+
+[41/45] mixed | 8 req/s | deployments_devices
+  Tasks (4): activity_recognition, crowd_counting, diasbp, ecgclass
+  Request rate per task: 8 req/s
+  Status: OPTIMAL
+  Deployments: 5, Devices: 5
+  Memory: 26527.7 MB
+  Throughput: 130.55 req/s
+  Avg Latency: 97.16 ms
+
+[42/45] mixed | 8 req/s | deployments_devices_modelsize
+  Tasks (4): activity_recognition, crowd_counting, diasbp, ecgclass
+  Request rate per task: 8 req/s
+  Status: OPTIMAL
+  Deployments: 5, Devices: 5
+  Memory: 16691.7 MB
+  Throughput: 131.82 req/s
+  Avg Latency: 90.93 ms
+
+[43/45] mixed | 10 req/s | deployments
+  Tasks (4): activity_recognition, crowd_counting, diasbp, ecgclass
+  Request rate per task: 10 req/s
+  Status: OPTIMAL
+  Deployments: 6, Devices: 6
+  Memory: 22042.7 MB
+  Throughput: 138.19 req/s
+  Avg Latency: 90.93 ms
+
+[44/45] mixed | 10 req/s | deployments_devices
+  Tasks (4): activity_recognition, crowd_counting, diasbp, ecgclass
+  Request rate per task: 10 req/s
+  Status: OPTIMAL
+  Deployments: 6, Devices: 6
+  Memory: 22042.7 MB
+  Throughput: 138.19 req/s
+  Avg Latency: 90.93 ms
+
+[45/45] mixed | 10 req/s | deployments_devices_modelsize
+  Tasks (4): activity_recognition, crowd_counting, diasbp, ecgclass
+  Request rate per task: 10 req/s
+  Status: OPTIMAL
+  Deployments: 6, Devices: 6
+  Memory: 22042.7 MB
+  Throughput: 138.19 req/s
+  Avg Latency: 90.93 ms
+
+======================================================================
+Saving summaries...
+======================================================================
+  /home/pragya/Desktop/FMaaS-motivation/ILP_new/experiments/single_tenant/results/reqrate/summary/vlm_reqrate_summary.json
+  /home/pragya/Desktop/FMaaS-motivation/ILP_new/experiments/single_tenant/results/reqrate/summary/tsfm_reqrate_summary.json
+  /home/pragya/Desktop/FMaaS-motivation/ILP_new/experiments/single_tenant/results/reqrate/summary/mixed_reqrate_summary.json
+
+Done! Results saved to: /home/pragya/Desktop/FMaaS-motivation/ILP_new/experiments/single_tenant/results/reqrate

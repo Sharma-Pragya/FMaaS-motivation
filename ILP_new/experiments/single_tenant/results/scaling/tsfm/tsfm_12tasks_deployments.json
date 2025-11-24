@@ -1,0 +1,25 @@
+{
+  "workload_type": "tsfm",
+  "num_tasks": 12,
+  "objective_mode": "deployments",
+  "task_list": [
+    "diasbp",
+    "ecgclass",
+    "elecfore",
+    "etth1fore",
+    "gestureclass",
+    "heartrate",
+    "ratefore",
+    "sysbp",
+    "trafficfore",
+    "weatherfore",
+    "diasbp",
+    "ecgclass"
+  ],
+  "metrics": null,
+  "ilp_result": {
+    "status": "INFEASIBLE",
+    "objective": null,
+    "objective_components": {}
+  }
+}

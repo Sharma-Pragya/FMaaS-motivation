@@ -11,10 +11,11 @@
     "elecfore"
   ],
   "metrics": {
-    "memory_mb": 9059.671870905,
-    "throughput_req_s": 136.35077511315055,
+    "memory_mb": 7891.7759711275,
+    "throughput_req_s": 305.9478331068886,
     "total_demand_req_s": 6.0,
-    "avg_latency_ms": 105.29476833333335,
+    "avg_latency_ms": 80.65445000000001,
+    "utilization": 0.48392670000000004,
     "num_deployments": 4,
     "num_devices": 4,
     "status": "OPTIMAL"
@@ -25,8 +26,8 @@
     "objective_components": {
       "O1_deployments": 4,
       "O2_devices": 4,
-      "O3_waste_mb": 86940.328129095,
-      "O4_total_mem_mb": 9059.671870905
+      "O3_waste_mb": 280108.2240288725,
+      "O4_total_mem_mb": 7891.7759711275
     }
   }
 }

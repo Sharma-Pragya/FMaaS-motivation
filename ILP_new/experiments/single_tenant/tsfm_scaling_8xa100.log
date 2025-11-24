@@ -1,0 +1,165 @@
+Scaling Experiment Plan:
+  Workloads: ['tsfm']
+  Task counts: [2, 4, 6, 8, 10, 12, 14, 16]
+  Objectives: ['deployments', 'deployments_devices', 'deployments_devices_modelsize']
+  Total runs: 24
+  Device pool: 8 devices (8× A100)
+
+
+======================================================================
+Workload: TSFM
+======================================================================
+Loading TSFM pipeline data...
+  Pipelines: 110
+
+[1/24] tsfm | 2 tasks | deployments
+  Tasks (2): diasbp, ecgclass
+Restricted license - for non-production use only - expires 2027-11-29
+  Status: OPTIMAL
+  Deployments: 2, Devices: 2
+  Memory: 170.4 MB
+  Throughput: 455.90 req/s
+  Avg Latency: 4.62 ms
+
+[2/24] tsfm | 2 tasks | deployments_devices
+  Tasks (2): diasbp, ecgclass
+  Status: OPTIMAL
+  Deployments: 2, Devices: 2
+  Memory: 170.4 MB
+  Throughput: 455.90 req/s
+  Avg Latency: 4.62 ms
+
+[3/24] tsfm | 2 tasks | deployments_devices_modelsize
+  Tasks (2): diasbp, ecgclass
+  Status: OPTIMAL
+  Deployments: 2, Devices: 2
+  Memory: 170.4 MB
+  Throughput: 455.90 req/s
+  Avg Latency: 4.62 ms
+
+[4/24] tsfm | 4 tasks | deployments
+  Tasks (4): diasbp, ecgclass, elecfore, etth1fore
+  Status: OPTIMAL
+  Deployments: 4, Devices: 4
+  Memory: 2777.8 MB
+  Throughput: 470.80 req/s
+  Avg Latency: 9.70 ms
+
+[5/24] tsfm | 4 tasks | deployments_devices
+  Tasks (4): diasbp, ecgclass, elecfore, etth1fore
+  Status: OPTIMAL
+  Deployments: 4, Devices: 4
+  Memory: 2777.8 MB
+  Throughput: 470.80 req/s
+  Avg Latency: 9.70 ms
+
+[6/24] tsfm | 4 tasks | deployments_devices_modelsize
+  Tasks (4): diasbp, ecgclass, elecfore, etth1fore
+  Status: OPTIMAL
+  Deployments: 4, Devices: 4
+  Memory: 2777.8 MB
+  Throughput: 470.80 req/s
+  Avg Latency: 9.70 ms
+
+[7/24] tsfm | 6 tasks | deployments
+  Tasks (6): diasbp, ecgclass, elecfore, etth1fore, gestureclass, heartrate
+  Status: OPTIMAL
+  Deployments: 6, Devices: 6
+  Memory: 3722.2 MB
+  Throughput: 721.81 req/s
+  Avg Latency: 9.14 ms
+
+[8/24] tsfm | 6 tasks | deployments_devices
+  Tasks (6): diasbp, ecgclass, elecfore, etth1fore, gestureclass, heartrate
+  Status: OPTIMAL
+  Deployments: 6, Devices: 6
+  Memory: 3722.2 MB
+  Throughput: 721.81 req/s
+  Avg Latency: 9.14 ms
+
+[9/24] tsfm | 6 tasks | deployments_devices_modelsize
+  Tasks (6): diasbp, ecgclass, elecfore, etth1fore, gestureclass, heartrate
+  Status: OPTIMAL
+  Deployments: 6, Devices: 6
+  Memory: 3722.2 MB
+  Throughput: 721.81 req/s
+  Avg Latency: 9.14 ms
+
+[10/24] tsfm | 8 tasks | deployments
+  Tasks (8): diasbp, ecgclass, elecfore, etth1fore, gestureclass, heartrate, ratefore, sysbp
+  Status: OPTIMAL
+  Deployments: 8, Devices: 8
+  Memory: 4508.6 MB
+  Throughput: 1206.94 req/s
+  Avg Latency: 10.66 ms
+
+[11/24] tsfm | 8 tasks | deployments_devices
+  Tasks (8): diasbp, ecgclass, elecfore, etth1fore, gestureclass, heartrate, ratefore, sysbp
+  Status: OPTIMAL
+  Deployments: 8, Devices: 8
+  Memory: 4508.6 MB
+  Throughput: 1206.94 req/s
+  Avg Latency: 10.66 ms
+
+[12/24] tsfm | 8 tasks | deployments_devices_modelsize
+  Tasks (8): diasbp, ecgclass, elecfore, etth1fore, gestureclass, heartrate, ratefore, sysbp
+  Status: OPTIMAL
+  Deployments: 8, Devices: 8
+  Memory: 4508.6 MB
+  Throughput: 1206.94 req/s
+  Avg Latency: 10.66 ms
+
+[13/24] tsfm | 10 tasks | deployments
+  Tasks (10): diasbp, ecgclass, elecfore, etth1fore, gestureclass, heartrate, ratefore, sysbp, trafficfore, weatherfore
+  Status: INFEASIBLE (no solution)
+
+[14/24] tsfm | 10 tasks | deployments_devices
+  Tasks (10): diasbp, ecgclass, elecfore, etth1fore, gestureclass, heartrate, ratefore, sysbp, trafficfore, weatherfore
+  Status: INFEASIBLE (no solution)
+
+[15/24] tsfm | 10 tasks | deployments_devices_modelsize
+  Tasks (10): diasbp, ecgclass, elecfore, etth1fore, gestureclass, heartrate, ratefore, sysbp, trafficfore, weatherfore
+  Status: INFEASIBLE (no solution)
+
+[16/24] tsfm | 12 tasks | deployments
+  Tasks (12): diasbp, ecgclass, elecfore, etth1fore, gestureclass, heartrate, ratefore, sysbp, trafficfore, weatherfore, diasbp, ecgclass
+  Status: INFEASIBLE (no solution)
+
+[17/24] tsfm | 12 tasks | deployments_devices
+  Tasks (12): diasbp, ecgclass, elecfore, etth1fore, gestureclass, heartrate, ratefore, sysbp, trafficfore, weatherfore, diasbp, ecgclass
+  Status: INFEASIBLE (no solution)
+
+[18/24] tsfm | 12 tasks | deployments_devices_modelsize
+  Tasks (12): diasbp, ecgclass, elecfore, etth1fore, gestureclass, heartrate, ratefore, sysbp, trafficfore, weatherfore, diasbp, ecgclass
+  Status: INFEASIBLE (no solution)
+
+[19/24] tsfm | 14 tasks | deployments
+  Tasks (14): diasbp, ecgclass, elecfore, etth1fore, gestureclass, heartrate, ratefore, sysbp, trafficfore, weatherfore, diasbp, ecgclass, elecfore, etth1fore
+  Status: INFEASIBLE (no solution)
+
+[20/24] tsfm | 14 tasks | deployments_devices
+  Tasks (14): diasbp, ecgclass, elecfore, etth1fore, gestureclass, heartrate, ratefore, sysbp, trafficfore, weatherfore, diasbp, ecgclass, elecfore, etth1fore
+  Status: INFEASIBLE (no solution)
+
+[21/24] tsfm | 14 tasks | deployments_devices_modelsize
+  Tasks (14): diasbp, ecgclass, elecfore, etth1fore, gestureclass, heartrate, ratefore, sysbp, trafficfore, weatherfore, diasbp, ecgclass, elecfore, etth1fore
+  Status: INFEASIBLE (no solution)
+
+[22/24] tsfm | 16 tasks | deployments
+  Tasks (16): diasbp, ecgclass, elecfore, etth1fore, gestureclass, heartrate, ratefore, sysbp, trafficfore, weatherfore, diasbp, ecgclass, elecfore, etth1fore, gestureclass, heartrate
+  Status: INFEASIBLE (no solution)
+
+[23/24] tsfm | 16 tasks | deployments_devices
+  Tasks (16): diasbp, ecgclass, elecfore, etth1fore, gestureclass, heartrate, ratefore, sysbp, trafficfore, weatherfore, diasbp, ecgclass, elecfore, etth1fore, gestureclass, heartrate
+  Status: INFEASIBLE (no solution)
+
+[24/24] tsfm | 16 tasks | deployments_devices_modelsize
+  Tasks (16): diasbp, ecgclass, elecfore, etth1fore, gestureclass, heartrate, ratefore, sysbp, trafficfore, weatherfore, diasbp, ecgclass, elecfore, etth1fore, gestureclass, heartrate
+  Status: INFEASIBLE (no solution)
+
+======================================================================
+Saving summaries...
+======================================================================
+  /home/pragya/Desktop/FMaaS-motivation/ILP_new/experiments/single_tenant/results/scaling/summary/tsfm_scaling_summary.json
+
+Done! Results saved to: /home/pragya/Desktop/FMaaS-motivation/ILP_new/experiments/single_tenant/results/scaling

@@ -10,23 +10,10 @@
     "gestureclass",
     "heartrate"
   ],
-  "metrics": {
-    "memory_mb": 407.4842861945,
-    "throughput_req_s": 833.6164119460894,
-    "total_demand_req_s": 6.0,
-    "avg_latency_ms": 12.239188333333336,
-    "num_deployments": 6,
-    "num_devices": 1,
-    "status": "OPTIMAL"
-  },
+  "metrics": null,
   "ilp_result": {
-    "status": "OPTIMAL",
-    "objective": 6001000.0,
-    "objective_components": {
-      "O1_deployments": 6,
-      "O2_devices": 1,
-      "O3_waste_mb": 15592.5157138055,
-      "O4_total_mem_mb": 407.4842861945
-    }
+    "status": "INFEASIBLE",
+    "objective": null,
+    "objective_components": {}
   }
 }

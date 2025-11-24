@@ -28,16 +28,20 @@ from experiments.config_loader import (
     get_solver_settings,
 )
 
-# Fixed device pool for ALL scaling experiments (from mixed config)
+# Fixed device pool for ALL scaling experiments (4 A6000 + 8 A100)
 CANONICAL_DEVICES = {
     "10.100.20.16": {"type": "A6000", "vram_mb": 48000},
     "10.100.20.17": {"type": "A6000", "vram_mb": 48000},
     "10.100.20.18": {"type": "A6000", "vram_mb": 48000},
     "10.100.20.19": {"type": "A6000", "vram_mb": 48000},
-    "10.100.20.20": {"type": "A16", "vram_mb": 16000},
-    "10.100.20.21": {"type": "A16", "vram_mb": 16000},
-    "10.100.20.22": {"type": "A16", "vram_mb": 16000},
-    "10.100.20.23": {"type": "A16", "vram_mb": 16000},
+    "10.100.20.20": {"type": "A100", "vram_mb": 80000},
+    "10.100.20.21": {"type": "A100", "vram_mb": 80000},
+    "10.100.20.22": {"type": "A100", "vram_mb": 80000},
+    "10.100.20.23": {"type": "A100", "vram_mb": 80000},
+    "10.100.20.24": {"type": "A100", "vram_mb": 80000},
+    "10.100.20.25": {"type": "A100", "vram_mb": 80000},
+    "10.100.20.26": {"type": "A100", "vram_mb": 80000},
+    "10.100.20.27": {"type": "A100", "vram_mb": 80000},
 }
 
 # Available tasks for each workload type
@@ -445,30 +449,37 @@ def collect_metrics(result, ilp_inputs):
     x = result.get("x", {})
     deployed = [(m, d) for (m, d), v in x.items() if v > 0.5]
 
-    # Total deployed capacity: sum of throughput capacities for all deployed model-device pairs
+    # Total deployed capacity: sum of bottleneck throughput for each deployment
     Ptmd = ilp_inputs["Ptmd"]
     support = ilp_inputs["support"]
     tasks = list(ilp_inputs["tasks"].keys())
     demands = ilp_inputs["demands"]
+    r = result.get("r", {})
 
-    total_capacity = 0.0
+    # Calculate throughput per deployment (bottleneck approach)
+    deployment_throughput = {}
     for (m, d) in deployed:
-        # Find tasks this model can serve
-        model_tasks = [t for t in tasks if support.get((m, t), 0) == 1]
-        if model_tasks:
-            # For each task this model serves, get its throughput capacity
-            # Use the average capacity across tasks (models may have different speeds per task)
-            capacities = [Ptmd.get((t, m, d), 0.0) for t in model_tasks]
+        # Find tasks ACTUALLY routed to this deployment (not just supported)
+        routed_tasks = [
+            t for t in tasks
+            if any((tt, mm, dd) == (t, m, d) and frac > 0.001 for (tt, mm, dd), frac in r.items())
+        ]
+        if routed_tasks:
+            # Get throughput capacity for each routed task
+            capacities = [Ptmd.get((t, m, d), 0.0) for t in routed_tasks]
             capacities = [c for c in capacities if c > 0]
-            if capacities:
-                # Sum capacities (each deployed model adds capacity)
-                total_capacity += sum(capacities)
+            # Deployment throughput = minimum capacity (bottleneck)
+            deployment_throughput[(m, d)] = min(capacities) if capacities else 0.0
+        else:
+            deployment_throughput[(m, d)] = 0.0
+
+    # Total system throughput = sum of deployment throughputs
+    total_capacity = sum(deployment_throughput.values())
 
     # Total demand being served (input demand, all served if feasible)
     total_demand = sum(demands.values())
 
     # Average latency: weighted by routing fraction and demand
-    r = result.get("r", {})
     latency_ilp = ilp_inputs["latency"]
 
     weighted_latency = 0.0
@@ -571,8 +582,8 @@ def main():
         "--objective",
         type=str,
         nargs="+",
-        default=["deployments", "deployments_devices", "deployments_devices_waste", "deployments_devices_waste_modelsize"],
-        choices=["deployments", "deployments_devices", "deployments_devices_waste", "deployments_devices_waste_modelsize"],
+        default=["deployments", "deployments_devices", "deployments_devices_modelsize", "deployments_devices_waste", "deployments_devices_waste_modelsize"],
+        choices=["deployments", "deployments_devices", "deployments_devices_modelsize", "deployments_devices_waste", "deployments_devices_waste_modelsize"],
         help="Objective modes to run",
     )
     parser.add_argument("--dry-run", action="store_true", help="Show what would run without executing")

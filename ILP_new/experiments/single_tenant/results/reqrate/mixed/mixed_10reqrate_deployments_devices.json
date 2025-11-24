@@ -1,0 +1,31 @@
+{
+  "workload_type": "mixed",
+  "num_tasks": 4,
+  "req_rate": 10,
+  "objective_mode": "deployments_devices",
+  "task_list": [
+    "activity_recognition",
+    "crowd_counting",
+    "diasbp",
+    "ecgclass"
+  ],
+  "metrics": {
+    "memory_mb": 22042.67597999,
+    "throughput_req_s": 138.19068037721024,
+    "total_demand_req_s": 40.0,
+    "avg_latency_ms": 90.93216749999999,
+    "num_deployments": 6,
+    "num_devices": 6,
+    "status": "OPTIMAL"
+  },
+  "ilp_result": {
+    "status": "OPTIMAL",
+    "objective": 6006000.0,
+    "objective_components": {
+      "O1_deployments": 6,
+      "O2_devices": 6,
+      "O3_waste_mb": 201957.32402001,
+      "O4_total_mem_mb": 22042.67597999
+    }
+  }
+}

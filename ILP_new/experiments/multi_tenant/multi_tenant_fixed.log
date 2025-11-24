@@ -1,0 +1,227 @@
+Multi-Tenant Scaling Experiment Plan:
+  Workloads: ['vlm', 'tsfm', 'mixed']
+  Task counts: [2, 4, 6, 8]
+  Objectives: ['deployments_devices', 'deployments_devices_modelsize']
+  Total runs: 24
+  Device pool: 8 devices (4× A6000, 4× A16)
+
+
+======================================================================
+Workload: VLM
+======================================================================
+Loading VLM pipeline data...
+  Pipelines: 89
+
+[1/24] vlm | 2 tasks | deployments_devices
+  Tasks (2): activity_recognition, crowd_counting
+Restricted license - for non-production use only - expires 2027-11-29
+  Status: OPTIMAL
+  Deployments: 1, Devices: 1
+  Memory: 27838.9 MB
+  Throughput: 2.34 req/s
+  Avg Latency: 380.78 ms
+
+[2/24] vlm | 2 tasks | deployments_devices_modelsize
+  Tasks (2): activity_recognition, crowd_counting
+  Status: OPTIMAL
+  Deployments: 1, Devices: 1
+  Memory: 5350.9 MB
+  Throughput: 6.37 req/s
+  Avg Latency: 150.79 ms
+
+[3/24] vlm | 4 tasks | deployments_devices
+  Tasks (4): activity_recognition, crowd_counting, gesture_recognition, image_classification
+  Status: OPTIMAL
+  Deployments: 1, Devices: 1
+  Memory: 7154.3 MB
+  Throughput: 6.37 req/s
+  Avg Latency: 141.92 ms
+
+[4/24] vlm | 4 tasks | deployments_devices_modelsize
+  Tasks (4): activity_recognition, crowd_counting, gesture_recognition, image_classification
+  Status: OPTIMAL
+  Deployments: 1, Devices: 1
+  Memory: 7154.3 MB
+  Throughput: 6.37 req/s
+  Avg Latency: 141.92 ms
+
+[5/24] vlm | 6 tasks | deployments_devices
+  Tasks (6): activity_recognition, crowd_counting, gesture_recognition, image_classification, object_detection, ocr
+  Status: OPTIMAL
+  Deployments: 1, Devices: 1
+  Memory: 8668.1 MB
+  Throughput: 6.37 req/s
+  Avg Latency: 132.61 ms
+
+[6/24] vlm | 6 tasks | deployments_devices_modelsize
+  Tasks (6): activity_recognition, crowd_counting, gesture_recognition, image_classification, object_detection, ocr
+  Status: OPTIMAL
+  Deployments: 1, Devices: 1
+  Memory: 8668.1 MB
+  Throughput: 6.37 req/s
+  Avg Latency: 132.61 ms
+
+[7/24] vlm | 8 tasks | deployments_devices
+  Tasks (8): activity_recognition, crowd_counting, gesture_recognition, image_classification, object_detection, ocr, scene_classification, traffic_classification
+  Status: OPTIMAL
+  Deployments: 2, Devices: 1
+  Memory: 20078.2 MB
+  Throughput: 14.30 req/s
+  Avg Latency: 113.75 ms
+
+[8/24] vlm | 8 tasks | deployments_devices_modelsize
+  Tasks (8): activity_recognition, crowd_counting, gesture_recognition, image_classification, object_detection, ocr, scene_classification, traffic_classification
+  Status: OPTIMAL
+  Deployments: 2, Devices: 1
+  Memory: 20078.2 MB
+  Throughput: 14.30 req/s
+  Avg Latency: 118.18 ms
+
+======================================================================
+Workload: TSFM
+======================================================================
+Loading TSFM pipeline data...
+  Pipelines: 110
+
+[9/24] tsfm | 2 tasks | deployments_devices
+  Tasks (2): diasbp, ecgclass
+  Status: OPTIMAL
+  Deployments: 2, Devices: 1
+  Memory: 1638.2 MB
+  Throughput: 71.92 req/s
+  Avg Latency: 51.46 ms
+
+[10/24] tsfm | 2 tasks | deployments_devices_modelsize
+  Tasks (2): diasbp, ecgclass
+  Status: OPTIMAL
+  Deployments: 2, Devices: 1
+  Memory: 134.9 MB
+  Throughput: 438.19 req/s
+  Avg Latency: 4.72 ms
+
+[11/24] tsfm | 4 tasks | deployments_devices
+  Tasks (4): diasbp, ecgclass, elecfore, etth1fore
+  Status: OPTIMAL
+  Deployments: 4, Devices: 1
+  Memory: 258.4 MB
+  Throughput: 526.20 req/s
+  Avg Latency: 15.13 ms
+
+[12/24] tsfm | 4 tasks | deployments_devices_modelsize
+  Tasks (4): diasbp, ecgclass, elecfore, etth1fore
+  Status: OPTIMAL
+  Deployments: 4, Devices: 1
+  Memory: 258.4 MB
+  Throughput: 526.20 req/s
+  Avg Latency: 15.13 ms
+
+[13/24] tsfm | 6 tasks | deployments_devices
+  Tasks (6): diasbp, ecgclass, elecfore, etth1fore, gestureclass, heartrate
+  Status: OPTIMAL
+  Deployments: 6, Devices: 1
+  Memory: 407.5 MB
+  Throughput: 833.62 req/s
+  Avg Latency: 12.24 ms
+
+[14/24] tsfm | 6 tasks | deployments_devices_modelsize
+  Tasks (6): diasbp, ecgclass, elecfore, etth1fore, gestureclass, heartrate
+  Status: OPTIMAL
+  Deployments: 6, Devices: 1
+  Memory: 381.3 MB
+  Throughput: 1014.61 req/s
+  Avg Latency: 6.05 ms
+
+[15/24] tsfm | 8 tasks | deployments_devices
+  Tasks (8): diasbp, ecgclass, elecfore, etth1fore, gestureclass, heartrate, ratefore, sysbp
+  Status: OPTIMAL
+  Deployments: 8, Devices: 1
+  Memory: 553.6 MB
+  Throughput: 1159.71 req/s
+  Avg Latency: 10.71 ms
+
+[16/24] tsfm | 8 tasks | deployments_devices_modelsize
+  Tasks (8): diasbp, ecgclass, elecfore, etth1fore, gestureclass, heartrate, ratefore, sysbp
+  Status: OPTIMAL
+  Deployments: 8, Devices: 1
+  Memory: 531.4 MB
+  Throughput: 1418.65 req/s
+  Avg Latency: 5.65 ms
+
+======================================================================
+Workload: MIXED
+======================================================================
+Loading MIXED pipeline data...
+  Pipelines: 199
+
+[17/24] mixed | 2 tasks | deployments_devices
+  Tasks (2): activity_recognition, diasbp
+  Status: OPTIMAL
+  Deployments: 2, Devices: 2
+  Memory: 14973.7 MB
+  Throughput: 23.15 req/s
+  Avg Latency: 161.57 ms
+
+[18/24] mixed | 2 tasks | deployments_devices_modelsize
+  Tasks (2): activity_recognition, diasbp
+  Status: OPTIMAL
+  Deployments: 2, Devices: 2
+  Memory: 4648.0 MB
+  Throughput: 78.29 req/s
+  Avg Latency: 79.30 ms
+
+[19/24] mixed | 4 tasks | deployments_devices
+  Tasks (4): activity_recognition, crowd_counting, diasbp, ecgclass
+  Status: OPTIMAL
+  Deployments: 3, Devices: 2
+  Memory: 29834.8 MB
+  Throughput: 33.40 req/s
+  Avg Latency: 224.82 ms
+
+[20/24] mixed | 4 tasks | deployments_devices_modelsize
+  Tasks (4): activity_recognition, crowd_counting, diasbp, ecgclass
+  Status: OPTIMAL
+  Deployments: 3, Devices: 2
+  Memory: 5478.7 MB
+  Throughput: 336.74 req/s
+  Avg Latency: 79.86 ms
+
+[21/24] mixed | 6 tasks | deployments_devices
+  Tasks (6): activity_recognition, crowd_counting, gesture_recognition, diasbp, ecgclass, elecfore
+  Status: OPTIMAL
+  Deployments: 4, Devices: 2
+  Memory: 6456.5 MB
+  Throughput: 352.76 req/s
+  Avg Latency: 84.47 ms
+
+[22/24] mixed | 6 tasks | deployments_devices_modelsize
+  Tasks (6): activity_recognition, crowd_counting, gesture_recognition, diasbp, ecgclass, elecfore
+  Status: OPTIMAL
+  Deployments: 4, Devices: 2
+  Memory: 6453.4 MB
+  Throughput: 370.36 req/s
+  Avg Latency: 84.37 ms
+
+[23/24] mixed | 8 tasks | deployments_devices
+  Tasks (8): activity_recognition, crowd_counting, gesture_recognition, image_classification, diasbp, ecgclass, elecfore, etth1fore
+  Status: OPTIMAL
+  Deployments: 5, Devices: 2
+  Memory: 7412.7 MB
+  Throughput: 532.57 req/s
+  Avg Latency: 78.52 ms
+
+[24/24] mixed | 8 tasks | deployments_devices_modelsize
+  Tasks (8): activity_recognition, crowd_counting, gesture_recognition, image_classification, diasbp, ecgclass, elecfore, etth1fore
+  Status: OPTIMAL
+  Deployments: 5, Devices: 2
+  Memory: 7412.7 MB
+  Throughput: 532.57 req/s
+  Avg Latency: 78.52 ms
+
+======================================================================
+Saving summaries...
+======================================================================
+  /home/pragya/Desktop/FMaaS-motivation/ILP_new/experiments/multi_tenant/results/scaling/summary/vlm_scaling_summary.json
+  /home/pragya/Desktop/FMaaS-motivation/ILP_new/experiments/multi_tenant/results/scaling/summary/tsfm_scaling_summary.json
+  /home/pragya/Desktop/FMaaS-motivation/ILP_new/experiments/multi_tenant/results/scaling/summary/mixed_scaling_summary.json
+
+Done! Results saved to: /home/pragya/Desktop/FMaaS-motivation/ILP_new/experiments/multi_tenant/results/scaling

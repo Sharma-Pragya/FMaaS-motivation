@@ -15,22 +15,23 @@
     "activity_recognition"
   ],
   "metrics": {
-    "memory_mb": 58801.05280600001,
-    "throughput_req_s": 82.33145217991112,
-    "total_demand_req_s": 9.0,
-    "avg_latency_ms": 204.8009455555556,
+    "memory_mb": 46177.675,
+    "throughput_req_s": 8.711737672678218,
+    "total_demand_req_s": 10.0,
+    "avg_latency_ms": 192.42493734638393,
+    "utilization": 1.9242493734638386,
     "num_deployments": 2,
     "num_devices": 2,
     "status": "OPTIMAL"
   },
   "ilp_result": {
     "status": "OPTIMAL",
-    "objective": 2039257.748246806,
+    "objective": 2051868.502675,
     "objective_components": {
       "O1_deployments": 2,
       "O2_devices": 2,
-      "O3_waste_mb": 37198.94719399999,
-      "O4_total_mem_mb": 58801.05280600001
+      "O3_waste_mb": 49822.325,
+      "O4_total_mem_mb": 46177.675
     }
   }
 }

@@ -13,10 +13,11 @@
     "etth1fore"
   ],
   "metrics": {
-    "memory_mb": 10334.297152878002,
-    "throughput_req_s": 416.03173717781044,
+    "memory_mb": 8974.143708190999,
+    "throughput_req_s": 628.1557184746641,
     "total_demand_req_s": 8.0,
-    "avg_latency_ms": 86.80582750000002,
+    "avg_latency_ms": 75.71445625000001,
+    "utilization": 0.60571565,
     "num_deployments": 5,
     "num_devices": 5,
     "status": "OPTIMAL"
@@ -27,8 +28,8 @@
     "objective_components": {
       "O1_deployments": 5,
       "O2_devices": 5,
-      "O3_waste_mb": 101665.702847122,
-      "O4_total_mem_mb": 10334.297152878002
+      "O3_waste_mb": 359025.856291809,
+      "O4_total_mem_mb": 8974.143708190999
     }
   }
 }

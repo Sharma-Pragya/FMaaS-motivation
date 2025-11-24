@@ -6,23 +6,10 @@
     "diasbp",
     "ecgclass"
   ],
-  "metrics": {
-    "memory_mb": 1638.17619066,
-    "throughput_req_s": 71.92269735935265,
-    "total_demand_req_s": 2.0,
-    "avg_latency_ms": 51.45754,
-    "num_deployments": 2,
-    "num_devices": 1,
-    "status": "OPTIMAL"
-  },
+  "metrics": null,
   "ilp_result": {
-    "status": "OPTIMAL",
-    "objective": 2001000.0,
-    "objective_components": {
-      "O1_deployments": 2,
-      "O2_devices": 1,
-      "O3_waste_mb": 14361.82380934,
-      "O4_total_mem_mb": 1638.17619066
-    }
+    "status": "INFEASIBLE",
+    "objective": null,
+    "objective_components": {}
   }
 }

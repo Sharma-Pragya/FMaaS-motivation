@@ -10,9 +10,10 @@
   ],
   "metrics": {
     "memory_mb": 16534.9375,
-    "throughput_req_s": 20.98705852714972,
+    "throughput_req_s": 3.6795256767604396,
     "total_demand_req_s": 4.0,
     "avg_latency_ms": 198.88018,
+    "utilization": 0.79552072,
     "num_deployments": 1,
     "num_devices": 1,
     "status": "OPTIMAL"

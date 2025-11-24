@@ -1,0 +1,35 @@
+{
+  "workload_type": "vlm",
+  "num_tasks": 8,
+  "objective_mode": "deployments_devices_modelsize",
+  "task_list": [
+    "activity_recognition",
+    "crowd_counting",
+    "gesture_recognition",
+    "image_classification",
+    "object_detection",
+    "ocr",
+    "scene_classification",
+    "traffic_classification"
+  ],
+  "metrics": {
+    "memory_mb": 20127.675000000003,
+    "throughput_req_s": 8.052797707284432,
+    "total_demand_req_s": 8.0,
+    "avg_latency_ms": 214.1032326683756,
+    "utilization": 1.7128252979145124,
+    "num_deployments": 2,
+    "num_devices": 2,
+    "status": "OPTIMAL"
+  },
+  "ilp_result": {
+    "status": "OPTIMAL",
+    "objective": 2002018.810636379,
+    "objective_components": {
+      "O1_deployments": 2,
+      "O2_devices": 2,
+      "O3_waste_mb": 75872.325,
+      "O4_total_mem_mb": 20127.675000000003
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "workload_type": "tsfm",
+  "num_tasks": 2,
+  "objective_mode": "deployments_devices_modelsize",
+  "task_list": [
+    "diasbp",
+    "ecgclass"
+  ],
+  "metrics": null,
+  "ilp_result": {
+    "status": "INFEASIBLE",
+    "objective": null,
+    "objective_components": {}
+  }
+}

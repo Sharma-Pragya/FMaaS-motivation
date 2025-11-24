@@ -362,6 +362,8 @@ def build_and_solve(
         obj = alpha * O1
     elif minimize == "deployments_devices":
         obj = alpha * O1 + beta * O2
+    elif minimize == "deployments_devices_modelsize":
+        obj = alpha * O1 + beta * O2 + delta * O4
     elif minimize == "deployments_devices_waste":
         obj = alpha * O1 + beta * O2 + gamma * O3
     elif minimize == "deployments_devices_waste_modelsize":

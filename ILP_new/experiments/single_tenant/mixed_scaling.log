@@ -1,0 +1,124 @@
+Scaling Experiment Plan:
+  Workloads: ['mixed']
+  Task counts: [2, 4, 6, 8, 10, 12, 14, 16]
+  Objectives: ['deployments', 'deployments_devices', 'deployments_devices_modelsize']
+  Total runs: 24
+  Device pool: 12 devices (8× A100, 4× A6000)
+
+
+======================================================================
+Workload: MIXED
+======================================================================
+Loading MIXED pipeline data...
+  Pipelines: 199
+
+[1/24] mixed | 2 tasks | deployments
+  Tasks (2): activity_recognition, diasbp
+Restricted license - for non-production use only - expires 2027-11-29
+  Status: OPTIMAL
+  Deployments: 2, Devices: 2
+  Memory: 28294.4 MB
+  Throughput: 36.45 req/s
+  Avg Latency: 228.16 ms
+
+[2/24] mixed | 2 tasks | deployments_devices
+  Tasks (2): activity_recognition, diasbp
+  Status: OPTIMAL
+  Deployments: 2, Devices: 2
+  Memory: 28294.4 MB
+  Throughput: 36.45 req/s
+  Avg Latency: 228.16 ms
+
+[3/24] mixed | 2 tasks | deployments_devices_modelsize
+  Tasks (2): activity_recognition, diasbp
+  Status: OPTIMAL
+  Deployments: 2, Devices: 2
+  Memory: 6080.4 MB
+  Throughput: 41.03 req/s
+  Avg Latency: 86.95 ms
+
+[4/24] mixed | 4 tasks | deployments
+  Tasks (4): activity_recognition, crowd_counting, diasbp, ecgclass
+  Status: OPTIMAL
+  Deployments: 3, Devices: 3
+  Memory: 28426.0 MB
+  Throughput: 372.79 req/s
+  Avg Latency: 194.03 ms
+
+[5/24] mixed | 4 tasks | deployments_devices
+  Tasks (4): activity_recognition, crowd_counting, diasbp, ecgclass
+  Status: OPTIMAL
+  Deployments: 3, Devices: 3
+  Memory: 5938.0 MB
+  Throughput: 376.81 req/s
+  Avg Latency: 79.04 ms
+
+[6/24] mixed | 4 tasks | deployments_devices_modelsize
+  Tasks (4): activity_recognition, crowd_counting, diasbp, ecgclass
+  Status: OPTIMAL
+  Deployments: 3, Devices: 3
+  Memory: 5938.0 MB
+  Throughput: 376.81 req/s
+  Avg Latency: 79.04 ms
+
+[7/24] mixed | 6 tasks | deployments
+  Tasks (6): activity_recognition, crowd_counting, gesture_recognition, diasbp, ecgclass, elecfore
+  Status: OPTIMAL
+  Deployments: 4, Devices: 4
+  Memory: 7891.8 MB
+  Throughput: 305.95 req/s
+  Avg Latency: 80.65 ms
+
+[8/24] mixed | 6 tasks | deployments_devices
+  Tasks (6): activity_recognition, crowd_counting, gesture_recognition, diasbp, ecgclass, elecfore
+  Status: OPTIMAL
+  Deployments: 4, Devices: 4
+  Memory: 18860.5 MB
+  Throughput: 301.82 req/s
+  Avg Latency: 167.59 ms
+
+[9/24] mixed | 6 tasks | deployments_devices_modelsize
+  Tasks (6): activity_recognition, crowd_counting, gesture_recognition, diasbp, ecgclass, elecfore
+  Status: OPTIMAL
+  Deployments: 4, Devices: 4
+  Memory: 7891.8 MB
+  Throughput: 305.95 req/s
+  Avg Latency: 80.65 ms
+
+[10/24] mixed | 8 tasks | deployments
+  Tasks (8): activity_recognition, crowd_counting, gesture_recognition, image_classification, diasbp, ecgclass, elecfore, etth1fore
+  Status: OPTIMAL
+  Deployments: 5, Devices: 5
+  Memory: 18354.8 MB
+  Throughput: 625.47 req/s
+  Avg Latency: 104.20 ms
+
+[11/24] mixed | 8 tasks | deployments_devices
+  Tasks (8): activity_recognition, crowd_counting, gesture_recognition, image_classification, diasbp, ecgclass, elecfore, etth1fore
+  Status: OPTIMAL
+  Deployments: 5, Devices: 5
+  Memory: 8974.1 MB
+  Throughput: 628.16 req/s
+  Avg Latency: 75.71 ms
+
+[12/24] mixed | 8 tasks | deployments_devices_modelsize
+  Tasks (8): activity_recognition, crowd_counting, gesture_recognition, image_classification, diasbp, ecgclass, elecfore, etth1fore
+  Status: OPTIMAL
+  Deployments: 5, Devices: 5
+  Memory: 8974.1 MB
+  Throughput: 628.16 req/s
+  Avg Latency: 75.71 ms
+
+[13/24] mixed | 10 tasks | deployments
+  Tasks (10): activity_recognition, crowd_counting, gesture_recognition, image_classification, object_detection, diasbp, ecgclass, elecfore, etth1fore, gestureclass
+Traceback (most recent call last):
+  File "/home/pragya/Desktop/FMaaS-motivation/ILP_new/experiments/single_tenant/run_scaling_experiments.py", line 730, in <module>
+    main()
+  File "/home/pragya/Desktop/FMaaS-motivation/ILP_new/experiments/single_tenant/run_scaling_experiments.py", line 681, in main
+    exp_result = run_single_experiment(
+  File "/home/pragya/Desktop/FMaaS-motivation/ILP_new/experiments/single_tenant/run_scaling_experiments.py", line 576, in run_single_experiment
+    result = build_and_solve(
+  File "/home/pragya/Desktop/FMaaS-motivation/ILP_new/experiments/single_tenant/../../methods/single_tenant.py", line 404, in build_and_solve
+    model.optimize()
+  File "src/gurobipy/_model.pyx", line 926, in gurobipy._model.Model.optimize
+gurobipy._exception.GurobiError: Model too large for size-limited license; visit https://gurobi.com/unrestricted for more information

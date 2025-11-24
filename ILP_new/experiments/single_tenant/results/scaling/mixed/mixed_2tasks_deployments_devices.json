@@ -7,10 +7,11 @@
     "diasbp"
   ],
   "metrics": {
-    "memory_mb": 14973.6910641,
-    "throughput_req_s": 23.151014938039395,
+    "memory_mb": 28294.36892712,
+    "throughput_req_s": 36.45207273635024,
     "total_demand_req_s": 2.0,
-    "avg_latency_ms": 161.56565,
+    "avg_latency_ms": 228.157855,
+    "utilization": 0.45631571,
     "num_deployments": 2,
     "num_devices": 2,
     "status": "OPTIMAL"
@@ -21,8 +22,8 @@
     "objective_components": {
       "O1_deployments": 2,
       "O2_devices": 2,
-      "O3_waste_mb": 49026.3089359,
-      "O4_total_mem_mb": 14973.6910641
+      "O3_waste_mb": 99705.63107288,
+      "O4_total_mem_mb": 28294.36892712
     }
   }
 }

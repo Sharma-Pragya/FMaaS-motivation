@@ -12,10 +12,24 @@
     "ratefore",
     "sysbp"
   ],
-  "metrics": null,
+  "metrics": {
+    "memory_mb": 4508.560976206,
+    "throughput_req_s": 1206.9407109668932,
+    "total_demand_req_s": 8.0,
+    "avg_latency_ms": 10.6566175,
+    "utilization": 0.08525294000000003,
+    "num_deployments": 8,
+    "num_devices": 8,
+    "status": "OPTIMAL"
+  },
   "ilp_result": {
-    "status": "INFEASIBLE",
-    "objective": null,
-    "objective_components": {}
+    "status": "OPTIMAL",
+    "objective": 8000000.0,
+    "objective_components": {
+      "O1_deployments": 8,
+      "O2_devices": 8,
+      "O3_waste_mb": 635491.4390237939,
+      "O4_total_mem_mb": 4508.560976206
+    }
   }
 }
