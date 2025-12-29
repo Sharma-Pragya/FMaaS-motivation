@@ -56,7 +56,7 @@ async def _deploy_one(s: DeploySpec, session: aiohttp.ClientSession):
     if s['backbone'] == "llava":
         conda_env = vlm_env
         server_cmd = f"python device/main.py --port {port} "
-    elif s['backbone'] in ["momentlarge","momentbase",'momentsmall',"chronostiny"] :
+    elif s['backbone'] in ["momentlarge","momentbase",'momentsmall',"chronostiny","papageip","papageis"] :
         conda_env = timeseries_env
         server_cmd = f"python device/main.py --port {port} "
     else:

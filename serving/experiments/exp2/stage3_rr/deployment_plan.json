@@ -1,0 +1,127 @@
+{
+  "sites": [
+    {
+      "id": "site1",
+      "deployments": [
+        {
+          "device": "http://10.100.20.16:8001",
+          "device_type": "A16",
+          "backbone": "papageip",
+          "decoders": [
+            {
+              "task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_papageip_mlp"
+            },
+            {
+              "task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_papageip_mlp"
+            },
+            {
+              "task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_papageip_mlp"
+            }
+          ],
+          "tasks": {
+            "heartrate": {
+              "type": "regression",
+              "total_requested_workload": 50,
+              "request_per_sec": 25.0
+            },
+            "sysbp": {
+              "type": "regression",
+              "total_requested_workload": 50,
+              "request_per_sec": 25.0
+            },
+            "diasbp": {
+              "type": "regression",
+              "total_requested_workload": 50,
+              "request_per_sec": 25.0
+            },
+            "ecgclass": {
+              "type": "classification",
+              "total_requested_workload": 50,
+              "request_per_sec": 25.0
+            },
+            "gestureclass": {
+              "type": "classification",
+              "total_requested_workload": 50,
+              "request_per_sec": 25.0
+            }
+          }
+        },
+        {
+          "device": "http://10.100.20.15:8002",
+          "device_type": "A16",
+          "backbone": "papageip",
+          "decoders": [
+            {
+              "task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_papageip_mlp"
+            },
+            {
+              "task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_papageip_mlp"
+            },
+            {
+              "task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_papageip_mlp"
+            }
+          ],
+          "tasks": {
+            "heartrate": {
+              "type": "regression",
+              "total_requested_workload": 25.0,
+              "request_per_sec": 25.0
+            },
+            "sysbp": {
+              "type": "regression",
+              "total_requested_workload": 25.0,
+              "request_per_sec": 25.0
+            },
+            "diasbp": {
+              "type": "regression",
+              "total_requested_workload": 25.0,
+              "request_per_sec": 25.0
+            },
+            "ecgclass": {
+              "type": "classification",
+              "total_requested_workload": 25.0,
+              "request_per_sec": 25.0
+            },
+            "gestureclass": {
+              "type": "classification",
+              "total_requested_workload": 25.0,
+              "request_per_sec": 25.0
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

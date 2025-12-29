@@ -56,10 +56,10 @@ def load_models(backbone: str, decoders: list):
         _pipeline = Pipeline(ChronosModel(DEVICE, "mini"))
     elif backbone == "papageis":
         from timeseries.components.backbones.papagei import PapageiModel
-        _pipeline = Pipeline(PapageiModel(DEVICE, "papagei_p"))
+        _pipeline = Pipeline(PapageiModel(DEVICE, "papagei_s"))
     elif backbone == "papageip":
         from timeseries.components.backbones.papagei import PapageiModel
-        _pipeline = Pipeline(PapageiModel(DEVICE, "papagei_s"))
+        _pipeline = Pipeline(PapageiModel(DEVICE, "papagei_p"))
     elif backbone == "papageissvri":
         from timeseries.components.backbones.papagei import PapageiModel
         _pipeline = Pipeline(PapageiModel(DEVICE, "papagei_s_svri"))

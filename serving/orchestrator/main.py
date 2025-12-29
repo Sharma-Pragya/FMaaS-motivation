@@ -146,19 +146,24 @@ if __name__ == "__main__":
     parser.add_argument("--run-only", action="store_true", help="Runtime phase")
     args = parser.parse_args()
 
-    #extract tasks and devices from config.py
-    from user_config import devices, tasks 
+    from experiments.user_config import devices, tasks 
     all_task_names = sorted({t for t in tasks.keys()})
     routed_tasks = [(t, None, None, None) for t in all_task_names] #task, site, device, backbone
     seed=42
 
-    # #synthetic trace generation
+    # #extract tasks and devices from config.py
+    # from experiments.exp2.stage4_resources.user_config import devices, tasks 
+    # all_task_names = sorted({t for t in tasks.keys()})
+    # routed_tasks = [(t, None, None, None) for t in all_task_names] #task, site, device, backbone
+    # seed=42
+
+
+    ##synthetic trace generation
     # from traces.gamma import generate_requests
     # num_tasks, alpha, req_rate, cv, duration = (1, 1, 6, 1, 10)  # num_tasks, alpha, req_rate, cv, duration
     # trace = generate_requests(num_tasks, alpha, req_rate, cv, duration, routed_tasks, seed)
 
-    #real workload trace can be loaded
-    #update the peak workload in tasks based on trace
+    # #lmsyschat
     # from traces.lmsyschat import generate_requests
     # req_rate, duration = (6, 10)
     # trace,avg_workload_per_task,peak_workload_per_task = generate_requests( req_rate,  duration, routed_tasks, seed)
@@ -168,6 +173,7 @@ if __name__ == "__main__":
     #         tasks[t]['peak_workload'] = peak_workload_per_task[t]
     # print("Updated tasks:", tasks)
 
+    #chatbotarena
     from traces.chatbotarena import generate_requests
     req_rate, duration = (10,300) #max (50,300), (100,300), (150,300), (200,300)
     trace,avg_workload_per_task,peak_workload_per_task = generate_requests(req_rate, duration, routed_tasks, seed)
@@ -180,7 +186,7 @@ if __name__ == "__main__":
     #make plan using greedy algorithm and route the trace based on the plan
     plan = run_deployment_plan(devices, tasks)
     routed_trace = route_trace(trace, plan, seed)
-
+    print(routed_trace)
     site_ids = [s["id"] for s in plan["sites"]]
     if args.deploy_only:
         acks.clear()

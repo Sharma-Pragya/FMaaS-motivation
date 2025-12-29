@@ -9,8 +9,7 @@ SITE_ID = "site2"
 pythonpath = (
     "/work/pi_shenoy_umass_edu/hshastri/FMaaS-motivation:"
     "/project/pi_shenoy_umass_edu/hshastri/foundation-model-zoo:"
-    "/work/pi_shenoy_umass_edu/hshastri/FMaaS-motivation:"
-    "/project/pi_shenoy_umass_edu/hshastri/foundation-model-zoo:$PYTHONPATH"
+    "/project/pi_shenoy_umass_edu/hshastri/FMaaS-motivation:$PYTHONPATH"
 )
 
 # remote_cmd = (
