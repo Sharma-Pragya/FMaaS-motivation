@@ -1,25 +1,18 @@
 # device/model_loader.py
 import torch
-from timeseries.pipeline import Pipeline
-from timeseries.components.decoders.regression.mlp import MLPDecoder as RegressionMLP
-from timeseries.components.decoders.classification.mlp import MLPDecoder as ClassificationMLP
-from timeseries.components.decoders.forecasting.mlp import MLPDecoder as ForecastingMLP
+from fmtk.pipeline import Pipeline
+from fmtk.components.decoders.regression.mlp import MLPDecoder as RegressionMLP
+from fmtk.components.decoders.classification.mlp import MLPDecoder as ClassificationMLP
+from fmtk.components.decoders.forecasting.mlp import MLPDecoder as ForecastingMLP
+from fmtk.logger import Logger
 from device.config import DEVICE, DECODERS
+from contextlib import nullcontext
+
 
 _pipeline = None
 _decoders = {}
 _loaded = False
-
-
-def unload_models():
-    """Unload all currently loaded models to free GPU memory."""
-    global _pipeline, _decoders, _loaded
-    if _loaded:
-        del _pipeline
-        _decoders.clear()
-        torch.cuda.empty_cache()
-        _loaded = False
-        print("[ModelLoader] Unloaded all models from memory.")
+current_task = None
 
 
 def load_models(backbone: str, decoders: list):
@@ -28,46 +21,45 @@ def load_models(backbone: str, decoders: list):
     backbone: str (e.g., "moment_large")
     decoders: list of {"task": str, "type": str, "path": str}
     """
-    global _pipeline, _decoders, _loaded
-
-    # unload_models()
-
+    global _pipeline, _decoders, _loaded, current_task
+    logger=Logger(DEVICE,'deploymentlogger')
     print(f"[ModelLoader] Loading backbone: {backbone}")
-    if backbone == "momentlarge":
-        from timeseries.components.backbones.moment import MomentModel
-        _pipeline = Pipeline(MomentModel(DEVICE, "large"))
-    elif backbone == "momentsmall":
-        from timeseries.components.backbones.moment import MomentModel
-        _pipeline = Pipeline(MomentModel(DEVICE, "small"))
-    elif backbone == "momentbase":
-        from timeseries.components.backbones.moment import MomentModel
-        _pipeline = Pipeline(MomentModel(DEVICE, "base"))
-    elif backbone == "chronostiny":
-        from timeseries.components.backbones.chronos import ChronosModel
-        _pipeline = Pipeline(ChronosModel(DEVICE, "tiny"))
-    elif backbone == "chronosbase":
-        from timeseries.components.backbones.chronos import ChronosModel
-        _pipeline = Pipeline(ChronosModel(DEVICE, "base"))
-    elif backbone == "chronoslarge":
-        from timeseries.components.backbones.chronos import ChronosModel
-        _pipeline = Pipeline(ChronosModel(DEVICE, "large"))
-    elif backbone == "chronosmini": 
-        from timeseries.components.backbones.chronos import ChronosModel
-        _pipeline = Pipeline(ChronosModel(DEVICE, "mini"))
-    elif backbone == "papageis":
-        from timeseries.components.backbones.papagei import PapageiModel
-        _pipeline = Pipeline(PapageiModel(DEVICE, "papagei_s"))
-    elif backbone == "papageip":
-        from timeseries.components.backbones.papagei import PapageiModel
-        _pipeline = Pipeline(PapageiModel(DEVICE, "papagei_p"))
-    elif backbone == "papageissvri":
-        from timeseries.components.backbones.papagei import PapageiModel
-        _pipeline = Pipeline(PapageiModel(DEVICE, "papagei_s_svri"))
-    elif backbone == "llava":
-        from timeseries.components.backbones.llava import LlavaModel
-        _pipeline = Pipeline(LlavaModel(DEVICE, "llava-1.5-7b-hf"))
-    else:
-        raise ValueError(f"Unsupported backbone type: {backbone}")
+    with (logger.measure("load_backbone", device=DEVICE) if logger else nullcontext()):
+        if backbone == "momentlarge":
+            from fmtk.components.backbones.moment import MomentModel
+            _pipeline = Pipeline(MomentModel(DEVICE, "large"),logger=logger)
+        elif backbone == "momentsmall":
+            from fmtk.components.backbones.moment import MomentModel
+            _pipeline = Pipeline(MomentModel(DEVICE, "small"),logger=logger)
+        elif backbone == "momentbase":
+            from fmtk.components.backbones.moment import MomentModel
+            _pipeline = Pipeline(MomentModel(DEVICE, "base"),logger=logger)
+        elif backbone == "chronostiny":
+            from fmtk.components.backbones.chronos import ChronosModel
+            _pipeline = Pipeline(ChronosModel(DEVICE, "tiny"),logger=logger)
+        elif backbone == "chronosbase":
+            from fmtk.components.backbones.chronos import ChronosModel
+            _pipeline = Pipeline(ChronosModel(DEVICE, "base"),logger=logger)
+        elif backbone == "chronoslarge":
+            from fmtk.components.backbones.chronos import ChronosModel
+            _pipeline = Pipeline(ChronosModel(DEVICE, "large"),logger=logger)
+        elif backbone == "chronosmini": 
+            from fmtk.components.backbones.chronos import ChronosModel
+            _pipeline = Pipeline(ChronosModel(DEVICE, "mini"),logger=logger)
+        elif backbone == "papageis":
+            from fmtk.components.backbones.papagei import PapageiModel
+            _pipeline = Pipeline(PapageiModel(DEVICE, "papagei_s"),logger=logger)
+        elif backbone == "papageip":
+            from fmtk.components.backbones.papagei import PapageiModel
+            _pipeline = Pipeline(PapageiModel(DEVICE, "papagei_p"))
+        elif backbone == "papageissvri":
+            from fmtk.components.backbones.papagei import PapageiModel
+            _pipeline = Pipeline(PapageiModel(DEVICE, "papagei_s_svri"),logger=logger)
+        elif backbone == "llava":
+            from fmtk.components.backbones.llava import LlavaModel
+            _pipeline = Pipeline(LlavaModel(DEVICE, "llava-1.5-7b-hf"),logger=logger)
+        else:
+            raise ValueError(f"Unsupported backbone type: {backbone}")
     
     for dec in decoders:
         task, dtype, path = dec["task"], dec["type"], dec["path"]
@@ -84,14 +76,16 @@ def load_models(backbone: str, decoders: list):
         else:
             raise ValueError(f"Unknown decoder type: {dtype} or mlp_{backbone}_{dtype} or mlp_{backbone}_{task}")
 
-        _decoders[task] = _pipeline.add_decoder(decoder, load=True, trained=True, path=path)
-
+        _decoders[task] = _pipeline.add_decoder(decoder, load=True, train=False, path=path)
+        current_task=task
     _loaded = True
     print(f"[ModelLoader] Loaded {_pipeline.model_instance.__class__.__name__} with {len(_decoders)} decoders.")
+    return logger
 
 
 def get_loaded_pipeline():
     """Return the current loaded pipeline and decoders."""
+    print(f"[ModelLoader] Retrieving loaded models. Loaded status: {_loaded}")
     if not _loaded:
         raise RuntimeError("No models are loaded. Please deploy first via /load_model.")
-    return _pipeline, _decoders
+    return _pipeline, _decoders, current_task

@@ -1,23 +1,26 @@
-# site_manager/runtime_executor.py
-import asyncio, time, base64, aiohttp, numpy as np
-from typing import List, Optional, Literal
+from fmtk.datasets.etth1 import ETTh1Dataset
+from fmtk.datasets.weather import WeatherDataset
+from fmtk.datasets.exchange import ExchangeDataset
+from fmtk.datasets.ecg5000 import ECG5000Dataset
+from fmtk.datasets.uwavegesture import UWaveGestureLibraryALLDataset
+from fmtk.datasets.ppg import PPGDataset
+from fmtk.datasets.illness import IllnessDataset
+from fmtk.datasets.ecl import ECLDataset
+from fmtk.datasets.traffic import TrafficDataset
+from fmtk.datasets.vqa import VQADataset
+import asyncio
+import time
+import numpy as np
+from typing import List
+from pytriton.client import ModelClient
 from torch.utils.data import DataLoader
-from site_manager.config import DATASET_DIR, DEFAULT_BATCH_SIZE
-
-from timeseries.datasets.etth1 import ETTh1Dataset
-from timeseries.datasets.weather import WeatherDataset
-from timeseries.datasets.exchange import ExchangeDataset
-from timeseries.datasets.ecg5000 import ECG5000Dataset
-from timeseries.datasets.uwavegesture import UWaveGestureLibraryALLDataset
-from timeseries.datasets.ppg import PPGDataset
-from timeseries.datasets.illness import IllnessDataset
-from timeseries.datasets.ecl import ECLDataset
-from timeseries.datasets.traffic import TrafficDataset
-from timeseries.datasets.vqa import VQADataset
-
+from urllib.parse import urlparse
+from config import *
+import tritonclient.grpc as grpcclient
+from tritonclient.grpc import InferInput
 
 DATASET_LOADERS = {}
-
+dataloaders={}
 #based on type of tasks in requests in needs to initialize dataloaders
 def initialize_dataloaders():
     global DATASET_LOADERS
@@ -25,11 +28,11 @@ def initialize_dataloaders():
     d = DATASET_DIR
     # create test dataloaders
     DATASET_LOADERS = {
-        "ecgclass": DataLoader(ECG5000Dataset({"dataset_path": f"{d}/ECG5000"}, {"task_type": "classification"}, "test"), **inference_config),
-        "heartrate": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"hr"}, "test"), **inference_config),
-        "diasbp": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"diasbp"}, "test"), **inference_config),
-        "sysbp": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"sysbp"}, "test"), **inference_config),
-        # "gesture_class": DataLoader(UWaveGestureLibraryALLDataset({"dataset_path": f"{d}/UWaveGestureLibraryAll"}, {"task_type": "classification"}, "test"), **inference_config),
+        # "ecgclass": DataLoader(ECG5000Dataset({"dataset_path": f"{d}/ECG5000"}, {"task_type": "classification"}, "test"), **inference_config),
+        # "heartrate": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"hr"}, "test"), **inference_config),
+        # "diasbp": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"diasbp"}, "test"), **inference_config),
+        # "sysbp": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"sysbp"}, "test"), **inference_config),
+        "gestureclass": DataLoader(UWaveGestureLibraryALLDataset({"dataset_path": f"{d}/UWaveGestureLibraryAll"}, {"task_type": "classification"}, "test"), **inference_config),
         # "ecl": DataLoader(ECLDataset({"dataset_path": f"{d}/ElectricityLoad-data"}, {"task_type": "forecasting"}, "test"), **inference_config),
         # "traffic": DataLoader(TrafficDataset({"dataset_path": f"{d}/Traffic"}, {"task_type": "forecasting"}, "test"), **inference_config),
         # "illness": DataLoader(IllnessDataset({"dataset_path": f"{d}/ILLNESS"}, {"task_type": "forecasting"}, "test", forecast_horizon=192), **inference_config),
@@ -45,64 +48,139 @@ def load_dataloader(task: str):
         raise ValueError(f'Unknown task: {task}')
     return DATASET_LOADERS[task]
 
-def encode_raw(arr) -> dict:
-    if isinstance(arr, np.ndarray):
-        return {
-            "shape": arr.shape,
-            "dtype": str(arr.dtype),
-            "data": base64.b64encode(arr.tobytes()).decode("utf-8"),
-        }
-    elif isinstance(arr, str):
-        return {
-            "type": "text",
-            "data": arr,
-        }
-    elif isinstance(arr, (list, tuple)) and all(isinstance(x, str) for x in arr):
-        return {
-            "type": "text_list",
-            "data": arr,
-        }
+CLIENT_CACHE = {}
+def get_client(url: str):
+    if url not in CLIENT_CACHE:
+        try:
+            # Now clean_url is just "10.100.20.50:8001"
+            client = grpcclient.InferenceServerClient(url=url, verbose=False)
+            
+            if not client.is_server_live():
+                print(f"Warning: Server at {url} is not live yet.")
+                return None
+                
+            CLIENT_CACHE[url] = client
+            print(f"Connected to gRPC server at {url}")
+            return client # Make sure to return the new client here
+            
+        except Exception as e:
+            print(f"Error connecting to {url}: {e}")
+            return None
+            
+    return CLIENT_CACHE[url]
 
-async def send_request(i, server, payload):
-    
+async def send_request(req_id, device_url, inputs_dict, ouputs_dict):
+    # 1. Get the raw gRPC client
     st = time.time()
-    try:
-        timeout = aiohttp.ClientTimeout(total=3*3600)
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.post(server, json=payload) as resp:
-                data = await resp.json()
-                et = time.time()
-    except Exception as e:
-        print(f"Request {i} failed: {e}")
-        data = {}
-        et = time.time()
-    return (i, et - st, data)
+    client = get_client(device_url) 
+    if client is None:
+        return
 
-async def handle_runtime_request(reqs:dict):
-    tasks: List[asyncio.Task] = []
-    start = time.time()
-    for req in reqs:
-        await asyncio.sleep(start + req['req_time'] - time.time())
-        dataloader=load_dataloader(req['task'])
-        batch=next(iter(dataloader))
-        if 'question' in batch:
-            payload = {
-                "task": req['task'], 
-                "req_id": req['req_id'],
-                "x": encode_raw(batch['x'].numpy()),
-                "question": encode_raw(batch['question']),
-            }
-        #timeseries with mask and without
+    # 2. Prepare Inputs List
+    triton_inputs = []
+    
+    for name, data in inputs_dict.items():
+        # Determine format based on data type
+        # Strings/Bytes need "BYTES", Floats need "FP32"
+        if data.dtype.kind in {'U', 'S', 'O'}: # String/Object/Bytes
+            dtype = "BYTES"
         else:
-            payload = {
-                "task": req['task'], 
-                "req_id": req['req_id'],
-                "x": encode_raw(batch['x'].numpy()),
-                "mask": encode_raw(batch['mask'].numpy()) if len(batch)==3 else None,
-            }  
+            dtype = "FP32" # Or "INT32", etc. based on your data
 
-        # print(f"[RuntimeExecutor] Executing {req['task']} on device {req['device']}")
-        task = asyncio.create_task(send_request(req['req_id'], req['device']+'/predict', payload))
-        tasks.append(task)
-    latency = await asyncio.gather(*tasks)
-    return latency
+        # Create the InferInput object
+        # shape is required
+        inp = InferInput(name, data.shape, dtype)
+        inp.set_data_from_numpy(data)
+        triton_inputs.append(inp)
+
+    # 3. Send Request (Thread-safe!)
+    # logic: model_name is the one you defined in bind()
+    response = client.infer(model_name="edge_infer", inputs=triton_inputs)
+
+    # 4. Get Output
+    # Assuming your output is named "output"
+    # You might need to check your model config for the exact output name
+    result = response.as_numpy("output")
+    proc_time = response.as_numpy("proc_time")
+    swap_time = response.as_numpy("swap_time")
+    et = time.time()
+    return req_id, device_url, et - st, proc_time.item(), swap_time.item(), result.item(), ouputs_dict.get('y').item()
+    
+
+
+async def handle_runtime_request(reqs: dict, mode: str = 'trace'):
+    if mode == 'trace':
+        # Existing logic for trace-based requests
+        tasks: List[asyncio.Task] = []
+        start = time.time()
+        
+        for req in reqs:
+            # Simulate Arrival Time
+            wait_time = (start + req['req_time']) - time.time()
+            if wait_time > 0:
+                await asyncio.sleep(wait_time)
+
+            dataloader = load_dataloader(req['task'])
+            batch = next(iter(dataloader))
+
+            # --- Prepare Inputs for PyTriton ---
+            # PyTriton expects NumPy arrays.
+            inputs = {}
+            outputs = {}
+
+            # 1. X (Data)
+            inputs['x'] = batch['x'].numpy().astype(np.float32)
+
+            #2. Y) (Labels)
+            outputs['y'] = batch['y'].numpy().astype(np.float32)
+
+            # 2. Task (Bytes)
+            # Must be shape (Batch,) or (1,) depending on your batching strategy
+            # Even for a single item, it expects an array.
+            task_str = req['task']
+            inputs['task'] = np.array([[task_str.encode('utf-8')]], dtype=object)
+
+            # 3. Optional: Mask
+            if 'mask' in batch:
+                mask_np = batch['mask'].numpy().astype(np.float32)
+                inputs['mask'] = np.expand_dims(mask_np, axis=-1)
+
+            # 4. Optional: Question
+            if 'question' in batch:
+                q_data = batch['question']
+                inputs['question'] = np.array([[q_data.encode('utf-8')]], dtype=object)
+
+            # Schedule the request
+            task = asyncio.create_task(send_request(req['req_id'], req['device'], inputs, outputs))
+            tasks.append(task)
+
+        results = await asyncio.gather(*tasks)
+        return results
+    
+    elif mode == 'accuracy':
+        task = reqs[0]['task']
+        device = reqs[0]['device']
+        
+        dataloader = load_dataloader(task)
+        
+        results = []        
+        for batch_idx, batch in enumerate(dataloader):
+            # Prepare inputs (same as trace mode)
+            inputs = {}
+            outputs={}
+            inputs['x'] = batch['x'].numpy().astype(np.float32)
+            outputs['y'] = batch['y'].numpy().astype(np.float32)
+            inputs['task'] = np.array([[task.encode('utf-8')]], dtype=object)
+            if 'mask' in batch:
+                mask_np = batch['mask'].numpy().astype(np.float32)
+                inputs['mask'] = np.expand_dims(mask_np, axis=-1)
+            if 'question' in batch:
+                q_data = batch['question']
+                inputs['question'] = np.array([[q_data.encode('utf-8')]], dtype=object)
+            
+            result = await send_request(batch_idx, device, inputs, outputs)
+            results.append(result)
+        return results
+            
+    else:
+        raise ValueError(f"Unknown mode: {mode}")

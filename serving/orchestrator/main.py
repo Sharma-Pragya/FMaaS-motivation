@@ -114,24 +114,6 @@ def publish_deployments(client, plan, routed_trace):
                 task=record['task']
                 f.write(f'{site},{device},{backbone},{req_id},{task},{req_time}\n')
 
-
-    # save site_requests in csv file 
-    # request_latency_results.csv with columns site_manager, device, req_id, req_time
-    filename='site_requests.csv'
-    file_exists = os.path.isfile(filename)
-    with open(filename, 'a') as f:
-        if not file_exists:
-            f.write('site_manager,device,backbone,req_id,task,req_time\n')
-        for site in site_requests:
-            for record in site_requests[site]:
-                req_id=record['req_id']
-                req_time=record['req_time']
-                device=record['device']
-                backbone=record['backbone']
-                task=record['task']
-                f.write(f'{site},{device},{backbone},{req_id},{task},{req_time}\n')
-
-
 def trigger_runtime_start(client, plan):
     print("Triggering runtime start on all sites...")
     for site in plan["sites"]:
@@ -175,9 +157,8 @@ if __name__ == "__main__":
 
     #chatbotarena
     from traces.chatbotarena import generate_requests
-    req_rate, duration = (10,300) #max (50,300), (100,300), (150,300), (200,300)
+    req_rate, duration = (1,10) #max (50,300), (100,300), (150,300), (200,300)
     trace,avg_workload_per_task,peak_workload_per_task = generate_requests(req_rate, duration, routed_tasks, seed)
-
     #update tasks dict with peak workload based on real world trace
     for t in tasks:
         if t in avg_workload_per_task:
@@ -186,7 +167,7 @@ if __name__ == "__main__":
     #make plan using greedy algorithm and route the trace based on the plan
     plan = run_deployment_plan(devices, tasks)
     routed_trace = route_trace(trace, plan, seed)
-    print(routed_trace)
+    
     site_ids = [s["id"] for s in plan["sites"]]
     if args.deploy_only:
         acks.clear()

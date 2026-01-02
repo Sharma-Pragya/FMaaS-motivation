@@ -7,7 +7,7 @@ BROKER = "broker.emqx.io"
 SITE_ID = "site2"
 
 pythonpath = (
-    "/project/pi_shenoy_umass_edu/hshastri/FMTK/src:"
+    "/project/pi_shenoy_umass_edu/hshastri/FMTK:"
     "/project/pi_shenoy_umass_edu/hshastri/FMaaS-motivation:$PYTHONPATH"
 )
 

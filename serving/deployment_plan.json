@@ -4,21 +4,21 @@
       "id": "site2",
       "deployments": [
         {
-          "device": "http://10.100.31.63:8001",
+          "device": "10.100.20.48:8001",
           "device_type": "A16",
-          "backbone": "papageip",
+          "backbone": "chronostiny",
           "decoders": [
             {
-              "task": "heartrate",
-              "type": "regression",
-              "path": "heartrate_papageip_mlp"
+              "task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_chronostiny_mlp"
             }
           ],
           "tasks": {
-            "heartrate": {
-              "type": "regression",
-              "total_requested_workload": 10.0,
-              "request_per_sec": 10.0
+            "gestureclass": {
+              "type": "classification",
+              "total_requested_workload": 1.0,
+              "request_per_sec": 1.0
             }
           }
         }

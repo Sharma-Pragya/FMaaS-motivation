@@ -1,8 +1,12 @@
+import json
+import asyncio
+import asyncssh
+import numpy as np
 from typing import List
-from pydantic import BaseModel, Field
-import asyncio, asyncssh, aiohttp
 from urllib.parse import urlparse
-from config import *
+from pydantic import BaseModel, Field
+from pytriton.client import ModelClient
+from config import * 
 
 class DecoderSpec(BaseModel):
     task: str
@@ -10,23 +14,24 @@ class DecoderSpec(BaseModel):
     path: str
 
 class DeploySpec(BaseModel):
-    device: str               # HTTP endpoint, e.g. "http://gpu048:8000" or "http://10.100.20.48:8000"
-    backbone: str             # "moment_large" or "llava"
+    device: str
+    backbone: str
     decoders: List[DecoderSpec] = Field(default_factory=list)
 
-def _parse_hosts(device_url: str) -> tuple[str, str]:
+def _parse_url(device_url: str) -> tuple[str, str]:
     """
-    Returns (ssh_host, api_base).
-    device_url may be "http://gpu048:8000" or "http://10.100.20.48:8000".
+    Returns (ssh_host, triton_url)
+    triton_url is formatted as 'host:port' for ModelClient.
     """
     p = urlparse(device_url)
-    if p.scheme and p.hostname:
-        ssh_host = p.hostname                # e.g. "gpu048" or "10.100.20.48"
-        api_base = f"{p.scheme}://{p.netloc}"  # e.g. "http://gpu048:8000"
+    if p.scheme and p.path:
+        ssh_host = p.scheme
+        port = p.port if p.port else 8000
+        triton_url = f"{p.scheme}:{port}"
     else:
         ssh_host = device_url
-        api_base = f"http://{device_url}:8000"
-    return ssh_host, api_base,p.port
+        triton_url = f"{device_url}:8000"
+    return ssh_host, triton_url, port
 
 async def _ssh_start_server(ssh_host: str, conda_env: str, cmd: str,log_path:str):
     """Run remote command on gpu node via SSH (agent forwarding must be enabled)."""
@@ -36,10 +41,8 @@ async def _ssh_start_server(ssh_host: str, conda_env: str, cmd: str,log_path:str
             username="hshastri_umass_edu",
             agent_forwarding=True,
         ) as conn:
-            remote_cmd=(f"bash -lc '{cmds} && {activate_env} {conda_env} && nohup {cmd}> {log_path} 2>&1 &'")
-       
-            # print(f"[SSH] {ssh_host}: {remote_cmd}")
-            # await conn.run(remote_cmd, check=False)
+            remote_cmd=(f"bash -lc '{cmds} && {activate_env} {conda_env} && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CONDA_PREFIX/lib && nohup {cmd}> {log_path} 2>&1 &'")
+
             print(f"[SSH] Launching on {ssh_host}: {remote_cmd}")
             proc = await conn.create_process(remote_cmd)
             await asyncio.sleep(10)   # small delay to ensure command sent
@@ -49,45 +52,51 @@ async def _ssh_start_server(ssh_host: str, conda_env: str, cmd: str,log_path:str
     except Exception as e:
         print(f"[SSH] Error on {ssh_host}: {e}")
         raise
-
-async def _deploy_one(s: DeploySpec, session: aiohttp.ClientSession):
-    ssh_host, api_base, port = _parse_hosts(s['device'])
+    
+def _send_control(ssh_host, port, cmd_data, payload_data):
+    try:
+        with ModelClient(f"{ssh_host}:8000", "edge_control", init_timeout_s=120) as client:
+            print(f"[SiteManager] Connected to control plane at {ssh_host}:8000")
+            resp = client.infer_batch(command=cmd_data, payload=payload_data)
+            status = resp["status"][0].decode("utf-8")
+            logger_summary = resp["logger_summary"][0].decode("utf-8")
+            print(f"[PyTriton] {ssh_host}:8000 Status: {status}")
+            return {"status": status, "logger_summary": logger_summary}
+        
+    except Exception as e:
+        print(f"[PyTriton] Failed to deploy to {ssh_host}:8000: {e}")
+        return False
+        
+async def _deploy_one(s: DeploySpec):
+    ssh_host, triton_url, port = _parse_url(s['device'])
     # choose env + server command
     if s['backbone'] == "llava":
         conda_env = vlm_env
-        server_cmd = f"python device/main.py --port {port} "
+        server_cmd = f"python -u device/main.py --port {port} "
     elif s['backbone'] in ["momentlarge","momentbase",'momentsmall',"chronostiny","papageip","papageis"] :
         conda_env = timeseries_env
-        server_cmd = f"python device/main.py --port {port} "
+        server_cmd = f"python -u device/main.py --port {port} "
     else:
         print(f"[WARN] Unknown backbone {s['backbone']}; skipping {s['device']}")
         return
 
     log_path = f"./device/logs/{ssh_host}_{s['backbone']}.log"
-
+    # 1. Start Server via SSH
     await _ssh_start_server(ssh_host, conda_env, server_cmd, log_path)
     
-    await asyncio.sleep(60)
-    print('Server Started on device')
-
-    payload = {
+    # 2. Send Deployment Config via Control Plane
+    config_payload = {
         "backbone": s['backbone'],
-        "decoders": s['decoders'],
+        "decoders": [d for d in s['decoders']],
     }
-    print(f"[SiteManager] Deploying to device {api_base}")
-    try:
-        async with session.post(f"{api_base}/load_model", json=payload) as resp:
-            txt = await resp.text()
-            print(f"[HTTP] {api_base}/load_model -> {resp.status} {txt[:200]}")
-    except asyncio.TimeoutError:
-        print(f"[HTTP] Timeout while waiting for {api_base}/load_model. Probably still loading.")
-    except Exception as e:
-        print(f"[HTTP] Error posting to {api_base}/load_model: {e}")
+    config_str = json.dumps(config_payload)
+    cmd_data = np.array([[b"load"]], dtype=object)
+    payload_data = np.array([[config_str.encode("utf-8")]], dtype=object)
+
+    deployment_status = await asyncio.to_thread(_send_control, ssh_host, port, cmd_data, payload_data)
+    return deployment_status
 
 async def deploy_models(specs: List[DeploySpec]):
-    """SSH into each node to start its server, then POST /load_model to that node."""
-    async with aiohttp.ClientSession() as session:
-        tasks = [_deploy_one(s, session) for s in specs]
-        await asyncio.gather(*tasks, return_exceptions=False)
+    results=await asyncio.gather(*[_deploy_one(s) for s in specs])
     print(f"[SiteManager] Deployment complete for {len(specs)} devices.")
-    return {"status": "ok"}
+    return results

@@ -1,91 +1,116 @@
-# device/main.py
-import asyncio, time, uvicorn
-from fastapi import FastAPI, Request
-from typing import List, Optional, Literal, Union
-from pydantic import BaseModel
-from device.model_loader import load_models, unload_models
-from device.inference_engine import request_queue, _gpu_worker
-from device.config import DEVICE
+import json
+import numpy as np
+import torch
+import torch.nn as nn
+from pytriton.triton import Triton
+from pytriton.model_config import ModelConfig, Tensor
+from pytriton.decorators import batch
+from device.model_loader import load_models, get_loaded_pipeline
 
-app = FastAPI()
+import time
 
-# ---------- Schemas ----------
-class DecoderSpec(BaseModel):
-    task: str
-    type: Literal["regression", "classification", "forecasting"]
-    path: str
+class UnifiedEdgeSystem:
 
-class DeployRequest(BaseModel):
-    backbone: str
-    decoders: List[DecoderSpec]
+    @batch
+    def infer(self, x, task, mask=None, question=None):
+        """
+        Standard inference logic. 
+        PyTriton handles the queueing and batching automatically.
+        """
 
-class EncodedArray(BaseModel):
-    shape: List[int]
-    dtype: str
-    data: str
+        swap_st=time.time()
+        pipeline, decoders, current_task = get_loaded_pipeline()
+        task = task[0][0].decode('utf-8')
+        if current_task != task:
+            decoder_name = decoders.get(task)
+            pipeline.active_decoder = pipeline.decoders[decoder_name]
+        swap_time=time.time()-swap_st
+        st=time.time()
+        # Prepare Inputs
+        bx = torch.from_numpy(x)
+        b_mask = torch.from_numpy(mask) if mask is not None else None
+        if pipeline.active_decoder is not None:
+            logits=pipeline.forward(bx, b_mask)
+            if isinstance(pipeline.active_decoder.criterion, (nn.CrossEntropyLoss)):
+                logits = torch.argmax(logits, dim=1)
+            if (hasattr(pipeline.active_decoder, "requires_model") and pipeline.active_decoder.requires_model and hasattr(self.model_instance.model, "normalizer")):
+                logits = pipeline.model_instance.model.normalizer(x=logits, mode="denorm")
+            result=logits.detach().cpu().numpy()
+        else:
+            embeddings = pipeline.model_instance.forward((bx, None))
+            result = pipeline.model_instance.postprocess(embeddings)
+        et=time.time()
+        return {"output": result,"proc_time": np.array([et - st]),"swap_time": np.array([swap_time])}
 
-class EncodedText(BaseModel):
-    type: Literal["text"] = "text"
-    data: str
+    #batch not needed
+    # --- 2. The Control Endpoint ---
+    @batch
+    def control(self, command, payload):
+        """
+        Executes management tasks (Load/Unload).
+        The client sends a 'command' (load/unload) and a JSON 'payload'.
+        """
+        # Take the first command in the batch (Control requests usually aren't batched)
+        cmd_str = command[0][0].decode("utf-8")
+        status_msg = "ok"
 
-class EncodedTextList(BaseModel):
-    type: Literal["text_list"] = "text_list"
-    data: List[str]
+        try:
+            if cmd_str == "load":
+                # Decode the JSON payload containing backbone/decoders info
+                config_json = payload[0][0].decode("utf-8")
+                config = json.loads(config_json)
+                
+                print(f"[System] Loading backbone: {config['backbone']}")
+                logger=load_models(config['backbone'], config['decoders'])
+                status_msg = f"loaded_{config['backbone']}"
+                            
+            else:
+                status_msg = f"unknown_command_{cmd_str}"
 
+        except Exception as e:
+            status_msg = f"error_{str(e)}"
+            print(f"[System] Error: {e}")
 
-class PredictRequest(BaseModel):
-    req_id: int
-    task: str
-    x: EncodedArray
-    mask: Optional[Union[EncodedArray, EncodedText, EncodedTextList]] = None
-    question: Optional[Union[EncodedArray, EncodedText, EncodedTextList]] = None
-    y: Optional[Union[EncodedArray, EncodedText, EncodedTextList]] = None
-
-class PredictResponse(BaseModel):
-    req_id: int
-    device_wait_time: float
-    device_infer_time: float
-
-# ---------- FastAPI Events ----------
-@app.on_event("startup")
-async def startup_event():
-    asyncio.create_task(_gpu_worker())
-    print("[Device] Ready for deployment and runtime inference.")
-
-# ---------- Deployment Endpoints ----------
-@app.post("/load_model")
-async def load_model(req: DeployRequest):
-    load_models(req.backbone, [d.model_dump() for d in req.decoders])
-    return {"status": "loaded", "decoders": len(req.decoders)}
-
-@app.post("/unload_model")
-async def unload_model_endpoint():
-    unload_models()
-    return {"status": "unloaded"}
-
-# ---------- Runtime Endpoints ----------
-@app.post("/predict", response_model=PredictResponse)
-async def predict(req: PredictRequest):
-    fut = asyncio.get_event_loop().create_future()
-    arrival = time.time()
-    await request_queue.put((fut, req, arrival, time.time()))
-    return await fut
-
-@app.get("/health")
-def health():
-    return {"ok": True, "device": str(DEVICE)}
-
-# @app.middleware("http")
-# async def timing_middleware(request: Request, call_next):
-#     server_start = time.time()
-#     response = await call_next(request)
-#     server_end = time.time()
-#     response.headers["X-Server-Total-Time"] = str((server_end - server_start) * 1000)
-#     return response
-
+        return {
+            "status": np.array([status_msg.encode('utf-8')]),
+            "logger_summary": np.array([str(logger.summary()).encode('utf-8')])
+        }
 if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--port", type=int, default=8000)
-    args = parser.parse_args()
-    uvicorn.run("device.main:app", host="0.0.0.0", port=args.port, workers=1)
+    system = UnifiedEdgeSystem()
+    
+    with Triton() as triton:
+        # Bind the Inference Model
+        triton.bind(
+            model_name="edge_infer",
+            infer_func=system.infer,
+            inputs=[
+                Tensor(name="x", dtype=np.float32, shape=(-1, -1)),
+                Tensor(name="task", dtype=bytes, shape=(1,)),
+                Tensor(name="mask", dtype=np.float32, shape=(-1, -1), optional=True),
+                Tensor(name="question", dtype=bytes, shape=(1,), optional=True),
+            ],
+            outputs=[
+                Tensor(name="output", dtype=np.float32, shape=(-1, -1)),
+                Tensor(name="proc_time", dtype=np.float32, shape=(1,)),
+                Tensor(name="swap_time", dtype=np.float32, shape=(1,)),
+            ],
+            config=ModelConfig(max_batch_size=8)
+        )
+
+        # Bind the Control Model
+        triton.bind(
+            model_name="edge_control",
+            infer_func=system.control,
+            inputs=[
+                Tensor(name="command", dtype=bytes, shape=(1,)),
+                Tensor(name="payload", dtype=bytes, shape=(1,)),
+            ],
+            outputs=[
+                Tensor(name="status", dtype=bytes, shape=(1,)),
+                Tensor(name="logger_summary", dtype=bytes, shape=(1,)),
+            ],
+            config=ModelConfig(max_batch_size=1)
+        )
+        
+        print("[System] PyTriton Server running on port")
+        triton.serve()

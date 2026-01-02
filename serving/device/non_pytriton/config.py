@@ -90,77 +90,77 @@ DECODERS={
         }
     },
 
-    'mlp_momentlarge_gestureclass':{
+    'mlp_momentlarge_gesture_class':{
         'decoder_type': 'mlp',
         'decoder_config':{
             'DEVICE': DEVICE,
             'cfg':{'input_dim':1024,'output_dim':10,'hidden_dim':128}
         }
     },
-    'mlp_momentbase_gestureclass':{
+    'mlp_momentbase_gesture_class':{
         'decoder_type': 'mlp',
         'decoder_config':{
             'DEVICE': DEVICE,
             'cfg':{'input_dim':768,'output_dim':10,'hidden_dim':128}
         }
     },
-    'mlp_momentsmall_gestureclass':{
+    'mlp_momentsmall_gesture_class':{
         'decoder_type': 'mlp',
         'decoder_config':{
             'DEVICE': DEVICE,
             'cfg':{'input_dim':512,'output_dim':10,'hidden_dim':128}
         }
     },
-    'mlp_chronostiny_gestureclass':{
+    'mlp_chronostiny_gesture_class':{
         'decoder_type': 'mlp',
         'decoder_config':{
             'DEVICE': DEVICE,
             'cfg':{'input_dim':256,'output_dim':10,'hidden_dim':128}
         }
     },
-    'mlp_chronosmini_gestureclass':{
+    'mlp_chronosmini_gesture_class':{
         'decoder_type': 'mlp',
         'decoder_config':{
             'DEVICE': DEVICE,
             'cfg':{'input_dim':384,'output_dim':10,'hidden_dim':128}
         }
     },
-    'mlp_chronossmall_gestureclass':{
+    'mlp_chronossmall_gesture_class':{
         'decoder_type': 'mlp',
         'decoder_config':{
             'DEVICE': DEVICE,
             'cfg':{'input_dim':512,'output_dim':10,'hidden_dim':128}
         }
     },
-    'mlp_chronosbase_gestureclass':{
+    'mlp_chronosbase_gesture_class':{
         'decoder_type': 'mlp',
         'decoder_config':{
             'DEVICE': DEVICE,
             'cfg':{'input_dim':768,'output_dim':10,'hidden_dim':128}
         }
     },
-    'mlp_chronoslarge_gestureclass':{
+    'mlp_chronoslarge_gesture_class':{
         'decoder_type': 'mlp',
         'decoder_config':{
             'DEVICE': DEVICE,
             'cfg':{'input_dim':1024,'output_dim':10,'hidden_dim':128}
         }
     },
-    'mlp_papageis_gestureclass':{
+    'mlp_papageis_gesture_class':{
         'decoder_type': 'mlp',
         'decoder_config':{
             'DEVICE': DEVICE,
             'cfg':{'input_dim':512,'output_dim':10,'hidden_dim':128}
         }
     },
-    'mlp_papageip_gestureclass':{
+    'mlp_papageip_gesture_class':{
         'decoder_type': 'mlp',
         'decoder_config':{
             'DEVICE': DEVICE,       
             'cfg':{'input_dim':512,'output_dim':10,'hidden_dim':128},    
         }
     },
-    'mlp_papageissvri_gestureclass':{
+    'mlp_papageissvri_gesture_class':{
         'decoder_type': 'mlp',
         'decoder_config':{
             'DEVICE': DEVICE,

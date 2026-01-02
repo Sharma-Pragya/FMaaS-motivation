@@ -20,7 +20,7 @@ def write_data_to_file(site,payload):
         file_exists = os.path.isfile(filename)
         with open(filename, 'a') as f:
             if not file_exists:
-                f.write('req_id,req_time,site_manager,device,backbone,task,latency\n')
+                f.write('req_id,req_time,site_manager,device,backbone,task,end_to_end_latency(ms),proc_time(ms),swap_time(ms),pred,true\n')
             for record in latency_data:
                 req_id=record[0]
                 req_time = site_requests[site][req_id]['req_time']
@@ -28,6 +28,10 @@ def write_data_to_file(site,payload):
                 device = site_requests[site][req_id]['device']
                 backbone=site_requests[site][req_id]['backbone']
                 task= site_requests[site][req_id]['task']
-                latency=record[1]*1000  # convert to milliseconds
-                f.write(f'{req_id},{req_time},{site_manager},{device},{backbone},{task},{latency}\n')
+                latency=record[2]*1000  # convert to milliseconds
+                proc_time=record[3]*1000  # convert to milliseconds
+                swap_time=record[4]*1000  # convert to milliseconds
+                pred=record[5]
+                true=record[6]
+                f.write(f'{req_id},{req_time},{site_manager},{device},{backbone},{task},{latency},{proc_time},{swap_time},{pred},{true}\n')
             

@@ -22,10 +22,10 @@ def on_message(client, userdata, msg):
         store_plan(payload)
         try:
             loop = asyncio.get_running_loop()
-            deployment_status = loop.create_task(deploy_models(payload["deployments"]))
+            loop.create_task(deploy_models(payload["deployments"]))
         except RuntimeError:
-            deployment_status = asyncio.run(deploy_models(payload["deployments"]))
-        client.publish(f"fmaas/deploytime/ack/site/{SITE_ID}", json.dumps({'site':SITE_ID,'deploymentstatus':deployment_status}), qos=1)
+            asyncio.run(deploy_models(payload["deployments"]))
+        client.publish(f"fmaas/deploytime/ack/site/{SITE_ID}", json.dumps({'site':SITE_ID,'deploy':'done'}), qos=1)
         print(f"[MQTT] Sent deploytime ACK for {SITE_ID}")
 
     elif topic.endswith(f"deploy/site/{SITE_ID}/req"):
@@ -35,7 +35,6 @@ def on_message(client, userdata, msg):
     elif topic.endswith(f"runtime/start/site/{SITE_ID}"):
         print(f"[MQTT] Start signal received for {SITE_ID}")
         reqs_latency=asyncio.run(execute_cached_requests(client))
-
         ## send small chuncks of data
         chunk_length=1500
         i=0        
@@ -50,6 +49,7 @@ def on_message(client, userdata, msg):
             # payload_json = json.dumps(payload)
             # payload_bytes = payload_json.encode("utf-8")
             # size_bytes = len(payload_bytes)
+
             # print(f"Payload size: {size_bytes} bytes (~{size_bytes/1024:.2f} KB)")
             client.publish(f"fmaas/runtime/ack/site/{SITE_ID}", json.dumps(payload),qos=1)
             i+=chunk_length
@@ -60,7 +60,6 @@ async def execute_cached_requests(client):
     start = time.time()
     reqs = get_requests()
     reqs_latency =await handle_runtime_request(reqs)
-    print(reqs_latency)
     return reqs_latency
 
 

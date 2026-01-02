@@ -3,7 +3,7 @@ devices = {
   'device1': {
     'type': 'A16',
     'mem': 16000,  # in MB
-    'ip': 'http://10.100.31.63',
+    'ip': '10.100.20.48',
     'site_manager':'site2'
   },
   # 'device2': {
@@ -33,15 +33,14 @@ devices = {
 }
 factor=1.5
 tasks={
-    'heartrate':
-    {
-    'type':'regression',
-    'peak_workload':50,
-    'latency':5.58*factor, #(5.58,239.15)
-    'metric':'mae',
-    'value':100
-
-    },
+    # 'heartrate':
+    # {
+    # 'type':'regression',
+    # 'peak_workload':50,
+    # 'latency':5.58*factor, #(5.58,239.15)
+    # 'metric':'mae',
+    # 'value':100
+    # },
     # 'sysbp':
     # {
     # 'type':'regression',
@@ -54,7 +53,7 @@ tasks={
     # {
     # 'type':'regression',
     # 'peak_workload':50,
-    # 'latency':5.58*factor,#(5.58,238.95)
+    # 'latency':15,#(5.58,238.95)
     # 'metric':'mae',
     # 'value':100       
     # },
@@ -62,17 +61,17 @@ tasks={
     # {
     # 'type':'classification',
     # 'peak_workload':50,
-    # 'latency':3.86*factor,#(3.86,86.34)
+    # 'latency':5,#(3.86,86.34)
     # 'metric':'accuracy',
     # 'value':0.7        
     # },
-    # 'gestureclass':
-    # {
-    # 'type':'classification',
-    # 'peak_workload':50,
-    # 'latency':3.88*factor, #(3.88,86.53)
-    # 'metric':'accuracy',
-    # 'value':0.6        
-    # },
+    'gestureclass':
+    {
+    'type':'classification',
+    'peak_workload':50,
+    'latency':3.88*factor, #(3.88,86.53)
+    'metric':'accuracy',
+    'value':0.6        
+    },
 
 }
