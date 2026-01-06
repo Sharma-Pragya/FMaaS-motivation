@@ -1,0 +1,38 @@
+{
+  "sites": [
+    {
+      "id": "site2",
+      "deployments": [
+        {
+          "device": "10.100.20.49:8001",
+          "device_type": "A16",
+          "backbone": "chronostiny",
+          "decoders": [
+            {
+              "task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_chronostiny_mlp"
+            },
+            {
+              "task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_chronostiny_mlp"
+            }
+          ],
+          "tasks": {
+            "ecgclass": {
+              "type": "classification",
+              "total_requested_workload": 5.027777777777778,
+              "request_per_sec": 5.027777777777778
+            },
+            "gestureclass": {
+              "type": "classification",
+              "total_requested_workload": 4.972222222222222,
+              "request_per_sec": 4.972222222222222
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

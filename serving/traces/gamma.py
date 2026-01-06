@@ -4,7 +4,7 @@ import logging
 from itertools import groupby
 import numpy as np
 import pickle
-from typing import List, Tuple, Any
+from typing import List, Tuple, Any, Dict
 
 import numpy as np
 
@@ -55,6 +55,10 @@ def generate_requests(num_tasks, alpha, req_rate, cv, duration,
     for i in range(tot_req):
         tic += intervals[i]
         requests.append(Request(i, tasks[ind[i]][0], tasks[ind[i]][1], tasks[ind[i]][2], tic))
-    return requests
+    #get per task mean rate per second per task
+    task_counts = Counter([req.task for req in requests])
+    mean_rps_per_task: Dict[str, float] = {task: cnt / float(duration) for task, cnt in task_counts.items()}
+
+    return requests, mean_rps_per_task, None
 
 

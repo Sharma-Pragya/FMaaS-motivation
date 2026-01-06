@@ -137,20 +137,20 @@ def greedy_pack(root, tasks, server, ancestor_size, child_size, count):
     return servers
 
 
-def get_task_latency(tasks):
+def get_task_latency(backbone,tasks):
     """Helper to get task latencies for a server."""
     task_latency = {}
     for t in tasks:
         for id,pipeline in pipelines.items():
-            if t==pipeline['task']:
+            if t==pipeline['task'] and backbone==pipeline['backbone']:
                 task_latency[t] = latency[id]
     return task_latency
 
 
-def check_workload(task_manifest,device_type):
+def check_workload(backbone,task_manifest,device_type):
     """Check if for all task in manifest combined sum of all latency*workload <= 1."""
     for srv in task_manifest:
-        task_latency = get_task_latency(srv['tasks'])
+        task_latency = get_task_latency(backbone,srv['tasks'])
         # as latency is in ms convert to seconds
         cap = sum(l[device_type] * srv['tasks'][t]['total_requested_workload'] for t, l in task_latency.items())/1000
         if cap > 1:
@@ -191,12 +191,11 @@ def shared_packing(devices, tasks):
         trees = sorted(trees.items(), key=lambda x: sum(1 for decoder in x[1].children for task in decoder.children), reverse=True)
         
         backbone, root=trees[0]
-        
         #based on memory packing
         ancestor_size, child_size, count = lower_bound_mem(root, device_memory)
         task_manifest = greedy_pack(root,tasks, server, ancestor_size, child_size, count)
         #check workload for all task in task_manifest 
-        task_manifest = check_workload(task_manifest,device_type)
+        task_manifest = check_workload(backbone,task_manifest,device_type)
 
         #only if 100% workload is covered then remove packed tasks from tasks list and trees
         #else update the peak workload of tasks based on packed workload in task_manifest
@@ -234,9 +233,9 @@ def build_final_json(device_list):
     decoder_to_task = {f"{v['decoder']}_{v['backbone']}_{v['task']}": v['task'] for v in pipelines.values()}
     decoder_to_fulltask = {f"{v['decoder']}_{v['backbone']}_{v['task']}":f"{v['task']}_{v['backbone']}_{v['decoder']}"  for v in pipelines.values()}
     decoder_to_backbone = {f"{v['decoder']}_{v['backbone']}_{v['task']}": v['backbone'] for v in pipelines.values()}
-    port = 8000
+    port = 8001
     for d in device_list:
-        port += 1
+        # port += 1
         site_id = d["site_manager"]
         device_url = f"{d['ip']}:{port}"
         device_type = d['type']

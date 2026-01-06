@@ -9,14 +9,14 @@
           "backbone": "chronostiny",
           "decoders": [
             {
-              "task": "gestureclass",
-              "type": "classification",
-              "path": "gestureclass_chronostiny_mlp"
-            },
-            {
               "task": "ecgclass",
               "type": "classification",
               "path": "ecgclass_chronostiny_mlp"
+            },
+            {
+              "task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_chronostiny_mlp"
             }
           ],
           "tasks": {
@@ -38,14 +38,14 @@
           "backbone": "chronostiny",
           "decoders": [
             {
-              "task": "gestureclass",
-              "type": "classification",
-              "path": "gestureclass_chronostiny_mlp"
-            },
-            {
               "task": "ecgclass",
               "type": "classification",
               "path": "ecgclass_chronostiny_mlp"
+            },
+            {
+              "task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_chronostiny_mlp"
             }
           ],
           "tasks": {

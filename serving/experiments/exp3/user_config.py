@@ -6,12 +6,12 @@ devices = {
     'ip': '10.100.20.48',
     'site_manager':'site2'
   },
-  # 'device2': {
-  #   'type': 'A16',
-  #   'mem': 16000,  # in MB
-  #   'ip': 'http://10.100.20.48',
-  #   'site_manager':'site2',
-  # },
+  'device2': {
+    'type': 'A16',
+    'mem': 16000,  # in MB
+    'ip': '10.100.20.49',
+    'site_manager':'site2',
+  },
   # 'device3': {
   #   'type': 'A16',
   #   'mem': 16000,  # in MB
@@ -57,14 +57,14 @@ tasks={
     # 'metric':'mae',
     # 'value':100       
     # },
-    # 'ecgclass':
-    # {
-    # 'type':'classification',
-    # 'peak_workload':50,
-    # 'latency':5,#(3.86,86.34)
-    # 'metric':'accuracy',
-    # 'value':0.7        
-    # },
+    'ecgclass':
+    {
+    'type':'classification',
+    'peak_workload':50,
+    'latency':3.86*factor, #(3.86,86.34)
+    'metric':'accuracy',
+    'value':0.7        
+    },
     'gestureclass':
     {
     'type':'classification',

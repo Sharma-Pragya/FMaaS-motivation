@@ -28,7 +28,7 @@ def initialize_dataloaders():
     d = DATASET_DIR
     # create test dataloaders
     DATASET_LOADERS = {
-        # "ecgclass": DataLoader(ECG5000Dataset({"dataset_path": f"{d}/ECG5000"}, {"task_type": "classification"}, "test"), **inference_config),
+        "ecgclass": DataLoader(ECG5000Dataset({"dataset_path": f"{d}/ECG5000"}, {"task_type": "classification"}, "test"), **inference_config),
         # "heartrate": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"hr"}, "test"), **inference_config),
         # "diasbp": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"diasbp"}, "test"), **inference_config),
         # "sysbp": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"sysbp"}, "test"), **inference_config),
@@ -52,7 +52,6 @@ CLIENT_CACHE = {}
 def get_client(url: str):
     if url not in CLIENT_CACHE:
         try:
-            # Now clean_url is just "10.100.20.50:8001"
             client = grpcclient.InferenceServerClient(url=url, verbose=False)
             
             if not client.is_server_live():
@@ -95,7 +94,11 @@ async def send_request(req_id, device_url, inputs_dict, ouputs_dict):
 
     # 3. Send Request (Thread-safe!)
     # logic: model_name is the one you defined in bind()
-    response = client.infer(model_name="edge_infer", inputs=triton_inputs)
+    try:
+        response = client.infer(model_name="edge_infer", inputs=triton_inputs)
+    except Exception as e:
+        print(f"Error during inference: {e}")
+        return
 
     # 4. Get Output
     # Assuming your output is named "output"

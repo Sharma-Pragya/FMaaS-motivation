@@ -34,35 +34,43 @@ def on_message(client, userdata, msg):
         print(f"ACK from {site}: {payload}")
             
     elif topic.startswith("fmaas/runtime/ack"):
-        site = payload["site"]
-
+        site = payload.get("site", "unknown")
         with acks_lock:
-            if site not in acks:
-                acks[site] = {
-                    "total_requests": payload["total_requests"],
-                    "latency": []
-                }
-            
-            acks[site]["latency"].extend(payload["latency"])
+            acks[site] = payload
+            if all(s in acks for s in site_ids):
+                all_acks_event.set()  # signal done
+        print(f"ACK from {site} for runtime: {payload}")
 
-            print(acks[site]["total_requests"], len(acks[site]["latency"]))
+        #not able to send big chunks of data via mqtt hence storing at site_manager
+        # site = payload["site"]
 
-            # === Check completion correctly ===
-            done = True
-            for s in site_ids:
-                if s not in acks:
-                    done = False
-                    break
-                if len(acks[s]["latency"]) != acks[s]["total_requests"]:
-                    done = False
-                    break
+        # with acks_lock:
+        #     if site not in acks:
+        #         acks[site] = {
+        #             "total_requests": payload["total_requests"],
+        #             "latency": []
+        #         }
             
-            if done:
-                print("All sites complete! Waiting to flush...")
-                time.sleep(2)
-                for s in site_ids:
-                    write_data_to_file(s, acks[s])
-                all_acks_event.set()
+        #     acks[site]["latency"].extend(payload["latency"])
+
+        #     print(acks[site]["total_requests"], len(acks[site]["latency"]))
+
+        #     # === Check completion correctly ===
+        #     done = True
+        #     for s in site_ids:
+        #         if s not in acks:
+        #             done = False
+        #             break
+        #         if len(acks[s]["latency"]) != acks[s]["total_requests"]:
+        #             done = False
+        #             break
+            
+        #     if done:
+        #         print("All sites complete! Waiting to flush...")
+        #         time.sleep(2)
+        #         for s in site_ids:
+        #             write_data_to_file(s, acks[s])
+        #         all_acks_event.set()
             
     
 def run_deployment_plan(devices, tasks_slo):
@@ -98,21 +106,22 @@ def publish_deployments(client, plan, routed_trace):
         print(f"[MQTT] Sent deployment to {site_id}")
         time.sleep(0.1)
 
-    # save site_requests in csv file 
-    # request_latency_results.csv with columns site_manager, device, req_id, req_time
-    filename='site_requests.csv'
-    file_exists = os.path.isfile(filename)
-    with open(filename, 'a') as f:
-        if not file_exists:
-            f.write('site_manager,device,backbone,req_id,task,req_time\n')
-        for site in site_requests:
-            for record in site_requests[site]:
-                req_id=record['req_id']
-                req_time=record['req_time']
-                device=record['device']
-                backbone=record['backbone']
-                task=record['task']
-                f.write(f'{site},{device},{backbone},{req_id},{task},{req_time}\n')
+    #not able to send big chunks of data via mqtt hence storing at site_manager
+    # # save site_requests in csv file 
+    # # request_latency_results.csv with columns site_manager, device, req_id, req_time
+    # filename='site_requests.csv'
+    # file_exists = os.path.isfile(filename)
+    # with open(filename, 'a') as f:
+    #     if not file_exists:
+    #         f.write('site_manager,device,backbone,req_id,task,req_time\n')
+    #     for site in site_requests:
+    #         for record in site_requests[site]:
+    #             req_id=record['req_id']
+    #             req_time=record['req_time']
+    #             device=record['device']
+    #             backbone=record['backbone']
+    #             task=record['task']
+    #             f.write(f'{site},{device},{backbone},{req_id},{task},{req_time}\n')
 
 def trigger_runtime_start(client, plan):
     print("Triggering runtime start on all sites...")
@@ -128,22 +137,22 @@ if __name__ == "__main__":
     parser.add_argument("--run-only", action="store_true", help="Runtime phase")
     args = parser.parse_args()
 
-    from experiments.user_config import devices, tasks 
+    #1. First set the config file for defining tasks and devices
+    #extract tasks and devices from config.py
+    from experiments.exp3.user_config import devices, tasks 
     all_task_names = sorted({t for t in tasks.keys()})
     routed_tasks = [(t, None, None, None) for t in all_task_names] #task, site, device, backbone
     seed=42
 
-    # #extract tasks and devices from config.py
-    # from experiments.exp2.stage4_resources.user_config import devices, tasks 
-    # all_task_names = sorted({t for t in tasks.keys()})
-    # routed_tasks = [(t, None, None, None) for t in all_task_names] #task, site, device, backbone
-    # seed=42
-
-
+    #2. Connect with the trace generation
     ##synthetic trace generation
-    # from traces.gamma import generate_requests
-    # num_tasks, alpha, req_rate, cv, duration = (1, 1, 6, 1, 10)  # num_tasks, alpha, req_rate, cv, duration
-    # trace = generate_requests(num_tasks, alpha, req_rate, cv, duration, routed_tasks, seed)
+    from traces.gamma import generate_requests
+    num_tasks, alpha, req_rate, cv, duration = (2, 1, 300, 1, 120)  # num_tasks, alpha, req_rate, cv, duration
+    trace,avg_workload_per_task,peak_workload_per_task = generate_requests(num_tasks, alpha, req_rate, cv, duration, routed_tasks, seed)
+    #update tasks dict with peak workload based on real world trace
+    for t in tasks:
+        if t in avg_workload_per_task:
+            tasks[t]['peak_workload'] = avg_workload_per_task[t]
 
     # #lmsyschat
     # from traces.lmsyschat import generate_requests
@@ -155,14 +164,14 @@ if __name__ == "__main__":
     #         tasks[t]['peak_workload'] = peak_workload_per_task[t]
     # print("Updated tasks:", tasks)
 
-    #chatbotarena
-    from traces.chatbotarena import generate_requests
-    req_rate, duration = (1,10) #max (50,300), (100,300), (150,300), (200,300)
-    trace,avg_workload_per_task,peak_workload_per_task = generate_requests(req_rate, duration, routed_tasks, seed)
-    #update tasks dict with peak workload based on real world trace
-    for t in tasks:
-        if t in avg_workload_per_task:
-            tasks[t]['peak_workload'] = avg_workload_per_task[t]
+    # #chatbotarena
+    # from traces.chatbotarena import generate_requests
+    # req_rate, duration = (1,10) #max (50,300), (100,300), (150,300), (200,300)
+    # trace,avg_workload_per_task,peak_workload_per_task = generate_requests(req_rate, duration, routed_tasks, seed)
+    # #update tasks dict with peak workload based on real world trace
+    # for t in tasks:
+    #     if t in avg_workload_per_task:
+    #         tasks[t]['peak_workload'] = avg_workload_per_task[t]
 
     #make plan using greedy algorithm and route the trace based on the plan
     plan = run_deployment_plan(devices, tasks)

@@ -25,6 +25,10 @@ def on_message(client, userdata, msg):
             deployment_status = loop.create_task(deploy_models(payload["deployments"]))
         except RuntimeError:
             deployment_status = asyncio.run(deploy_models(payload["deployments"]))
+        #save deployment_status in json file model_deployment_results.json
+        with open("model_deployment_results.json","w") as f:
+            json.dump(deployment_status,f,indent=4)
+        
         client.publish(f"fmaas/deploytime/ack/site/{SITE_ID}", json.dumps({'site':SITE_ID,'deploymentstatus':deployment_status}), qos=1)
         print(f"[MQTT] Sent deploytime ACK for {SITE_ID}")
 
@@ -35,32 +39,56 @@ def on_message(client, userdata, msg):
     elif topic.endswith(f"runtime/start/site/{SITE_ID}"):
         print(f"[MQTT] Start signal received for {SITE_ID}")
         reqs_latency=asyncio.run(execute_cached_requests(client))
-
-        ## send small chuncks of data
-        chunk_length=1500
-        i=0        
-        while i<len(reqs_latency):
-            print(f"[MQTT] Sent request chunck {i} to {i+chunk_length}")
-            payload = {
-                "site": SITE_ID,
-                "status": "completed",
-                "total_requests": len(reqs_latency),
-                "latency": reqs_latency[i:i+chunk_length],
-            }
-            # payload_json = json.dumps(payload)
-            # payload_bytes = payload_json.encode("utf-8")
-            # size_bytes = len(payload_bytes)
-            # print(f"Payload size: {size_bytes} bytes (~{size_bytes/1024:.2f} KB)")
-            client.publish(f"fmaas/runtime/ack/site/{SITE_ID}", json.dumps(payload),qos=1)
-            i+=chunk_length
-            time.sleep(5)
+        #save reqs_latency to file request_latency_results.csv
+        # req_id,req_time,site_manager,device,backbone,task,end_to_end_latency(ms),proc_time(ms),swap_time(ms),pred,true
+        # out of req_id,end_to_end_latency(ms),proc_time(ms),swap_time(ms),pred,true get from reqs_latency
+        #rest from stored requests
+        reqs = get_requests()
+        with open(f"request_latency_results.csv","w") as f:
+            f.write("req_id,req_time,site_manager,device,backbone,task,end_to_end_latency(ms),proc_time(ms),swap_time(ms),pred,true\n")
+            reqs_dict = {req['req_id']:req for req in reqs}
+            for entry in reqs_latency:
+                req_id,device_url,e2e_latency,proc_time,swap_time,pred,true = entry
+                req = reqs_dict.get(req_id,{})
+                req_time = req.get('req_time',-1)
+                site_manager = SITE_ID
+                device = device_url
+                backbone = req.get('backbone','unknown')
+                task = req.get('task','unknown')
+                f.write(f"{req_id},{req_time},{site_manager},{device},{backbone},{task},{e2e_latency*1000:.2f},{proc_time*1000:.2f},{swap_time*1000:.2f},{pred},{true}\n")
+        payload = {
+            "site": SITE_ID,
+            "status": "completed",
+            "total_requests": len(reqs_latency),
+        }
+        client.publish(f"fmaas/runtime/ack/site/{SITE_ID}", json.dumps(payload),qos=1)
         print(f"[MQTT] Sent runtime ACK for {SITE_ID}")
+
+        #not able to send big chunks of data via mqtt hence storing at site_manager
+        ## send small chuncks of data
+        # chunk_length=1500
+        # i=0        
+        # while i<len(reqs_latency):
+        #     print(f"[MQTT] Sent request chunck {i} to {i+chunk_length}")
+        #     payload = {
+        #         "site": SITE_ID,
+        #         "status": "completed",
+        #         "total_requests": len(reqs_latency),
+        #         "latency": reqs_latency[i:i+chunk_length],
+        #     }
+        #     # payload_json = json.dumps(payload)
+        #     # payload_bytes = payload_json.encode("utf-8")
+        #     # size_bytes = len(payload_bytes)
+        #     # print(f"Payload size: {size_bytes} bytes (~{size_bytes/1024:.2f} KB)")
+        #     client.publish(f"fmaas/runtime/ack/site/{SITE_ID}", json.dumps(payload),qos=1)
+        #     i+=chunk_length
+        #     time.sleep(5)
+        # print(f"[MQTT] Sent runtime ACK for {SITE_ID}")
 
 async def execute_cached_requests(client):
     start = time.time()
     reqs = get_requests()
     reqs_latency =await handle_runtime_request(reqs)
-    print(reqs_latency)
     return reqs_latency
 
 

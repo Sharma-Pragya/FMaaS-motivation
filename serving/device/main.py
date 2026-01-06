@@ -10,6 +10,10 @@ from device.model_loader import load_models, get_loaded_pipeline
 import time
 
 class UnifiedEdgeSystem:
+    def __init__(self):
+        self.pipeline = None
+        self.decoders = None
+        self.current_task = None
 
     @batch
     def infer(self, x, task, mask=None, question=None):
@@ -17,28 +21,31 @@ class UnifiedEdgeSystem:
         Standard inference logic. 
         PyTriton handles the queueing and batching automatically.
         """
-
+        print("inference request received")
         swap_st=time.time()
-        pipeline, decoders, current_task = get_loaded_pipeline()
+        if self.pipeline is None: 
+            self.pipeline, self.decoders, self.current_task = get_loaded_pipeline()
         task = task[0][0].decode('utf-8')
-        if current_task != task:
-            decoder_name = decoders.get(task)
-            pipeline.active_decoder = pipeline.decoders[decoder_name]
+        if self.current_task != task:
+            self.current_task=task
+            decoder_name = self.decoders.get(self.current_task)
+            self.pipeline.active_decoder = self.pipeline.decoders[decoder_name]
         swap_time=time.time()-swap_st
+        
         st=time.time()
         # Prepare Inputs
         bx = torch.from_numpy(x)
         b_mask = torch.from_numpy(mask) if mask is not None else None
-        if pipeline.active_decoder is not None:
-            logits=pipeline.forward(bx, b_mask)
-            if isinstance(pipeline.active_decoder.criterion, (nn.CrossEntropyLoss)):
+        if self.pipeline.active_decoder is not None:
+            logits=self.pipeline.forward(bx, b_mask)
+            if isinstance(self.pipeline.active_decoder.criterion, (nn.CrossEntropyLoss)):
                 logits = torch.argmax(logits, dim=1)
-            if (hasattr(pipeline.active_decoder, "requires_model") and pipeline.active_decoder.requires_model and hasattr(self.model_instance.model, "normalizer")):
-                logits = pipeline.model_instance.model.normalizer(x=logits, mode="denorm")
+            if (hasattr(self.pipeline.active_decoder, "requires_model") and self.pipeline.active_decoder.requires_model and hasattr(self.model_instance.model, "normalizer")):
+                logits = self.pipeline.model_instance.model.normalizer(x=logits, mode="denorm")
             result=logits.detach().cpu().numpy()
         else:
-            embeddings = pipeline.model_instance.forward((bx, None))
-            result = pipeline.model_instance.postprocess(embeddings)
+            embeddings = self.pipeline.model_instance.forward((bx, None))
+            result = self.pipeline.model_instance.postprocess(embeddings)
         et=time.time()
         return {"output": result,"proc_time": np.array([et - st]),"swap_time": np.array([swap_time])}
 
