@@ -4,60 +4,31 @@
       "id": "site2",
       "deployments": [
         {
-          "device": "10.100.20.49:8001",
+          "device": "10.100.20.54:8001",
           "device_type": "A16",
           "backbone": "chronostiny",
           "decoders": [
             {
-              "task": "gestureclass",
-              "type": "classification",
-              "path": "gestureclass_chronostiny_mlp"
-            },
-            {
               "task": "ecgclass",
               "type": "classification",
               "path": "ecgclass_chronostiny_mlp"
+            },
+            {
+              "task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_chronostiny_mlp"
             }
           ],
           "tasks": {
             "ecgclass": {
               "type": "classification",
-              "total_requested_workload": 149.875,
-              "request_per_sec": 74.9375
+              "total_requested_workload": 3.1266666666666665,
+              "request_per_sec": 3.1266666666666665
             },
             "gestureclass": {
               "type": "classification",
-              "total_requested_workload": 150.125,
-              "request_per_sec": 75.0625
-            }
-          }
-        },
-        {
-          "device": "10.100.20.48:8001",
-          "device_type": "A16",
-          "backbone": "chronostiny",
-          "decoders": [
-            {
-              "task": "gestureclass",
-              "type": "classification",
-              "path": "gestureclass_chronostiny_mlp"
-            },
-            {
-              "task": "ecgclass",
-              "type": "classification",
-              "path": "ecgclass_chronostiny_mlp"
-            }
-          ],
-          "tasks": {
-            "ecgclass": {
-              "type": "classification",
-              "total_requested_workload": 74.9375,
-              "request_per_sec": 74.9375
-            },
-            "gestureclass": {
-              "type": "classification",
-              "total_requested_workload": 75.0625,
-              "request_per_sec": 75.0625
+              "total_requested_workload": 6.873333333333333,
+              "request_per_sec": 6.873333333333333
             }
           }
         }

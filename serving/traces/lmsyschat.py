@@ -29,20 +29,13 @@ def generate_requests(req_rate, duration, tasks, seed=42) -> List[Request]:
     tok = open("../hf-token.txt").read().strip()
     K = max(tot_req * 3, tot_req + 1000)  # grab a small prefix to stay fast & avoid OOM
     ds = load_dataset("lmsys/lmsys-chat-1m", split=f"train[:{K}]", token=tok)
-
     cols = ds.column_names
-    model_col = "model" if "model" in cols else None
-    time_col = "timestamp" if "timestamp" in cols else None
-    if model_col is None:
-        raise ValueError(f"missing model column; have {cols}")
+    model_col = "model"
 
     raw = []
     for i, ex in enumerate(ds):
-        m = ex.get(model_col, None)
-        if m is None:
-            continue
-        t = ex.get(time_col, None)
-        t = float(t) if t is not None else float(i)
+        m = ex[model_col]
+        t = float(i)
         raw.append((m, t))
         if len(raw) >= tot_req:
             break
@@ -54,7 +47,6 @@ def generate_requests(req_rate, duration, tasks, seed=42) -> List[Request]:
     t0, t1 = raw[0][1], raw[-1][1]
     span = max(t1 - t0, 1e-12)
     times = [(t - t0) / span * duration for _, t in raw]
-
     model_to_task = {}
     assign_ptr = 0
     k =  len(tasks)
@@ -63,7 +55,7 @@ def generate_requests(req_rate, duration, tasks, seed=42) -> List[Request]:
         if m not in model_to_task:
             model_to_task[m] = tasks[assign_ptr % k]
             assign_ptr += 1
-        task_name, site_manager, device = model_to_task[m]
+        task_name, site_manager, device, backbone = model_to_task[m] #task, site, device, backbone
         reqs.append(Request(i, task_name, site_manager, device, float(ts)))
     # --- per-task mean and peak RPS (1-second bins) ---
     counts_per_task: Dict[str, int] = {}

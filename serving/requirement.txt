@@ -1,0 +1,5 @@
+#on top on fmtk
+pip install nvidia-pytriton
+pip install paho-mqtt
+pip install asyncssh
+pip install datasets

@@ -146,23 +146,23 @@ if __name__ == "__main__":
 
     #2. Connect with the trace generation
     ##synthetic trace generation
-    from traces.gamma import generate_requests
-    num_tasks, alpha, req_rate, cv, duration = (2, 1, 300, 1, 120)  # num_tasks, alpha, req_rate, cv, duration
-    trace,avg_workload_per_task,peak_workload_per_task = generate_requests(num_tasks, alpha, req_rate, cv, duration, routed_tasks, seed)
+    # from traces.gamma import generate_requests
+    # num_tasks, alpha, req_rate, cv, duration = (2, 1, 3, 1, 120)  # num_tasks, alpha, req_rate, cv, duration
+    # trace,avg_workload_per_task,peak_workload_per_task = generate_requests(num_tasks, alpha, req_rate, cv, duration, routed_tasks, seed)
+    # #update tasks dict with peak workload based on real world trace
+    # for t in tasks:
+    #     if t in avg_workload_per_task:
+    #         tasks[t]['peak_workload'] = avg_workload_per_task[t]
+
+    # # # #lmsyschat
+    from traces.lmsyschat import generate_requests
+    req_rate, duration = (10, 300) #max (50,300), (100,300), (150,300), (200,300)
+    trace,avg_workload_per_task,peak_workload_per_task = generate_requests( req_rate,  duration, routed_tasks, seed)
     #update tasks dict with peak workload based on real world trace
     for t in tasks:
         if t in avg_workload_per_task:
             tasks[t]['peak_workload'] = avg_workload_per_task[t]
-
-    # #lmsyschat
-    # from traces.lmsyschat import generate_requests
-    # req_rate, duration = (6, 10)
-    # trace,avg_workload_per_task,peak_workload_per_task = generate_requests( req_rate,  duration, routed_tasks, seed)
-    # #update tasks dict with peak workload based on real world trace
-    # for t in tasks:
-    #     if t in peak_workload_per_task:
-    #         tasks[t]['peak_workload'] = peak_workload_per_task[t]
-    # print("Updated tasks:", tasks)
+    print("Updated tasks:", tasks)
 
     # #chatbotarena
     # from traces.chatbotarena import generate_requests

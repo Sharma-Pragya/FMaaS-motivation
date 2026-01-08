@@ -1,0 +1,87 @@
+/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/site-packages/numpy/core/getlimits.py:500: UserWarning: The value of the smallest subnormal for <class 'numpy.float64'> type is zero.
+  setattr(self, word, getattr(machar, word).flat[0])
+/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/site-packages/numpy/core/getlimits.py:89: UserWarning: The value of the smallest subnormal for <class 'numpy.float64'> type is zero.
+  return self._float_to_str(self.smallest_subnormal)
+/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/site-packages/numpy/core/getlimits.py:500: UserWarning: The value of the smallest subnormal for <class 'numpy.float32'> type is zero.
+  setattr(self, word, getattr(machar, word).flat[0])
+/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/site-packages/numpy/core/getlimits.py:89: UserWarning: The value of the smallest subnormal for <class 'numpy.float32'> type is zero.
+  return self._float_to_str(self.smallest_subnormal)
+I0107 19:02:03.856454 3162883 pinned_memory_manager.cc:277] "Pinned memory pool is created at '0x7d14e0000000' with size 268435456"
+I0107 19:02:03.861662 3162883 cuda_memory_manager.cc:107] "CUDA memory pool is created on device 0 with size 67108864"
+I0107 19:02:03.870556 3162883 server.cc:604] 
++------------------+------+
+| Repository Agent | Path |
++------------------+------+
++------------------+------+
+
+I0107 19:02:03.870577 3162883 server.cc:631] 
++---------+------+--------+
+| Backend | Path | Config |
++---------+------+--------+
++---------+------+--------+
+
+I0107 19:02:03.870587 3162883 server.cc:674] 
++-------+---------+--------+
+| Model | Version | Status |
++-------+---------+--------+
++-------+---------+--------+
+
+I0107 19:02:03.904083 3162883 metrics.cc:877] "Collecting metrics for GPU 0: NVIDIA A16"
+I0107 19:02:03.908847 3162883 metrics.cc:770] "Collecting CPU metrics"
+I0107 19:02:03.908940 3162883 tritonserver.cc:2598] 
++----------------------------------+------------------------------------------+
+| Option                           | Value                                    |
++----------------------------------+------------------------------------------+
+| server_id                        | triton                                   |
+| server_version                   | 2.51.0                                   |
+| server_extensions                | classification sequence model_repository |
+|                                  |  model_repository(unload_dependents) sch |
+|                                  | edule_policy model_configuration system_ |
+|                                  | shared_memory cuda_shared_memory binary_ |
+|                                  | tensor_data parameters statistics trace  |
+|                                  | logging                                  |
+| model_repository_path[0]         | /home/hshastri_umass_edu/.cache/pytriton |
+|                                  | /workspace_2ps4trux/model-store          |
+| model_control_mode               | MODE_EXPLICIT                            |
+| startup_models_0                 | *                                        |
+| strict_model_config              | 0                                        |
+| model_config_name                |                                          |
+| rate_limit                       | OFF                                      |
+| pinned_memory_pool_byte_size     | 268435456                                |
+| cuda_memory_pool_byte_size{0}    | 67108864                                 |
+| min_supported_compute_capability | 6.0                                      |
+| strict_readiness                 | 1                                        |
+| exit_timeout                     | 30                                       |
+| cache_enabled                    | 0                                        |
++----------------------------------+------------------------------------------+
+
+I0107 19:02:03.999066 3162883 grpc_server.cc:2558] "Started GRPCInferenceService at 0.0.0.0:8001"
+I0107 19:02:03.999263 3162883 http_server.cc:4713] "Started HTTPService at 0.0.0.0:8000"
+I0107 19:02:04.043255 3162883 http_server.cc:362] "Started Metrics Service at 0.0.0.0:8002"
+E0107 19:02:04.372794 3162883 model_repository_manager.cc:470] "Failed to set config modification time: model_config_content_name_ is empty"
+I0107 19:02:04.372996 3162883 model_lifecycle.cc:472] "loading: edge_infer:1"
+I0107 19:02:06.072365 3162883 python_be.cc:2249] "TRITONBACKEND_ModelInstanceInitialize: edge_infer_0_0 (CPU device 0)"
+I0107 19:02:06.571897 3162883 model_lifecycle.cc:839] "successfully loaded 'edge_infer'"
+E0107 19:02:06.582807 3162883 model_repository_manager.cc:470] "Failed to set config modification time: model_config_content_name_ is empty"
+I0107 19:02:06.582979 3162883 model_lifecycle.cc:472] "loading: edge_control:1"
+I0107 19:02:08.195716 3162883 python_be.cc:2249] "TRITONBACKEND_ModelInstanceInitialize: edge_control_0_0 (CPU device 0)"
+I0107 19:02:08.694370 3162883 model_lifecycle.cc:839] "successfully loaded 'edge_control'"
+[System] PyTriton Server running on port
+[System] Loading backbone: chronostiny
+[ModelLoader] Loading backbone: chronostiny
+[System] Error: huggingface-hub>=0.15.1,<1.0 is required for a normal functioning of this module, but found huggingface-hub==1.2.4.
+Try: pip install transformers -U or pip install -e '.[dev]' if you're working with git main
+Exception while performing inference on requests=00000001: Traceback (most recent call last):
+  File "/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/site-packages/pytriton/proxy/inference.py", line 393, in _handle_requests
+    async for responses in self._model_callable(requests):
+  File "/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/site-packages/pytriton/proxy/inference.py", line 85, in _callable
+    yield inference_callable(requests)
+  File "/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/site-packages/pytriton/decorators.py", line 213, in batch
+    outputs = wrapped(*args, **new_kwargs)
+  File "/project/pi_shenoy_umass_edu/hshastri/FMaaS-motivation/serving/device/main.py", line 83, in control
+    "logger_summary": np.array([str(logger.summary()).encode('utf-8')])
+UnboundLocalError: local variable 'logger' referenced before assignment
+
+E0107 19:02:10.285691 3162883 pb_stub.cc:714] "Failed to process the request(s) for model 'edge_control_0_0', message: TritonModelException: Model execute error: Traceback (most recent call last):\n  File \"/tmp/folder1jJAV3/1/model.py\", line 492, in execute\n    raise triton_responses_or_error\nc_python_backend_utils.TritonModelException: Traceback (most recent call last):\n  File \"/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/site-packages/pytriton/proxy/inference.py\", line 393, in _handle_requests\n    async for responses in self._model_callable(requests):\n  File \"/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/site-packages/pytriton/proxy/inference.py\", line 85, in _callable\n    yield inference_callable(requests)\n  File \"/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/site-packages/pytriton/decorators.py\", line 213, in batch\n    outputs = wrapped(*args, **new_kwargs)\n  File \"/project/pi_shenoy_umass_edu/hshastri/FMaaS-motivation/serving/device/main.py\", line 83, in control\n    \"logger_summary\": np.array([str(logger.summary()).encode('utf-8')])\nUnboundLocalError: local variable 'logger' referenced before assignment\n\n\n\nAt:\n  /tmp/folder1jJAV3/1/model.py(501): execute\n"
