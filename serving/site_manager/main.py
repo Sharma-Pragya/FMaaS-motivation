@@ -45,17 +45,17 @@ def on_message(client, userdata, msg):
         #rest from stored requests
         reqs = get_requests()
         with open(f"request_latency_results.csv","w") as f:
-            f.write("req_id,req_time,site_manager,device,backbone,task,end_to_end_latency(ms),proc_time(ms),swap_time(ms),pred,true\n")
+            f.write("req_id,req_time,site_manager,device,backbone,task,site_manager_send_time,device_start_time,end_to_end_latency(ms),proc_time(ms),swap_time(ms),pred,true\n")
             reqs_dict = {req['req_id']:req for req in reqs}
             for entry in reqs_latency:
-                req_id,device_url,e2e_latency,proc_time,swap_time,pred,true = entry
+                req_id,device_url,site_manager_send_time,device_start_time,e2e_latency,proc_time,swap_time,pred,true = entry
                 req = reqs_dict.get(req_id,{})
                 req_time = req.get('req_time',-1)
                 site_manager = SITE_ID
                 device = device_url
                 backbone = req.get('backbone','unknown')
                 task = req.get('task','unknown')
-                f.write(f"{req_id},{req_time},{site_manager},{device},{backbone},{task},{e2e_latency*1000:.2f},{proc_time*1000:.2f},{swap_time*1000:.2f},{pred},{true}\n")
+                f.write(f"{req_id},{req_time},{site_manager},{device},{backbone},{task},{site_manager_send_time},{device_start_time},{e2e_latency*1000},{proc_time*1000},{swap_time*1000},{pred},{true}\n")
         payload = {
             "site": SITE_ID,
             "status": "completed",

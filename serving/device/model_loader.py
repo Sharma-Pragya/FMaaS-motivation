@@ -51,7 +51,7 @@ def load_models(backbone: str, decoders: list):
             _pipeline = Pipeline(PapageiModel(DEVICE, "papagei_s"),logger=logger)
         elif backbone == "papageip":
             from fmtk.components.backbones.papagei import PapageiModel
-            _pipeline = Pipeline(PapageiModel(DEVICE, "papagei_p"))
+            _pipeline = Pipeline(PapageiModel(DEVICE, "papagei_p"),logger=logger)
         elif backbone == "papageissvri":
             from fmtk.components.backbones.papagei import PapageiModel
             _pipeline = Pipeline(PapageiModel(DEVICE, "papagei_s_svri"),logger=logger)

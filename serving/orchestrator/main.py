@@ -139,7 +139,7 @@ if __name__ == "__main__":
 
     #1. First set the config file for defining tasks and devices
     #extract tasks and devices from config.py
-    from experiments.exp3.user_config import devices, tasks 
+    from experiments.exp4.user_config import devices, tasks 
     all_task_names = sorted({t for t in tasks.keys()})
     routed_tasks = [(t, None, None, None) for t in all_task_names] #task, site, device, backbone
     seed=42
@@ -156,7 +156,7 @@ if __name__ == "__main__":
 
     # # # #lmsyschat
     from traces.lmsyschat import generate_requests
-    req_rate, duration = (10, 300) #max (50,300), (100,300), (150,300), (200,300)
+    req_rate, duration = (10, 3000) #max (50,300), (100,300), (150,300), (200,300)
     trace,avg_workload_per_task,peak_workload_per_task = generate_requests( req_rate,  duration, routed_tasks, seed)
     #update tasks dict with peak workload based on real world trace
     for t in tasks:

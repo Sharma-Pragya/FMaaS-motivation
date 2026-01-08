@@ -18,9 +18,10 @@ from urllib.parse import urlparse
 from config import *
 import tritonclient.grpc as grpcclient
 from tritonclient.grpc import InferInput
+import tritonclient.grpc.aio as grpc_aio
 
 DATASET_LOADERS = {}
-dataloaders={}
+DATA={}
 #based on type of tasks in requests in needs to initialize dataloaders
 def initialize_dataloaders():
     global DATASET_LOADERS
@@ -29,9 +30,9 @@ def initialize_dataloaders():
     # create test dataloaders
     DATASET_LOADERS = {
         "ecgclass": DataLoader(ECG5000Dataset({"dataset_path": f"{d}/ECG5000"}, {"task_type": "classification"}, "test"), **inference_config),
-        # "heartrate": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"hr"}, "test"), **inference_config),
-        # "diasbp": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"diasbp"}, "test"), **inference_config),
-        # "sysbp": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"sysbp"}, "test"), **inference_config),
+        "heartrate": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"hr"}, "test"), **inference_config),
+        "diasbp": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"diasbp"}, "test"), **inference_config),
+        "sysbp": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"sysbp"}, "test"), **inference_config),
         "gestureclass": DataLoader(UWaveGestureLibraryALLDataset({"dataset_path": f"{d}/UWaveGestureLibraryAll"}, {"task_type": "classification"}, "test"), **inference_config),
         # "ecl": DataLoader(ECLDataset({"dataset_path": f"{d}/ElectricityLoad-data"}, {"task_type": "forecasting"}, "test"), **inference_config),
         # "traffic": DataLoader(TrafficDataset({"dataset_path": f"{d}/Traffic"}, {"task_type": "forecasting"}, "test"), **inference_config),
@@ -41,6 +42,8 @@ def initialize_dataloaders():
         # "rate": DataLoader(ExchangeDataset({"dataset_path": f"{d}/Exchange"}, {"task_type": "forecasting"}, "test"), **inference_config),
         # 'vqa': DataLoader(VQADataset({"dataset_path": f"{d}/val2014"}, {"task_type": "forecasting"}, "test") ,  **inference_config)
     }
+    global DATA
+    DATA = {task: next(iter(loader)) for task, loader in DATASET_LOADERS.items()}
     print(f"[RuntimeExecutor] Initialized {len(DATASET_LOADERS)} dataloaders.")
 
 def load_dataloader(task: str):
@@ -49,12 +52,12 @@ def load_dataloader(task: str):
     return DATASET_LOADERS[task]
 
 CLIENT_CACHE = {}
-def get_client(url: str):
+async def get_client(url: str):
     if url not in CLIENT_CACHE:
         try:
-            client = grpcclient.InferenceServerClient(url=url, verbose=False)
+            client = grpc_aio.InferenceServerClient(url=url, verbose=False)
             
-            if not client.is_server_live():
+            if not await client.is_server_live():
                 print(f"Warning: Server at {url} is not live yet.")
                 return None
                 
@@ -71,10 +74,7 @@ def get_client(url: str):
 async def send_request(req_id, device_url, inputs_dict, ouputs_dict):
     # 1. Get the raw gRPC client
     st = time.time()
-    client = get_client(device_url) 
-    if client is None:
-        return
-
+    client = await get_client(device_url) 
     # 2. Prepare Inputs List
     triton_inputs = []
     
@@ -95,7 +95,7 @@ async def send_request(req_id, device_url, inputs_dict, ouputs_dict):
     # 3. Send Request (Thread-safe!)
     # logic: model_name is the one you defined in bind()
     try:
-        response = client.infer(model_name="edge_infer", inputs=triton_inputs)
+        response = await client.infer(model_name="edge_infer", inputs=triton_inputs)
     except Exception as e:
         print(f"Error during inference: {e}")
         return
@@ -104,10 +104,11 @@ async def send_request(req_id, device_url, inputs_dict, ouputs_dict):
     # Assuming your output is named "output"
     # You might need to check your model config for the exact output name
     result = response.as_numpy("output")
-    proc_time = response.as_numpy("proc_time")
-    swap_time = response.as_numpy("swap_time")
+    device_start_time = response.as_numpy("start_time")/10**9
+    proc_time = response.as_numpy("proc_time")/10**9
+    swap_time = response.as_numpy("swap_time")/10**9
     et = time.time()
-    return req_id, device_url, et - st, proc_time.item(), swap_time.item(), result.item(), ouputs_dict.get('y').item()
+    return req_id, device_url, st, device_start_time.item(), et - st, proc_time.item(), swap_time.item(), result.item(), ouputs_dict.get('y').item()
     
 
 
@@ -122,9 +123,8 @@ async def handle_runtime_request(reqs: dict, mode: str = 'trace'):
             wait_time = (start + req['req_time']) - time.time()
             if wait_time > 0:
                 await asyncio.sleep(wait_time)
-
-            dataloader = load_dataloader(req['task'])
-            batch = next(iter(dataloader))
+            
+            batch = DATA.get(req['task'])
 
             # --- Prepare Inputs for PyTriton ---
             # PyTriton expects NumPy arrays.
