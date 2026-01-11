@@ -73,7 +73,7 @@ for r in REQ_RATES:
     data.append(compute_reqs_per_sec(df, "req_time"))
 
 fig, ax = plt.subplots()
-stacked_bar(ax, REQ_RATES, data, "Workload (from req_time)", "reqs/sec")
+stacked_bar(ax, REQ_RATES, data, "Workload from dataset", "reqs/sec")
 plt.savefig("workload_from_req_time.png")
 
 # -------- Plot 2: Workload from site_manager_send_time --------
@@ -83,7 +83,7 @@ for r in REQ_RATES:
     data.append(compute_reqs_per_sec(df, "site_manager_send_time"))
 
 fig, ax = plt.subplots()
-stacked_bar(ax, REQ_RATES, data, "Workload (from site_manager_send_time)", "reqs/sec")
+stacked_bar(ax, REQ_RATES, data, "Workload from Sender", "reqs/sec")
 plt.savefig("workload_from_site_manager_send_time.png")
 
 # -------- Plot 3: Workload from device_start_time --------
@@ -93,7 +93,7 @@ for r in REQ_RATES:
     data.append(compute_reqs_per_sec(df, "device_start_time"))
 
 fig, ax = plt.subplots()
-stacked_bar(ax, REQ_RATES, data, "Workload (from device_start_time)", "reqs/sec")
+stacked_bar(ax, REQ_RATES, data, "Workload on device", "reqs/sec")
 plt.savefig("workload_from_device_start_time.png")
 
 # -------- Plot 4: Response time breakdown --------
@@ -135,7 +135,7 @@ for i, task in enumerate(tasks):
 ax.set_xticks(x + width * (len(tasks) - 1) / 2)
 ax.set_xticklabels(REQ_RATES)
 ax.set_title("Response Time Breakdown")
-ax.set_ylabel("seconds")
+ax.set_ylabel("Time (ms)")
 ax.set_xlabel("req_rate")
 
 task_handles = [plt.Rectangle((0, 0), 1, 1, facecolor=task_colors[t], edgecolor="black", label=t) for t in tasks]
@@ -151,6 +151,80 @@ ax.legend(handles=comp_handles, title="Component", loc="upper left", bbox_to_anc
 
 plt.tight_layout()
 plt.savefig("response_time_breakdown.png")
+## box plot version
+tasks = sorted(load_data(REQ_RATES[0])["task"].unique())
+x = np.arange(len(REQ_RATES))
+width = 0.8 / len(tasks)
+
+fig, ax = plt.subplots()
+
+colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+task_colors = {task: colors[i % len(colors)] for i, task in enumerate(tasks)}
+
+for i, task in enumerate(tasks):
+    data = []
+    positions = []
+
+    for r_idx, r in enumerate(REQ_RATES):
+        df = load_data(r)
+        g = df[df["task"] == task]
+        vals = g["end_to_end_latency(ms)"].to_numpy()
+
+        pos = x[r_idx] + i * width
+        data.append(vals)
+        positions.append(pos)
+
+    bp = ax.boxplot(
+        data,
+        positions=positions,
+        widths=width * 0.85,
+        patch_artist=True,
+        showmeans=True,
+        meanprops=dict(marker="o", markerfacecolor="black", markeredgecolor="black"),
+        medianprops=dict(color="black", linewidth=1.5),
+        showfliers=False
+    )
+
+    for patch in bp["boxes"]:
+        patch.set_facecolor(task_colors[task])
+        patch.set_edgecolor("black")
+        patch.set_alpha(0.6)
+
+    # for pos, vals in zip(positions, data):
+    #     if len(vals) == 0:
+    #         continue
+    #     n = min(len(vals), 300)
+    #     idx = np.random.choice(len(vals), size=n, replace=False)
+    #     v = vals[idx]
+        # jitter = (np.random.rand(n) - 0.5) * width * 0.55
+        # ax.scatter(np.full(n, pos) + jitter, v, s=8, alpha=0.25)
+
+ax.set_xticks(x + width * (len(tasks) - 1) / 2)
+ax.set_xticklabels(REQ_RATES)
+ax.set_xlabel("req_rate")
+ax.set_ylabel("end_to_end_latency (ms)")
+ax.set_title("Response Time")
+
+task_handles = [
+    plt.Line2D([0], [0], color=task_colors[t], lw=6, label=t)
+    for t in tasks
+]
+ax.legend(handles=task_handles, title="Task", bbox_to_anchor=(1.02, 1.0), loc="upper left")
+
+plt.tight_layout()
+plt.savefig("response_time_box_jitter.png")
+
+for r in [10, 50, 100,200]:
+    df = load_data(r)
+    vals = df["end_to_end_latency(ms)"]
+    print(f"{r} req/s")
+    print("p50:", np.percentile(vals, 50))
+    print("p90:", np.percentile(vals, 90))
+    print("p95:", np.percentile(vals, 95))
+    print("p99:", np.percentile(vals, 99))
+    print("mean:", vals.mean())
+    print()
+
 # -------- Plot 5: Device throughput --------
 data = []
 for r in REQ_RATES:
@@ -170,5 +244,12 @@ for r in REQ_RATES:
     data.append(compute_reqs_per_sec(df, "sm_done_time"))
 
 fig, ax = plt.subplots()
-stacked_bar(ax, REQ_RATES, data, "Site Manager Throughput", "reqs/sec")
+stacked_bar(ax, REQ_RATES, data, "Sender Throughput", "reqs/sec")
+for r, d in zip(REQ_RATES, data):
+    print(f"\n{r} req/s")
+    total = 0.0
+    for task, v in d.items():
+        print(f"  {task}: {v:.2f} req/s")
+        total += v
+    print(f"  TOTAL: {total:.2f} req/s")
 plt.savefig("site_manager_throughput.png")
