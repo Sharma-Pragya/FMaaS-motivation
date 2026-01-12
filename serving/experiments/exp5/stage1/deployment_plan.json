@@ -1,0 +1,69 @@
+{
+  "sites": [
+    {
+      "id": "site2",
+      "deployments": [
+        {
+          "device": "http://10.100.20.54:8001",
+          "device_type": "A16",
+          "backbone": "chronostiny",
+          "decoders": [
+            {
+              "task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_chronostiny_mlp"
+            },
+            {
+              "task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_chronostiny_mlp"
+            },
+            {
+              "task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_chronostiny_mlp"
+            },
+            {
+              "task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageip_mlp"
+            },
+            {
+              "task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_chronostiny_mlp"
+            }
+          ],
+          "tasks": {
+            "heartrate": {
+              "type": "regression",
+              "total_requested_workload": 10,
+              "request_per_sec": 10.0
+            },
+            "sysbp": {
+              "type": "regression",
+              "total_requested_workload": 10,
+              "request_per_sec": 10.0
+            },
+            "diasbp": {
+              "type": "regression",
+              "total_requested_workload": 10,
+              "request_per_sec": 10.0
+            },
+            "ecgclass": {
+              "type": "classification",
+              "total_requested_workload": 10,
+              "request_per_sec": 10.0
+            },
+            "gestureclass": {
+              "type": "classification",
+              "total_requested_workload": 10,
+              "request_per_sec": 10.0
+            }
+          },
+          "util": 0.30055410000000005
+        }
+      ]
+    }
+  ]
+}

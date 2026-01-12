@@ -3,7 +3,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-ROOT_DIR = "./"
+ROOT_DIR = "./greedy_new"
+SAVEFIG_DIR=f"./plots/{ROOT_DIR}"
 REQ_RATES = sorted([int(d) for d in os.listdir(ROOT_DIR) if d.isdigit()])
 def load_data(req_rate):
     path = os.path.join(ROOT_DIR, str(req_rate), "request_latency_results.csv")
@@ -74,7 +75,7 @@ for r in REQ_RATES:
 
 fig, ax = plt.subplots()
 stacked_bar(ax, REQ_RATES, data, "Workload from dataset", "reqs/sec")
-plt.savefig("workload_from_req_time.png")
+plt.savefig(f"{SAVEFIG_DIR}/workload_from_req_time.png")
 
 # -------- Plot 2: Workload from site_manager_send_time --------
 data = []
@@ -84,7 +85,7 @@ for r in REQ_RATES:
 
 fig, ax = plt.subplots()
 stacked_bar(ax, REQ_RATES, data, "Workload from Sender", "reqs/sec")
-plt.savefig("workload_from_site_manager_send_time.png")
+plt.savefig(f"{SAVEFIG_DIR}/workload_from_site_manager_send_time.png")
 
 # -------- Plot 3: Workload from device_start_time --------
 data = []
@@ -94,7 +95,7 @@ for r in REQ_RATES:
 
 fig, ax = plt.subplots()
 stacked_bar(ax, REQ_RATES, data, "Workload on device", "reqs/sec")
-plt.savefig("workload_from_device_start_time.png")
+plt.savefig(f"{SAVEFIG_DIR}/workload_from_device_start_time.png")
 
 # -------- Plot 4: Response time breakdown --------
 tasks = sorted(load_data(REQ_RATES[0])["task"].unique())
@@ -150,7 +151,7 @@ ax.add_artist(leg1)
 ax.legend(handles=comp_handles, title="Component", loc="upper left", bbox_to_anchor=(1.02, 0.55))
 
 plt.tight_layout()
-plt.savefig("response_time_breakdown.png")
+plt.savefig(f"{SAVEFIG_DIR}/response_time_breakdown.png")
 ## box plot version
 tasks = sorted(load_data(REQ_RATES[0])["task"].unique())
 x = np.arange(len(REQ_RATES))
@@ -212,9 +213,9 @@ task_handles = [
 ax.legend(handles=task_handles, title="Task", bbox_to_anchor=(1.02, 1.0), loc="upper left")
 
 plt.tight_layout()
-plt.savefig("response_time_box_jitter.png")
+plt.savefig(f"{SAVEFIG_DIR}/response_time_box_jitter.png")
 
-for r in [10, 50, 100,200]:
+for r in REQ_RATES:
     df = load_data(r)
     vals = df["end_to_end_latency(ms)"]
     print(f"{r} req/s")
@@ -234,7 +235,7 @@ for r in REQ_RATES:
 
 fig, ax = plt.subplots()
 stacked_bar(ax, REQ_RATES, data, "Device Throughput", "reqs/sec")
-plt.savefig("device_throughput.png")
+plt.savefig(f"{SAVEFIG_DIR}/device_throughput.png")
 
 # -------- Plot 6: Site manager throughput --------
 data = []
@@ -252,4 +253,76 @@ for r, d in zip(REQ_RATES, data):
         print(f"  {task}: {v:.2f} req/s")
         total += v
     print(f"  TOTAL: {total:.2f} req/s")
-plt.savefig("site_manager_throughput.png")
+plt.savefig(f"{SAVEFIG_DIR}/site_manager_throughput.png")
+
+# # -------- Plot 7: gpu time --------
+# tasks = sorted(load_data(REQ_RATES[0])["task"].unique())
+# x = np.arange(len(REQ_RATES))
+# width = 0.8 / len(tasks)
+
+# fig, ax = plt.subplots()
+
+# task_colors = {task: plt.rcParams["axes.prop_cycle"].by_key()["color"][i % len(plt.rcParams["axes.prop_cycle"].by_key()["color"])] for i, task in enumerate(tasks)}
+
+# for i, task in enumerate(tasks):
+#     gpu_time = []
+
+#     for r in REQ_RATES:
+#         df = load_data(r)
+#         g = df[df["task"] == task]
+#         p = g["gpu_time(ms)"].mean()
+#         gpu_time.append(p)
+
+#     xpos = x + i * width
+#     c = task_colors[task]
+
+#     ax.bar(xpos, p, width, color=c, hatch=hatch_proc, edgecolor="black")
+
+# ax.set_xticks(x + width * (len(tasks) - 1) / 2)
+# ax.set_xticklabels(REQ_RATES)
+# ax.set_title("GPU Time Breakdown")
+# ax.set_ylabel("Time (ms)")
+# ax.set_xlabel("req_rate")
+
+# task_handles = [plt.Rectangle((0, 0), 1, 1, facecolor=task_colors[t], edgecolor="black", label=t) for t in tasks]
+# leg1 = ax.legend(handles=task_handles, title="Task", loc="upper left", bbox_to_anchor=(1.02, 1.0))
+# ax.add_artist(leg1)
+
+# plt.tight_layout()
+# plt.savefig(f"{SAVEFIG_DIR}/gpu_time.png")
+
+# # -------- Plot 7: gpu sync --------
+# tasks = sorted(load_data(REQ_RATES[0])["task"].unique())
+# x = np.arange(len(REQ_RATES))
+# width = 0.8 / len(tasks)
+
+# fig, ax = plt.subplots()
+
+# task_colors = {task: plt.rcParams["axes.prop_cycle"].by_key()["color"][i % len(plt.rcParams["axes.prop_cycle"].by_key()["color"])] for i, task in enumerate(tasks)}
+
+# for i, task in enumerate(tasks):
+#     gpu_time = []
+
+#     for r in REQ_RATES:
+#         df = load_data(r)
+#         g = df[df["task"] == task]
+#         p = g["gpu_sync(ms)"].mean()
+#         gpu_time.append(p)
+
+#     xpos = x + i * width
+#     c = task_colors[task]
+
+#     ax.bar(xpos, p, width, color=c, hatch=hatch_proc, edgecolor="black")
+
+# ax.set_xticks(x + width * (len(tasks) - 1) / 2)
+# ax.set_xticklabels(REQ_RATES)
+# ax.set_title("GPU Sync Breakdown")
+# ax.set_ylabel("Time (ms)")
+# ax.set_xlabel("req_rate")
+
+# task_handles = [plt.Rectangle((0, 0), 1, 1, facecolor=task_colors[t], edgecolor="black", label=t) for t in tasks]
+# leg1 = ax.legend(handles=task_handles, title="Task", loc="upper left", bbox_to_anchor=(1.02, 1.0))
+# ax.add_artist(leg1)
+
+# plt.tight_layout()
+# plt.savefig(f"{SAVEFIG_DIR}/gpu_sync.png")

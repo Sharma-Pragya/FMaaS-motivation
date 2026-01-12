@@ -5,7 +5,6 @@ import argparse
 from collections import defaultdict
 from router import route_trace
 import os
-from hueristic.greedy import shared_packing, build_final_json
 import ssl
 from storage import write_data_to_file
 acks = {}
@@ -34,6 +33,7 @@ def on_message(client, userdata, msg):
         print(f"ACK from {site}: {payload}")
             
     elif topic.startswith("fmaas/runtime/ack"):
+        print(payload)
         site = payload.get("site", "unknown")
         with acks_lock:
             acks[site] = payload
@@ -74,9 +74,17 @@ def on_message(client, userdata, msg):
             
     
 def run_deployment_plan(devices, tasks_slo):
-    task_manifest=shared_packing(devices,tasks_slo)
+    #old greedy
+    # from hueristic.greedy import shared_packing, build_final_json
+    # task_manifest=shared_packing(devices,tasks_slo)
+    # final_json = build_final_json(task_manifest)
+    # with open(f"{DEPLOYMENT_PLAN_PATH}.json", "w") as f:
+    #     json.dump(final_json, f, indent=2)
+    #new greedy
+    from hueristic.greedy_new import shared_packing, build_final_json
+    task_manifest = shared_packing(devices,tasks_slo)
     final_json = build_final_json(task_manifest)
-    with open(DEPLOYMENT_PLAN_PATH, "w") as f:
+    with open(f"{DEPLOYMENT_PLAN_PATH}.json", "w") as f:
         json.dump(final_json, f, indent=2)
     return final_json
 
@@ -139,7 +147,7 @@ if __name__ == "__main__":
 
     #1. First set the config file for defining tasks and devices
     #extract tasks and devices from config.py
-    from experiments.exp4.user_config import devices, tasks 
+    from experiments.exp5.stage2_50.user_config import devices, tasks 
     all_task_names = sorted({t for t in tasks.keys()})
     routed_tasks = [(t, None, None, None) for t in all_task_names] #task, site, device, backbone
     seed=42
@@ -155,14 +163,14 @@ if __name__ == "__main__":
     #         tasks[t]['peak_workload'] = avg_workload_per_task[t]
 
     # # # #lmsyschat
-    from traces.lmsyschat import generate_requests
-    req_rate, duration = (10, 3000) #max (50,300), (100,300), (150,300), (200,300)
-    trace,avg_workload_per_task,peak_workload_per_task = generate_requests( req_rate,  duration, routed_tasks, seed)
-    #update tasks dict with peak workload based on real world trace
-    for t in tasks:
-        if t in avg_workload_per_task:
-            tasks[t]['peak_workload'] = avg_workload_per_task[t]
-    print("Updated tasks:", tasks)
+    # from traces.lmsyschat import generate_requests
+    # req_rate, duration = (200, 360) #max (50,300), (100,300), (150,300), (200,300)
+    # trace,avg_workload_per_task,peak_workload_per_task = generate_requests( req_rate,  duration, routed_tasks, seed)
+    # #update tasks dict with peak workload based on real world trace
+    # for t in tasks:
+    #     if t in avg_workload_per_task:
+    #         tasks[t]['peak_workload'] = avg_workload_per_task[t]
+    # print("Updated tasks:", tasks)
 
     # #chatbotarena
     # from traces.chatbotarena import generate_requests
@@ -175,7 +183,7 @@ if __name__ == "__main__":
 
     #make plan using greedy algorithm and route the trace based on the plan
     plan = run_deployment_plan(devices, tasks)
-    routed_trace = route_trace(trace, plan, seed)
+    # routed_trace = route_trace(trace, plan, seed)
     
     site_ids = [s["id"] for s in plan["sites"]]
     if args.deploy_only:

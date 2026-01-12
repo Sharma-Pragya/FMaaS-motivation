@@ -1,0 +1,6 @@
+[
+    {
+        "status": "loaded_papageip",
+        "logger_summary": "{'load_backbone': {'wall time': 4712.603860534728, 'gpu time': 4712.65771484375, 'gpu peak': 20.068352, 'cpu dRSS': 355.115008}, 'add_decoder_diasbp_papageip_mlp': {'wall time': 1.7775781452655792, 'gpu time': 1.8012160062789917, 'gpu peak': 20.332032, 'cpu dRSS': 0.0}, 'add_decoder_gestureclass_papageip_mlp': {'wall time': 1.468469388782978, 'gpu time': 1.491968035697937, 'gpu peak': 20.60032, 'cpu dRSS': 0.0}, 'add_decoder_heartrate_papageip_mlp': {'wall time': 1.4071855694055557, 'gpu time': 1.4305280447006226, 'gpu peak': 20.864, 'cpu dRSS': 0.0}, 'add_decoder_sysbp_papageip_mlp': {'wall time': 1.4066556468605995, 'gpu time': 1.4284800291061401, 'gpu peak': 21.12768, 'cpu dRSS': 0.0}, 'add_decoder_ecgclass_papageip_mlp': {'wall time': 1.4144666492938995, 'gpu time': 1.4366719722747803, 'gpu peak': 21.393408, 'cpu dRSS': 0.0}}"
+    }
+]

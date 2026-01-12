@@ -1,6 +1,5 @@
 from hueristic.parser.profiler import *
 import math
-import copy
 import json
 
 class TreeNode:
