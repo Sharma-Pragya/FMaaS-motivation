@@ -1,13 +1,14 @@
 import heapq
+import json
+import copy
 from hueristic.parser.profiler import *
-import json 
 
 def get_pipelines_task(task_name):
-    components={}
-    for id,pipeline in pipelines.items():
+    components_map = {}
+    for id, pipeline in pipelines.items():
         if pipeline['task'] == task_name:
-            components[id]=pipeline
-    return components
+            components_map[id] = pipeline
+    return components_map
 
 def get_pipeline_task_accuracy(id):
     return metric[id]
@@ -16,243 +17,334 @@ def get_pipeline_task_device_latency(id, device_type):
     return latency[id][device_type]
 
 def get_pipeline_components_mem(pipeline):
-    backbone_name=f"{pipeline['backbone']}"
-    decoder_name=f"{pipeline['decoder']}_{pipeline['backbone']}_{pipeline['task']}"
-    task_name=f"{pipeline['task']}_{pipeline['backbone']}_{pipeline['decoder']}"
-    return {backbone_name:components[backbone_name]['mem'],decoder_name:components[decoder_name]['mem'],task_name:components[task_name]['mem']}
+    backbone_name = f"{pipeline['backbone']}"
+    decoder_name = f"{pipeline['decoder']}_{pipeline['backbone']}_{pipeline['task']}"
+    task_name = f"{pipeline['task']}_{pipeline['backbone']}_{pipeline['decoder']}"
+    return {
+        backbone_name: components[backbone_name]['mem'],
+        decoder_name: components[decoder_name]['mem'],
+        task_name: components[task_name]['mem']
+    }
 
-def select_active_backbones(task,task_pipelines,deployment_plans):
-    active_plan=[]
+def select_active_backbones(task, task_pipelines, deployment_plans):
+    """Algorithm 1 - Line 1: Select active backbone/server pairs."""
+    active_plan = []
     for plan in deployment_plans:
-        deployed_components=plan['components']
-        for id,pipeline in task_pipelines.items():
+        deployed_components = plan['components']
+        for id, pipeline in task_pipelines.items():
             if pipeline['backbone'] in deployed_components:
-                pipeline_metric=get_pipeline_task_accuracy(id)
-                pipeline_latency=get_pipeline_task_device_latency(id, plan['type'])
-                plan_util=plan['util']
-                plan_server=plan['name']
-                if task['metric']=='accuracy':
-                    if pipeline_metric >= task['value'] and pipeline_latency <= task['latency']: 
-                        heapq.heappush(active_plan, (-pipeline_metric, pipeline_latency,plan_util,plan_server,id, plan))
-                elif task['metric']=='mae':
-                    if pipeline_metric <= task['value'] and pipeline_latency <= task['latency']: 
-                        heapq.heappush(active_plan, (pipeline_metric, pipeline_latency,plan_util,plan_server,id, plan))
+                pipeline_metric = get_pipeline_task_accuracy(id)
+                pipeline_latency = get_pipeline_task_device_latency(id, plan['type'])
+                # Check SLOs
+                if task['metric'] == 'accuracy':
+                    if pipeline_metric >= task['value'] and pipeline_latency <= task['latency']:
+                        heapq.heappush(active_plan, (-pipeline_metric, pipeline_latency, plan['util'], plan['name'], id, plan))
+                elif task['metric'] == 'mae':
+                    if pipeline_metric <= task['value'] and pipeline_latency <= task['latency']:
+                        heapq.heappush(active_plan, (pipeline_metric, pipeline_latency, plan['util'], plan['name'], id, plan))
     return active_plan
 
-def distribute_demand(task_name,task,active_deployments):
-    total_requested_workload=task['peak_workload']
-    task_demand=total_requested_workload
-    task_type=task['type']
-    temp_plan={}
-    original_plan=[]
-    while task_demand and active_deployments:
-        print(active_deployments)
-        plan=heapq.heappop(active_deployments)
-        original_plan.append(plan)
-        pipeline_latency=plan[1]
-        cap = plan[2]
-        pipeline_id=plan[4]
-        left_cap=1-cap
+def distribute_demand(task_name, task, active_deployments):
+    """Algorithm 1 - Line 2 & 6: Distribute demand across sorted candidates."""
+    total_requested_workload = task['peak_workload']
+    task_demand = total_requested_workload
+    task_type = task['type']
+    temp_plan = {}
+    
+    # We work on a copy of the heap to avoid polluting the caller's state
+    working_heap = list(active_deployments)
+    heapq.heapify(working_heap)
+    
+    while task_demand > 1e-9 and working_heap:
+        plan_tuple = heapq.heappop(working_heap)
+        pipeline_latency = plan_tuple[1]
+        current_util = plan_tuple[2]
+        pipeline_id = plan_tuple[4]
+        plan_ref = plan_tuple[5]
+        server_name = plan_ref['name']
+        
+        left_cap = 1.0 - current_util
         if left_cap > 0:
-            task_cap=task_demand*pipeline_latency/1000
-            allocated_cap=min(left_cap, task_cap)
-            allocated_demand=allocated_cap*1000/pipeline_latency
+            # Capacity needed for 1 request/sec: latency/1000
+            task_cap_needed = task_demand * pipeline_latency / 1000.0
+            allocated_cap = min(left_cap, task_cap_needed)
+            allocated_demand = allocated_cap * 1000.0 / pipeline_latency
+            
             task_demand -= allocated_demand
-            if abs(task_demand)<1e-6:
-                task_demand=0
-            temp_plan.update({plan[5]['name']:{'name': plan[5]['name'],'ip':plan[5]['ip'],'site_manager':plan[5]['site_manager'], 'type': plan[5]['type'], 'mem': plan[5]['mem'],'components':get_pipeline_components_mem(pipelines[pipeline_id]),'task_info':{task_name: {'type':task_type,'total_requested_workload':total_requested_workload,'request_per_sec':allocated_demand}},'util': cap+allocated_cap}})
 
-    if task_demand!=0:
-        #push the plans in temp_plan back in active_deployments
-        for plan in original_plan:
-            heapq.heappush(active_deployments, plan)
+            temp_plan.update({plan_ref['name']:{
+                    'name': plan_ref['name'],
+                    'ip': plan_ref.get('ip'),
+                    'site_manager': plan_ref.get('site_manager'),
+                    'type': plan_ref['type'],
+                    'mem': plan_ref['mem'],
+                    'components': get_pipeline_components_mem(pipelines[pipeline_id]),
+                    'task_info': {
+                        task_name: {
+                            'type': task_type,
+                            'total_requested_workload': total_requested_workload,
+                            'request_per_sec': allocated_demand
+                        }
+                    },
+                    'util': current_util + allocated_cap
+                }
+            }
+            )
 
-    return task_demand,temp_plan
+    return max(0, task_demand), temp_plan
 
 def select_lowutil_server(servers):
-    # Select the server with the lowest utilization
-    min_util = float('inf')
-    selected_server = None
-    for server in servers:
-        if server['util'] < min_util:
-            min_util = server['util']
-            selected_server = server
-    return selected_server
+    if not servers: return None
+    return min(servers, key=lambda x: x['util'])
 
-def deployment_plan(task_name,task, task_pipelines, servers, deployment_plans):
-    task_active_deployments=select_active_backbones(task, task_pipelines,deployment_plans)
-    task_demand,temp_plan=distribute_demand(task_name,task,task_active_deployments)
-    for id,pipeline in task_pipelines.items():
-        if task_demand>0 and len(servers)>0:
-            s = select_lowutil_server(servers)
-            #only consider pipeline which satisfy task latency slo and accuracy requirement
-            pipeline_metric=get_pipeline_task_accuracy(id)
-            pipeline_latency=get_pipeline_task_device_latency(id, s['type'])
-            if task['metric']=='accuracy':
-                if pipeline_metric >= task['value'] and pipeline_latency <= task['latency']: 
-                    heapq.heappush(task_active_deployments, (-pipeline_metric,pipeline_latency,s['util'],s['name'],id, {'name': s['name'],'site_manager':s['site_manager'],'ip':s['ip'],'type': s['type'],'mem':s['mem'],'ip':s['ip'],'site_manager':s['site_manager'],'components':get_pipeline_components_mem(pipeline),'tasks': [],'util': s['util']}))  
-            elif task['metric']=='mae':
-                if pipeline_metric <= task['value'] and pipeline_latency <= task['latency']: 
-                    heapq.heappush(task_active_deployments, (pipeline_metric,pipeline_latency,s['util'],s['name'], id, {'name': s['name'],'site_manager':s['site_manager'], 'type': s['type'],'mem':s['mem'],'ip':s['ip'],'ip':s['ip'],'site_manager':s['site_manager'],'components':get_pipeline_components_mem(pipeline),'tasks': [],'util': s['util']}))  
-            task_demand,temp_plan=distribute_demand(task_name,task,task_active_deployments)
-    if task_demand>0:
-        deployment_plans,redeploy_flag=fit(deployment_plans)
-        if redeploy_flag==True:
-            print("Trying redeployment")
-            deployment_plan(task_name,task, task_pipelines, servers, deployment_plans)
+def commit_plan(temp_plan, deployment_plans):
+    """Helper to merge the temp_plan into the main deployment_plans."""
+    for server_name, plan_data in temp_plan.items():
+        found = False
+        for existing in deployment_plans:
+            if existing['name'] == server_name:
+                existing['components'].update(plan_data['components'])
+                existing['task_info'].update(plan_data['task_info'])
+                # # If task already exists on this server (from a different backbone), sum it
+                # for t_name, t_info in plan_data['task_info'].items():
+                #     if t_name in existing['task_info']:
+                #         existing['task_info'][t_name]['request_per_sec'] += t_info['request_per_sec']
+                #     else:
+                #         existing['task_info'][t_name] = t_info
+                existing['util'] = plan_data['util']
+                found = True
+                break
+        if not found:
+            deployment_plans.append(plan_data)
+
+def deployment_plan(task_name, task, task_pipelines, servers, deployment_plans):
+    """Algorithm 1: Place_Task"""
+    # 1. Select active backbones and try to distribute
+    d = select_active_backbones(task, task_pipelines, deployment_plans)
+    task_demand, temp_plan = distribute_demand(task_name, task, d)
+    
+    if task_demand <= 1e-9:
+        commit_plan(temp_plan, deployment_plans)
+        return
+    # To prevent duplicates, keep track of (pipeline_id, server_name) already in 'd'
+    seen_candidates = set()
+    for item in d:
+        # item: (priority, latency, util, server_name, pipeline_id, plan_ref)
+        seen_candidates.add((item[4], item[3]))
+    
+    # 3. Iterate over backbones & servers if demand not satisfied
+    for id, pipeline in task_pipelines.items():
+        if task_demand <= 1e-9:
+            break
+            
+        if not servers:
+            break
+            
+        s = select_lowutil_server(servers)
+        pipeline_metric = get_pipeline_task_accuracy(id)
+        pipeline_latency = get_pipeline_task_device_latency(id, s['type'])
+        if (id, s['name']) in seen_candidates:
+            continue
+        # Check if this pipeline/server combo is valid
+        valid = False
+        if task['metric'] == 'accuracy' and pipeline_metric >= task['value'] and pipeline_latency <= task['latency']:
+            valid = True
+            priority = -pipeline_metric
+        elif task['metric'] == 'mae' and pipeline_metric <= task['value'] and pipeline_latency <= task['latency']:
+            valid = True
+            priority = pipeline_metric
+            
+        if valid:
+            # 5. Append to candidates
+            new_candidate = (priority, pipeline_latency, s['util'], s['name'], id, 
+                            {'name': s['name'], 'site_manager': s['site_manager'], 'ip': s['ip'], 
+                             'type': s['type'], 'mem': s['mem'],'components':get_pipeline_components_mem(pipeline),'task_info':{},'util': s['util']})
+            
+            d.append(new_candidate)
+            
+            # 6. Redistribute
+            task_demand, temp_plan = distribute_demand(task_name, task, d)
+    print("\n")
+    print(task_name,task_demand,temp_plan)
+    # 7. Final Check
+    if task_demand > 1e-9:
+        # 8. fit()
+        deployment_plans, success = fit(deployment_plans)
+        if success:
+            print(f"Replan: Replaning previous deployment to fit {task_name}")
+            # Recursively try again
+            return deployment_plan(task_name, task, task_pipelines, servers, deployment_plans)
         else:
-            print(f"Unable to satisfy {task_name} task demand {task_demand} with current backbones and servers.")
-            flag=False
-            for server_name, plan in temp_plan.items():
-                for existing_plan in deployment_plans:
-                    if existing_plan['name'] == server_name:
-                        existing_plan['components'].update(plan['components'])
-                        existing_plan['task_info'].update(plan['task_info'])
-                        existing_plan['util'] =  plan['util']
-                        flag= True
-                        break
-                if not flag:
-                    deployment_plans.append(plan)
+            print(f"CRITICAL: Unable to satisfy {task_name}. Demand left: {task_demand}")
+            # Even if it failed, commit what we could
+            commit_plan(temp_plan, deployment_plans)
     else:
-        flag=False
-        for server_name, plan in temp_plan.items():
-            for existing_plan in deployment_plans:
-                if existing_plan['name'] == server_name:
-                    existing_plan['components'].update(plan['components'])
-                    existing_plan['task_info'].update(plan['task_info'])
-                    existing_plan['util'] =  plan['util']
-                    flag= True
-                    break
-            if not flag:
-                deployment_plans.append(plan)
+        commit_plan(temp_plan, deployment_plans)
 
 def fit(deployment_plans):
-    #select a backbone with minimum number of task deployed on a server
-    #[{'name': 'device1', 'type': 'A16', 'mem': 16000, 'components': {'chronosmini': 57.957376, 'mlp_chronosmini_heartrate': 0.198144, 'heartrate_chronosmini_mlp': 84.86956956, 'mlp_chronosmini_sysbp': 0.198144, 'sysbp_chronosmini_mlp': 84.86956956, 'mlp_chronosmini_ecgclass': 0.200192, 'ecgclass_chronosmini_mlp': 28.13260789}, 'task_info': {'heartrate': {'type': 'regression', 'total_requested_workload': 25, 'request_per_sec': 25.0}, 'sysbp': {'type': 'regression', 'total_requested_workload': 25, 'request_per_sec': 25.0}, 'ecgclass': {'type': 'classification', 'total_requested_workload': 25, 'request_per_sec': 22.741736416325516}}, 'util': 1.0}, {'name': 'device2', 'type': 'A16', 'mem': 16000, 'components': {'chronostiny': 33.828864, 'mlp_chronostiny_diasbp': 0.132608, 'diasbp_chronostiny_mlp': 43.068878049999995, 'mlp_chronostiny_ecgclass': 0.134656, 'ecgclass_chronostiny_mlp': 16.75775989, 'mlp_chronostiny_gestureclass': 0.137216, 'gestureclass_chronostiny_mlp': 16.75903986}, 'task_info': {'diasbp': {'type': 'regression', 'total_requested_workload': 25, 'request_per_sec': 25.0}, 'ecgclass': {'type': 'classification', 'total_requested_workload': 25, 'request_per_sec': 2.258263583674484}, 'gestureclass': {'type': 'classification', 'total_requested_workload': 25, 'request_per_sec': 25.0}}, 'util': 0.4561525863576539}]
-    min_task=float('inf')
-    for plan in deployment_plans:
-        #minimum task deployment
-        #size of dictionary plan['task_info']
-        if len(plan['task_info'])<min_task:
-            redeploy_plan=plan
-            min_task=len(plan['task_info'])
+    """Algorithm 2: fit()"""
+    if not deployment_plans:
+        return deployment_plans, False
+        
+    # 1. Select backbone with minimum tasks
+    redeploy_plan = min(deployment_plans, key=lambda x: len(x['task_info']))
+    
+    deployed_backbone = None
     for component in redeploy_plan['components'].keys():
         for pipeline in pipelines.values():
-            if pipeline['backbone']==component:
+            if pipeline['backbone'] == component:
                 deployed_backbone = component
-    deployed_server_type=redeploy_plan['type']
-
-    new_backbone=None
-    #decrease size of backbone
-    for component_name,component in components.items():
-        try:
-            if component['mem']<components[deployed_backbone]['mem'] and component['type']==components[deployed_backbone]['type']:
-                new_backbone=component_name
-        except:
-            pass
-    #new backbone not found then end program saying not any smaller backbone found
-    if new_backbone is None:
-        print("No smaller backbone found. Cannot redeploy to a smaller backbone.")
+                break
+    
+    if not deployed_backbone:
         return deployment_plans, False
 
-    #try to deploy task
-    #find all the pipelines with new_backbone for all tasks
-    new_components={new_backbone:components[new_backbone]['mem']}
-    new_util=0
-    for task_name, task in redeploy_plan['task_info'].items():
-        for id,pipeline in pipelines.items():
-            if pipeline['backbone']==new_backbone and pipeline['task']==task_name:
-                decoder_name=f"{pipeline['decoder']}_{new_backbone}_{task_name}"
-                component_task_name=f"{task_name}_{new_backbone}_{pipeline['decoder']}"
-                new_components.update({decoder_name:components[decoder_name]['mem'],component_task_name:components[component_task_name]['mem']})
-                new_util+=task['request_per_sec']*latency[id][deployed_server_type]/1000
-    deployment_plans.remove(redeploy_plan)
-    redeploy_plan['components']=new_components
-    redeploy_plan['util']=new_util
-    deployment_plans.append(redeploy_plan)
+    # 2. Decrease backbone size
+    new_backbone = None
+    current_mem = components[deployed_backbone]['mem']
+    for component_name, comp_data in components.items():
+        #try and except as for every component did not write the type
+        try:
+            # Heuristic: Find a backbone that is smaller but of the same 'type' (e.g., Chronos)
+            if comp_data['mem'] < current_mem and comp_data['type']==components[deployed_backbone]['type']:
+                new_backbone = component_name
+                break
+        except:
+            pass
+    if new_backbone is None:
+        return deployment_plans, False
+
+    # 3. Apply change
+    new_components = {new_backbone: components[new_backbone]['mem']}
+    new_util = 0
+    deployed_server_type = redeploy_plan['type']
+    for task_name, t_info in redeploy_plan['task_info'].items():
+        for id, pipeline in pipelines.items():
+            if pipeline['backbone'] == new_backbone and pipeline['task'] == task_name:
+                decoder_name = f"{pipeline['decoder']}_{new_backbone}_{task_name}"
+                comp_task_name = f"{task_name}_{new_backbone}_{pipeline['decoder']}"
+                new_components.update({
+                    decoder_name: components[decoder_name]['mem'],
+                    comp_task_name: components[comp_task_name]['mem']
+                })
+                new_util += t_info['request_per_sec'] * latency[id][deployed_server_type] / 1000.0
+                
+    redeploy_plan['components'] = new_components
+    redeploy_plan['util'] = new_util
     return deployment_plans, True
 
-
 def shared_packing(devices, tasks):
-    servers=[{'name':name, 'type': device['type'], 'mem': device['mem'],'ip': device['ip'],'site_manager': device['site_manager'],'util':0} for name, device in devices.items()]
+    servers = [{'name': name, 'type': device['type'], 'mem': device['mem'], 
+                'ip': device['ip'], 'site_manager': device['site_manager'], 'util': 0} 
+               for name, device in devices.items()]
     deployment_plans = []
-    #pack task with high peak workload first 
-    #sort tasks according to peak workload
-    sorted_tasks = sorted(tasks.items(), key=lambda x: x[1].get('peak_workload', 0), reverse=False)
+    
+    # Sort tasks by peak workload (Descending for better packing)
+    sorted_tasks = sorted(tasks.items(), key=lambda x: x[1].get('peak_workload', 0), reverse=True)
+    
     for task_name, task in sorted_tasks:
-        task_pipelines=get_pipelines_task(task_name)
+        task_pipelines = get_pipelines_task(task_name)
         deployment_plan(task_name, task, task_pipelines, servers, deployment_plans)
-        #update util for each server based on the deployment plan
+        
+        # Update server utilities from the plans
         for plan in deployment_plans:
-            for server in servers:
-                if server['name'] == plan['name']:
-                    server['util'] = plan['util']
-                if server['util'] ==1:
-                    ##remove server from consideration for future tasks
-                    servers.remove(server)
+            for s in servers:
+                if s['name'] == plan['name']:
+                    s['util'] = plan['util']
+        
+        # Filter out fully saturated servers
+        servers = [s for s in servers if s['util'] < 0.999]
+    print(deployment_plans)
     return deployment_plans
 
 def build_final_json(device_list):
     """
-    Build deployment JSON grouped by site_manager using pipeline config.
-    Each device's components are matched against pipeline definitions
-    to infer backbone and decoders properly.
+    Build deployment JSON grouped by site_manager.
+    Splits multiple backbones on a single device into separate deployment entries.
     """
-
     sites = {}
-    # reverse lookup: decoder -> backbone
+    
+    # Pre-compute lookups from the global 'pipelines' metadata
+    # decoder_key: e.g., "mlp_chronostiny_ecgclass"
     decoder_to_task = {f"{v['decoder']}_{v['backbone']}_{v['task']}": v['task'] for v in pipelines.values()}
-    decoder_to_fulltask = {f"{v['decoder']}_{v['backbone']}_{v['task']}":f"{v['task']}_{v['backbone']}_{v['decoder']}"  for v in pipelines.values()}
+    decoder_to_fulltask = {f"{v['decoder']}_{v['backbone']}_{v['task']}": f"{v['task']}_{v['backbone']}_{v['decoder']}" for v in pipelines.values()}
     decoder_to_backbone = {f"{v['decoder']}_{v['backbone']}_{v['task']}": v['backbone'] for v in pipelines.values()}
-    port = 8001
+    
+    # We also need a way to map which task belongs to which backbone
+    task_to_backbones = {} 
+    for v in pipelines.values():
+        if v['task'] not in task_to_backbones:
+            task_to_backbones[v['task']] = set()
+        task_to_backbones[v['task']].add(v['backbone'])
+
+    base_port = 8001
+
     for d in device_list:
-        # port += 1
         site_id = d["site_manager"]
-        device_url = f"{d['ip']}:{port}"
         device_type = d['type']
-        tasks_info = d["task_info"]
-        util=d["util"]
-
-        components = set(d["components"])
-
-        # find all decoders on this device that match known ones
-        decoders = [dec for dec in components if dec in decoder_to_backbone]
-
-        # infer backbone: any backbone that corresponds to these decoders
-        backbone = None
-        for dec in decoders:
-            possible_backbone = decoder_to_backbone[dec]
-            if possible_backbone in components:
-                backbone = possible_backbone
-                break
+        device_ip = d['ip']
+        all_components = d["components"]
+        all_tasks = d["task_info"]
+        device_util=d['util']
         
-        decoders_list = []
-        for decoder in decoders:
-            task=decoder_to_task[decoder]
-            full_task=decoder_to_fulltask[decoder]
-            decoders_list.append({"task": task, "type": tasks_info[task]['type'], "path":full_task})
-            # build deployment entry
-        deployment = {
-            "device": device_url,
-            "device_type": device_type,
-            "backbone": backbone,
-            "decoders": decoders_list,
-            "tasks": tasks_info,
-            "util":util
+        # 1. Identify all unique backbones present on this device
+        # We find components that act as backbones (keys that are backbones in pipelines)
+        backbones_on_device = [comp for comp in all_components if any(v['backbone'] == comp for v in pipelines.values())]
+        
+        # If a device has multiple backbones, we split them
+        for i, backbone in enumerate(backbones_on_device):
+            # Assign a unique port for each backbone on this device
+            deployment_port = base_port + i*10
+            device_url = f"{device_ip}:{deployment_port}"
+            
+            # 2. Filter decoders that belong ONLY to this backbone
+            current_decoders_list = []
+            backbone_tasks = {}
+            backbone_util = 0.0
+            
+            # We iterate through decoders found in components
+            for comp_name in all_components:
+                if comp_name in decoder_to_backbone and decoder_to_backbone[comp_name] == backbone:
+                    task_name = decoder_to_task[comp_name]
+                    full_path = decoder_to_fulltask[comp_name]
+                    
+                    current_decoders_list.append({
+                        "task": task_name,
+                        "type": all_tasks[task_name]['type'],
+                        "path": full_path
+                    })
+                    
+                    # 3. Associate the task workload with this backbone
+                    if task_name in all_tasks:
+                        backbone_tasks[task_name] = all_tasks[task_name]
 
-        }
-
-        # initialize site entry
-        if site_id not in sites:
-            sites[site_id] = {
-                "id": site_id,
-                "deployments": []
+                        # 4. Calculate this backbone's contribution to utility
+                        # Since util = (demand * latency) / 1000
+                        # We find the specific pipeline ID for this task+backbone
+                        for pid, p_val in pipelines.items():
+                            if p_val['backbone'] == backbone and p_val['task'] == task_name:
+                                latency_val = latency[pid][device_type]
+                                backbone_util += (all_tasks[task_name]['request_per_sec'] * latency_val) / 1000.0
+            
+            # Build the specific deployment entry for this backbone
+            deployment = {
+                "device": device_url,
+                "device_type": device_type,
+                "backbone": backbone,
+                "decoders": current_decoders_list,
+                "tasks": backbone_tasks,
+                "util": round(device_util, 6) # Rounding for cleaner JSON
             }
 
-        sites[site_id]["deployments"].append(deployment)
+            # Initialize site entry and append
+            if site_id not in sites:
+                sites[site_id] = {
+                    "id": site_id,
+                    "deployments": []
+                }
+            sites[site_id]["deployments"].append(deployment)
 
-    final_json = {"sites": list(sites.values())}
-    return final_json
+    return {"sites": list(sites.values())}
 
 if __name__ == "__main__":
     from user_config import devices, tasks
