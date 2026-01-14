@@ -1,7 +1,0 @@
-No conda package cache directories found outside your home directory. To
-prevent conda from filling up your home directory, you can create a new
-directory at `/work/pi_<your_pi_name>/$USER/.conda/pkgs` and reload the module. 
-No conda environment directories found outside your home directory. To prevent
-conda from filling up your home directory, you can create a new directory at
-`/work/pi_<your_pi_name>/$USER/.conda/envs` and reload the module. 
-Loading conda version miniforge3-24.7.1
