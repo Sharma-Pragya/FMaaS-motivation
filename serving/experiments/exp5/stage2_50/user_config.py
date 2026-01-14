@@ -36,7 +36,7 @@ tasks={
     'heartrate':
     {
     'type':'regression',
-    'peak_workload':50,
+    'peak_workload':10,
     'latency':100, #(5.58,239.15)
     'metric':'mae',
     'value':100
@@ -45,7 +45,7 @@ tasks={
     'sysbp':
     {
     'type':'regression',
-    'peak_workload':50,
+    'peak_workload':10,
     'latency':100, #(5.55,239.08)
     'metric':'mae',
     'value': 100   
@@ -53,7 +53,7 @@ tasks={
     'diasbp':
     {
     'type':'regression',
-    'peak_workload':50,
+    'peak_workload':10,
     'latency':100,#(5.58,238.95)
     'metric':'mae',
     'value':100       
@@ -61,7 +61,7 @@ tasks={
     'ecgclass':
     {
     'type':'classification',
-    'peak_workload':50,
+    'peak_workload':10,
     'latency':100,#(3.86,86.34)
     'metric':'accuracy',
     'value':0.7        
@@ -69,7 +69,7 @@ tasks={
     'gestureclass':
     {
     'type':'classification',
-    'peak_workload':50,
+    'peak_workload':10,
     'latency':100, #(3.88,86.53)
     'metric':'accuracy',
     'value':0.6        

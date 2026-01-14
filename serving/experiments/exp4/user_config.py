@@ -1,11 +1,11 @@
 
 devices = {
-  'device1': {
-    'type': 'A16',
-    'mem': 16000,  # in MB
-    'ip': '10.100.20.48',
-    'site_manager':'site2'
-  },
+  # 'device1': {
+  #   'type': 'A16',
+  #   'mem': 16000,  # in MB
+  #   'ip': '10.100.20.51',
+  #   'site_manager':'site2'
+  # },
   'device2': {
     'type': 'A16',
     'mem': 16000,  # in MB

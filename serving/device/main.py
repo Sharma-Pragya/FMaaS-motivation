@@ -2,12 +2,12 @@ import json
 import numpy as np
 import torch
 import torch.nn as nn
-from pytriton.triton import Triton
+from pytriton.triton import Triton, TritonConfig
 from pytriton.model_config import ModelConfig, Tensor
 from pytriton.decorators import batch
 from device.model_loader import load_models, get_loaded_pipeline
-
 import time
+import argparse
 
 class UnifiedEdgeSystem:
     def __init__(self):
@@ -83,9 +83,22 @@ class UnifiedEdgeSystem:
             "logger_summary": np.array([str(logger.summary()).encode('utf-8')])
         }
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--port", type=int, required=True, help="gRPC port")
+    args = parser.parse_args()
+
     system = UnifiedEdgeSystem()
+    grpc_port = args.port
+    http_port = grpc_port + 1
+    metrics_port=http_port + 1
     
-    with Triton() as triton:
+    config = TritonConfig(
+        grpc_port=grpc_port,
+        http_port=http_port,
+        metrics_port=metrics_port
+    )
+
+    with Triton(config=config) as triton:
         # Bind the Inference Model
         triton.bind(
             model_name="edge_infer",

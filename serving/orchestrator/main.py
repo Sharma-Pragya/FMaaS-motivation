@@ -147,7 +147,7 @@ if __name__ == "__main__":
 
     #1. First set the config file for defining tasks and devices
     #extract tasks and devices from config.py
-    from experiments.exp5.stage2_50.user_config import devices, tasks 
+    from experiments.exp4.user_config import devices, tasks 
     all_task_names = sorted({t for t in tasks.keys()})
     routed_tasks = [(t, None, None, None) for t in all_task_names] #task, site, device, backbone
     seed=42
@@ -162,15 +162,15 @@ if __name__ == "__main__":
     #     if t in avg_workload_per_task:
     #         tasks[t]['peak_workload'] = avg_workload_per_task[t]
 
-    # # # #lmsyschat
-    # from traces.lmsyschat import generate_requests
-    # req_rate, duration = (200, 360) #max (50,300), (100,300), (150,300), (200,300)
-    # trace,avg_workload_per_task,peak_workload_per_task = generate_requests( req_rate,  duration, routed_tasks, seed)
-    # #update tasks dict with peak workload based on real world trace
-    # for t in tasks:
-    #     if t in avg_workload_per_task:
-    #         tasks[t]['peak_workload'] = avg_workload_per_task[t]
-    # print("Updated tasks:", tasks)
+    # # #lmsyschat
+    from traces.lmsyschat import generate_requests
+    req_rate, duration = (200, 360) #max (50,300), (100,300), (150,300), (200,300)
+    trace,avg_workload_per_task,peak_workload_per_task = generate_requests( req_rate,  duration, routed_tasks, seed)
+    #update tasks dict with peak workload based on real world trace
+    for t in tasks:
+        if t in avg_workload_per_task:
+            tasks[t]['peak_workload'] = avg_workload_per_task[t]
+    print("Updated tasks:", tasks)
 
     # #chatbotarena
     # from traces.chatbotarena import generate_requests
@@ -183,8 +183,7 @@ if __name__ == "__main__":
 
     #make plan using greedy algorithm and route the trace based on the plan
     plan = run_deployment_plan(devices, tasks)
-    # routed_trace = route_trace(trace, plan, seed)
-    
+    routed_trace = route_trace(trace, plan, seed)
     site_ids = [s["id"] for s in plan["sites"]]
     if args.deploy_only:
         acks.clear()

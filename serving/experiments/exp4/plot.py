@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-ROOT_DIR = "./greedy_new"
+ROOT_DIR = "./greedy_new_new/2_device"
 SAVEFIG_DIR=f"./plots/{ROOT_DIR}"
 REQ_RATES = sorted([int(d) for d in os.listdir(ROOT_DIR) if d.isdigit()])
 def load_data(req_rate):

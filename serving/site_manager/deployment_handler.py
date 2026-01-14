@@ -23,14 +23,18 @@ def _parse_url(device_url: str) -> tuple[str, str]:
     Returns (ssh_host, triton_url)
     triton_url is formatted as 'host:port' for ModelClient.
     """
+    print(device_url)
     p = urlparse(device_url)
+    print(p)
     if p.scheme and p.path:
         ssh_host = p.scheme
-        port = p.port if p.port else 8000
-        triton_url = f"{p.scheme}:{port}"
+        #http port for control so +1
+        port = int(p.path) if p.path else 8000
+        triton_url = f"{p.scheme}:{port+1}"
     else:
         ssh_host = device_url
-        triton_url = f"{device_url}:8000"
+        port=8000
+        triton_url = f"{device_url}:{port+1}"
     return ssh_host, triton_url, port
 
 async def _ssh_start_server(ssh_host: str, conda_env: str, cmd: str,log_path:str):
@@ -55,27 +59,28 @@ async def _ssh_start_server(ssh_host: str, conda_env: str, cmd: str,log_path:str
     
 def _send_control(ssh_host, port, cmd_data, payload_data):
     try:
-        with ModelClient(f"{ssh_host}:8000", "edge_control", init_timeout_s=120) as client:
-            print(f"[SiteManager] Connected to control plane at {ssh_host}:8000")
+        with ModelClient(f"{ssh_host}:{port}", "edge_control", init_timeout_s=120) as client:
+            print(f"[SiteManager] Connected to control plane at {ssh_host}:{port}")
             resp = client.infer_batch(command=cmd_data, payload=payload_data)
             status = resp["status"][0].decode("utf-8")
             logger_summary = resp["logger_summary"][0].decode("utf-8")
-            print(f"[PyTriton] {ssh_host}:8000 Status: {status}")
+            print(f"[PyTriton] {ssh_host}:{port} Status: {status}")
             return {"status": status, "logger_summary": logger_summary}
         
     except Exception as e:
-        print(f"[PyTriton] Failed to deploy to {ssh_host}:8000: {e}")
+        print(f"[PyTriton] Failed to deploy to {ssh_host}:{port}: {e}")
         return False
         
 async def _deploy_one(s: DeploySpec):
-    ssh_host, triton_url, port = _parse_url(s['device'])
+    ssh_host, triton_url, grpc_port = _parse_url(s['device'])
+    print(ssh_host,grpc_port,triton_url)
     # choose env + server command
     if s['backbone'] == "llava":
         conda_env = vlm_env
-        server_cmd = f"python -u device/main.py --port {port} "
-    elif s['backbone'] in ["momentlarge","momentbase",'momentsmall',"chronostiny","papageip","papageis"] :
+        server_cmd = f"python -u device/main.py --port {grpc_port} "
+    elif s['backbone'] in ["momentlarge","momentbase",'momentsmall',"chronostiny","chronossmall","chronosbase","chronosmini","chronoslarge","papageip","papageis","papageisvri"] :
         conda_env = timeseries_env
-        server_cmd = f"python -u device/main.py --port {port} "
+        server_cmd = f"python -u device/main.py --port {grpc_port} "
     else:
         print(f"[WARN] Unknown backbone {s['backbone']}; skipping {s['device']}")
         return
@@ -92,8 +97,7 @@ async def _deploy_one(s: DeploySpec):
     config_str = json.dumps(config_payload)
     cmd_data = np.array([[b"load"]], dtype=object)
     payload_data = np.array([[config_str.encode("utf-8")]], dtype=object)
-
-    deployment_status = await asyncio.to_thread(_send_control, ssh_host, port, cmd_data, payload_data)
+    deployment_status = await asyncio.to_thread(_send_control, ssh_host, grpc_port+1, cmd_data, payload_data)
     return deployment_status
 
 async def deploy_models(specs: List[DeploySpec]):
