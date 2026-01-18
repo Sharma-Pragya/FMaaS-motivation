@@ -1,0 +1,103 @@
+{
+  "sites": [
+    {
+      "id": "site2",
+      "deployments": [
+        {
+          "device": "10.100.20.48:8000",
+          "device_name": "device1",
+          "device_type": "A16",
+          "backbone": "momentsmall",
+          "decoders": [
+            {
+              "task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentsmall_mlp"
+            },
+            {
+              "task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_momentsmall_mlp"
+            }
+          ],
+          "tasks": {
+            "heartrate": {
+              "type": "regression",
+              "total_requested_workload": 20,
+              "request_per_sec": 20.0
+            },
+            "diasbp": {
+              "type": "regression",
+              "total_requested_workload": 20,
+              "request_per_sec": 20.0
+            }
+          },
+          "util": 0.750207
+        },
+        {
+          "device": "10.100.20.48:8010",
+          "device_name": "device1",
+          "device_type": "A16",
+          "backbone": "chronostiny",
+          "decoders": [
+            {
+              "task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_chronostiny_mlp"
+            }
+          ],
+          "tasks": {
+            "sysbp": {
+              "type": "regression",
+              "total_requested_workload": 20,
+              "request_per_sec": 20.0
+            }
+          },
+          "util": 0.750207
+        },
+        {
+          "device": "10.100.20.48:8020",
+          "device_name": "device1",
+          "device_type": "A16",
+          "backbone": "momentbase",
+          "decoders": [
+            {
+              "task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentbase_mlp"
+            }
+          ],
+          "tasks": {
+            "ecgclass": {
+              "type": "classification",
+              "total_requested_workload": 20,
+              "request_per_sec": 20.0
+            }
+          },
+          "util": 0.750207
+        },
+        {
+          "device": "10.100.20.48:8030",
+          "device_name": "device1",
+          "device_type": "A16",
+          "backbone": "papageissvri",
+          "decoders": [
+            {
+              "task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_papageissvri_mlp"
+            }
+          ],
+          "tasks": {
+            "gestureclass": {
+              "type": "classification",
+              "total_requested_workload": 20,
+              "request_per_sec": 20.0
+            }
+          },
+          "util": 0.750207
+        }
+      ]
+    }
+  ]
+}
