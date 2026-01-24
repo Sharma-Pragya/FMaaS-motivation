@@ -4,76 +4,98 @@
       "id": "site2",
       "deployments": [
         {
-          "device": "10.100.20.48:8001",
+          "device": "10.100.20.49:8000",
           "device_name": "device1",
           "device_type": "A16",
-          "backbone": "chronostiny",
+          "backbone": "momentsmall",
           "decoders": [
+            {
+              "task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentsmall_mlp"
+            },
             {
               "task": "heartrate",
               "type": "regression",
-              "path": "heartrate_chronostiny_mlp"
-            },
-            {
-              "task": "sysbp",
-              "type": "regression",
-              "path": "sysbp_chronostiny_mlp"
-            },
-            {
-              "task": "diasbp",
-              "type": "regression",
-              "path": "diasbp_chronostiny_mlp"
+              "path": "heartrate_momentsmall_mlp"
             }
           ],
           "tasks": {
+            "ecgclass": {
+              "type": "classification",
+              "total_requested_workload": 112.71388888888889,
+              "request_per_sec": 112.71388888888889
+            },
             "heartrate": {
               "type": "regression",
-              "total_requested_workload": 100,
-              "request_per_sec": 60.453022862728716
-            },
-            "sysbp": {
-              "type": "regression",
-              "total_requested_workload": 100,
-              "request_per_sec": 39.665517697008674
-            },
-            "diasbp": {
-              "type": "regression",
-              "total_requested_workload": 100,
-              "request_per_sec": 11.595140815909707
+              "total_requested_workload": 19.863888888888887,
+              "request_per_sec": 19.86388888888889
             }
           },
-          "util": 1.0
+          "util": 0.947832
         },
         {
-          "device": "10.100.20.49:8001",
+          "device": "10.100.20.48:8000",
           "device_name": "device2",
           "device_type": "A16",
-          "backbone": "chronostiny",
+          "backbone": "chronossmall",
           "decoders": [
             {
               "task": "sysbp",
               "type": "regression",
-              "path": "sysbp_chronostiny_mlp"
-            },
-            {
-              "task": "diasbp",
-              "type": "regression",
-              "path": "diasbp_chronostiny_mlp"
+              "path": "sysbp_chronossmall_mlp"
             }
           ],
           "tasks": {
             "sysbp": {
               "type": "regression",
-              "total_requested_workload": 100,
-              "request_per_sec": 60.334482302991326
-            },
-            "diasbp": {
-              "type": "regression",
-              "total_requested_workload": 100,
-              "request_per_sec": 35.608292933910235
+              "total_requested_workload": 28.18888888888889,
+              "request_per_sec": 28.188888888888894
             }
           },
-          "util": 1.0
+          "util": 0.980619
+        },
+        {
+          "device": "10.100.20.49:8010",
+          "device_name": "device1",
+          "device_type": "A16",
+          "backbone": "papageissvri",
+          "decoders": [
+            {
+              "task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_papageissvri_mlp"
+            }
+          ],
+          "tasks": {
+            "gestureclass": {
+              "type": "classification",
+              "total_requested_workload": 22.166666666666668,
+              "request_per_sec": 22.166666666666668
+            }
+          },
+          "util": 0.947832
+        },
+        {
+          "device": "10.100.20.48:8010",
+          "device_name": "device2",
+          "device_type": "A16",
+          "backbone": "momentsmall",
+          "decoders": [
+            {
+              "task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_momentsmall_mlp"
+            }
+          ],
+          "tasks": {
+            "diasbp": {
+              "type": "regression",
+              "total_requested_workload": 17.066666666666666,
+              "request_per_sec": 17.066666666666666
+            }
+          },
+          "util": 0.980619
         }
       ]
     }

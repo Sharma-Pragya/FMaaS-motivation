@@ -78,7 +78,7 @@ async def _deploy_one(s: DeploySpec):
     if s['backbone'] == "llava":
         conda_env = vlm_env
         server_cmd = f"python -u device/main.py --port {grpc_port} "
-    elif s['backbone'] in ["momentlarge","momentbase",'momentsmall',"chronostiny","chronossmall","chronosbase","chronosmini","chronoslarge","papageip","papageis","papageisvri"] :
+    elif s['backbone'] in ["momentlarge","momentbase",'momentsmall',"chronostiny","chronossmall","chronosbase","chronosmini","chronoslarge","papageip","papageis","papageissvri"] :
         conda_env = timeseries_env
         server_cmd = f"python -u device/main.py --port {grpc_port} "
     else:

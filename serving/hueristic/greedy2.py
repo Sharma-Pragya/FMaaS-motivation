@@ -1,16 +1,8 @@
 import heapq
 import json
 import copy
-from parser.profiler import *
-from user_config import devices, tasks
-global servers, deployments
-deployments=[]
-servers = [
-    {'name': name, 'type': d['type'], 'mem': d['mem'], 'ip': d['ip'], 
-        'site_manager': d['site_manager'], 'util': 0} 
-    for name, d in devices.items()
-]
-
+from hueristic.parser.profiler import *
+util_factor=1
 def get_pipelines_task(task_name):
     components_map = {}
     for id, pipeline in pipelines.items():
@@ -39,27 +31,32 @@ def commit_plan(temp_plan):
     for endpoint, plan in temp_plan.items():
         server_name=endpoint[0]
         new_total_util = plan['util']
-        found=False
+        found_server=False
+        found_backbone=False
         max_port=0
         for deployed in deployments:
             deployed_server_backbone_name,deployed_plan=list(deployed.items())[0]
             if deployed_server_backbone_name==endpoint:
                 deployed_plan['components'].update(plan['components'])
                 deployed_plan['task_info'].update(plan['task_info'])
-                return 
+                found_server,found_backbone=True, True
+             
             elif server_name==deployed_server_backbone_name[0]:
                 base_ip,deployed_port = deployed_plan['ip'].split(':')
                 max_port=max(max_port,int(deployed_port))
-                found=True
-        if not found:
-            for server in servers:
-                if server['name']==server_name:
-                    base_ip=server['ip']
-                    break
-            max_port=7990
-        new_ip=f"{base_ip}:{max_port+10}"
-        plan['ip']=new_ip
-        deployments.append({endpoint:plan})
+                found_server=True
+        
+        if not found_backbone: 
+            if not found_server:
+                for server in servers:
+                    if server['name']==server_name:
+                        base_ip=server['ip']
+                        break
+                max_port=7990
+        
+            new_ip=f"{base_ip}:{max_port+10}"
+            plan['ip']=new_ip
+            deployments.append({endpoint:plan})
 
         # Sync total device utilization to ALL ports on this physical IP
         for deployed in deployments:
@@ -69,9 +66,10 @@ def commit_plan(temp_plan):
 
 def delete_plan(endpoint):
     for deployed in deployments:
-        deployed_server_backbone_name,_=list(deployed.items())[0]
+        deployed_server_backbone_name,plan=list(deployed.items())[0]
         if deployed_server_backbone_name==endpoint:
-            deployments.remove(deployed_server_backbone_name)
+            deployments.remove({deployed_server_backbone_name:plan})
+        #update util
     #
 def decrease_backbone_size(b):
     for name, data in components.items():
@@ -86,39 +84,92 @@ def fit(task):
     demand_left= task[1]['peak_workload']
     sorted_deployments = sorted(deployments,key=lambda d: len(next(iter(d.values()))['task_info']))
     m=None
-    for deployed in sorted_deployments: 
-        if demand_left <= 10e-9:
-            break
+    for deployed in sorted_deployments:
         server_backbone_name, redeploy_plan = list(deployed.items())[0]
         s,b=server_backbone_name
         b_new = decrease_backbone_size(b) 
         if b_new:
-            change.append(redeploy_plan)
-            
-            delete_plan((s, b))
-
+            change.append({server_backbone_name:redeploy_plan})
+            delete_plan(server_backbone_name)
             new_components = {b_new: components[b_new]['mem']}
-            new_util_contribution = 0
             s_type = redeploy_plan['type']
+            s_site_manager= redeploy_plan['site_manager']
+            s_mem=redeploy_plan['mem']
             for t_name, t_info in redeploy_plan['task_info'].items():
                 for pid, p_val in pipelines.items():
                     if p_val['backbone'] == b_new and p_val['task'] == t_name:
                         d_name, ct_name = f"{p_val['decoder']}_{b_new}_{t_name}", f"{t_name}_{b_new}_{p_val['decoder']}"
                         new_components.update({d_name: components[d_name]['mem'], ct_name: components[ct_name]['mem']})
-                        new_util_contribution += (t_info['request_per_sec'] * latency[pid][s_type]) / 1000.0
                         break
-                        
-            # Update this specific plan's components
-            redeploy_plan['components'] = new_components
             
+            deployments.append({(s,b_new):{'name':s,'backbone':b_new,'site_manager':s_site_manager,
+                                            'type':s_type,'mem':s_mem,'components':new_components,
+                                            'task_info':redeploy_plan['task_info'],
+                                            'ip':redeploy_plan['ip']}})
+
+            # Recalculate global device utility for all ports on this physical device
+            base_ip = redeploy_plan['ip'].split(':')[0]
+
+            other_ports_util=0
+            for deployed in deployments:
+                server_backbone_name, plan = list(deployed.items())[0]
+                if plan['ip'].startswith(base_ip):
+                    for t_name, t in plan['task_info'].items():
+                        for pid, p_val in pipelines.items():
+                            if p_val['task'] == t_name and p_val['backbone'] == server_backbone_name[1]:
+                                other_ports_util+=(t['request_per_sec'] * latency[pid][plan['type']]) / 1000.0 
+
+            total_new_util = other_ports_util
+            for deployed in deployments:
+                server_backbone_name, plan = list(deployed.items())[0]
+                if plan['ip'].startswith(base_ip):
+                    plan['util'] = total_new_util
+            # update server utility
+            for server in servers:
+                for p in deployments:
+                    deployed_server_backbone_name,deployed_plan=list(p.items())[0]
+                    if server['name'] ==deployed_server_backbone_name[0]:
+                        server['util'] = deployed_plan['util']
             m, demand_left = deploy_task(task,do_fit=False)
             #the change did not work need to roll back change
             if demand_left==None:
                 print("Rolling back")
                 delete_plan((s, b_new))
-                for p in change:
-                    commit_plan(p)
-                continue
+                new_components = {b: components[b]['mem']}
+                s_type = redeploy_plan['type']
+                s_site_manager= redeploy_plan['site_manager']
+                s_mem=redeploy_plan['mem']
+                for t_name, t_info in redeploy_plan['task_info'].items():
+                    for pid, p_val in pipelines.items():
+                        if p_val['backbone'] == b and p_val['task'] == t_name:
+                            d_name, ct_name = f"{p_val['decoder']}_{b}_{t_name}", f"{t_name}_{b}_{p_val['decoder']}"
+                            new_components.update({d_name: components[d_name]['mem'], ct_name: components[ct_name]['mem']})
+                            break
+
+                deployments.append({(s,b):{'name':s,'backbone':b,'site_manager':s_site_manager,
+                                            'type':s_type,'mem':s_mem,'components':new_components,
+                                            'task_info':redeploy_plan['task_info'],
+                                            'ip':redeploy_plan['ip']}})
+                # Recalculate global device utility for all ports on this physical device
+                base_ip = redeploy_plan['ip'].split(':')[0]
+
+                other_ports_util=0
+                for deployed in deployments:
+                    server_backbone_name, plan = list(deployed.items())[0]
+                    if plan['ip'].startswith(base_ip):
+                        for t_name, t in plan['task_info'].items():
+                            for pid, p_val in pipelines.items():
+                                if p_val['task'] == t_name and p_val['backbone'] == server_backbone_name[1]:
+                                    other_ports_util+=(t['request_per_sec'] * latency[pid][plan['type']]) / 1000.0 
+
+                total_new_util = other_ports_util
+                for deployed in deployments:
+                    server_backbone_name, plan = list(deployed.items())[0]
+                    if plan['ip'].startswith(base_ip):
+                        plan['util'] = total_new_util
+            elif demand_left<=10-9:
+                return m, demand_left 
+
     return m, demand_left 
 
 def distribute_demand(task, active_backbones_endpoints):
@@ -149,7 +200,7 @@ def distribute_demand(task, active_backbones_endpoints):
 
         latency_val = latency[pid][s_type]
         total_util = s_util
-        left_cap = 1.0 - total_util
+        left_cap = util_factor - total_util
         
         if left_cap > 1e-6:
             task_cap_needed = task_demand * latency_val / 1000.0
@@ -183,7 +234,7 @@ def find_active_deployments(backbone_name):
     for deployment in deployments:
         server_backbone_name, plan = list(deployment.items())[0]
         if server_backbone_name[1] == backbone_name:
-            if plan['util'] < 0.8:
+            if plan['util'] < util_factor:
                 active_backbones_endpoints.append(server_backbone_name)
     return active_backbones_endpoints
             
@@ -229,18 +280,28 @@ def deploy_task(task, do_fit=True):
     
     if do_fit:
         print("Running fit")
-        m, demand_left = fit(task)
-        if demand_left==0:
-            return m, demand_left 
-    print("Nothing worked")
+        fit_m, fit_demand_left = fit(task)
+        if fit_demand_left==0:
+            return fit_m, fit_demand_left
+        else:
+            print("Nothing worked")
+            return m,demand_left
     return m, None
 
-def shared_packing(tasks):
-    global servers
+def shared_packing(devices,tasks):
+    global servers, deployments
+    servers = [
+        {'name': name, 'type': d['type'], 'mem': d['mem'], 'ip': d['ip'], 
+            'site_manager': d['site_manager'], 'util': 0} 
+        for name, d in devices.items()
+    ]
+    deployments=[]
     # iterate over tasks based on peak_workload, high workload first
     sorted_tasks = sorted(tasks.items(), key=lambda x: x[1].get('peak_workload', 0), reverse=True)
     for t_data in sorted_tasks:
+        print('task name',t_data[0])
         res = deploy_task(t_data)
+        print(res)
         if res[0]:
             commit_plan(res[0])
         # update server utility
@@ -249,7 +310,8 @@ def shared_packing(tasks):
                 deployed_server_backbone_name,deployed_plan=list(p.items())[0]
                 if s['name'] ==deployed_server_backbone_name[0]:
                     s['util'] = deployed_plan['util']
-        servers = [s for s in servers if s['util'] < 0.999]
+        # servers = [s for s in servers if s['util'] < 0.999]
+    return deployments
 
 def build_final_json(deployment_plans):
     sites = {}
@@ -271,7 +333,8 @@ def build_final_json(deployment_plans):
     return {"sites": list(sites.values())}
 
 if __name__ == "__main__":
-    shared_packing(tasks)
+    from user_config import devices, tasks
+    deployments=shared_packing(devices,tasks)
     print(deployments)
     final_json = build_final_json(deployments)
     with open("deployment_plan.json", "w") as f:

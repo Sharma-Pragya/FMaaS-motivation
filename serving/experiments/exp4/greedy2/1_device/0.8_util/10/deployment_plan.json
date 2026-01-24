@@ -1,0 +1,103 @@
+{
+  "sites": [
+    {
+      "id": "site2",
+      "deployments": [
+        {
+          "device": "10.100.20.49:8000",
+          "device_name": "device1",
+          "device_type": "A16",
+          "backbone": "momentbase",
+          "decoders": [
+            {
+              "task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentbase_mlp"
+            }
+          ],
+          "tasks": {
+            "ecgclass": {
+              "type": "classification",
+              "total_requested_workload": 5.683333333333334,
+              "request_per_sec": 5.683333333333334
+            }
+          },
+          "util": 0.240609
+        },
+        {
+          "device": "10.100.20.49:8010",
+          "device_name": "device1",
+          "device_type": "A16",
+          "backbone": "chronosbase",
+          "decoders": [
+            {
+              "task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_chronosbase_mlp"
+            }
+          ],
+          "tasks": {
+            "sysbp": {
+              "type": "regression",
+              "total_requested_workload": 1.4361111111111111,
+              "request_per_sec": 1.4361111111111111
+            }
+          },
+          "util": 0.240609
+        },
+        {
+          "device": "10.100.20.49:8020",
+          "device_name": "device1",
+          "device_type": "A16",
+          "backbone": "momentlarge",
+          "decoders": [
+            {
+              "task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentlarge_mlp"
+            }
+          ],
+          "tasks": {
+            "gestureclass": {
+              "type": "classification",
+              "total_requested_workload": 1.0222222222222221,
+              "request_per_sec": 1.0222222222222221
+            }
+          },
+          "util": 0.240609
+        },
+        {
+          "device": "10.100.20.49:8030",
+          "device_name": "device1",
+          "device_type": "A16",
+          "backbone": "momentsmall",
+          "decoders": [
+            {
+              "task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentsmall_mlp"
+            },
+            {
+              "task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_momentsmall_mlp"
+            }
+          ],
+          "tasks": {
+            "heartrate": {
+              "type": "regression",
+              "total_requested_workload": 0.9416666666666667,
+              "request_per_sec": 0.9416666666666667
+            },
+            "diasbp": {
+              "type": "regression",
+              "total_requested_workload": 0.9166666666666666,
+              "request_per_sec": 0.9166666666666666
+            }
+          },
+          "util": 0.240609
+        }
+      ]
+    }
+  ]
+}

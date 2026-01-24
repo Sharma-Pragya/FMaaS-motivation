@@ -37,6 +37,9 @@ def load_models(backbone: str, decoders: list):
         elif backbone == "chronostiny":
             from fmtk.components.backbones.chronos import ChronosModel
             _pipeline = Pipeline(ChronosModel(DEVICE, "tiny"),logger=logger)
+        elif backbone == "chronossmall":
+            from fmtk.components.backbones.chronos import ChronosModel
+            _pipeline = Pipeline(ChronosModel(DEVICE, "small"),logger=logger)
         elif backbone == "chronosbase":
             from fmtk.components.backbones.chronos import ChronosModel
             _pipeline = Pipeline(ChronosModel(DEVICE, "base"),logger=logger)

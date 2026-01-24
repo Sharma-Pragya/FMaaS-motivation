@@ -2,13 +2,19 @@ import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-
-ROOT_DIR = "./greedy_new_new/2_device"
+import json
+ROOT_DIR = "./greedy2/2_device/1_util"
 SAVEFIG_DIR=f"./plots/{ROOT_DIR}"
 REQ_RATES = sorted([int(d) for d in os.listdir(ROOT_DIR) if d.isdigit()])
 def load_data(req_rate):
     path = os.path.join(ROOT_DIR, str(req_rate), "request_latency_results.csv")
     return pd.read_csv(path)
+
+def load_deployment(req_rate):
+    path = os.path.join(ROOT_DIR, str(req_rate), "deployment_plan.json")
+    with open(path) as f:
+        d = json.load(f)
+    return d
 
 def compute_reqs_per_sec(df, time_col):
     out = {}
@@ -255,74 +261,65 @@ for r, d in zip(REQ_RATES, data):
     print(f"  TOTAL: {total:.2f} req/s")
 plt.savefig(f"{SAVEFIG_DIR}/site_manager_throughput.png")
 
-# # -------- Plot 7: gpu time --------
-# tasks = sorted(load_data(REQ_RATES[0])["task"].unique())
-# x = np.arange(len(REQ_RATES))
-# width = 0.8 / len(tasks)
+## -------- Plot 7: Metric --------
 
-# fig, ax = plt.subplots()
+from serving.hueristic.parser.profiler import *
+acc_metric=[]
+mae_metric=[]
+deployments_metric=[]
+for r in REQ_RATES:
+    deploymentplan=load_deployment(r)
+    deployments=deploymentplan['sites'][0]['deployments']
+    acc,acc_count=0,0
+    mae,mae_count=0,0
+    num_of_deployments=0
+    for d in deployments:
+        backbone=d['backbone']
+        num_of_deployments+=1
+        for decoder_info in d['decoders']:
+            task=decoder_info['task']
+            decoder=decoder_info['path'].split("_")[2]
+            for pid,pipeline in pipelines.items():
+                if pipeline['task']==task and pipeline['backbone']==backbone and pipeline['decoder']==decoder:
+                    break
+            if decoder_info['type']=='classification':
+                acc+=metric[pid]
+                acc_count+=1
+            elif decoder_info['type']=='regression':
+                mae+=metric[pid]
+                mae_count+=1
+    deployments_metric.append(num_of_deployments)
+    acc_metric.append(acc/acc_count)
+    mae_metric.append(mae/mae_count)
 
-# task_colors = {task: plt.rcParams["axes.prop_cycle"].by_key()["color"][i % len(plt.rcParams["axes.prop_cycle"].by_key()["color"])] for i, task in enumerate(tasks)}
+x = np.arange(len(REQ_RATES))
+width = 0.4
 
-# for i, task in enumerate(tasks):
-#     gpu_time = []
+fig, ax = plt.subplots()
 
-#     for r in REQ_RATES:
-#         df = load_data(r)
-#         g = df[df["task"] == task]
-#         p = g["gpu_time(ms)"].mean()
-#         gpu_time.append(p)
+c='tab:red'
+ax.bar(x - width/2, acc_metric, width=width, color=c, label='Accuracy')
+ax.set_ylabel('Accuracy',color=c)
+ax.set_xlabel('Workload (reqs/sec)')
+ax.tick_params(axis='y', labelcolor=c)
 
-#     xpos = x + i * width
-#     c = task_colors[task]
+c='tab:blue'
+ax2 = ax.twinx()
+ax2.bar(x + width/2, mae_metric, width=width, color=c, label='MAE')
+ax2.set_ylabel('MAE',color=c)
+ax2.tick_params(axis='y', labelcolor=c)
 
-#     ax.bar(xpos, p, width, color=c, hatch=hatch_proc, edgecolor="black")
+ax.set_xticks(x)
+ax.set_xticklabels(REQ_RATES)
 
-# ax.set_xticks(x + width * (len(tasks) - 1) / 2)
-# ax.set_xticklabels(REQ_RATES)
-# ax.set_title("GPU Time Breakdown")
-# ax.set_ylabel("Time (ms)")
-# ax.set_xlabel("req_rate")
+fig.tight_layout()
+plt.savefig(f"{SAVEFIG_DIR}/metric.png")
 
-# task_handles = [plt.Rectangle((0, 0), 1, 1, facecolor=task_colors[t], edgecolor="black", label=t) for t in tasks]
-# leg1 = ax.legend(handles=task_handles, title="Task", loc="upper left", bbox_to_anchor=(1.02, 1.0))
-# ax.add_artist(leg1)
-
-# plt.tight_layout()
-# plt.savefig(f"{SAVEFIG_DIR}/gpu_time.png")
-
-# # -------- Plot 7: gpu sync --------
-# tasks = sorted(load_data(REQ_RATES[0])["task"].unique())
-# x = np.arange(len(REQ_RATES))
-# width = 0.8 / len(tasks)
-
-# fig, ax = plt.subplots()
-
-# task_colors = {task: plt.rcParams["axes.prop_cycle"].by_key()["color"][i % len(plt.rcParams["axes.prop_cycle"].by_key()["color"])] for i, task in enumerate(tasks)}
-
-# for i, task in enumerate(tasks):
-#     gpu_time = []
-
-#     for r in REQ_RATES:
-#         df = load_data(r)
-#         g = df[df["task"] == task]
-#         p = g["gpu_sync(ms)"].mean()
-#         gpu_time.append(p)
-
-#     xpos = x + i * width
-#     c = task_colors[task]
-
-#     ax.bar(xpos, p, width, color=c, hatch=hatch_proc, edgecolor="black")
-
-# ax.set_xticks(x + width * (len(tasks) - 1) / 2)
-# ax.set_xticklabels(REQ_RATES)
-# ax.set_title("GPU Sync Breakdown")
-# ax.set_ylabel("Time (ms)")
-# ax.set_xlabel("req_rate")
-
-# task_handles = [plt.Rectangle((0, 0), 1, 1, facecolor=task_colors[t], edgecolor="black", label=t) for t in tasks]
-# leg1 = ax.legend(handles=task_handles, title="Task", loc="upper left", bbox_to_anchor=(1.02, 1.0))
-# ax.add_artist(leg1)
-
-# plt.tight_layout()
-# plt.savefig(f"{SAVEFIG_DIR}/gpu_sync.png")
+fig, ax = plt.subplots()
+ax.bar(x,deployments_metric, width=width)
+ax.set_ylabel('#Deployments')
+ax.set_xlabel('Workload (reqs/sec)')
+ax.set_xticks(x)
+ax.set_xticklabels(REQ_RATES)
+fig.tight_layout()
+plt.savefig(f"{SAVEFIG_DIR}/num_of_deployments.png")

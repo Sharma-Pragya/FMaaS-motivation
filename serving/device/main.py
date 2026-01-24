@@ -104,9 +104,9 @@ if __name__ == "__main__":
             model_name="edge_infer",
             infer_func=system.infer,
             inputs=[
-                Tensor(name="x", dtype=np.float32, shape=(-1, -1)),
+                Tensor(name="x", dtype=np.float32, shape=(-1,-1)),
                 Tensor(name="task", dtype=bytes, shape=(1,)),
-                Tensor(name="mask", dtype=np.float32, shape=(-1, -1), optional=True),
+                Tensor(name="mask", dtype=np.float32, shape=(-1,), optional=True),
                 Tensor(name="question", dtype=bytes, shape=(1,), optional=True),
             ],
             outputs=[

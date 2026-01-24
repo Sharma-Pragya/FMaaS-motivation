@@ -146,8 +146,9 @@ async def handle_runtime_request(reqs: dict, mode: str = 'trace'):
             # 3. Optional: Mask
             if 'mask' in batch:
                 mask_np = batch['mask'].numpy().astype(np.float32)
-                inputs['mask'] = np.expand_dims(mask_np, axis=-1)
-
+                # inputs['mask'] = np.expand_dims(mask_np, axis=-1)
+                inputs['mask']=mask_np
+                
             # 4. Optional: Question
             if 'question' in batch:
                 q_data = batch['question']
@@ -176,7 +177,8 @@ async def handle_runtime_request(reqs: dict, mode: str = 'trace'):
             inputs['task'] = np.array([[task.encode('utf-8')]], dtype=object)
             if 'mask' in batch:
                 mask_np = batch['mask'].numpy().astype(np.float32)
-                inputs['mask'] = np.expand_dims(mask_np, axis=-1)
+                # inputs['mask'] = np.expand_dims(mask_np, axis=-1)
+                inputs['mask']=mask_np
             if 'question' in batch:
                 q_data = batch['question']
                 inputs['question'] = np.array([[q_data.encode('utf-8')]], dtype=object)

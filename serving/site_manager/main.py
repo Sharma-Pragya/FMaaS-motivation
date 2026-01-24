@@ -93,7 +93,9 @@ async def execute_cached_requests(client):
 
 
 def start_site_mqtt_agent():
-    client = mqtt.Client(client_id=SITE_ID, transport="websockets",clean_session=True)
+    import socket,os
+    client_id = f"{SITE_ID}-{socket.gethostname()}-{os.getpid()}"
+    client = mqtt.Client(client_id=client_id, transport="websockets",clean_session=True)
     client.enable_logger()
     # client.tls_set()
     client.tls_set(cert_reqs=ssl.CERT_NONE)

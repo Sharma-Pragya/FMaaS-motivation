@@ -81,7 +81,13 @@ def run_deployment_plan(devices, tasks_slo):
     # with open(f"{DEPLOYMENT_PLAN_PATH}.json", "w") as f:
     #     json.dump(final_json, f, indent=2)
     #new greedy
-    from hueristic.greedy1 import shared_packing, build_final_json
+    # from hueristic.greedy1 import shared_packing, build_final_json
+    # task_manifest = shared_packing(devices,tasks_slo)
+    # final_json = build_final_json(task_manifest)
+    # with open(f"{DEPLOYMENT_PLAN_PATH}.json", "w") as f:
+    #     json.dump(final_json, f, indent=2)
+
+    from hueristic.greedy2 import shared_packing, build_final_json
     task_manifest = shared_packing(devices,tasks_slo)
     final_json = build_final_json(task_manifest)
     with open(f"{DEPLOYMENT_PLAN_PATH}.json", "w") as f:
