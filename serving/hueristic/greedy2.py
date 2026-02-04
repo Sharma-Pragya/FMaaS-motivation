@@ -2,7 +2,7 @@ import heapq
 import json
 import copy
 from hueristic.parser.profiler import *
-util_factor=1
+util_factor=0.76
 def get_pipelines_task(task_name):
     components_map = {}
     for id, pipeline in pipelines.items():
@@ -39,6 +39,7 @@ def commit_plan(temp_plan):
             if deployed_server_backbone_name==endpoint:
                 deployed_plan['components'].update(plan['components'])
                 deployed_plan['task_info'].update(plan['task_info'])
+                base_ip,deployed_port = deployed_plan['ip'].split(':')
                 found_server,found_backbone=True, True
              
             elif server_name==deployed_server_backbone_name[0]:
@@ -53,7 +54,6 @@ def commit_plan(temp_plan):
                         base_ip=server['ip']
                         break
                 max_port=7990
-        
             new_ip=f"{base_ip}:{max_port+10}"
             plan['ip']=new_ip
             deployments.append({endpoint:plan})
@@ -79,7 +79,7 @@ def decrease_backbone_size(b):
     return None
    
 
-def fit(task):
+def fit(task,share_flag=False):
     change = []
     demand_left= task[1]['peak_workload']
     sorted_deployments = sorted(deployments,key=lambda d: len(next(iter(d.values()))['task_info']))
@@ -92,82 +92,84 @@ def fit(task):
             change.append({server_backbone_name:redeploy_plan})
             delete_plan(server_backbone_name)
             new_components = {b_new: components[b_new]['mem']}
+            new_util=0  
             s_type = redeploy_plan['type']
             s_site_manager= redeploy_plan['site_manager']
             s_mem=redeploy_plan['mem']
+            s_util=redeploy_plan['util']     
             for t_name, t_info in redeploy_plan['task_info'].items():
                 for pid, p_val in pipelines.items():
-                    if p_val['backbone'] == b_new and p_val['task'] == t_name:
-                        d_name, ct_name = f"{p_val['decoder']}_{b_new}_{t_name}", f"{t_name}_{b_new}_{p_val['decoder']}"
-                        new_components.update({d_name: components[d_name]['mem'], ct_name: components[ct_name]['mem']})
-                        break
-            
-            deployments.append({(s,b_new):{'name':s,'backbone':b_new,'site_manager':s_site_manager,
-                                            'type':s_type,'mem':s_mem,'components':new_components,
-                                            'task_info':redeploy_plan['task_info'],
-                                            'ip':redeploy_plan['ip']}})
+                    if p_val['task'] == t_name:
+                        if p_val['backbone'] == b_new:
+                            d_name, ct_name = f"{p_val['decoder']}_{b_new}_{t_name}", f"{t_name}_{b_new}_{p_val['decoder']}"
+                            new_components.update({d_name: components[d_name]['mem'], ct_name: components[ct_name]['mem']})
+                            new_util+=(t_info['request_per_sec'] * latency[pid][s_type]) / 1000.0 
+                        elif p_val['backbone'] == b:
+                            s_util-=(t_info['request_per_sec'] * latency[pid][s_type]) / 1000.0 
 
-            # Recalculate global device utility for all ports on this physical device
-            base_ip = redeploy_plan['ip'].split(':')[0]
-
-            other_ports_util=0
-            for deployed in deployments:
-                server_backbone_name, plan = list(deployed.items())[0]
-                if plan['ip'].startswith(base_ip):
-                    for t_name, t in plan['task_info'].items():
-                        for pid, p_val in pipelines.items():
-                            if p_val['task'] == t_name and p_val['backbone'] == server_backbone_name[1]:
-                                other_ports_util+=(t['request_per_sec'] * latency[pid][plan['type']]) / 1000.0 
-
-            total_new_util = other_ports_util
-            for deployed in deployments:
-                server_backbone_name, plan = list(deployed.items())[0]
-                if plan['ip'].startswith(base_ip):
-                    plan['util'] = total_new_util
+            new_plan = {
+                'name': s,
+                'backbone': b_new,
+                'site_manager': s_site_manager,
+                'type': s_type,
+                'mem': s_mem,
+                'components': new_components,
+                'task_info': redeploy_plan['task_info'],
+                'ip': redeploy_plan['ip'],
+                'util': s_util+new_util
+            }
+            commit_plan({(s, b_new): new_plan})
             # update server utility
             for server in servers:
                 for p in deployments:
                     deployed_server_backbone_name,deployed_plan=list(p.items())[0]
                     if server['name'] ==deployed_server_backbone_name[0]:
                         server['util'] = deployed_plan['util']
-            m, demand_left = deploy_task(task,do_fit=False)
+
+            m, demand_left = deploy_task(task,share_flag,do_fit=False)
             #the change did not work need to roll back change
             if demand_left==None:
                 print("Rolling back")
                 delete_plan((s, b_new))
-                new_components = {b: components[b]['mem']}
-                s_type = redeploy_plan['type']
-                s_site_manager= redeploy_plan['site_manager']
-                s_mem=redeploy_plan['mem']
-                for t_name, t_info in redeploy_plan['task_info'].items():
-                    for pid, p_val in pipelines.items():
-                        if p_val['backbone'] == b and p_val['task'] == t_name:
-                            d_name, ct_name = f"{p_val['decoder']}_{b}_{t_name}", f"{t_name}_{b}_{p_val['decoder']}"
-                            new_components.update({d_name: components[d_name]['mem'], ct_name: components[ct_name]['mem']})
-                            break
+                # new_components = {b: components[b]['mem']}
+                # new_util=0  
+                # s_type = redeploy_plan['type']
+                # s_site_manager= redeploy_plan['site_manager']
+                # s_mem=redeploy_plan['mem']
+                # s_util=redeploy_plan['util'] 
+                # for t_name, t_info in redeploy_plan['task_info'].items():
+                #     for pid, p_val in pipelines.items():
+                #         if p_val['task'] == t_name:
+                #             if p_val['backbone'] == b:
+                #                 d_name, ct_name = f"{p_val['decoder']}_{b}_{t_name}", f"{t_name}_{b}_{p_val['decoder']}"
+                #                 new_components.update({d_name: components[d_name]['mem'], ct_name: components[ct_name]['mem']})
+                #                 new_util+=(t_info['request_per_sec'] * latency[pid][s_type]) / 1000.0 
+                #             elif p_val['backbone'] == b_new:
+                #                 s_util-=(t_info['request_per_sec'] * latency[pid][s_type]) / 1000.0 
 
-                deployments.append({(s,b):{'name':s,'backbone':b,'site_manager':s_site_manager,
-                                            'type':s_type,'mem':s_mem,'components':new_components,
-                                            'task_info':redeploy_plan['task_info'],
-                                            'ip':redeploy_plan['ip']}})
-                # Recalculate global device utility for all ports on this physical device
-                base_ip = redeploy_plan['ip'].split(':')[0]
+                # new_plan = {
+                #     'name': s,
+                #     'backbone': b,
+                #     'site_manager': s_site_manager,
+                #     'type': s_type,
+                #     'mem': s_mem,
+                #     'components': new_components,
+                #     'task_info': redeploy_plan['task_info'],
+                #     'ip': redeploy_plan['ip'],
+                #     'util': redeploy_plan['util'] 
+                # }
+                # print(new_plan)
+                # print(redeploy_plan)
+                commit_plan({(s, b): redeploy_plan})
 
-                other_ports_util=0
-                for deployed in deployments:
-                    server_backbone_name, plan = list(deployed.items())[0]
-                    if plan['ip'].startswith(base_ip):
-                        for t_name, t in plan['task_info'].items():
-                            for pid, p_val in pipelines.items():
-                                if p_val['task'] == t_name and p_val['backbone'] == server_backbone_name[1]:
-                                    other_ports_util+=(t['request_per_sec'] * latency[pid][plan['type']]) / 1000.0 
-
-                total_new_util = other_ports_util
-                for deployed in deployments:
-                    server_backbone_name, plan = list(deployed.items())[0]
-                    if plan['ip'].startswith(base_ip):
-                        plan['util'] = total_new_util
+                # update server utility
+                for server in servers:
+                    for p in deployments:
+                        deployed_server_backbone_name,deployed_plan=list(p.items())[0]
+                        if server['name'] ==deployed_server_backbone_name[0]:
+                            server['util'] = deployed_plan['util']
             elif demand_left<=10-9:
+                print("Fit worked")
                 return m, demand_left 
 
     return m, demand_left 
@@ -177,7 +179,7 @@ def distribute_demand(task, active_backbones_endpoints):
     total_requested_workload= task[1]['peak_workload']
     task_demand =total_requested_workload
     temp_plan = {}
-    
+    total_util_dict={}
     while task_demand > 1e-9 and active_backbones_endpoints:
         s, b = heapq.heappop(active_backbones_endpoints) 
         # get pid based on backbone and task_name
@@ -196,10 +198,11 @@ def distribute_demand(task, active_backbones_endpoints):
                 s_type=server['type']
                 s_mem=server['mem']
                 s_site_manager=server['site_manager']
+                if s not in total_util_dict:
+                    total_util_dict[s]=s_util
 
-
+        total_util = total_util_dict[s]
         latency_val = latency[pid][s_type]
-        total_util = s_util
         left_cap = util_factor - total_util
         
         if left_cap > 1e-6:
@@ -226,7 +229,8 @@ def distribute_demand(task, active_backbones_endpoints):
                     }
                 },
                 'util': allocated_cap + total_util
-            }            
+            }  
+            total_util_dict[s] += allocated_cap        
     return temp_plan,max(0, task_demand)
 
 def find_active_deployments(backbone_name):
@@ -238,29 +242,30 @@ def find_active_deployments(backbone_name):
                 active_backbones_endpoints.append(server_backbone_name)
     return active_backbones_endpoints
             
-def deploy_model(task, backbone):
+def deploy_model(task, backbone, share_flag):
     active_backbones_endpoints = find_active_deployments(backbone)
     m, demand_left = distribute_demand(task, active_backbones_endpoints)
     
-    if demand_left == 0:
+    if demand_left <=1e-9:
         return m, demand_left
-        
-    for s in servers:
-        if s['mem']>=components[backbone]['mem']:
-            active_backbones_endpoints.append((s['name'], backbone))
-            m, demand_left = distribute_demand(task, active_backbones_endpoints)
-            if demand_left == 0:
-                return m, demand_left
+    if not share_flag:  
+        for s in servers:
+            if s['mem']>=components[backbone]['mem']:
+                active_backbones_endpoints.append((s['name'], backbone))
+                m, demand_left = distribute_demand(task, active_backbones_endpoints)
+                if demand_left <=1e-9:
+                    return m, demand_left
     return m, demand_left
-
-def sort_based_on_accuracy(task):
+def get_backbones(task):
     task_name=task[0]
-    task_type=task[1]['type']
     pid_backbones={}
     for pid, pipeline in pipelines.items():
         if pipeline['task']==task_name:
             pid_backbones[pid]=pipeline['backbone']
+    return pid_backbones
+def sort_based_on_accuracy(pid_backbones,task):
     backbones=[]
+    task_type=task[1]['type']
     #get list of backbones after sorting based on accuracy metric
     for pid, backbone in pid_backbones.items():
         if task_type=='classification':
@@ -270,25 +275,51 @@ def sort_based_on_accuracy(task):
 
     return [backbone[1] for backbone in backbones]
 
-def deploy_task(task, do_fit=True):
+def deploy_task(task, share_flag=False, do_fit=True):
     # based on latency and metric slo get pipelines
-    sorted_backbones=sort_based_on_accuracy(task)
-    for b in sorted_backbones:
-        m, demand_left = deploy_model(task, b)
-        if demand_left == 0:
-            return m, demand_left
+    if not share_flag:
+        pid_backbones=get_backbones(task)
+    else:
+        all_task_backbones=sort_based_on_accuracy(get_backbones(task), task)
+        pid_backbones={}
+        for p in deployments:
+            server_backbone_name, _ = list(p.items())[0]
+            b=server_backbone_name[1]
+            for pid, pipeline in pipelines.items():
+                if pipeline['task']==task[0] and pipeline['backbone']==b:
+                    pid_backbones[pid]=b
+                    break
+
+    sorted_backbones=sort_based_on_accuracy(pid_backbones, task )
     
+    for b in sorted_backbones:
+        m, demand_left = deploy_model(task, b, share_flag)
+        if demand_left <=1e-9:
+            return m, demand_left
+    if share_flag:
+        active_backbones_endpoints=[]
+        for b in sorted_backbones:
+            active_backbones_endpoints.extend(find_active_deployments(b))
+
+        for b in all_task_backbones: 
+            for s in servers:
+                if s['mem']>=components[b]['mem']:
+                    active_backbones_endpoints.append((s['name'], b))
+                    m, demand_left = distribute_demand(task, active_backbones_endpoints)
+                    if demand_left <=1e-9:
+                        return m, demand_left
+                    
     if do_fit:
         print("Running fit")
-        fit_m, fit_demand_left = fit(task)
-        if fit_demand_left==0:
-            return fit_m, fit_demand_left
+        fit_m, fit_demand_left = fit(task,share_flag)
+        if fit_demand_left==None or fit_demand_left>1e-9:
+            return m, demand_left
         else:
-            print("Nothing worked")
-            return m,demand_left
+            return fit_m, fit_demand_left         
+    
     return m, None
 
-def shared_packing(devices,tasks):
+def shared_packing(devices,tasks,share_flag=False):
     global servers, deployments
     servers = [
         {'name': name, 'type': d['type'], 'mem': d['mem'], 'ip': d['ip'], 
@@ -299,9 +330,7 @@ def shared_packing(devices,tasks):
     # iterate over tasks based on peak_workload, high workload first
     sorted_tasks = sorted(tasks.items(), key=lambda x: x[1].get('peak_workload', 0), reverse=True)
     for t_data in sorted_tasks:
-        print('task name',t_data[0])
-        res = deploy_task(t_data)
-        print(res)
+        res = deploy_task(t_data,share_flag)
         if res[0]:
             commit_plan(res[0])
         # update server utility
@@ -311,6 +340,7 @@ def shared_packing(devices,tasks):
                 if s['name'] ==deployed_server_backbone_name[0]:
                     s['util'] = deployed_plan['util']
         # servers = [s for s in servers if s['util'] < 0.999]
+    print("Final deployments:", deployments)
     return deployments
 
 def build_final_json(deployment_plans):
@@ -335,7 +365,6 @@ def build_final_json(deployment_plans):
 if __name__ == "__main__":
     from user_config import devices, tasks
     deployments=shared_packing(devices,tasks)
-    print(deployments)
     final_json = build_final_json(deployments)
     with open("deployment_plan.json", "w") as f:
         json.dump(final_json, f, indent=2)

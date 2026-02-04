@@ -48,7 +48,7 @@ def write_one_line_dict(name, data, f):
         f.write(f"    {repr(k)}:{repr(v)},\n")
     f.write("}\n\n")
 
-with open("config.py", "w") as f:
+with open("profiler.py", "w") as f:
     write_one_line_dict('components', components,f)
     write_one_line_dict('pipelines', pipelines,f)
     write_one_line_dict('latency', latency, f)
