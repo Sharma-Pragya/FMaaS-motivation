@@ -1,0 +1,10 @@
+[
+    {
+        "status": "loaded_momentsmall",
+        "logger_summary": "{'load_backbone': {'wall time': 2811.4876579493284, 'gpu time': 2811.49951171875, 'gpu peak': 151.835648, 'cpu dRSS': 277.487616}, 'add_decoder_ecgclass_momentsmall_mlp': {'wall time': 16.06717612594366, 'gpu time': 16.100351333618164, 'gpu peak': 152.101376, 'cpu dRSS': 0.0}, 'add_decoder_gestureclass_momentsmall_mlp': {'wall time': 1.564855221658945, 'gpu time': 1.5882240533828735, 'gpu peak': 152.369664, 'cpu dRSS': 0.0}}"
+    },
+    {
+        "status": "loaded_chronostiny",
+        "logger_summary": "{'load_backbone': {'wall time': 3839.5931581035256, 'gpu time': 3839.599853515625, 'gpu peak': 16.789504, 'cpu dRSS': 303.075328}, 'add_decoder_sysbp_chronostiny_mlp': {'wall time': 4.132447764277458, 'gpu time': 4.157695770263672, 'gpu peak': 16.922112, 'cpu dRSS': 0.0}}"
+    }
+]

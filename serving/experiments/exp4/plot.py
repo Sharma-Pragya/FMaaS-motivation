@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import json
-ROOT_DIR = "./greedy2/2_device/1_util"
+ROOT_DIR = "./greedy2/share_mode/1_device/0.8_util"
 SAVEFIG_DIR=f"./plots/{ROOT_DIR}"
 REQ_RATES = sorted([int(d) for d in os.listdir(ROOT_DIR) if d.isdigit()])
 def load_data(req_rate):
@@ -262,19 +262,21 @@ for r, d in zip(REQ_RATES, data):
 plt.savefig(f"{SAVEFIG_DIR}/site_manager_throughput.png")
 
 ## -------- Plot 7: Metric --------
-
 from serving.hueristic.parser.profiler import *
 acc_metric=[]
 mae_metric=[]
 deployments_metric=[]
+backbones=[]
 for r in REQ_RATES:
     deploymentplan=load_deployment(r)
     deployments=deploymentplan['sites'][0]['deployments']
     acc,acc_count=0,0
     mae,mae_count=0,0
     num_of_deployments=0
+    backbones_mem={}
     for d in deployments:
         backbone=d['backbone']
+        backbones_mem[backbone] = components[backbone]['mem']
         num_of_deployments+=1
         for decoder_info in d['decoders']:
             task=decoder_info['task']
@@ -291,6 +293,7 @@ for r in REQ_RATES:
     deployments_metric.append(num_of_deployments)
     acc_metric.append(acc/acc_count)
     mae_metric.append(mae/mae_count)
+    backbones.append(backbones_mem)
 
 x = np.arange(len(REQ_RATES))
 width = 0.4
@@ -323,3 +326,11 @@ ax.set_xticks(x)
 ax.set_xticklabels(REQ_RATES)
 fig.tight_layout()
 plt.savefig(f"{SAVEFIG_DIR}/num_of_deployments.png")
+
+fig, ax = plt.subplots()
+stacked_bar(ax, REQ_RATES, backbones, "Backbone Memory Usage", "Memory (MB)")
+ax.set_xlabel('Workload (reqs/sec)')
+ax.set_xticks(x)
+ax.set_xticklabels(REQ_RATES)
+fig.tight_layout()
+plt.savefig(f"{SAVEFIG_DIR}/components.png")

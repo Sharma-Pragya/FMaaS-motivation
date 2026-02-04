@@ -1,0 +1,82 @@
+{
+  "sites": [
+    {
+      "id": "site2",
+      "deployments": [
+        {
+          "device": "10.100.20.48:8000",
+          "device_name": "device2",
+          "device_type": "A16",
+          "backbone": "momentsmall",
+          "decoders": [
+            {
+              "task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentsmall_mlp"
+            }
+          ],
+          "tasks": {
+            "ecgclass": {
+              "type": "classification",
+              "total_requested_workload": 112.71388888888889,
+              "request_per_sec": 112.71388888888889
+            }
+          },
+          "util": 1.0
+        },
+        {
+          "device": "10.100.20.48:8010",
+          "device_name": "device2",
+          "device_type": "A16",
+          "backbone": "chronostiny",
+          "decoders": [
+            {
+              "task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_chronostiny_mlp"
+            }
+          ],
+          "tasks": {
+            "sysbp": {
+              "type": "regression",
+              "total_requested_workload": 28.18888888888889,
+              "request_per_sec": 28.18888888888889
+            }
+          },
+          "util": 1.0
+        },
+        {
+          "device": "10.100.20.48:8020",
+          "device_name": "device2",
+          "device_type": "A16",
+          "backbone": "papageissvri",
+          "decoders": [
+            {
+              "task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_papageissvri_mlp"
+            },
+            {
+              "task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_papageissvri_mlp"
+            }
+          ],
+          "tasks": {
+            "gestureclass": {
+              "type": "classification",
+              "total_requested_workload": 22.166666666666668,
+              "request_per_sec": 22.166666666666668
+            },
+            "heartrate": {
+              "type": "regression",
+              "total_requested_workload": 19.863888888888887,
+              "request_per_sec": 17.86998008071218
+            }
+          },
+          "util": 1.0
+        }
+      ]
+    }
+  ]
+}

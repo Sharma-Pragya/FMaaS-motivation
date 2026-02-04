@@ -1,0 +1,92 @@
+{
+  "sites": [
+    {
+      "id": "site2",
+      "deployments": [
+        {
+          "device": "10.100.20.48:8000",
+          "device_name": "device2",
+          "device_type": "A16",
+          "backbone": "momentbase",
+          "decoders": [
+            {
+              "task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentbase_mlp"
+            },
+            {
+              "task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_momentbase_mlp"
+            },
+            {
+              "task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentbase_mlp"
+            }
+          ],
+          "tasks": {
+            "ecgclass": {
+              "type": "classification",
+              "total_requested_workload": 28.405555555555555,
+              "request_per_sec": 28.40555555555555
+            },
+            "sysbp": {
+              "type": "regression",
+              "total_requested_workload": 7.025,
+              "request_per_sec": 7.025
+            },
+            "gestureclass": {
+              "type": "classification",
+              "total_requested_workload": 5.436111111111111,
+              "request_per_sec": 5.43611111111111
+            }
+          },
+          "util": 0.769961
+        },
+        {
+          "device": "10.100.20.48:8010",
+          "device_name": "device2",
+          "device_type": "A16",
+          "backbone": "chronostiny",
+          "decoders": [
+            {
+              "task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_chronostiny_mlp"
+            }
+          ],
+          "tasks": {
+            "heartrate": {
+              "type": "regression",
+              "total_requested_workload": 4.863888888888889,
+              "request_per_sec": 4.863888888888889
+            }
+          },
+          "util": 0.769961
+        },
+        {
+          "device": "10.100.20.48:8020",
+          "device_name": "device2",
+          "device_type": "A16",
+          "backbone": "papageip",
+          "decoders": [
+            {
+              "task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageip_mlp"
+            }
+          ],
+          "tasks": {
+            "diasbp": {
+              "type": "regression",
+              "total_requested_workload": 4.269444444444445,
+              "request_per_sec": 4.269444444444445
+            }
+          },
+          "util": 0.769961
+        }
+      ]
+    }
+  ]
+}

@@ -1,18 +1,10 @@
 [
     {
         "status": "loaded_momentsmall",
-        "logger_summary": "{'load_backbone': {'wall time': 2603.8293382152915, 'gpu time': 2603.830322265625, 'gpu peak': 151.835648, 'cpu dRSS': 277.200896}, 'add_decoder_ecgclass_momentsmall_mlp': {'wall time': 6.86725415289402, 'gpu time': 6.89356803894043, 'gpu peak': 152.101376, 'cpu dRSS': 0.524288}, 'add_decoder_heartrate_momentsmall_mlp': {'wall time': 1.6048457473516464, 'gpu time': 1.6312320232391357, 'gpu peak': 152.365056, 'cpu dRSS': 0.0}}"
-    },
-    {
-        "status": "loaded_chronossmall",
-        "logger_summary": "{'load_backbone': {'wall time': 4541.477840859443, 'gpu time': 4541.474609375, 'gpu peak': 92.30848, 'cpu dRSS': 305.311744}, 'add_decoder_sysbp_chronossmall_mlp': {'wall time': 106.17192974314094, 'gpu time': 106.21504211425781, 'gpu peak': 92.57216, 'cpu dRSS': 0.0}}"
+        "logger_summary": "{'load_backbone': {'wall time': 2851.9049929454923, 'gpu time': 2851.927001953125, 'gpu peak': 151.835648, 'cpu dRSS': 278.122496}, 'add_decoder_ecgclass_momentsmall_mlp': {'wall time': 98.24137482792139, 'gpu time': 98.28761291503906, 'gpu peak': 152.101376, 'cpu dRSS': 0.524288}}"
     },
     {
         "status": "loaded_papageissvri",
-        "logger_summary": "{'load_backbone': {'wall time': 4822.502377443016, 'gpu time': 4822.48486328125, 'gpu peak': 20.068352, 'cpu dRSS': 355.20512}, 'add_decoder_gestureclass_papageissvri_mlp': {'wall time': 1.645808108150959, 'gpu time': 1.6855039596557617, 'gpu peak': 20.33664, 'cpu dRSS': 0.0}}"
-    },
-    {
-        "status": "loaded_momentsmall",
-        "logger_summary": "{'load_backbone': {'wall time': 2398.914164863527, 'gpu time': 2398.90673828125, 'gpu peak': 151.835648, 'cpu dRSS': 277.295104}, 'add_decoder_diasbp_momentsmall_mlp': {'wall time': 7.3905037716031075, 'gpu time': 7.4199042320251465, 'gpu peak': 152.099328, 'cpu dRSS': 0.524288}}"
+        "logger_summary": "{'load_backbone': {'wall time': 6516.027949750423, 'gpu time': 6516.05126953125, 'gpu peak': 20.068352, 'cpu dRSS': 355.639296}, 'add_decoder_sysbp_papageissvri_mlp': {'wall time': 85.23102104663849, 'gpu time': 85.27769470214844, 'gpu peak': 20.332032, 'cpu dRSS': 0.0}}"
     }
 ]
