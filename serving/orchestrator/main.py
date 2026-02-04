@@ -88,7 +88,7 @@ def run_deployment_plan(devices, tasks_slo):
     #     json.dump(final_json, f, indent=2)
 
     from hueristic.greedy2 import shared_packing, build_final_json
-    task_manifest = shared_packing(devices,tasks_slo)
+    task_manifest = shared_packing(devices,tasks_slo,share_flag=True)
     final_json = build_final_json(task_manifest)
     with open(f"{DEPLOYMENT_PLAN_PATH}.json", "w") as f:
         json.dump(final_json, f, indent=2)
