@@ -175,14 +175,22 @@ class FMaaSScheduler(BaseScheduler):
         
         # In share mode, try all backbones if existing ones don't satisfy demand
         if share_mode:
-            # Legacy behavior: after distribute_demand consumes the list via heappop,
-            # it's nearly empty. So effectively each iteration processes just one endpoint.
-            # We match this by processing one endpoint at a time.
+            # Legacy behavior: 
+            # 1. First collect ALL active deployments from sorted_backbones
+            # 2. Then iterate through all backbones and servers, appending to the same list
+            # 3. distribute_demand consumes from this list via heappop
+            
+            # Step 1: Collect all active deployments from sorted_backbones
+            active_endpoints = []
+            for backbone in sorted_backbones:
+                for d in state.find_active_deployments(backbone, self.config.util_factor):
+                    active_endpoints.append((d.server_name, backbone))
+            
+            # Step 2: Iterate through all backbones and servers, appending and distributing
             for backbone in all_backbones:
                 for server in state.get_all_servers():
                     if server.mem >= self.data.get_component_mem(backbone):
-                        # Process just this one endpoint (like legacy after heappop consumes list)
-                        active_endpoints = [(server.name, backbone)]
+                        active_endpoints.append((server.name, backbone))
                         temp_plan, demand_left = self._distribute_demand(
                             state, task, active_endpoints,
                             remaining_demand=None,  # Start fresh with full demand
