@@ -1,0 +1,31 @@
+
+{
+  "sites": [
+    {
+      "id":"site1",
+      "site_manager_url": "http://10.100.20.2:8000",
+      "deployments": [
+        {
+          "device": "http://10.100.20.16:8000",
+          "backbone": "llava",
+          "decoders": [],
+          "tasks": {
+            "heartrate": {
+              "type": "regression",
+              "request_per_sec": 6
+            },
+        },
+        {
+          "device": "http://10.100.20.16:8000",
+          "backbone": "llava",
+          "decoders": [],
+          "tasks": {
+            "heartrate": {
+              "type": "regression",
+              "request_per_sec": 6.24
+            },
+        },        
+      ]
+    }
+  ]
+}

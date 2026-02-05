@@ -1,0 +1,82 @@
+{
+  "sites": [
+    {
+      "id": "site2",
+      "deployments": [
+        {
+          "device": "10.100.20.48:8000",
+          "device_name": "device1",
+          "device_type": "A16",
+          "backbone": "momentsmall",
+          "decoders": [
+            {
+              "task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentsmall_mlp"
+            }
+          ],
+          "tasks": {
+            "heartrate": {
+              "type": "regression",
+              "total_requested_workload": 20,
+              "request_per_sec": 20.0
+            }
+          },
+          "util": 0.76
+        },
+        {
+          "device": "10.100.20.48:8010",
+          "device_name": "device1",
+          "device_type": "A16",
+          "backbone": "chronostiny",
+          "decoders": [
+            {
+              "task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_chronostiny_mlp"
+            },
+            {
+              "task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_chronostiny_mlp"
+            }
+          ],
+          "tasks": {
+            "sysbp": {
+              "type": "regression",
+              "total_requested_workload": 20,
+              "request_per_sec": 20.0
+            },
+            "diasbp": {
+              "type": "regression",
+              "total_requested_workload": 20,
+              "request_per_sec": 20.0
+            }
+          },
+          "util": 0.76
+        },
+        {
+          "device": "10.100.20.48:8020",
+          "device_name": "device1",
+          "device_type": "A16",
+          "backbone": "papageis",
+          "decoders": [
+            {
+              "task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_papageis_mlp"
+            }
+          ],
+          "tasks": {
+            "ecgclass": {
+              "type": "classification",
+              "total_requested_workload": 20,
+              "request_per_sec": 4.839871065641523
+            }
+          },
+          "util": 0.76
+        }
+      ]
+    }
+  ]
+}
