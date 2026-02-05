@@ -87,9 +87,23 @@ def run_deployment_plan(devices, tasks_slo):
     # with open(f"{DEPLOYMENT_PLAN_PATH}.json", "w") as f:
     #     json.dump(final_json, f, indent=2)
 
-    from hueristic.greedy2 import shared_packing, build_final_json
-    task_manifest = shared_packing(devices,tasks_slo,share_flag=True)
-    final_json = build_final_json(task_manifest)
+    # from hueristic.greedy2 import shared_packing, build_final_json
+    # task_manifest = shared_packing(devices,tasks_slo,share_flag=False)
+    # final_json = build_final_json(task_manifest)
+    # with open(f"{DEPLOYMENT_PLAN_PATH}.json", "w") as f:
+    #     json.dump(final_json, f, indent=2)
+    
+    from planner import FMaaSScheduler, ProfileData, SchedulerConfig, build_final_json
+    from planner.parser.profiler import components, pipelines, latency, metric
+    
+    # Create profile data
+    profile = ProfileData(components, pipelines, latency, metric)
+    # Create scheduler
+    config = SchedulerConfig(util_factor=0.8)
+    scheduler = FMaaSScheduler(profile, config)
+    # Run scheduling
+    deployments = scheduler.schedule(devices, tasks_slo, share_mode=False)
+    final_json = build_final_json(deployments, pipelines)
     with open(f"{DEPLOYMENT_PLAN_PATH}.json", "w") as f:
         json.dump(final_json, f, indent=2)
     return final_json
@@ -170,7 +184,7 @@ if __name__ == "__main__":
 
     # # #lmsyschat
     from traces.lmsyschat import generate_requests
-    req_rate, duration = (200, 360) #max (50,300), (100,300), (150,300), (200,300)
+    req_rate, duration = (10, 360) #max (50,300), (100,300), (150,300), (200,300)
     trace,avg_workload_per_task,peak_workload_per_task = generate_requests( req_rate,  duration, routed_tasks, seed)
     #update tasks dict with peak workload based on real world trace
     for t in tasks:
