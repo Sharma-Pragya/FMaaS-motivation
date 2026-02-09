@@ -1,0 +1,40 @@
+{
+  "sites": [
+    {
+      "id": "site2",
+      "deployments": [
+        {
+          "device": "10.100.20.45:8000",
+          "device_name": "device1",
+          "device_type": "NVIDIA L40S",
+          "backbone": "momentbase",
+          "decoders": [
+            {
+              "task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentbase_mlp"
+            },
+            {
+              "task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_momentbase_mlp"
+            }
+          ],
+          "tasks": {
+            "ecgclass": {
+              "type": "classification",
+              "total_requested_workload": 112.71388888888889,
+              "request_per_sec": 112.71388888888887
+            },
+            "sysbp": {
+              "type": "regression",
+              "total_requested_workload": 28.18888888888889,
+              "request_per_sec": 14.839660360867652
+            }
+          },
+          "util": 0.8
+        }
+      ]
+    }
+  ]
+}

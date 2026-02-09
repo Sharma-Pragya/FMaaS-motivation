@@ -262,7 +262,7 @@ for r, d in zip(REQ_RATES, data):
 plt.savefig(f"{SAVEFIG_DIR}/site_manager_throughput.png")
 
 ## -------- Plot 7: Metric --------
-from serving.hueristic.parser.profiler import *
+from serving.planner.parser.profiler import *
 acc_metric=[]
 mae_metric=[]
 deployments_metric=[]

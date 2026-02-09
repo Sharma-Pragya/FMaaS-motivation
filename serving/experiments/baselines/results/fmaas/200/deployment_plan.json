@@ -1,0 +1,61 @@
+{
+  "sites": [
+    {
+      "id": "site2",
+      "deployments": [
+        {
+          "device": "10.100.20.39:8000",
+          "device_name": "device1",
+          "device_type": "NVIDIA L40S",
+          "backbone": "momentsmall",
+          "decoders": [
+            {
+              "task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            }
+          ],
+          "tasks": {
+            "ecgclass": {
+              "type": "classification",
+              "total_requested_workload": 112.71388888888889,
+              "request_per_sec": 112.71388888888887
+            },
+            "gestureclass": {
+              "type": "classification",
+              "total_requested_workload": 22.166666666666668,
+              "request_per_sec": 7.411813475069791
+            }
+          },
+          "util": 0.8
+        },
+        {
+          "device": "10.100.20.39:8010",
+          "device_name": "device1",
+          "device_type": "NVIDIA L40S",
+          "backbone": "momentbase",
+          "decoders": [
+            {
+              "task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_momentbase_mlp"
+            }
+          ],
+          "tasks": {
+            "sysbp": {
+              "type": "regression",
+              "total_requested_workload": 28.18888888888889,
+              "request_per_sec": 28.18888888888889
+            }
+          },
+          "util": 0.8
+        }
+      ]
+    }
+  ]
+}

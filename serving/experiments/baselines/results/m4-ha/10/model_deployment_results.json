@@ -1,0 +1,6 @@
+[
+    {
+        "status": "loaded_momentbase",
+        "logger_summary": "{'load_backbone': {'wall time': 3240.6376488506794, 'gpu time': 3240.701904296875, 'gpu peak': 455.474688, 'cpu dRSS': 540.798976}, 'add_decoder_ecgclass_momentbase_mlp': {'wall time': 10.10770071297884, 'gpu time': 10.147711753845215, 'gpu peak': 455.871488, 'cpu dRSS': 0.0}, 'add_decoder_sysbp_momentbase_mlp': {'wall time': 20.870525389909744, 'gpu time': 20.901887893676758, 'gpu peak': 456.26624, 'cpu dRSS': 0.0}, 'add_decoder_gestureclass_momentbase_mlp': {'wall time': 29.66874558478594, 'gpu time': 29.699071884155273, 'gpu peak': 456.6656, 'cpu dRSS': 0.0}, 'add_decoder_heartrate_momentbase_mlp': {'wall time': 18.597722984850407, 'gpu time': 18.625503540039062, 'gpu peak': 457.060352, 'cpu dRSS': 0.0}, 'add_decoder_diasbp_momentbase_mlp': {'wall time': 73.61656427383423, 'gpu time': 73.64611053466797, 'gpu peak': 457.455104, 'cpu dRSS': 0.262144}}"
+    }
+]

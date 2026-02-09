@@ -1,0 +1,93 @@
+{
+  "sites": [
+    {
+      "id": "site2",
+      "deployments": [
+        {
+          "device": "10.100.20.45:8000",
+          "device_name": "device1",
+          "device_type": "NVIDIA L40S",
+          "backbone": "chronostiny",
+          "decoders": [
+            {
+              "task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_chronostiny_mlp"
+            }
+          ],
+          "tasks": {
+            "ecgclass": {
+              "type": "classification",
+              "total_requested_workload": 112.71388888888889,
+              "request_per_sec": 112.7138888888889
+            }
+          },
+          "util": 0.8
+        },
+        {
+          "device": "10.100.20.45:8010",
+          "device_name": "device1",
+          "device_type": "NVIDIA L40S",
+          "backbone": "papageissvri",
+          "decoders": [
+            {
+              "task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageissvri_mlp"
+            }
+          ],
+          "tasks": {
+            "sysbp": {
+              "type": "regression",
+              "total_requested_workload": 28.18888888888889,
+              "request_per_sec": 28.18888888888889
+            }
+          },
+          "util": 0.8
+        },
+        {
+          "device": "10.100.20.45:8020",
+          "device_name": "device1",
+          "device_type": "NVIDIA L40S",
+          "backbone": "chronostiny",
+          "decoders": [
+            {
+              "task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_chronostiny_mlp"
+            }
+          ],
+          "tasks": {
+            "gestureclass": {
+              "type": "classification",
+              "total_requested_workload": 22.166666666666668,
+              "request_per_sec": 22.166666666666668
+            }
+          },
+          "util": 0.8
+        },
+        {
+          "device": "10.100.20.45:8030",
+          "device_name": "device1",
+          "device_type": "NVIDIA L40S",
+          "backbone": "papageip",
+          "decoders": [
+            {
+              "task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_papageip_mlp"
+            }
+          ],
+          "tasks": {
+            "heartrate": {
+              "type": "regression",
+              "total_requested_workload": 19.863888888888887,
+              "request_per_sec": 14.113621700293859
+            }
+          },
+          "util": 0.8
+        }
+      ]
+    }
+  ]
+}
