@@ -1,0 +1,6 @@
+[
+    {
+        "status": "loaded_chronostiny",
+        "logger_summary": "{'load_backbone': {'wall time': 3514.861796051264, 'gpu time': 3514.96337890625, 'gpu peak': 16.789504, 'cpu dRSS': 301.330432}, 'add_decoder_gestureclass_chronostiny_mlp': {'wall time': 7.387673482298851, 'gpu time': 7.414752006530762, 'gpu peak': 16.92672, 'cpu dRSS': 0.0}, 'add_decoder_ecgclass_chronostiny_mlp': {'wall time': 1.3798251748085022, 'gpu time': 1.4039039611816406, 'gpu peak': 17.061376, 'cpu dRSS': 0.0}}"
+    }
+]

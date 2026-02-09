@@ -52,6 +52,31 @@ def load_dataloader(task: str):
     return DATASET_LOADERS[task]
 
 CLIENT_CACHE = {}
+
+async def close_clients():
+    """Close all cached gRPC clients and clear the cache.
+    
+    Must be called at the start of each asyncio.run() session because
+    grpc_aio clients are bound to the event loop that created them.
+    When asyncio.run() closes that loop, the cached clients become stale.
+    """
+    n = len(CLIENT_CACHE)
+    for url, client in list(CLIENT_CACHE.items()):
+        try:
+            await client.close()
+        except Exception:
+            pass
+    CLIENT_CACHE.clear()
+    if n > 0:
+        print(f"[RuntimeExecutor] Closed and cleared {n} cached gRPC client(s).")
+
+
+def clear_client_cache():
+    """Sync wrapper to clear cache without closing (for between asyncio.run calls)."""
+    CLIENT_CACHE.clear()
+    print("[RuntimeExecutor] Client cache cleared.")
+
+
 async def get_client(url: str):
     if url not in CLIENT_CACHE:
         try:
@@ -63,7 +88,7 @@ async def get_client(url: str):
                 
             CLIENT_CACHE[url] = client
             print(f"Connected to gRPC server at {url}")
-            return client # Make sure to return the new client here
+            return client
             
         except Exception as e:
             print(f"Error connecting to {url}: {e}")
@@ -113,6 +138,11 @@ async def send_request(req_id, device_url, inputs_dict, ouputs_dict):
 
 
 async def handle_runtime_request(reqs: dict, mode: str = 'trace'):
+    # Clear stale gRPC clients from previous asyncio.run() sessions.
+    # Each asyncio.run() creates a new event loop, so cached clients
+    # bound to the old (closed) loop would cause "Event loop is closed".
+    await close_clients()
+
     if mode == 'trace':
         # Existing logic for trace-based requests
         tasks: List[asyncio.Task] = []

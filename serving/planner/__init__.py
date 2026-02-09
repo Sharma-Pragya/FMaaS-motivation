@@ -10,7 +10,7 @@ from .models import Deployment, Server, TaskSpec, TaskInfo, Component, Pipeline
 from .state import DeploymentState
 from .data_loader import ProfileData
 from .config import SchedulerConfig, TaskConstraints, DEFAULT_CONFIG
-from .schedulers import FMaaSScheduler, BaseScheduler, shared_packing, build_final_json
+from .schedulers import FMaaSScheduler, ClipperScheduler, M4Scheduler, BaseScheduler, shared_packing, build_final_json
 
 __all__ = [
     # Models
@@ -30,6 +30,8 @@ __all__ = [
     'DEFAULT_CONFIG',
     # Schedulers
     'FMaaSScheduler',
+    'ClipperScheduler',
+    'M4Scheduler',
     'BaseScheduler',
     'shared_packing',
     'build_final_json',

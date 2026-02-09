@@ -59,15 +59,17 @@ class FMaaSScheduler(BaseScheduler):
         for task_name, task_spec in sorted_tasks:
             task = self._create_task_spec(task_name, task_spec)
             temp_plan, demand_left = self._deploy_task(state, task, share_mode)
-            
+            logger.info(f"Deployed task {task.name}, remaining demand: {demand_left}, temp plan: {temp_plan}, current deployments: {state.get_all_deployments()}")
             # Commit the plan for this task
             if temp_plan:
+                logger.info(f"Committing deployment for task {task.name}: {temp_plan}")
                 for deployment in temp_plan.values():
                     state.add_deployment(
                         deployment, 
                         self.config.base_port, 
                         self.config.port_increment
                     )
+            logger.info(f"State after deploying task {task.name}: {state.get_all_deployments()}")
         
         logger.info(f"Final deployment count: {state.get_deployment_count()}")
         return state.get_all_deployments()
@@ -350,7 +352,10 @@ class FMaaSScheduler(BaseScheduler):
                 task_cap_needed = task_demand * latency / 1000.0
                 allocated_cap = min(left_cap, task_cap_needed)
                 allocated_demand = allocated_cap * 1000.0 / latency
-                
+                logger.debug(f"Task {task.name} on {server_name}/{backbone}: "
+                           f"latency={latency}ms, left_cap={left_cap:.4f}, "
+                           f"allocated_cap={allocated_cap:.4f}, allocated_demand={allocated_demand:.2f} req/s, "
+                           f"remaining_demand={max(0, task_demand - allocated_demand):.2f}")                
                 task_demand -= allocated_demand
                 
                 # Get pipeline components
@@ -427,6 +432,7 @@ class FMaaSScheduler(BaseScheduler):
         Returns:
             Tuple of (deployment plan, remaining demand).
         """
+        logger.info(f"Attempting fit for task {task.name}")
         demand_left = task.peak_workload
         temp_plan = None
         changes = []
@@ -440,9 +446,10 @@ class FMaaSScheduler(BaseScheduler):
         for deployment in deployments:
             # Find smaller backbone
             new_backbone = self.data.find_smaller_backbone(deployment.backbone)
+
             if not new_backbone:
                 continue
-            
+            logger.info(f"Trying to fit by replacing backbone {deployment.backbone} of deployment {deployment} with {new_backbone} on server {deployment.server_name}")
             # Save change info for potential rollback
             old_deployment_copy = Deployment(
                 server_name=deployment.server_name,
@@ -460,12 +467,34 @@ class FMaaSScheduler(BaseScheduler):
                 ) for k, v in deployment.task_info.items()}
             )
             changes.append(old_deployment_copy)
-            
+
+            # Save existing deployment at (server_name, new_backbone) if any,
+            # since update_deployment_backbone may merge into it and we need
+            # to restore it on rollback.
+            existing_at_new_key = state.get_deployment(deployment.server_name, new_backbone)
+            existing_copy = None
+            if existing_at_new_key:
+                existing_copy = Deployment(
+                    server_name=existing_at_new_key.server_name,
+                    backbone=existing_at_new_key.backbone,
+                    ip=existing_at_new_key.ip,
+                    site_manager=existing_at_new_key.site_manager,
+                    device_type=existing_at_new_key.device_type,
+                    mem=existing_at_new_key.mem,
+                    util=existing_at_new_key.util,
+                    components=dict(existing_at_new_key.components),
+                    task_info={k: TaskInfo(
+                        type=v.type,
+                        total_requested_workload=v.total_requested_workload,
+                        request_per_sec=v.request_per_sec
+                    ) for k, v in existing_at_new_key.task_info.items()}
+                )
+
             # Calculate new components and utilization
             new_components = {new_backbone: self.data.get_component_mem(new_backbone)}
             new_util = 0.0
             old_util = deployment.util
-            
+
             for t_name, t_info in deployment.task_info.items():
                 # Find pipeline for new backbone
                 new_pid = self.data.find_pipeline_id(t_name, new_backbone)
@@ -475,18 +504,18 @@ class FMaaSScheduler(BaseScheduler):
                     for k, v in comp_mem.items():
                         if k != new_backbone:
                             new_components[k] = v
-                    
+
                     latency = self.data.get_pipeline_latency(new_pid, deployment.device_type)
                     if latency:
                         new_util += (t_info.request_per_sec * latency) / 1000.0
-                
+
                 # Subtract old backbone contribution
                 old_pid = self.data.find_pipeline_id(t_name, deployment.backbone)
                 if old_pid:
                     old_latency = self.data.get_pipeline_latency(old_pid, deployment.device_type)
                     if old_latency:
                         old_util -= (t_info.request_per_sec * old_latency) / 1000.0
-            
+
             # Update deployment
             state.update_deployment_backbone(
                 deployment.server_name,
@@ -495,39 +524,39 @@ class FMaaSScheduler(BaseScheduler):
                 new_components,
                 old_util + new_util
             )
-            
+            logger.info(f"Current deployments after backbone change: {state.get_all_deployments()}")
             # Try to deploy task with updated state
             temp_plan, demand_left = self._deploy_task(
                 state, task, share_mode, do_fit=False
             )
-            
+            logger.info(f"Post-fit deployment attempt for task {task.name}, remaining demand: {demand_left}, temp plan: {temp_plan}, current deployments: {state.get_all_deployments()}")
+
             if demand_left is not None and demand_left <= self.config.demand_epsilon:
                 # Fit succeeded - commit the plan here
-                if temp_plan:
-                    for dep in temp_plan.values():
-                        state.add_deployment(
-                            dep,
-                            self.config.base_port,
-                            self.config.port_increment
-                        )
-                logger.info("Fit succeeded")
+                logger.info(f"Fit succeeded with: {state.get_all_deployments()}")
                 # Return empty plan since we already committed
-                return {}, demand_left
+                return temp_plan, demand_left
             else:
                 # Rollback - fit didn't help enough
                 logger.info("Rolling back backbone change")
                 state.remove_deployment(deployment.server_name, new_backbone)
+                # Restore the pre-existing deployment at the new_backbone key
+                # that was merged into during update_deployment_backbone
+                if existing_copy:
+                    state.add_deployment(
+                        existing_copy,
+                        self.config.base_port,
+                        self.config.port_increment
+                    )
+                # Restore the original deployment that was replaced
                 state.add_deployment(
                     old_deployment_copy,
                     self.config.base_port,
                     self.config.port_increment
                 )
+                return {}, demand_left
         
         return temp_plan, demand_left
-
-
-# Alias for backwards compatibility
-GreedyScheduler = FMaaSScheduler
 
 
 def build_final_json(deployments: List[Deployment], pipelines: Dict) -> Dict:

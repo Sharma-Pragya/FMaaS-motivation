@@ -1,0 +1,51 @@
+{
+  "sites": [
+    {
+      "id": "site2",
+      "deployments": [
+        {
+          "device": "10.100.20.54:8000",
+          "device_name": "device2",
+          "device_type": "NVIDIA A16",
+          "backbone": "momentsmall",
+          "decoders": [
+            {
+              "task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentsmall_mlp"
+            }
+          ],
+          "tasks": {
+            "ecgclass": {
+              "type": "classification",
+              "total_requested_workload": 112.71388888888889,
+              "request_per_sec": 112.71388888888889
+            }
+          },
+          "util": 0.76
+        },
+        {
+          "device": "10.100.20.54:8010",
+          "device_name": "device2",
+          "device_type": "NVIDIA A16",
+          "backbone": "papageissvri",
+          "decoders": [
+            {
+              "task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageissvri_mlp"
+            }
+          ],
+          "tasks": {
+            "sysbp": {
+              "type": "regression",
+              "total_requested_workload": 28.18888888888889,
+              "request_per_sec": 15.141740509835234
+            }
+          },
+          "util": 0.76
+        }
+      ]
+    }
+  ]
+}

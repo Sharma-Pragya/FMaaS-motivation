@@ -23,9 +23,7 @@ def _parse_url(device_url: str) -> tuple[str, str]:
     Returns (ssh_host, triton_url)
     triton_url is formatted as 'host:port' for ModelClient.
     """
-    print(device_url)
     p = urlparse(device_url)
-    print(p)
     if p.scheme and p.path:
         ssh_host = p.scheme
         #http port for control so +1
@@ -70,10 +68,11 @@ def _send_control(ssh_host, port, cmd_data, payload_data):
     except Exception as e:
         print(f"[PyTriton] Failed to deploy to {ssh_host}:{port}: {e}")
         return False
-        
+
+
 async def _deploy_one(s: DeploySpec):
     ssh_host, triton_url, grpc_port = _parse_url(s['device'])
-    print(ssh_host,grpc_port,triton_url)
+    print(ssh_host, grpc_port, triton_url)
     # choose env + server command
     if s['backbone'] == "llava":
         conda_env = vlm_env
@@ -86,6 +85,7 @@ async def _deploy_one(s: DeploySpec):
         return
 
     log_path = f"./device/logs/{ssh_host}_{s['backbone']}.log"
+
     # 1. Start Server via SSH
     await _ssh_start_server(ssh_host, conda_env, server_cmd, log_path)
     
@@ -104,3 +104,76 @@ async def deploy_models(specs: List[DeploySpec]):
     results=await asyncio.gather(*[_deploy_one(s) for s in specs])
     print(f"[SiteManager] Deployment complete for {len(specs)} devices.")
     return results
+
+
+# ── Device cleanup ───────────────────────────────────────────────────────────
+
+async def _ssh_kill_server(ssh_host: str, grpc_port: int):
+    """Gracefully kill a Triton server on a remote host, then clean up resources.
+
+    Steps:
+      1. SIGTERM — give PyTriton/Triton time to release GPU mem, shared mem, temp dirs.
+      2. Wait 5s for graceful shutdown.
+      3. SIGKILL — force-kill anything still lingering.
+      4. Clean up leaked shared-memory segments and PyTriton workspace dirs.
+      5. Wait 5s for CUDA driver to fully release GPU memory.
+    """
+    try:
+        async with asyncssh.connect(
+            ssh_host,
+            username="hshastri_umass_edu",
+            agent_forwarding=True,
+        ) as conn:
+            ports = [grpc_port, grpc_port + 1, grpc_port + 2]
+            port_targets = " ".join(f"{p}/tcp" for p in ports)
+
+            kill_cmd = (
+                # 1. Graceful SIGTERM
+                f"for p in {' '.join(str(p) for p in ports)}; do "
+                f"  fuser -TERM $p/tcp 2>/dev/null; "
+                f"done; "
+                # 2. Wait for graceful shutdown
+                f"sleep 20; "
+                # 3. Force-kill survivors
+                f"for p in {' '.join(str(p) for p in ports)}; do "
+                f"  fuser -k $p/tcp 2>/dev/null; "
+                f"done; "
+                # 4. Clean up shared memory and PyTriton temp dirs
+                f"rm -f /dev/shm/*triton* 2>/dev/null; "
+                f"rm -rf $HOME/.cache/pytriton/workspace_* 2>/dev/null; "
+                f"rm -rf /tmp/folder* 2>/dev/null;"
+                # 5. Wait for CUDA driver to reclaim GPU memory
+                f"sleep 5; "
+                f"true"
+            )
+            result = await conn.run(kill_cmd)
+            print(f"[SSH] Killed Triton on {ssh_host}:{grpc_port} "
+                  f"(exit={result.exit_status})")
+
+    except Exception as e:
+        print(f"[SSH] Error killing server on {ssh_host}:{grpc_port}: {e}")
+
+
+async def shutdown_devices(specs: List):
+    """Kill all Triton servers launched for the given deployment specs.
+    
+    Extracts (host, port) from each deployment spec and SSHes in to
+    kill the processes. Safe to call even if servers are already dead.
+    
+    Args:
+        specs: List of deployment spec dicts (same format as received
+               from the orchestrator via MQTT).
+    """
+    # Collect unique (host, port) pairs to avoid killing the same server twice
+    seen = set()
+    tasks = []
+    for s in specs:
+        ssh_host, _, grpc_port = _parse_url(s['device'])
+        key = (ssh_host, grpc_port)
+        if key not in seen:
+            seen.add(key)
+            tasks.append(_ssh_kill_server(ssh_host, grpc_port))
+
+    if tasks:
+        await asyncio.gather(*tasks)
+    print(f"[SiteManager] Shutdown complete for {len(seen)} device server(s).")

@@ -22,7 +22,7 @@ activate_env="conda activate"
 vlm_env='benchmark-foundation-vqa'
 timeseries_env='fmtk'
 
-cmds=f"nohup nvidia-smi --query-gpu=timestamp,utilization.gpu,utilization.memory,memory.used --format=csv -l 1 > ./project/pi_shenoy_umass_edu/hshastri/FMaaS-motivation/serving/device/logs/gpu.csv 2>&1 & cd /project/pi_shenoy_umass_edu/hshastri/FMaaS-motivation/serving && module load conda/latest && export PYTHONPATH={pythonpath}"
+cmds=f"cd /project/pi_shenoy_umass_edu/hshastri/FMaaS-motivation/serving && module load conda/latest && export PYTHONPATH={pythonpath}"
 
 # cmds = (
 #   "cd /project/pi_shenoy_umass_edu/hshastri/FMaaS-motivation/serving && "
