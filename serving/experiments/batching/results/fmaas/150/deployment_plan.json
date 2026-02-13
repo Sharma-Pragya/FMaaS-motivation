@@ -1,0 +1,92 @@
+{
+  "sites": [
+    {
+      "id": "site2",
+      "deployments": [
+        {
+          "device": "10.100.20.31:8030",
+          "device_name": "device1",
+          "device_type": "NVIDIA L40S",
+          "backbone": "momentsmall",
+          "decoders": [
+            {
+              "task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentsmall_mlp"
+            },
+            {
+              "task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentsmall_mlp"
+            },
+            {
+              "task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_momentsmall_mlp"
+            }
+          ],
+          "tasks": {
+            "ecgclass": {
+              "type": "classification",
+              "total_requested_workload": 84.625,
+              "request_per_sec": 84.625
+            },
+            "heartrate": {
+              "type": "regression",
+              "total_requested_workload": 15.11111111111111,
+              "request_per_sec": 15.11111111111111
+            },
+            "diasbp": {
+              "type": "regression",
+              "total_requested_workload": 12.619444444444444,
+              "request_per_sec": 12.619444444444444
+            }
+          },
+          "util": 0.9927
+        },
+        {
+          "device": "10.100.20.31:8040",
+          "device_name": "device1",
+          "device_type": "NVIDIA L40S",
+          "backbone": "chronossmall",
+          "decoders": [
+            {
+              "task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_chronossmall_mlp"
+            }
+          ],
+          "tasks": {
+            "sysbp": {
+              "type": "regression",
+              "total_requested_workload": 21.04722222222222,
+              "request_per_sec": 21.047222222222224
+            }
+          },
+          "util": 0.9927
+        },
+        {
+          "device": "10.100.20.31:8050",
+          "device_name": "device1",
+          "device_type": "NVIDIA L40S",
+          "backbone": "momentbase",
+          "decoders": [
+            {
+              "task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentbase_mlp"
+            }
+          ],
+          "tasks": {
+            "gestureclass": {
+              "type": "classification",
+              "total_requested_workload": 16.59722222222222,
+              "request_per_sec": 16.59722222222222
+            }
+          },
+          "util": 0.9927
+        }
+      ]
+    }
+  ]
+}

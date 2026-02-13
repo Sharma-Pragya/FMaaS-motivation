@@ -1,0 +1,2 @@
+req_id,req_time,site_manager,device,backbone,task,site_manager_send_time,device_start_time,device_end_time,end_to_end_latency(ms),proc_time(ms),swap_time(ms),decoder_time(ms),pred,true
+0,0.0,site2,10.100.20.31:8030,chronostiny,diasbp,1770934887.1593874,1770934887.241656,1770934888.0911555,947.3991394042969,727.298004,0.0012,122.159954,72.25891876220703,56.0

@@ -1,0 +1,18 @@
+[
+    {
+        "status": "loaded_momentbase",
+        "logger_summary": "{'load_backbone': {'wall time': 6583.605347201228, 'gpu time': 6583.61572265625, 'gpu peak': 455.474688, 'cpu dRSS': 541.26592}, 'add_decoder_ecgclass_momentbase_mlp': {'wall time': 15.52924420684576, 'gpu time': 15.570943832397461, 'gpu peak': 455.871488, 'cpu dRSS': 0.262144}}"
+    },
+    {
+        "status": "loaded_chronosbase",
+        "logger_summary": "{'load_backbone': {'wall time': 8036.887462250888, 'gpu time': 8036.92333984375, 'gpu peak': 420.18304, 'cpu dRSS': 307.130368}, 'add_decoder_sysbp_chronosbase_mlp': {'wall time': 6.8383896723389626, 'gpu time': 6.874688148498535, 'gpu peak': 420.577792, 'cpu dRSS': 0.524288}, 'add_decoder_heartrate_chronosbase_mlp': {'wall time': 4.07453253865242, 'gpu time': 4.1084160804748535, 'gpu peak': 420.972544, 'cpu dRSS': 0.0}}"
+    },
+    {
+        "status": "loaded_momentlarge",
+        "logger_summary": "{'load_backbone': {'wall time': 9399.696920067072, 'gpu time': 9399.71484375, 'gpu peak': 1461.95456, 'cpu dRSS': 605.30688}, 'add_decoder_gestureclass_momentlarge_mlp': {'wall time': 5.681935697793961, 'gpu time': 5.720064163208008, 'gpu peak': 1462.484992, 'cpu dRSS': 0.262144}}"
+    },
+    {
+        "status": "loaded_chronostiny",
+        "logger_summary": "{'load_backbone': {'wall time': 7770.459839142859, 'gpu time': 7770.47412109375, 'gpu peak': 16.789504, 'cpu dRSS': 302.772224}, 'add_decoder_diasbp_chronostiny_mlp': {'wall time': 13.350296765565872, 'gpu time': 13.387743949890137, 'gpu peak': 16.922112, 'cpu dRSS': 0.262144}}"
+    }
+]
