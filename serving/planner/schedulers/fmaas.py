@@ -206,9 +206,11 @@ class FMaaSScheduler(BaseScheduler):
         if do_fit and (demand_left is None or demand_left > self.config.demand_epsilon):
             logger.info(f"Running fit for task {task.name}")
             fit_plan, fit_demand = self._fit(state, task, share_mode)
-            if fit_demand is not None and fit_demand <= self.config.demand_epsilon:
+            # Use fit result if it improved over the pre-fit result
+            pre_fit_demand = demand_left if demand_left is not None else task.peak_workload
+            if fit_demand is not None and fit_demand < pre_fit_demand:
                 return fit_plan, fit_demand
-        
+
         return temp_plan, demand_left
     
     def _deploy_with_backbone(
@@ -422,56 +424,73 @@ class FMaaSScheduler(BaseScheduler):
         task: TaskSpec,
         share_mode: bool
     ) -> Tuple[Optional[Dict], Optional[float]]:
-        """Attempt to fit task by downsizing backbones.
-        
+        """Attempt to fit task by downsizing backbones cumulatively.
+
+        Tries downsizing multiple backbones in sequence. Each downsize
+        frees capacity, and the cumulative effect is checked after each one.
+        If fully satisfied at any point, returns immediately. Otherwise,
+        keeps changes if they improved demand, or rolls back everything.
+
         Args:
             state: Current deployment state.
             task: Task specification.
             share_mode: Share mode flag.
-            
+
         Returns:
             Tuple of (deployment plan, remaining demand).
         """
         logger.info(f"Attempting fit for task {task.name}")
         demand_left = task.peak_workload
         temp_plan = None
-        changes = []
-        
+
+        # Track all changes for potential rollback
+        # Each entry: (old_deployment_copy, existing_copy_or_None, new_backbone)
+        rollback_info = []
+
         # Get deployments sorted by number of tasks (ascending)
         deployments = sorted(
             state.get_all_deployments(),
             key=lambda d: len(d.task_info)
         )
-        
+
         for deployment in deployments:
             # Find smaller backbone
             new_backbone = self.data.find_smaller_backbone(deployment.backbone)
-
             if not new_backbone:
                 continue
-            logger.info(f"Trying to fit by replacing backbone {deployment.backbone} of deployment {deployment} with {new_backbone} on server {deployment.server_name}")
-            # Save change info for potential rollback
+
+            # Check if this deployment still exists in state — a previous
+            # iteration's update_deployment_backbone may have removed it
+            # (e.g., if it was merged into another deployment's key).
+            current = state.get_deployment(deployment.server_name, deployment.backbone)
+            if not current:
+                continue
+
+            logger.info(f"Trying to fit by replacing backbone {current.backbone} of deployment {current} with {new_backbone} on server {current.server_name}")
+
+            # Save current state for potential rollback (use current from
+            # state, not snapshot, since previous iterations may have
+            # mutated it via util sync or merge).
             old_deployment_copy = Deployment(
-                server_name=deployment.server_name,
-                backbone=deployment.backbone,
-                ip=deployment.ip,
-                site_manager=deployment.site_manager,
-                device_type=deployment.device_type,
-                mem=deployment.mem,
-                util=deployment.util,
-                components=dict(deployment.components),
+                server_name=current.server_name,
+                backbone=current.backbone,
+                ip=current.ip,
+                site_manager=current.site_manager,
+                device_type=current.device_type,
+                mem=current.mem,
+                util=current.util,
+                components=dict(current.components),
                 task_info={k: TaskInfo(
                     type=v.type,
                     total_requested_workload=v.total_requested_workload,
                     request_per_sec=v.request_per_sec
-                ) for k, v in deployment.task_info.items()}
+                ) for k, v in current.task_info.items()}
             )
-            changes.append(old_deployment_copy)
 
             # Save existing deployment at (server_name, new_backbone) if any,
             # since update_deployment_backbone may merge into it and we need
             # to restore it on rollback.
-            existing_at_new_key = state.get_deployment(deployment.server_name, new_backbone)
+            existing_at_new_key = state.get_deployment(current.server_name, new_backbone)
             existing_copy = None
             if existing_at_new_key:
                 existing_copy = Deployment(
@@ -490,12 +509,14 @@ class FMaaSScheduler(BaseScheduler):
                     ) for k, v in existing_at_new_key.task_info.items()}
                 )
 
+            rollback_info.append((old_deployment_copy, existing_copy, new_backbone))
+
             # Calculate new components and utilization
             new_components = {new_backbone: self.data.get_component_mem(new_backbone)}
             new_util = 0.0
-            old_util = deployment.util
+            old_util = current.util
 
-            for t_name, t_info in deployment.task_info.items():
+            for t_name, t_info in current.task_info.items():
                 # Find pipeline for new backbone
                 new_pid = self.data.find_pipeline_id(t_name, new_backbone)
                 if new_pid:
@@ -505,58 +526,64 @@ class FMaaSScheduler(BaseScheduler):
                         if k != new_backbone:
                             new_components[k] = v
 
-                    latency = self.data.get_pipeline_latency(new_pid, deployment.device_type)
+                    latency = self.data.get_pipeline_latency(new_pid, current.device_type)
                     if latency:
                         new_util += (t_info.request_per_sec * latency) / 1000.0
 
                 # Subtract old backbone contribution
-                old_pid = self.data.find_pipeline_id(t_name, deployment.backbone)
+                old_pid = self.data.find_pipeline_id(t_name, current.backbone)
                 if old_pid:
-                    old_latency = self.data.get_pipeline_latency(old_pid, deployment.device_type)
+                    old_latency = self.data.get_pipeline_latency(old_pid, current.device_type)
                     if old_latency:
                         old_util -= (t_info.request_per_sec * old_latency) / 1000.0
 
-            # Update deployment
+            # Update deployment backbone (cumulative — don't rollback yet)
             state.update_deployment_backbone(
-                deployment.server_name,
-                deployment.backbone,
+                current.server_name,
+                current.backbone,
                 new_backbone,
                 new_components,
                 old_util + new_util
             )
             logger.info(f"Current deployments after backbone change: {state.get_all_deployments()}")
-            # Try to deploy task with updated state
+
+            # Try to deploy task with cumulative changes
             temp_plan, demand_left = self._deploy_task(
                 state, task, share_mode, do_fit=False
             )
             logger.info(f"Post-fit deployment attempt for task {task.name}, remaining demand: {demand_left}, temp plan: {temp_plan}, current deployments: {state.get_all_deployments()}")
 
             if demand_left is not None and demand_left <= self.config.demand_epsilon:
-                # Fit succeeded - commit the plan here
-                logger.info(f"Fit succeeded with: {state.get_all_deployments()}")
-                # Return empty plan since we already committed
+                # Fully satisfied — keep all backbone changes
+                logger.info(f"Fit fully succeeded with: {state.get_all_deployments()}")
                 return temp_plan, demand_left
-            else:
-                # Rollback - fit didn't help enough
-                logger.info("Rolling back backbone change")
-                state.remove_deployment(deployment.server_name, new_backbone)
-                # Restore the pre-existing deployment at the new_backbone key
-                # that was merged into during update_deployment_backbone
+
+            # Not fully satisfied — continue trying more backbone downsizes
+
+        # After trying all backbone downsizes: check if enough demand was satisfied
+        # to justify keeping the backbone changes.
+        satisfied_fraction = 1.0 - (demand_left / task.peak_workload) if task.peak_workload > 0 else 0.0
+        if satisfied_fraction >= self.config.fit_keep_threshold and demand_left < task.peak_workload:
+            logger.info(f"Fit partially helped: demand reduced from {task.peak_workload} to {demand_left} "
+                        f"({satisfied_fraction:.1%} satisfied, threshold={self.config.fit_keep_threshold:.1%}), keeping backbone changes")
+            return temp_plan, demand_left
+        else:
+            # Fit didn't satisfy enough demand — rollback ALL changes in reverse order
+            logger.info(f"Fit insufficient: {satisfied_fraction:.1%} satisfied (threshold={self.config.fit_keep_threshold:.1%}), rolling back all backbone changes")
+            for old_copy, existing_copy, new_bb in reversed(rollback_info):
+                state.remove_deployment(old_copy.server_name, new_bb)
                 if existing_copy:
                     state.add_deployment(
                         existing_copy,
                         self.config.base_port,
                         self.config.port_increment
                     )
-                # Restore the original deployment that was replaced
                 state.add_deployment(
-                    old_deployment_copy,
+                    old_copy,
                     self.config.base_port,
                     self.config.port_increment
                 )
-                return {}, demand_left
-        
-        return temp_plan, demand_left
+            return temp_plan, demand_left
 
 
 def build_final_json(deployments: List[Deployment], pipelines: Dict) -> Dict:

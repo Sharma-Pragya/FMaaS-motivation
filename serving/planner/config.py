@@ -11,7 +11,7 @@ from typing import Optional
 @dataclass
 class SchedulerConfig:
     """Configuration for deployment schedulers.
-    
+
     Attributes:
         util_factor: Maximum utilization factor for devices (0.0-1.0).
                     Devices won't be loaded beyond this threshold.
@@ -21,12 +21,17 @@ class SchedulerConfig:
                        Demand below this value is considered fully satisfied.
         max_fit_attempts: Maximum number of backbone downsizing attempts
                          in the fit() algorithm.
+        fit_keep_threshold: Fraction of demand that must be satisfied (0.0-1.0)
+                          for fit to keep its backbone downsizes. E.g., 0.9
+                          means keep changes if >=90% of demand is satisfied.
+                          Set to 0.0 to always keep any improvement.
     """
     util_factor: float = 0.8
     base_port: int = 8000
     port_increment: int = 10
     demand_epsilon: float = 1e-9
     max_fit_attempts: int = 1
+    fit_keep_threshold: float = 0.0
 
 
 @dataclass 
