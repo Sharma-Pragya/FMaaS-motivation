@@ -7,6 +7,18 @@ from router import route_trace
 import os
 import ssl
 from orchestrator.storage import write_data_to_file
+import logging
+# # Configure root logger
+# logging.basicConfig(
+#     level=logging.INFO,
+#     format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
+#     handlers=[
+#         logging.FileHandler('fmaas.log'),
+#         logging.StreamHandler()
+#     ]
+# )
+# logger = logging.getLogger(__name__)
+
 acks = {}
 acks_lock = threading.Lock()
 all_acks_event = threading.Event()
@@ -70,7 +82,7 @@ def run_deployment_plan(devices, tasks_slo, scheduler_name='fmaas', output_dir=N
     
     # Create profile data and config
     profile = ProfileData(components, pipelines, latency, metric)
-    config = SchedulerConfig(util_factor=0.8)
+    config = SchedulerConfig(util_factor=1)
     
     # Dispatch to the requested scheduler
     if scheduler_name == 'fmaas':
@@ -136,7 +148,7 @@ def publish_deployments(client, plan, routed_trace, output_dir=None):
             deploy_msg["output_dir"] = output_dir
         client.publish(f"fmaas/deploy/site/{site_id}", json.dumps(deploy_msg), qos=1)
         print(f"[MQTT] Sent deployment to {site_id} (output_dir={output_dir})")
-        time.sleep(2)  # give site manager time to process deploy before requests
+        time.sleep(30)  # give site manager time to process deploy before requests
 
         # 2. Send request chunks AFTER deploy — they accumulate into the
         #    now-clean RUNTIME_REQUESTS buffer.
@@ -207,6 +219,8 @@ if __name__ == "__main__":
                         help="Trace duration in seconds")
     parser.add_argument("--exp-dir", type=str, default=".",
                         help="Base experiment output directory")
+    parser.add_argument("--exp-type", type=str, default="baselines",
+                        help="Experiment type from which you need to take config file")
     parser.add_argument("--trace", type=str, default="lmsyschat",
                         choices=["lmsyschat", "gamma", "chatbotarena"],
                         help="Trace generator to use")
@@ -218,7 +232,13 @@ if __name__ == "__main__":
     os.makedirs(output_dir, exist_ok=True)
 
     # 1. Load task/device config
-    from experiments.baselines.user_config import devices, tasks
+    #based on exp_type we can load different config files for devices and tasks
+    if args.exp_type == "baselines":
+        from experiments.baselines.user_config import devices, tasks
+    elif args.exp_type == "batching":
+        from experiments.batching.user_config import devices, tasks
+    else:
+        raise ValueError(f"Unknown exp_type: {args.exp_type}. Use: baselines, batching")
     all_task_names = sorted({t for t in tasks.keys()})
     routed_tasks = [(t, None, None, None) for t in all_task_names]  # task, site, device, backbone
 

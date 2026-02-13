@@ -31,10 +31,8 @@ def _save_results(reqs_latency):
     if output_dir:
         os.makedirs(output_dir, exist_ok=True)
         csv_path = os.path.join(output_dir, "request_latency_results.csv")
-        json_path = os.path.join(output_dir, "model_deployment_results.json")
     else:
         csv_path = "request_latency_results.csv"
-        json_path = "model_deployment_results.json"
 
     # Save latency CSV
     reqs = get_requests()
@@ -46,20 +44,19 @@ def _save_results(reqs_latency):
     try:
         with open(csv_path, "w") as f:
             f.write("req_id,req_time,site_manager,device,backbone,task,"
-                    "site_manager_send_time,device_start_time,"
-                    "end_to_end_latency(ms),proc_time(ms),swap_time(ms),"
+                    "site_manager_send_time,device_start_time,device_end_time,"
+                    "end_to_end_latency(ms),proc_time(ms),swap_time(ms),decoder_time(ms),"
                     "pred,true\n")
-            print(reqs_latency)
             for entry in reqs_latency:
                 (req_id, device_url, site_manager_send_time, device_start_time,
-                e2e_latency, proc_time, swap_time, pred, true_val) = entry
+                device_end_time, e2e_latency, proc_time, swap_time, decoder_time, pred, true_val) = entry
                 req = reqs_dict.get(req_id, {})
                 req_time = req.get('req_time', -1)
                 backbone = req.get('backbone', 'unknown')
                 task = req.get('task', 'unknown')
                 f.write(f"{req_id},{req_time},{SITE_ID},{device_url},{backbone},"
                         f"{task},{site_manager_send_time},{device_start_time},"
-                        f"{e2e_latency*1000},{proc_time*1000},{swap_time*1000},"
+                        f"{device_end_time},{e2e_latency*1000},{proc_time*1000},{swap_time*1000},{decoder_time*1000},"
                         f"{pred},{true_val}\n")
 
         print(f"[SiteManager] Saved latency results to {csv_path} "

@@ -1,0 +1,83 @@
+/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/site-packages/numpy/core/getlimits.py:500: UserWarning: The value of the smallest subnormal for <class 'numpy.float64'> type is zero.
+  setattr(self, word, getattr(machar, word).flat[0])
+/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/site-packages/numpy/core/getlimits.py:89: UserWarning: The value of the smallest subnormal for <class 'numpy.float64'> type is zero.
+  return self._float_to_str(self.smallest_subnormal)
+/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/site-packages/numpy/core/getlimits.py:500: UserWarning: The value of the smallest subnormal for <class 'numpy.float32'> type is zero.
+  setattr(self, word, getattr(machar, word).flat[0])
+/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/site-packages/numpy/core/getlimits.py:89: UserWarning: The value of the smallest subnormal for <class 'numpy.float32'> type is zero.
+  return self._float_to_str(self.smallest_subnormal)
+I0212 19:44:18.130432 156066 pinned_memory_manager.cc:277] "Pinned memory pool is created at '0x7172aa000000' with size 268435456"
+I0212 19:44:18.143064 156066 cuda_memory_manager.cc:107] "CUDA memory pool is created on device 0 with size 67108864"
+I0212 19:44:18.174418 156066 server.cc:604] 
++------------------+------+
+| Repository Agent | Path |
++------------------+------+
++------------------+------+
+
+I0212 19:44:18.174435 156066 server.cc:631] 
++---------+------+--------+
+| Backend | Path | Config |
++---------+------+--------+
++---------+------+--------+
+
+I0212 19:44:18.174445 156066 server.cc:674] 
++-------+---------+--------+
+| Model | Version | Status |
++-------+---------+--------+
++-------+---------+--------+
+
+I0212 19:44:18.256549 156066 metrics.cc:877] "Collecting metrics for GPU 0: NVIDIA L40S"
+I0212 19:44:18.290038 156066 metrics.cc:770] "Collecting CPU metrics"
+I0212 19:44:18.290103 156066 tritonserver.cc:2598] 
++----------------------------------+------------------------------------------+
+| Option                           | Value                                    |
++----------------------------------+------------------------------------------+
+| server_id                        | triton                                   |
+| server_version                   | 2.51.0                                   |
+| server_extensions                | classification sequence model_repository |
+|                                  |  model_repository(unload_dependents) sch |
+|                                  | edule_policy model_configuration system_ |
+|                                  | shared_memory cuda_shared_memory binary_ |
+|                                  | tensor_data parameters statistics trace  |
+|                                  | logging                                  |
+| model_repository_path[0]         | /home/hshastri_umass_edu/.cache/pytriton |
+|                                  | /workspace_lt84gdl6/model-store          |
+| model_control_mode               | MODE_EXPLICIT                            |
+| startup_models_0                 | *                                        |
+| strict_model_config              | 0                                        |
+| model_config_name                |                                          |
+| rate_limit                       | OFF                                      |
+| pinned_memory_pool_byte_size     | 268435456                                |
+| cuda_memory_pool_byte_size{0}    | 67108864                                 |
+| min_supported_compute_capability | 6.0                                      |
+| strict_readiness                 | 1                                        |
+| exit_timeout                     | 30                                       |
+| cache_enabled                    | 0                                        |
++----------------------------------+------------------------------------------+
+
+I0212 19:44:18.362470 156066 grpc_server.cc:2558] "Started GRPCInferenceService at 0.0.0.0:8020"
+I0212 19:44:18.362658 156066 http_server.cc:4713] "Started HTTPService at 0.0.0.0:8021"
+I0212 19:44:18.425157 156066 http_server.cc:362] "Started Metrics Service at 0.0.0.0:8022"
+E0212 19:44:19.411770 156066 model_repository_manager.cc:470] "Failed to set config modification time: model_config_content_name_ is empty"
+I0212 19:44:19.411923 156066 model_lifecycle.cc:472] "loading: edge_infer:1"
+I0212 19:44:21.241277 156066 python_be.cc:2249] "TRITONBACKEND_ModelInstanceInitialize: edge_infer_0_0 (CPU device 0)"
+I0212 19:44:22.467027 156066 model_lifecycle.cc:839] "successfully loaded 'edge_infer'"
+E0212 19:44:22.486081 156066 model_repository_manager.cc:470] "Failed to set config modification time: model_config_content_name_ is empty"
+I0212 19:44:22.486221 156066 model_lifecycle.cc:472] "loading: edge_control:1"
+I0212 19:44:24.230878 156066 python_be.cc:2249] "TRITONBACKEND_ModelInstanceInitialize: edge_control_0_0 (CPU device 0)"
+I0212 19:44:25.453016 156066 model_lifecycle.cc:839] "successfully loaded 'edge_control'"
+[System] PyTriton Server running on port
+[System] Loading backbone: momentlarge
+[ModelLoader] Loading backbone: momentlarge
+/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/site-packages/transformers/utils/generic.py:311: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  torch.utils._pytree._register_pytree_node(
+/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/site-packages/transformers/utils/generic.py:311: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  torch.utils._pytree._register_pytree_node(
+[Moment] Loading AutonLab/MOMENT-1-large on device cuda
+/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/site-packages/momentfm/models/moment.py:174: UserWarning: Only reconstruction head is pre-trained. Classification and forecasting heads must be fine-tuned.
+  warnings.warn("Only reconstruction head is pre-trained. Classification and forecasting heads must be fine-tuned.")
+[ModelLoader] Loading decoder: gestureclass (classification) from gestureclass_momentlarge_mlp
+[ModelLoader] Loaded MomentModel with 1 decoders.
+[ModelLoader] Retrieving loaded models. Loaded status: True

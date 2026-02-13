@@ -1,0 +1,88 @@
+/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/site-packages/numpy/core/getlimits.py:500: UserWarning: The value of the smallest subnormal for <class 'numpy.float64'> type is zero.
+  setattr(self, word, getattr(machar, word).flat[0])
+/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/site-packages/numpy/core/getlimits.py:89: UserWarning: The value of the smallest subnormal for <class 'numpy.float64'> type is zero.
+  return self._float_to_str(self.smallest_subnormal)
+/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/site-packages/numpy/core/getlimits.py:500: UserWarning: The value of the smallest subnormal for <class 'numpy.float32'> type is zero.
+  setattr(self, word, getattr(machar, word).flat[0])
+/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/site-packages/numpy/core/getlimits.py:89: UserWarning: The value of the smallest subnormal for <class 'numpy.float32'> type is zero.
+  return self._float_to_str(self.smallest_subnormal)
+I0212 23:07:44.138819 43704 pinned_memory_manager.cc:277] "Pinned memory pool is created at '0x71977a000000' with size 268435456"
+I0212 23:07:44.146118 43704 cuda_memory_manager.cc:107] "CUDA memory pool is created on device 0 with size 67108864"
+I0212 23:07:44.172561 43704 server.cc:604] 
++------------------+------+
+| Repository Agent | Path |
++------------------+------+
++------------------+------+
+
+I0212 23:07:44.172579 43704 server.cc:631] 
++---------+------+--------+
+| Backend | Path | Config |
++---------+------+--------+
++---------+------+--------+
+
+I0212 23:07:44.172590 43704 server.cc:674] 
++-------+---------+--------+
+| Model | Version | Status |
++-------+---------+--------+
++-------+---------+--------+
+
+I0212 23:07:44.231465 43704 metrics.cc:877] "Collecting metrics for GPU 0: NVIDIA L40S"
+I0212 23:07:44.242944 43704 metrics.cc:770] "Collecting CPU metrics"
+I0212 23:07:44.243017 43704 tritonserver.cc:2598] 
++----------------------------------+------------------------------------------+
+| Option                           | Value                                    |
++----------------------------------+------------------------------------------+
+| server_id                        | triton                                   |
+| server_version                   | 2.51.0                                   |
+| server_extensions                | classification sequence model_repository |
+|                                  |  model_repository(unload_dependents) sch |
+|                                  | edule_policy model_configuration system_ |
+|                                  | shared_memory cuda_shared_memory binary_ |
+|                                  | tensor_data parameters statistics trace  |
+|                                  | logging                                  |
+| model_repository_path[0]         | /home/hshastri_umass_edu/.cache/pytriton |
+|                                  | /workspace_fp671a4d/model-store          |
+| model_control_mode               | MODE_EXPLICIT                            |
+| startup_models_0                 | *                                        |
+| strict_model_config              | 0                                        |
+| model_config_name                |                                          |
+| rate_limit                       | OFF                                      |
+| pinned_memory_pool_byte_size     | 268435456                                |
+| cuda_memory_pool_byte_size{0}    | 67108864                                 |
+| min_supported_compute_capability | 6.0                                      |
+| strict_readiness                 | 1                                        |
+| exit_timeout                     | 30                                       |
+| cache_enabled                    | 0                                        |
++----------------------------------+------------------------------------------+
+
+I0212 23:07:44.304792 43704 grpc_server.cc:2558] "Started GRPCInferenceService at 0.0.0.0:8010"
+I0212 23:07:44.304984 43704 http_server.cc:4713] "Started HTTPService at 0.0.0.0:8011"
+I0212 23:07:44.348244 43704 http_server.cc:362] "Started Metrics Service at 0.0.0.0:8012"
+E0212 23:07:44.512189 43704 model_repository_manager.cc:470] "Failed to set config modification time: model_config_content_name_ is empty"
+I0212 23:07:44.512345 43704 model_lifecycle.cc:472] "loading: edge_infer:1"
+I0212 23:07:46.268176 43704 python_be.cc:2249] "TRITONBACKEND_ModelInstanceInitialize: edge_infer_0_0 (CPU device 0)"
+I0212 23:07:47.131533 43704 model_lifecycle.cc:839] "successfully loaded 'edge_infer'"
+E0212 23:07:47.192964 43704 model_repository_manager.cc:470] "Failed to set config modification time: model_config_content_name_ is empty"
+I0212 23:07:47.194702 43704 model_lifecycle.cc:472] "loading: edge_control:1"
+I0212 23:07:48.897732 43704 python_be.cc:2249] "TRITONBACKEND_ModelInstanceInitialize: edge_control_0_0 (CPU device 0)"
+I0212 23:07:49.797929 43704 model_lifecycle.cc:839] "successfully loaded 'edge_control'"
+[System] PyTriton Server running on port
+[System] Loading backbone: chronossmall
+[ModelLoader] Loading backbone: chronossmall
+/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/site-packages/transformers/utils/generic.py:311: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  torch.utils._pytree._register_pytree_node(
+[Chronos] Loading amazon/chronos-t5-small on device cuda
+/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/site-packages/huggingface_hub/file_download.py:942: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
+  warnings.warn(
+/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/site-packages/huggingface_hub/file_download.py:942: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
+  warnings.warn(
+[ModelLoader] Loading decoder: heartrate (regression) from heartrate_chronossmall_mlp
+[ModelLoader] Loaded ChronosModel with 1 decoders.
+[ModelLoader] Retrieving loaded models. Loaded status: True
+/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/multiprocessing/resource_tracker.py:224: UserWarning: resource_tracker: There appear to be 8 leaked shared_memory objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/multiprocessing/resource_tracker.py:224: UserWarning: resource_tracker: There appear to be 1 leaked shared_memory objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+Triton Inference Server exited with failure. Please wait.

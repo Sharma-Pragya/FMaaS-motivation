@@ -130,10 +130,12 @@ async def send_request(req_id, device_url, inputs_dict, ouputs_dict):
     # You might need to check your model config for the exact output name
     result = response.as_numpy("output")
     device_start_time = response.as_numpy("start_time")/10**9
+    device_end_time = response.as_numpy("end_time")/10**9
     proc_time = response.as_numpy("proc_time")/10**9
     swap_time = response.as_numpy("swap_time")/10**9
+    decoder_time = response.as_numpy("decoder_time")/10**9
     et = time.time()
-    return req_id, device_url, st, device_start_time.item(), et - st, proc_time.item(), swap_time.item(), result.item(), ouputs_dict.get('y').item()
+    return req_id, device_url, st, device_start_time.item(), device_end_time.item(), et - st, proc_time.item(), swap_time.item(), decoder_time.item(), result.item(), ouputs_dict.get('y').item()
     
 
 
