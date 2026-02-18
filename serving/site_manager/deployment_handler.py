@@ -2,23 +2,12 @@ import json
 import asyncio
 import asyncssh
 import numpy as np
-from typing import List
 from urllib.parse import urlparse
-from pydantic import BaseModel, Field
 from pytriton.client import ModelClient
-from config import * 
+from site_manager.config import cmds, activate_env, vlm_env, timeseries_env
 
-class DecoderSpec(BaseModel):
-    task: str
-    type: str
-    path: str
 
-class DeploySpec(BaseModel):
-    device: str
-    backbone: str
-    decoders: List[DecoderSpec] = Field(default_factory=list)
-
-def _parse_url(device_url: str) -> tuple[str, str]:
+def _parse_url(device_url: str) -> tuple[str, str, int]:
     """
     Returns (ssh_host, triton_url)
     triton_url is formatted as 'host:port' for ModelClient.
@@ -35,7 +24,7 @@ def _parse_url(device_url: str) -> tuple[str, str]:
         triton_url = f"{device_url}:{port+1}"
     return ssh_host, triton_url, port
 
-async def _ssh_start_server(ssh_host: str, conda_env: str, cmd: str,log_path:str):
+async def _ssh_start_server(ssh_host: str, conda_env: str, cmd: str, log_path: str):
     """Run remote command on gpu node via SSH (agent forwarding must be enabled)."""
     try:
         async with asyncssh.connect(
@@ -47,8 +36,8 @@ async def _ssh_start_server(ssh_host: str, conda_env: str, cmd: str,log_path:str
 
             print(f"[SSH] Launching on {ssh_host}: {remote_cmd}")
             proc = await conn.create_process(remote_cmd)
-            await asyncio.sleep(10)   # small delay to ensure command sent
-            proc.exit_status  # don’t wait; just trigger cleanup
+            await asyncio.sleep(3)   # small delay to ensure nohup submitted before SSH closes
+            proc.exit_status  # don't wait; just trigger cleanup
             print(f"[SSH] {ssh_host}: detached.")
 
     except Exception as e:
@@ -70,7 +59,7 @@ def _send_control(ssh_host, port, cmd_data, payload_data):
         return False
 
 
-async def _deploy_one(s: DeploySpec):
+async def _deploy_one(s: dict):
     ssh_host, triton_url, grpc_port = _parse_url(s['device'])
     print(ssh_host, grpc_port, triton_url)
     # choose env + server command
@@ -92,7 +81,7 @@ async def _deploy_one(s: DeploySpec):
     # 2. Send Deployment Config via Control Plane
     config_payload = {
         "backbone": s['backbone'],
-        "decoders": [d for d in s['decoders']],
+        "decoders": s['decoders'],
     }
     config_str = json.dumps(config_payload)
     cmd_data = np.array([[b"load"]], dtype=object)
@@ -100,7 +89,34 @@ async def _deploy_one(s: DeploySpec):
     deployment_status = await asyncio.to_thread(_send_control, ssh_host, grpc_port+1, cmd_data, payload_data)
     return deployment_status
 
-async def deploy_models(specs: List[DeploySpec]):
+async def _add_decoder_to_device(device_url: str, decoders: list) -> dict:
+    """Hot-add decoders to a running device server (no SSH needed).
+
+    The device already has a backbone loaded and a PyTriton server running.
+    This sends an "add_decoder" control command via gRPC to load new
+    decoder heads on the existing backbone.
+
+    Args:
+        device_url: Device endpoint string (e.g. "gpu-node:8000").
+        decoders: List of {"task": str, "type": str, "path": str} dicts.
+
+    Returns:
+        Status dict from the device, or False on failure.
+    """
+    ssh_host, _, grpc_port = _parse_url(device_url)
+    config_payload = {"decoders": decoders}
+    config_str = json.dumps(config_payload)
+    cmd_data = np.array([[b"add_decoder"]], dtype=object)
+    payload_data = np.array([[config_str.encode("utf-8")]], dtype=object)
+
+    # _send_control is synchronous; run in thread to keep async context
+    result = await asyncio.to_thread(
+        _send_control, ssh_host, grpc_port + 1, cmd_data, payload_data
+    )
+    return result
+
+
+async def deploy_models(specs: list):
     results=await asyncio.gather(*[_deploy_one(s) for s in specs])
     print(f"[SiteManager] Deployment complete for {len(specs)} devices.")
     return results
@@ -125,7 +141,6 @@ async def _ssh_kill_server(ssh_host: str, grpc_port: int):
             agent_forwarding=True,
         ) as conn:
             ports = [grpc_port, grpc_port + 1, grpc_port + 2]
-            port_targets = " ".join(f"{p}/tcp" for p in ports)
 
             kill_cmd = (
                 # 1. Graceful SIGTERM
@@ -154,7 +169,7 @@ async def _ssh_kill_server(ssh_host: str, grpc_port: int):
         print(f"[SSH] Error killing server on {ssh_host}:{grpc_port}: {e}")
 
 
-async def shutdown_devices(specs: List):
+async def shutdown_devices(specs: list):
     """Kill all Triton servers launched for the given deployment specs.
     
     Extracts (host, port) from each deployment spec and SSHes in to

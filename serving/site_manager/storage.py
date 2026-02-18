@@ -1,18 +1,22 @@
 DEPLOYMENTS = []
 RUNTIME_REQUESTS = []
+PROCESSED_COUNT = 0  # Track how many requests have been processed
 OUTPUT_DIR = None  # Set by orchestrator to save results in the right experiment directory
+DEPLOYING_TASKS = set()  # Track tasks whose deployment is currently in progress
 
 
 def clear_state():
     """Reset all stored state between experiments.
-    
+
     Must be called at the start of each new deployment to prevent
     request/state accumulation across experiments.
     """
-    global DEPLOYMENTS, RUNTIME_REQUESTS, OUTPUT_DIR
+    global DEPLOYMENTS, RUNTIME_REQUESTS, PROCESSED_COUNT, OUTPUT_DIR, DEPLOYING_TASKS
     DEPLOYMENTS = []
     RUNTIME_REQUESTS = []
+    PROCESSED_COUNT = 0
     OUTPUT_DIR = None
+    DEPLOYING_TASKS.clear()
     print("[RuntimeBuffer] State cleared for new experiment.")
 
 
@@ -31,7 +35,22 @@ def store_requests(payload):
 
 
 def get_requests():
+    """Get all requests (including newly added ones during runtime)."""
     return RUNTIME_REQUESTS
+
+
+def get_new_requests():
+    """Get only requests that haven't been scheduled yet.
+
+    Returns requests from PROCESSED_COUNT onwards, and updates the counter.
+    This allows the inference loop to pick up newly added requests during runtime.
+    """
+    global PROCESSED_COUNT
+    new_reqs = RUNTIME_REQUESTS[PROCESSED_COUNT:]
+    PROCESSED_COUNT = len(RUNTIME_REQUESTS)
+    if new_reqs:
+        print(f"[RuntimeBuffer] Retrieved {len(new_reqs)} new request(s) (total={PROCESSED_COUNT})")
+    return new_reqs
 
 
 def get_deployments():
@@ -40,3 +59,44 @@ def get_deployments():
 
 def get_output_dir():
     return OUTPUT_DIR
+
+
+def append_deployments(new_specs: list):
+    """Append new deployment specs to the existing DEPLOYMENTS list.
+
+    Used when new tasks are added at runtime — the site manager needs
+    to track all active deployments for cleanup.
+
+    Args:
+        new_specs: List of deployment spec dicts to append.
+    """
+    global DEPLOYMENTS
+    DEPLOYMENTS.extend(new_specs)
+    print(f"[RuntimeBuffer] Appended {len(new_specs)} deployment(s). "
+          f"Total: {len(DEPLOYMENTS)}")
+
+
+def mark_task_deploying(task_name: str):
+    """Mark a task as currently being deployed.
+
+    Used to defer requests for this task until deployment completes.
+    """
+    DEPLOYING_TASKS.add(task_name)
+    print(f"[RuntimeBuffer] Task '{task_name}' marked as DEPLOYING (total deploying: {len(DEPLOYING_TASKS)})")
+
+
+def mark_task_deployed(task_name: str):
+    """Mark a task as deployment complete.
+
+    Requests for this task can now be executed.
+    """
+    DEPLOYING_TASKS.discard(task_name)
+    print(f"[RuntimeBuffer] Task '{task_name}' marked as DEPLOYED (remaining deploying: {len(DEPLOYING_TASKS)})")
+
+
+def is_task_deploying(task_name: str) -> bool:
+    """Check if a task is currently being deployed.
+
+    Returns True if deployment is in progress, False otherwise.
+    """
+    return task_name in DEPLOYING_TASKS

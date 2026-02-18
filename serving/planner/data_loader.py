@@ -93,11 +93,7 @@ class ProfileData:
                 self._backbones_by_type[component.type].append(name)
     
     # --- Component Access ---
-    
-    def get_component(self, name: str) -> Optional[Component]:
-        """Get a component by name."""
-        return self.components.get(name)
-    
+
     def get_component_mem(self, name: str) -> float:
         """Get memory footprint of a component."""
         return self._raw_components[name]['mem']
@@ -105,10 +101,6 @@ class ProfileData:
     def get_component_type(self, name: str) -> Optional[str]:
         """Get the type of a component (for backbones)."""
         return self._raw_components[name].get('type')
-    
-    def is_backbone(self, name: str) -> bool:
-        """Check if a component is a backbone."""
-        return self.get_component_type(name) is not None
     
     # --- Pipeline Access ---
     
@@ -143,20 +135,6 @@ class ProfileData:
             Pipeline ID if found, None otherwise.
         """
         return self._pipeline_by_task_backbone.get((task, backbone))
-    
-    def get_pipelines_for_task(self, task_name: str) -> Dict[str, Pipeline]:
-        """Get all pipelines that can serve a task.
-        
-        Args:
-            task_name: Name of the task.
-            
-        Returns:
-            Dictionary mapping pipeline IDs to Pipeline objects.
-        """
-        result = {}
-        for pid in self._pipelines_by_task.get(task_name, []):
-            result[pid] = self.pipelines[pid]
-        return result
     
     def get_backbones_for_task(self, task_name: str) -> Dict[str, str]:
         """Get all backbones that can serve a task.
@@ -193,18 +171,6 @@ class ProfileData:
             task_name: self.get_component_mem(task_name)
         }
     
-    def get_pipeline_components_mem_by_id(self, pid: str) -> Dict[str, float]:
-        """Get memory footprint for all components in a pipeline by ID.
-        
-        Args:
-            pid: Pipeline ID.
-            
-        Returns:
-            Dictionary mapping component names to memory in MB.
-        """
-        pipeline = self.pipelines[pid]
-        return self.get_pipeline_components_mem(pipeline)
-    
     # --- Backbone Operations ---
     
     def find_smaller_backbone(self, backbone_name: str) -> Optional[str]:
@@ -236,7 +202,3 @@ class ProfileData:
         # Return the largest one that's still smaller than current
         candidates.sort(reverse=True)
         return candidates[0][1]
-    
-    def get_all_backbones(self) -> List[str]:
-        """Get list of all backbone names."""
-        return [name for name, comp in self.components.items() if comp.type is not None]

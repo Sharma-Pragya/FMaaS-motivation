@@ -119,6 +119,4 @@ class Deployment:
     components: Dict[str, float] = field(default_factory=dict)
     task_info: Dict[str, TaskInfo] = field(default_factory=dict)
 
-    def get_endpoint_key(self) -> tuple:
-        """Returns the unique key for this deployment."""
-        return (self.server_name, self.backbone)
+

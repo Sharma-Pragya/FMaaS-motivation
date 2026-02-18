@@ -4,3 +4,5 @@ pip install paho-mqtt
 pip install asyncssh
 pip install datasets
 pip install "huggingface-hub>=0.15.1,<1.0"
+pip install uvicorn
+pip install fastapi

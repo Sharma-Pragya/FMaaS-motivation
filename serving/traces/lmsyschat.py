@@ -22,7 +22,7 @@ class Request:
             "req_time": self.req_time,
         }
 
-def generate_requests(req_rate, duration, tasks, seed=42) -> List[Request]:
+def generate_requests(req_rate, duration, tasks, seed=42, req_id_offset=0) -> List[Request]:
     rng = np.random.default_rng(seed)
     tot_req = int(req_rate * duration)
 
@@ -56,7 +56,7 @@ def generate_requests(req_rate, duration, tasks, seed=42) -> List[Request]:
             model_to_task[m] = tasks[assign_ptr % k]
             assign_ptr += 1
         task_name, site_manager, device, backbone = model_to_task[m] #task, site, device, backbone
-        reqs.append(Request(i, task_name, site_manager, device, float(ts)))
+        reqs.append(Request(req_id_offset + i, task_name, site_manager, device, float(ts)))
     # --- per-task mean and peak RPS (1-second bins) ---
     counts_per_task: Dict[str, int] = {}
     bins_per_task: Dict[str, Dict[int, int]] = {}

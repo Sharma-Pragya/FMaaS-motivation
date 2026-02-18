@@ -587,85 +587,10 @@ class FMaaSScheduler(BaseScheduler):
 
 
 def build_final_json(deployments: List[Deployment], pipelines: Dict) -> Dict:
-    """Build final JSON output from deployments.
-    
-    Args:
-        deployments: List of Deployment objects.
-        pipelines: Raw pipelines dictionary for decoder lookup.
-        
-    Returns:
-        Dictionary in the expected output format.
-    """
-    sites = {}
-    
-    for deployment in deployments:
-        backbone = deployment.backbone
-        decoders = []
-        site_id = deployment.site_manager
-        
-        for comp in deployment.components:
-            for v in pipelines.values():
-                d_key = f"{v['decoder']}_{v['backbone']}_{v['task']}"
-                if comp == d_key and v['backbone'] == backbone:
-                    task_name = v['task']
-                    if task_name in deployment.task_info:
-                        decoders.append({
-                            "task": task_name,
-                            "type": deployment.task_info[task_name].type,
-                            "path": f"{task_name}_{v['backbone']}_{v['decoder']}"
-                        })
-                        break
-        
-        # Convert task_info to dict format
-        task_info_dict = {}
-        for task_name, info in deployment.task_info.items():
-            task_info_dict[task_name] = {
-                'type': info.type,
-                'total_requested_workload': info.total_requested_workload,
-                'request_per_sec': info.request_per_sec
-            }
-        
-        deployment_entry = {
-            "device": deployment.ip,
-            "device_name": deployment.server_name,
-            "device_type": deployment.device_type,
-            "backbone": backbone,
-            "decoders": decoders,
-            "tasks": task_info_dict,
-            "util": round(deployment.util, 6)
-        }
-        
-        if site_id not in sites:
-            sites[site_id] = {"id": site_id, "deployments": []}
-        sites[site_id]["deployments"].append(deployment_entry)
-    
-    return {"sites": list(sites.values())}
+    """Build final JSON output from deployments."""
+    state = DeploymentState([])
+    for d in deployments:
+        state._deployments[(d.server_name, d.backbone)] = d
+    return state.to_plan_json(pipelines)
 
 
-# Backwards-compatible function
-def shared_packing(
-    devices: Dict,
-    tasks: Dict,
-    profile_data: Optional[ProfileData] = None,
-    share_flag: bool = False
-) -> List[Deployment]:
-    """Run shared packing algorithm.
-    
-    This is a backwards-compatible wrapper around FMaaSScheduler.
-    
-    Args:
-        devices: Device configuration dictionary.
-        tasks: Task specification dictionary.
-        profile_data: Optional ProfileData instance. If not provided,
-                     imports from parser.profiler.
-        share_flag: Enable share mode.
-        
-    Returns:
-        List of Deployment objects.
-    """
-    if profile_data is None:
-        from ..parser.profiler import components, pipelines, latency, metric
-        profile_data = ProfileData(components, pipelines, latency, metric)
-    
-    scheduler = FMaaSScheduler(profile_data)
-    return scheduler.schedule(devices, tasks, share_mode=share_flag)

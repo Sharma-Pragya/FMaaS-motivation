@@ -12,6 +12,7 @@ from contextlib import nullcontext
 _pipeline = None
 _decoders = {}
 _loaded = False
+_backbone_name = None
 current_task = None
 
 
@@ -21,7 +22,7 @@ def load_models(backbone: str, decoders: list):
     backbone: str (e.g., "moment_large")
     decoders: list of {"task": str, "type": str, "path": str}
     """
-    global _pipeline, _decoders, _loaded, current_task
+    global _pipeline, _decoders, _loaded, _backbone_name, current_task
     logger=Logger(DEVICE,'deploymentlogger')
     print(f"[ModelLoader] Loading backbone: {backbone}")
     with (logger.measure("load_backbone", device=DEVICE) if logger else nullcontext()):
@@ -67,6 +68,7 @@ def load_models(backbone: str, decoders: list):
         else:
             raise ValueError(f"Unsupported backbone type: {backbone}")
     
+    _backbone_name = backbone
     for dec in decoders:
         task, dtype, path = dec["task"], dec["type"], dec["path"]
         print(f"[ModelLoader] Loading decoder: {task} ({dtype}) from {path}")
@@ -86,6 +88,53 @@ def load_models(backbone: str, decoders: list):
         current_task=task
     _loaded = True
     print(f"[ModelLoader] Loaded {_pipeline.model_instance.__class__.__name__} with {len(_decoders)} decoders.")
+    return logger
+
+
+def add_decoder(decoder_specs: list):
+    """Hot-add new decoders to an already-loaded backbone.
+
+    This reuses the same instantiation logic as load_models() but skips
+    backbone loading — the backbone must already be loaded via load_models().
+
+    Args:
+        decoder_specs: list of {"task": str, "type": str, "path": str}
+
+    Returns:
+        Logger with timing measurements for the add operation.
+
+    Raises:
+        RuntimeError: If no backbone has been loaded yet.
+    """
+    global _decoders, current_task
+
+    if not _loaded or _pipeline is None or _backbone_name is None:
+        raise RuntimeError("No backbone loaded. Call load_models() first.")
+
+    logger = Logger(DEVICE, 'add_decoder_logger')
+    backbone = _backbone_name
+
+    for dec in decoder_specs:
+        task, dtype, path = dec["task"], dec["type"], dec["path"]
+        print(f"[ModelLoader] Hot-adding decoder: {task} ({dtype}) from {path}")
+
+        with (logger.measure("add_decoder", device=DEVICE) if logger else nullcontext()):
+            if dtype == "regression":
+                decoder_config = DECODERS[f'mlp_{backbone}_{dtype}']['decoder_config']
+                decoder = RegressionMLP(device=decoder_config['DEVICE'], cfg=decoder_config['cfg'])
+            elif dtype == "classification":
+                decoder_config = DECODERS[f'mlp_{backbone}_{task}']['decoder_config']
+                decoder = ClassificationMLP(device=decoder_config['DEVICE'], cfg=decoder_config['cfg'])
+            elif dtype == "forecasting":
+                decoder_config = DECODERS[f'mlp_{backbone}_{dtype}']['decoder_config']
+                decoder = ForecastingMLP(device=decoder_config['DEVICE'], cfg=decoder_config['cfg'])
+            else:
+                raise ValueError(f"Unknown decoder type: {dtype} or mlp_{backbone}_{dtype} or mlp_{backbone}_{task}")
+
+            _decoders[task] = _pipeline.add_decoder(decoder, load=True, train=False, path=path)
+            current_task = task
+
+    print(f"[ModelLoader] Hot-added {len(decoder_specs)} decoder(s). Total decoders: {len(_decoders)}")
     return logger
 
 

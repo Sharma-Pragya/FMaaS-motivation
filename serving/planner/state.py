@@ -324,34 +324,150 @@ class DeploymentState:
             return None
         return min(self._deployments.values(), key=lambda d: len(d.task_info))
     
-    def to_legacy_format(self) -> List[Dict]:
-        """Convert deployments to legacy list-of-dicts format.
-        
+    # --- Serialization ---
+
+    @classmethod
+    def from_deployment_plan(cls, plan: dict) -> 'DeploymentState':
+        """Build DeploymentState from deployment_plan.json format.
+
+        This converts the scheduler's output format (deployment_plan.json)
+        into DeploymentState for incremental planning.
+
+        Args:
+            plan: Deployment plan dict with "sites" key.
+
         Returns:
-            List of single-item dictionaries in legacy format.
+            DeploymentState reconstructed from the plan.
         """
-        result = []
-        for (server_name, backbone), deployment in self._deployments.items():
-            # Convert TaskInfo objects to dicts
-            task_info_dict = {}
-            for task_name, info in deployment.task_info.items():
-                task_info_dict[task_name] = {
-                    'type': info.type,
-                    'total_requested_workload': info.total_requested_workload,
-                    'request_per_sec': info.request_per_sec
-                }
-            
-            result.append({
-                (server_name, backbone): {
-                    'name': deployment.server_name,
-                    'backbone': deployment.backbone,
-                    'site_manager': deployment.site_manager,
-                    'type': deployment.device_type,
-                    'mem': deployment.mem,
-                    'components': deployment.components,
-                    'task_info': task_info_dict,
-                    'ip': deployment.ip,
-                    'util': deployment.util
-                }
-            })
-        return result
+        # Collect all unique servers across all sites
+        servers_dict = {}
+        deployments_list = []
+
+        for site in plan.get("sites", []):
+            site_id = site["id"]
+            for deploy_spec in site.get("deployments", []):
+                server_name = deploy_spec["device_name"]
+                backbone = deploy_spec["backbone"]
+                device_type = deploy_spec["device_type"]
+                ip = deploy_spec["device"]
+                mem = deploy_spec.get("mem", 0)  # May not be in plan
+                util = deploy_spec.get("util", 0.0)
+
+                # Add server if not seen yet
+                if server_name not in servers_dict:
+                    servers_dict[server_name] = Server(
+                        name=server_name,
+                        type=device_type,
+                        mem=mem,
+                        ip=ip.split(':')[0] if ':' in ip else ip,  # Extract IP without port
+                        site_manager=site_id,
+                        util=util,
+                    )
+
+                # Build task_info from tasks dict
+                task_info = {}
+                for task_name, task_data in deploy_spec.get("tasks", {}).items():
+                    task_info[task_name] = TaskInfo(
+                        type=task_data.get('type', 'classification'),
+                        total_requested_workload=task_data.get('total_requested_workload', 0),
+                        request_per_sec=task_data.get('request_per_sec', 0),
+                    )
+
+                # Build components dict (just use decoder names)
+                components = {}
+                for decoder in deploy_spec.get("decoders", []):
+                    # Estimate component memory (we don't have exact values)
+                    components[decoder["task"]] = 0.0  # Placeholder
+
+                # Create deployment
+                deployment = Deployment(
+                    server_name=server_name,
+                    backbone=backbone,
+                    ip=ip,
+                    site_manager=site_id,
+                    device_type=device_type,
+                    mem=mem,
+                    util=util,
+                    components=components,
+                    task_info=task_info,
+                )
+                deployments_list.append(deployment)
+
+        # Build state
+        servers = list(servers_dict.values())
+        state = cls(servers)
+
+        # Insert deployments directly (bypass add_deployment to preserve ports)
+        for deployment in deployments_list:
+            key = (deployment.server_name, deployment.backbone)
+            state._deployments[key] = deployment
+
+        # Sync server utilization
+        for deployment in state._deployments.values():
+            if deployment.server_name in state._servers:
+                state._servers[deployment.server_name].util = deployment.util
+
+        return state
+
+    def to_plan_json(self, pipelines: dict) -> dict:
+        """Serialize all deployments to deployment_plan.json format.
+
+        This is the single source of truth for converting DeploymentState
+        into the JSON structure consumed by site managers. Used by:
+          - schedulers' build_final_json (initial planning)
+          - orchestrator planner save_state (after add-task)
+          - incremental _build_full_deployment_spec (add_full diff)
+
+        Handles the __clipper__<task> backbone suffix transparently —
+        strips it for pipeline lookup and for the output backbone name.
+
+        Args:
+            pipelines: Raw pipelines dict from profiler, keyed by pipeline ID.
+                       Each value has keys: 'task', 'backbone', 'decoder'.
+
+        Returns:
+            {"sites": [{"id": ..., "deployments": [...]}]}
+        """
+        sites = {}
+        for deployment in self._deployments.values():
+            real_backbone = (
+                deployment.backbone.split('__clipper__')[0]
+                if '__clipper__' in deployment.backbone
+                else deployment.backbone
+            )
+
+            decoders = []
+            for comp in deployment.components:
+                for v in pipelines.values():
+                    d_key = f"{v['decoder']}_{v['backbone']}_{v['task']}"
+                    if comp == d_key and v['backbone'] == real_backbone:
+                        t_name = v['task']
+                        if t_name in deployment.task_info:
+                            decoders.append({
+                                "task": t_name,
+                                "type": deployment.task_info[t_name].type,
+                                "path": f"{t_name}_{v['backbone']}_{v['decoder']}",
+                            })
+                        break
+
+            entry = {
+                "device": deployment.ip,
+                "device_name": deployment.server_name,
+                "device_type": deployment.device_type,
+                "backbone": real_backbone,
+                "decoders": decoders,
+                "tasks": {
+                    t_name: {
+                        "type": info.type,
+                        "total_requested_workload": info.total_requested_workload,
+                        "request_per_sec": info.request_per_sec,
+                    }
+                    for t_name, info in deployment.task_info.items()
+                },
+                "util": round(deployment.util, 6),
+                "mem": deployment.mem,
+            }
+            site_id = deployment.site_manager
+            sites.setdefault(site_id, {"id": site_id, "deployments": []})["deployments"].append(entry)
+
+        return {"sites": list(sites.values())}

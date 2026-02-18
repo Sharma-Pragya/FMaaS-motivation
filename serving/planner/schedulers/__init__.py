@@ -9,7 +9,7 @@ All schedulers implement the BaseScheduler interface for consistency.
 """
 
 from .base import BaseScheduler
-from .fmaas import FMaaSScheduler, build_final_json, shared_packing
+from .fmaas import FMaaSScheduler, build_final_json
 from .clipper import ClipperScheduler
 from .m4 import M4Scheduler
 
@@ -19,5 +19,4 @@ __all__ = [
     'ClipperScheduler',
     'M4Scheduler',
     'build_final_json',
-    'shared_packing',
 ]

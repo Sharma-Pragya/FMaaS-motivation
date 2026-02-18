@@ -5,7 +5,7 @@ import torch.nn as nn
 from pytriton.triton import Triton, TritonConfig, TritonSecurityConfig
 from pytriton.model_config import ModelConfig, Tensor
 from pytriton.decorators import batch
-from device.model_loader import load_models, get_loaded_pipeline
+from device.model_loader import load_models, add_decoder, get_loaded_pipeline
 import time
 import argparse
 
@@ -110,17 +110,29 @@ class UnifiedEdgeSystem:
         # Take the first command in the batch (Control requests usually aren't batched)
         cmd_str = command[0][0].decode("utf-8")
         status_msg = "ok"
+        logger = None
 
         try:
             if cmd_str == "load":
                 # Decode the JSON payload containing backbone/decoders info
                 config_json = payload[0][0].decode("utf-8")
                 config = json.loads(config_json)
-                
+
                 print(f"[System] Loading backbone: {config['backbone']}")
-                logger=load_models(config['backbone'], config['decoders'])
+                logger = load_models(config['backbone'], config['decoders'])
                 status_msg = f"loaded_{config['backbone']}"
-                            
+
+            elif cmd_str == "add_decoder":
+                # Hot-add decoders to the already-loaded backbone
+                config_json = payload[0][0].decode("utf-8")
+                config = json.loads(config_json)
+
+                print(f"[System] Hot-adding {len(config['decoders'])} decoder(s)")
+                logger = add_decoder(config['decoders'])
+                # Refresh cached references so infer() sees the new decoders
+                self.pipeline, self.decoders, self.current_task = get_loaded_pipeline()
+                status_msg = f"added_{len(config['decoders'])}_decoders"
+
             else:
                 status_msg = f"unknown_command_{cmd_str}"
 
@@ -128,9 +140,10 @@ class UnifiedEdgeSystem:
             status_msg = f"error_{str(e)}"
             print(f"[System] Error: {e}")
 
+        logger_summary = str(logger.summary()) if logger else "no_logger"
         return {
             "status": np.array([status_msg.encode('utf-8')]),
-            "logger_summary": np.array([str(logger.summary()).encode('utf-8')])
+            "logger_summary": np.array([logger_summary.encode('utf-8')])
         }
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

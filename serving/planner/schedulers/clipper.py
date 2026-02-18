@@ -237,68 +237,13 @@ class ClipperScheduler(BaseScheduler):
         return [backbone for _, backbone in heap]
 
 
-def _strip_clipper_suffix(backbone: str) -> str:
-    """Strip the __clipper__<task> suffix to get the real backbone name.
-    
-    Args:
-        backbone: Backbone name, possibly with __clipper__<task> suffix.
-        
-    Returns:
-        The real backbone name without the Clipper suffix.
-    """
-    if '__clipper__' in backbone:
-        return backbone.split('__clipper__')[0]
-    return backbone
-
-
 def build_final_json(deployments: List[Deployment], pipelines: Dict) -> Dict:
     """Build final JSON output from deployments.
-    
-    Handles the __clipper__<task> suffix used to prevent backbone sharing
-    by stripping it when looking up pipeline/decoder information.
+
+    The __clipper__<task> suffix used to prevent backbone sharing is
+    stripped transparently by DeploymentState.to_plan_json().
     """
-    sites = {}
-    
-    for deployment in deployments:
-        raw_backbone = deployment.backbone
-        # Strip __clipper__ suffix for pipeline lookups
-        real_backbone = _strip_clipper_suffix(raw_backbone)
-        decoders = []
-        site_id = deployment.site_manager
-        
-        for comp in deployment.components:
-            for v in pipelines.values():
-                d_key = f"{v['decoder']}_{v['backbone']}_{v['task']}"
-                if comp == d_key and v['backbone'] == real_backbone:
-                    task_name = v['task']
-                    if task_name in deployment.task_info:
-                        decoders.append({
-                            "task": task_name,
-                            "type": deployment.task_info[task_name].type,
-                            "path": f"{task_name}_{v['backbone']}_{v['decoder']}"
-                        })
-                        break
-        
-        task_info_dict = {}
-        for task_name, info in deployment.task_info.items():
-            task_info_dict[task_name] = {
-                'type': info.type,
-                'total_requested_workload': info.total_requested_workload,
-                'request_per_sec': info.request_per_sec
-            }
-        
-        deployment_entry = {
-            "device": deployment.ip,
-            "device_name": deployment.server_name,
-            "device_type": deployment.device_type,
-            "backbone": real_backbone,  # Use real backbone name in output
-            "decoders": decoders,
-            "tasks": task_info_dict,
-            "util": round(deployment.util, 6)
-        }
-        
-        if site_id not in sites:
-            sites[site_id] = {"id": site_id, "deployments": []}
-        sites[site_id]["deployments"].append(deployment_entry)
-    
-    return {"sites": list(sites.values())}
+    state = DeploymentState([])
+    for d in deployments:
+        state._deployments[(d.server_name, d.backbone)] = d
+    return state.to_plan_json(pipelines)
