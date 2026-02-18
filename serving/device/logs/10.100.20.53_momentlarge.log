@@ -8,29 +8,29 @@
   setattr(self, word, getattr(machar, word).flat[0])
 /home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/site-packages/numpy/core/getlimits.py:89: UserWarning: The value of the smallest subnormal for <class 'numpy.float32'> type is zero.
   return self._float_to_str(self.smallest_subnormal)
-I0218 19:19:51.875359 622274 pinned_memory_manager.cc:277] "Pinned memory pool is created at '0x7a8fde000000' with size 268435456"
-I0218 19:19:51.879702 622274 cuda_memory_manager.cc:107] "CUDA memory pool is created on device 0 with size 67108864"
-I0218 19:19:51.884877 622274 server.cc:604] 
+I0218 20:51:39.458509 658934 pinned_memory_manager.cc:277] "Pinned memory pool is created at '0x7b2f90000000' with size 268435456"
+I0218 20:51:39.463097 658934 cuda_memory_manager.cc:107] "CUDA memory pool is created on device 0 with size 67108864"
+I0218 20:51:39.470370 658934 server.cc:604] 
 +------------------+------+
 | Repository Agent | Path |
 +------------------+------+
 +------------------+------+
 
-I0218 19:19:51.884899 622274 server.cc:631] 
+I0218 20:51:39.470387 658934 server.cc:631] 
 +---------+------+--------+
 | Backend | Path | Config |
 +---------+------+--------+
 +---------+------+--------+
 
-I0218 19:19:51.884907 622274 server.cc:674] 
+I0218 20:51:39.470396 658934 server.cc:674] 
 +-------+---------+--------+
 | Model | Version | Status |
 +-------+---------+--------+
 +-------+---------+--------+
 
-I0218 19:19:51.926262 622274 metrics.cc:877] "Collecting metrics for GPU 0: NVIDIA A16"
-I0218 19:19:51.931191 622274 metrics.cc:770] "Collecting CPU metrics"
-I0218 19:19:51.931275 622274 tritonserver.cc:2598] 
+I0218 20:51:39.502476 658934 metrics.cc:877] "Collecting metrics for GPU 0: NVIDIA A16"
+I0218 20:51:39.507037 658934 metrics.cc:770] "Collecting CPU metrics"
+I0218 20:51:39.507125 658934 tritonserver.cc:2598] 
 +----------------------------------+------------------------------------------+
 | Option                           | Value                                    |
 +----------------------------------+------------------------------------------+
@@ -43,7 +43,7 @@ I0218 19:19:51.931275 622274 tritonserver.cc:2598]
 |                                  | tensor_data parameters statistics trace  |
 |                                  | logging                                  |
 | model_repository_path[0]         | /home/hshastri_umass_edu/.cache/pytriton |
-|                                  | /workspace_qrl78l8l/model-store          |
+|                                  | /workspace_jgx__v2l/model-store          |
 | model_control_mode               | MODE_EXPLICIT                            |
 | startup_models_0                 | *                                        |
 | strict_model_config              | 0                                        |
@@ -57,17 +57,17 @@ I0218 19:19:51.931275 622274 tritonserver.cc:2598]
 | cache_enabled                    | 0                                        |
 +----------------------------------+------------------------------------------+
 
-I0218 19:19:52.027050 622274 grpc_server.cc:2558] "Started GRPCInferenceService at 0.0.0.0:8010"
-I0218 19:19:52.028172 622274 http_server.cc:4713] "Started HTTPService at 0.0.0.0:8011"
-I0218 19:19:52.088845 622274 http_server.cc:362] "Started Metrics Service at 0.0.0.0:8012"
-E0218 19:19:52.358782 622274 model_repository_manager.cc:470] "Failed to set config modification time: model_config_content_name_ is empty"
-I0218 19:19:52.360777 622274 model_lifecycle.cc:472] "loading: edge_infer:1"
-I0218 19:19:54.066472 622274 python_be.cc:2249] "TRITONBACKEND_ModelInstanceInitialize: edge_infer_0_0 (CPU device 0)"
-I0218 19:19:54.629926 622274 model_lifecycle.cc:839] "successfully loaded 'edge_infer'"
-E0218 19:19:54.682206 622274 model_repository_manager.cc:470] "Failed to set config modification time: model_config_content_name_ is empty"
-I0218 19:19:54.682392 622274 model_lifecycle.cc:472] "loading: edge_control:1"
-I0218 19:19:56.314280 622274 python_be.cc:2249] "TRITONBACKEND_ModelInstanceInitialize: edge_control_0_0 (CPU device 0)"
-I0218 19:19:56.932874 622274 model_lifecycle.cc:839] "successfully loaded 'edge_control'"
+I0218 20:51:39.571198 658934 grpc_server.cc:2558] "Started GRPCInferenceService at 0.0.0.0:8010"
+I0218 20:51:39.571374 658934 http_server.cc:4713] "Started HTTPService at 0.0.0.0:8011"
+I0218 20:51:39.628122 658934 http_server.cc:362] "Started Metrics Service at 0.0.0.0:8012"
+E0218 20:51:40.036703 658934 model_repository_manager.cc:470] "Failed to set config modification time: model_config_content_name_ is empty"
+I0218 20:51:40.036875 658934 model_lifecycle.cc:472] "loading: edge_infer:1"
+I0218 20:51:41.700554 658934 python_be.cc:2249] "TRITONBACKEND_ModelInstanceInitialize: edge_infer_0_0 (CPU device 0)"
+I0218 20:51:42.198632 658934 model_lifecycle.cc:839] "successfully loaded 'edge_infer'"
+E0218 20:51:42.208702 658934 model_repository_manager.cc:470] "Failed to set config modification time: model_config_content_name_ is empty"
+I0218 20:51:42.210654 658934 model_lifecycle.cc:472] "loading: edge_control:1"
+I0218 20:51:43.823061 658934 python_be.cc:2249] "TRITONBACKEND_ModelInstanceInitialize: edge_control_0_0 (CPU device 0)"
+I0218 20:51:44.339285 658934 model_lifecycle.cc:839] "successfully loaded 'edge_control'"
 [System] PyTriton Server running on port
 [System] Loading backbone: momentlarge
 [ModelLoader] Loading backbone: momentlarge
@@ -81,8 +81,28 @@ I0218 19:19:56.932874 622274 model_lifecycle.cc:839] "successfully loaded 'edge_
 [ModelLoader] Loading decoder: gestureclass (classification) from gestureclass_momentlarge_mlp
 [ModelLoader] Loaded MomentModel with 1 decoders.
 [ModelLoader] Retrieving loaded models. Loaded status: True
-/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/multiprocessing/resource_tracker.py:224: UserWarning: resource_tracker: There appear to be 100 leaked shared_memory objects to clean up at shutdown
-  warnings.warn('resource_tracker: There appear to be %d '
 /home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/multiprocessing/resource_tracker.py:224: UserWarning: resource_tracker: There appear to be 1 leaked shared_memory objects to clean up at shutdown
   warnings.warn('resource_tracker: There appear to be %d '
+/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/multiprocessing/resource_tracker.py:224: UserWarning: resource_tracker: There appear to be 66 leaked shared_memory objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
 WARNING:pytriton.server.triton_server:Triton Inference Server exited with failure. Please wait.
+Traceback (most recent call last):
+  File "/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/weakref.py", line 667, in _exitfunc
+    f()
+  File "/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/weakref.py", line 591, in __call__
+    return info.func(*info.args, **(info.kwargs or {}))
+  File "/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/tempfile.py", line 868, in _cleanup
+    cls._rmtree(name, ignore_errors=ignore_errors)
+  File "/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/tempfile.py", line 864, in _rmtree
+    _shutil.rmtree(name, onerror=onerror)
+  File "/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/shutil.py", line 725, in rmtree
+    _rmtree_safe_fd(fd, path, onerror)
+  File "/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/shutil.py", line 681, in _rmtree_safe_fd
+    onerror(os.unlink, fullname, sys.exc_info())
+  File "/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/shutil.py", line 679, in _rmtree_safe_fd
+    os.unlink(entry.name, dir_fd=topfd)
+OSError: [Errno 16] Device or resource busy: '.nfs45496a2eddbe9b3a000000fe'
+/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/multiprocessing/resource_tracker.py:224: UserWarning: resource_tracker: There appear to be 1 leaked shared_memory objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+/home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/multiprocessing/resource_tracker.py:237: UserWarning: resource_tracker: '/psm_b269a834': [Errno 2] No such file or directory: '/psm_b269a834'
+  warnings.warn('resource_tracker: %r: %s' % (name, e))
