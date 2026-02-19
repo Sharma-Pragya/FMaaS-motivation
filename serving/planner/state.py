@@ -193,6 +193,7 @@ class DeploymentState:
             for task_name, task_info in deployment.task_info.items():
                 if task_name in existing.task_info:
                     existing.task_info[task_name].request_per_sec += task_info.request_per_sec
+                    existing.task_info[task_name].total_requested_workload += task_info.total_requested_workload
                 else:
                     existing.task_info[task_name] = task_info
             existing.util = deployment.util
@@ -373,11 +374,18 @@ class DeploymentState:
                         request_per_sec=task_data.get('request_per_sec', 0),
                     )
 
-                # Build components dict (just use decoder names)
-                components = {}
-                for decoder in deploy_spec.get("decoders", []):
-                    # Estimate component memory (we don't have exact values)
-                    components[decoder["task"]] = 0.0  # Placeholder
+                # Build components dict using the same key format as get_pipeline_components_mem:
+                # decoder_name = f"{decoder}_{backbone}_{task}" (reversed from path f"{task}_{backbone}_{decoder}")
+                components = {backbone: 0.0}  # backbone key always present
+                for dec in deploy_spec.get("decoders", []):
+                    path = dec.get("path", "")  # e.g. "ecgclass_momentbase_mlp"
+                    # path format is "{task}_{backbone}_{decoder}", component key is "{decoder}_{backbone}_{task}"
+                    task_n = dec["task"]
+                    # Strip task prefix and backbone to get decoder name
+                    prefix = f"{task_n}_{backbone}_"
+                    decoder_n = path[len(prefix):] if path.startswith(prefix) else path
+                    component_key = f"{decoder_n}_{backbone}_{task_n}"
+                    components[component_key] = 0.0
 
                 # Create deployment
                 deployment = Deployment(

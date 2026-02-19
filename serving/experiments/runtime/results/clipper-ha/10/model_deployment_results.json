@@ -1,13 +1,13 @@
 [
     {
         "status": "loaded_momentbase",
-        "logger_summary": "{'load_backbone': {'wall time': 3175.631597001484, 'gpu time': 3175.716796875, 'gpu peak': 455.474688, 'cpu dRSS': 544.620544}, 'add_decoder_ecgclass_momentbase_mlp': {'wall time': 7.775435002258746, 'gpu time': 7.801951885223389, 'gpu peak': 455.871488, 'cpu dRSS': 0.524288}}"
+        "logger_summary": "{'load_backbone': {'wall time': 4280.778824002482, 'gpu time': 4280.9208984375, 'gpu peak': 455.474688, 'cpu dRSS': 544.018432}, 'add_decoder_ecgclass_momentbase_mlp': {'wall time': 8.589965000282973, 'gpu time': 8.621055603027344, 'gpu peak': 455.871488, 'cpu dRSS': 0.524288}}"
     },
     {
         "event": "runtime_add",
         "deployments": [
             {
-                "device": "10.100.20.53:8010",
+                "device": "10.100.20.48:8010",
                 "device_name": "device1",
                 "device_type": "NVIDIA A16",
                 "backbone": "momentlarge",
@@ -31,7 +31,7 @@
         ],
         "result": {
             "status": "loaded_momentlarge",
-            "logger_summary": "{'load_backbone': {'wall time': 5724.181928002508, 'gpu time': 5724.28271484375, 'gpu peak': 1461.95456, 'cpu dRSS': 608.0512}, 'add_decoder_gestureclass_momentlarge_mlp': {'wall time': 10.365894999267766, 'gpu time': 10.394623756408691, 'gpu peak': 1462.484992, 'cpu dRSS': 0.524288}}"
+            "logger_summary": "{'load_backbone': {'wall time': 5082.118971040472, 'gpu time': 5082.33642578125, 'gpu peak': 1461.95456, 'cpu dRSS': 608.11264}, 'add_decoder_gestureclass_momentlarge_mlp': {'wall time': 72.27929099462926, 'gpu time': 72.32118225097656, 'gpu peak': 1462.484992, 'cpu dRSS': 0.524288}}"
         }
     }
 ]

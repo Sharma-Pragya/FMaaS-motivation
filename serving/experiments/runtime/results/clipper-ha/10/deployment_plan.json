@@ -4,11 +4,17 @@
       "id": "site2",
       "deployments": [
         {
-          "device": "10.100.20.53:8000",
+          "device": "10.100.20.48:8000",
           "device_name": "device1",
           "device_type": "NVIDIA A16",
           "backbone": "momentbase",
-          "decoders": [],
+          "decoders": [
+            {
+              "task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentbase_mlp"
+            }
+          ],
           "tasks": {
             "ecgclass": {
               "type": "classification",
@@ -20,7 +26,7 @@
           "mem": 16000
         },
         {
-          "device": "10.100.20.53:8010",
+          "device": "10.100.20.48:8010",
           "device_name": "device1",
           "device_type": "NVIDIA A16",
           "backbone": "momentlarge",
