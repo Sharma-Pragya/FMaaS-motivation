@@ -1,0 +1,41 @@
+{
+  "sites": [
+    {
+      "id": "site2",
+      "deployments": [
+        {
+          "device": "10.100.20.48:8000",
+          "device_name": "device1",
+          "device_type": "NVIDIA A16",
+          "backbone": "momentbase",
+          "decoders": [
+            {
+              "task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentbase_mlp"
+            },
+            {
+              "task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentbase_mlp"
+            }
+          ],
+          "tasks": {
+            "ecgclass": {
+              "type": "classification",
+              "total_requested_workload": 10.0,
+              "request_per_sec": 10.0
+            },
+            "gestureclass": {
+              "type": "classification",
+              "total_requested_workload": 8.0,
+              "request_per_sec": 8.0
+            }
+          },
+          "util": 0.211814,
+          "mem": 16000
+        }
+      ]
+    }
+  ]
+}

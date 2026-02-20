@@ -1,0 +1,14 @@
+[
+    {
+        "status": "loaded_momentbase",
+        "logger_summary": "{'load_backbone': {'wall time': 3712.3203829978593, 'gpu time': 3712.461669921875, 'gpu peak': 455.474688, 'cpu dRSS': 544.538624}, 'add_decoder_ecgclass_momentbase_mlp': {'wall time': 7.624994032084942, 'gpu time': 7.6523518562316895, 'gpu peak': 455.871488, 'cpu dRSS': 0.524288}}"
+    },
+    {
+        "event": "runtime_update",
+        "device": "10.100.20.48:8000",
+        "result": {
+            "status": "added_1_decoders",
+            "logger_summary": "{'add_decoder': {'wall time': 359.9100570427254, 'gpu time': 359.9302978515625, 'gpu peak': 468.660224, 'cpu dRSS': 0.0}}"
+        }
+    }
+]
