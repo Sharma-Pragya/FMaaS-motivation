@@ -177,27 +177,46 @@ class FMaaSScheduler(BaseScheduler):
         
         # In share mode, try all backbones if existing ones don't satisfy demand
         if share_mode:
-            # Legacy behavior: 
-            # 1. First collect ALL active deployments from sorted_backbones
-            # 2. Then iterate through all backbones and servers, appending to the same list
-            # 3. distribute_demand consumes from this list via heappop
-            
-            # Step 1: Collect all active deployments from sorted_backbones
+            # Two-phase distribution:
+            # Phase 1: Exhaust capacity on existing shared deployments first (priority).
+            # Phase 2: Only if demand remains, consider new (server, backbone) combinations,
+            #          carrying forward the util_tracker so Phase 1 allocations are respected.
+
+            # Phase 1: Collect all active deployments from sorted_backbones and distribute
             active_endpoints = []
             for backbone in sorted_backbones:
                 for d in state.find_active_deployments(backbone, self.config.util_factor):
                     active_endpoints.append((d.server_name, backbone))
-            
-            # Step 2: Iterate through all backbones and servers, appending and distributing
+
+            shared_util_tracker: Dict[str, float] = {}
+            if active_endpoints:
+                temp_plan, demand_left = self._distribute_demand(
+                    state, task, active_endpoints,
+                    remaining_demand=None,  # Full demand — Phase 1 starts fresh
+                    existing_plan=None,
+                    util_tracker=shared_util_tracker  # Accumulate util across phases
+                )
+                if demand_left is not None and demand_left <= self.config.demand_epsilon:
+                    return temp_plan, demand_left
+            else:
+                demand_left = task.peak_workload
+
+            # Phase 2: Iterate through all backbones and servers for new placements,
+            #          carrying forward util_tracker and remaining demand from Phase 1.
             for backbone in all_backbones:
                 for server in state.get_all_servers():
                     if server.mem >= self.data.get_component_mem(backbone):
-                        active_endpoints.append((server.name, backbone))
+                        # Skip if this (server, backbone) was already in Phase 1
+                        already_shared = any(
+                            ep == (server.name, backbone) for ep in active_endpoints
+                        )
+                        if already_shared:
+                            continue
                         temp_plan, demand_left = self._distribute_demand(
-                            state, task, active_endpoints,
-                            remaining_demand=None,  # Start fresh with full demand
-                            existing_plan=None,  # Fresh plan
-                            util_tracker=None  # Fresh util tracker
+                            state, task, [(server.name, backbone)],
+                            remaining_demand=demand_left,   # Carry forward remaining
+                            existing_plan=temp_plan,        # Accumulate plan
+                            util_tracker=shared_util_tracker  # Carry forward util
                         )
                         if demand_left is not None and demand_left <= self.config.demand_epsilon:
                             return temp_plan, demand_left

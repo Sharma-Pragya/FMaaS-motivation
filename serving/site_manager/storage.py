@@ -61,6 +61,23 @@ def get_output_dir():
     return OUTPUT_DIR
 
 
+def replace_deployment(old_backbone: str, new_spec: dict):
+    """Replace an existing deployment (identified by backbone) with a new spec.
+
+    Used during backbone migration — removes the old deployment entry and
+    inserts the new one so cleanup later targets the right servers.
+
+    Args:
+        old_backbone: Backbone name of the deployment to remove.
+        new_spec: New deployment spec dict to insert.
+    """
+    global DEPLOYMENTS
+    DEPLOYMENTS = [d for d in DEPLOYMENTS if d.get("backbone") != old_backbone]
+    DEPLOYMENTS.append(new_spec)
+    print(f"[RuntimeBuffer] Replaced deployment backbone '{old_backbone}' → '{new_spec.get('backbone')}'. "
+          f"Total: {len(DEPLOYMENTS)}")
+
+
 def append_deployments(new_specs: list):
     """Append new deployment specs to the existing DEPLOYMENTS list.
 

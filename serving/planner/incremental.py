@@ -22,14 +22,16 @@ class DeploymentDiff:
     """Describes a single deployment action resulting from incremental planning.
 
     Attributes:
-        action: "add_full" (new server + backbone) or "add_decoder" (hot-add to existing).
+        action: "add_full" (new server + backbone), "add_decoder" (hot-add to existing),
+                or "migrate" (backbone swap on existing server — kill old, start new).
         site_manager: Site manager ID that owns this device.
         server_name: Device name.
-        backbone: Backbone model name.
+        backbone: New backbone model name.
+        old_backbone: Previous backbone name (only set for "migrate" action).
         ip: Device endpoint (ip:port).
         device_type: GPU type.
         new_decoders: List of decoder specs to deploy (task, type, path).
-        full_deployment: Complete deployment spec for "add_full" actions.
+        full_deployment: Complete deployment spec for "add_full" and "migrate" actions.
     """
     action: str
     site_manager: str
@@ -37,6 +39,7 @@ class DeploymentDiff:
     backbone: str
     ip: str
     device_type: str
+    old_backbone: Optional[str] = None
     new_decoders: List[dict] = field(default_factory=list)
     full_deployment: Optional[dict] = None
 
@@ -70,11 +73,18 @@ def plan_new_task(
     Returns:
         Tuple of (updated state, list of DeploymentDiff actions).
     """
-    # 1. Snapshot existing deployment keys and their tasks
+    # 1. Snapshot existing deployment keys and their tasks.
+    #    Also build a per-server set of old backbones so we can detect backbone
+    #    migrations produced by _fit() (old key disappears, new key appears on same server).
+    #    We use a set per server (not a single value) so that when a server gets multiple
+    #    new deployments after _fit, only the first new key consumes the migration slot;
+    #    subsequent new keys on the same server are treated as add_full.
     old_snapshot: Dict[Tuple[str, str], set] = {}
+    old_server_backbones: Dict[str, set] = {}  # server_name → set of old backbones
     for deployment in state.get_all_deployments():
         key = (deployment.server_name, deployment.backbone)
         old_snapshot[key] = set(deployment.task_info.keys())
+        old_server_backbones.setdefault(deployment.server_name, set()).add(deployment.backbone)
 
     # 2. Create TaskSpec and plan
     task = scheduler._create_task_spec(task_name, task_spec)
@@ -91,7 +101,17 @@ def plan_new_task(
                 scheduler.config.port_increment,
             )
 
-    # 4. Compute diff
+    # 4. Compute which old keys were removed by _fit (disappeared from state).
+    #    These are the only keys eligible to be matched as migration sources.
+    #    We build a mutable map: server_name → [removed_backbone, ...] so each
+    #    removed backbone can be consumed at most once.
+    current_keys = {(d.server_name, d.backbone) for d in state.get_all_deployments()}
+    removed_backbones: Dict[str, List[str]] = {}
+    for (server_name, backbone) in old_snapshot:
+        if (server_name, backbone) not in current_keys:
+            removed_backbones.setdefault(server_name, []).append(backbone)
+
+    # 5. Compute diff
     diffs = []
     for deployment in state.get_all_deployments():
         key = (deployment.server_name, deployment.backbone)
@@ -107,17 +127,38 @@ def plan_new_task(
         spec = temp_state.to_plan_json(pipelines)["sites"][0]["deployments"][0]
 
         if key not in old_snapshot:
-            # Brand new deployment — add_full
-            diffs.append(DeploymentDiff(
-                action="add_full",
-                site_manager=deployment.site_manager,
-                server_name=deployment.server_name,
-                backbone=backbone_for_diff,
-                ip=deployment.ip,
-                device_type=deployment.device_type,
-                new_decoders=[d for d in spec["decoders"] if d["task"] == task_name],
-                full_deployment=spec,
-            ))
+            # Key is new — check if there is an unmatched removed backbone on this server.
+            # If yes, consume one: this new key is a migration of that old backbone.
+            # If no removed backbones remain, it is a genuinely new add_full deployment.
+            server_removed = removed_backbones.get(deployment.server_name, [])
+            if server_removed:
+                prev_backbone = server_removed.pop(0)  # consume one migration slot
+                old_backbone_for_diff = prev_backbone
+                if '__clipper__' in prev_backbone:
+                    old_backbone_for_diff = prev_backbone.split('__clipper__')[0]
+                diffs.append(DeploymentDiff(
+                    action="migrate",
+                    site_manager=deployment.site_manager,
+                    server_name=deployment.server_name,
+                    backbone=backbone_for_diff,
+                    old_backbone=old_backbone_for_diff,
+                    ip=deployment.ip,
+                    device_type=deployment.device_type,
+                    new_decoders=spec["decoders"],  # all decoders — full restart
+                    full_deployment=spec,
+                ))
+            else:
+                # Genuinely new server+backbone — add_full
+                diffs.append(DeploymentDiff(
+                    action="add_full",
+                    site_manager=deployment.site_manager,
+                    server_name=deployment.server_name,
+                    backbone=backbone_for_diff,
+                    ip=deployment.ip,
+                    device_type=deployment.device_type,
+                    new_decoders=[d for d in spec["decoders"] if d["task"] == task_name],
+                    full_deployment=spec,
+                ))
         else:
             # Existing deployment — check if new task was added
             old_tasks = old_snapshot[key]

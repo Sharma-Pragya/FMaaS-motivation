@@ -11,6 +11,7 @@ Usage:
     curl -X POST http://localhost:8080/deploy
     curl -X POST http://localhost:8080/run
     curl -X POST http://localhost:8080/add-task -d '{"task_name": "gestureclass", ...}'
+    curl -X POST http://localhost:8080/add-workload -d '{"task_name": "heartrate", "task_workload": 20}'
     curl -X POST http://localhost:8080/cleanup
 """
 
@@ -55,6 +56,19 @@ class AddTaskRequest(BaseModel):
     task_type: str = "classification"
     task_workload: float = 8.0
     elapsed_time: float = 0.0  # How much time has elapsed since experiment start
+
+
+class AddWorkloadRequest(BaseModel):
+    """Request to change workload for an existing task at runtime.
+
+    task_workload is a *delta* (positive = spike, negative = drop).
+    The orchestrator accumulates this on top of the current rate and
+    generates additional request traffic for the remaining duration.
+    """
+    task_name: str
+    task_type: str = "classification"
+    task_workload: float = 10.0   # delta req/s (can be negative)
+    elapsed_time: float = 0.0     # seconds since experiment start
 
 
 class CleanupRequest(BaseModel):
@@ -406,6 +420,89 @@ async def add_task(req: AddTaskRequest):
         raise
     except Exception as e:
         print(f"[Server] Add task failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/add-workload")
+async def add_workload(req: AddWorkloadRequest):
+    """Change workload for an existing task at runtime (spike or drop).
+
+    Generates additional request traffic proportional to the delta for the
+    remaining experiment duration.  No new infrastructure is deployed — the
+    planner just accumulates the rate change on the existing task.
+    """
+    if not state.deployed:
+        raise HTTPException(status_code=400, detail="Must deploy before changing workload")
+    if not state.config:
+        raise HTTPException(status_code=500, detail="Missing deployment config")
+
+    try:
+        print(f"\n[Server] Workload change: {req.task_name} delta={req.task_workload:+.1f} req/s")
+        print(f"         Elapsed time: {req.elapsed_time}s")
+
+        remaining_duration = max(0, state.config['duration'] - req.elapsed_time)
+        if remaining_duration <= 0:
+            return {"status": "skipped", "reason": "no remaining duration"}
+
+        # Only generate additional traffic if delta is positive (spike).
+        # For a drop we still record the workload change but don't send
+        # negative requests — the existing queued requests simply thin out.
+        if req.task_workload > 0:
+            task_spec = {
+                'type': req.task_type,
+                'peak_workload': req.task_workload,  # delta only
+                'latency': 1000,
+                'metric': 'accuracy' if req.task_type == 'classification' else 'mae',
+                'value': 0.9 if req.task_type == 'classification' else 0.5,
+            }
+
+            req_id_offset = state.orchestrator.get_total_requests_generated()
+            trace, _, _ = generate_trace(
+                state.config['trace'],
+                int(req.task_workload),
+                remaining_duration,
+                {req.task_name: task_spec},
+                state.config['seed'],
+                req_id_offset
+            )
+            for r in trace:
+                r.req_time += req.elapsed_time
+
+            print(f"[Server] Generated {len(trace)} additional requests for {req.task_name} "
+                  f"(t={req.elapsed_time}s → {req.elapsed_time + remaining_duration:.0f}s)")
+
+            routed_trace = route_trace(trace, state.orchestrator.plan, state.config['seed'])
+            state.orchestrator.send_new_requests(routed_trace)
+            print(f"  ✓ Workload spike sent!")
+            n_new = len(trace)
+        else:
+            # Drop: just log it; no new requests generated
+            print(f"  ✓ Workload drop recorded (no new requests sent).")
+            n_new = 0
+
+        # Update internal workload accounting via handle_add_task (accumulates rate)
+        task_spec_for_state = {
+            'type': req.task_type,
+            'peak_workload': req.task_workload,
+            'latency': 1000,
+            'metric': 'accuracy' if req.task_type == 'classification' else 'mae',
+            'value': 0.9 if req.task_type == 'classification' else 0.5,
+        }
+        scheduler_name = state.config['scheduler'].lower()
+        scheduler_mode = scheduler_name == 'fmaas_share'
+        state.orchestrator.handle_add_task(req.task_name, task_spec_for_state, scheduler_mode)
+
+        return {
+            "status": "workload_updated",
+            "task_name": req.task_name,
+            "delta_req_per_sec": req.task_workload,
+            "new_requests_generated": n_new,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[Server] add-workload failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

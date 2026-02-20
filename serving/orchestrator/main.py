@@ -264,6 +264,14 @@ class Orchestrator:
                 payload = json.dumps({"device": d.ip, "decoders": d.new_decoders})
                 client.publish(f"fmaas/deploy/site/{d.site_manager}/update", payload, qos=1)
                 print(f"[MQTT] Published /update to {d.site_manager} (server={d.server_name})")
+            elif d.action == "migrate" and d.full_deployment:
+                payload = json.dumps({
+                    "deployments": [d.full_deployment],
+                    "old_backbone": d.old_backbone,
+                })
+                client.publish(f"fmaas/deploy/site/{d.site_manager}/migrate", payload, qos=1)
+                print(f"[MQTT] Published /migrate to {d.site_manager} "
+                      f"(server={d.server_name}, {d.old_backbone} → {d.backbone})")
 
         print(f"[Orchestrator] Waiting for ACKs from {len(self._mqtt._expected_sites)} site(s)...")
         if not self._mqtt.wait_for_acks(timeout=60):
@@ -320,6 +328,7 @@ class Orchestrator:
                     "site_manager": d.site_manager,
                     "server_name": d.server_name,
                     "backbone": d.backbone,
+                    "old_backbone": d.old_backbone,
                     "ip": d.ip,
                     "device_type": d.device_type,
                     "new_decoders": d.new_decoders,

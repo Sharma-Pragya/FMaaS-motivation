@@ -10,7 +10,7 @@ import paho.mqtt.client as mqtt
 from site_manager.config import BROKER, PORT, SITE_ID
 from site_manager.storage import (
     store_plan, store_requests, get_requests, get_deployments,
-    get_output_dir, clear_state, append_deployments,
+    get_output_dir, clear_state, append_deployments, replace_deployment,
     mark_task_deploying, mark_task_deployed
 )
 from site_manager.runtime_executor import handle_runtime_request_continuous, initialize_dataloaders
@@ -23,6 +23,7 @@ def on_connect(client, userdata, flags, rc):
         client.subscribe(f"fmaas/deploy/site/{SITE_ID}", qos=1)
         client.subscribe(f"fmaas/deploy/site/{SITE_ID}/req", qos=1)
         client.subscribe(f"fmaas/deploy/site/{SITE_ID}/add", qos=1)
+        client.subscribe(f"fmaas/deploy/site/{SITE_ID}/migrate", qos=1)
         client.subscribe(f"fmaas/deploy/site/{SITE_ID}/update", qos=1)
         client.subscribe(f"fmaas/runtime/start/site/{SITE_ID}", qos=1)
         client.subscribe(f"fmaas/cleanup/site/{SITE_ID}", qos=1)
@@ -193,6 +194,89 @@ def on_message(client, userdata, msg):
             qos=1,
         )
         print(f"[MQTT] Sent /add ACK for {SITE_ID} (deployment running in background)")
+
+    # ── Runtime migrate: swap backbone on existing server ──────────────────
+    elif topic.endswith(f"deploy/site/{SITE_ID}/migrate"):
+        print(f"[MQTT] Received /migrate for {SITE_ID}")
+
+        def migrate_in_background():
+            task_names = []
+            try:
+                new_specs = payload.get("deployments", [])
+                old_backbone = payload.get("old_backbone")
+                if not new_specs or not old_backbone:
+                    raise ValueError("deployments and old_backbone required in /migrate payload")
+
+                # Mark all tasks on the migrating server as deploying BEFORE starting
+                for spec in new_specs:
+                    for dec in spec.get("decoders", []):
+                        tname = dec.get("task")
+                        if tname:
+                            task_names.append(tname)
+                            mark_task_deploying(tname)
+
+                print(f"[SiteManager] Starting migration: {old_backbone} → "
+                      f"{new_specs[0].get('backbone')} (tasks: {task_names})")
+
+                # Step 1: find and kill the old server
+                old_deployments = [d for d in get_deployments()
+                                   if d.get("backbone") == old_backbone]
+                if old_deployments:
+                    asyncio.run(shutdown_devices(old_deployments))
+                else:
+                    print(f"[SiteManager] Warning: no stored deployment found for backbone '{old_backbone}'")
+
+                # Step 2: start the new server with the new backbone + all decoders
+                deployment_status = asyncio.run(deploy_models(new_specs))
+
+                # Step 3: update stored deployments
+                for spec in new_specs:
+                    replace_deployment(old_backbone, spec)
+
+                # Step 4: unblock requests
+                for tname in task_names:
+                    mark_task_deployed(tname)
+
+                # Append to model_deployment_results.json
+                output_dir = get_output_dir()
+                json_path = os.path.join(output_dir, "model_deployment_results.json") if output_dir else "model_deployment_results.json"
+                try:
+                    if os.path.exists(json_path):
+                        with open(json_path, "r") as f:
+                            deployment_results = json.load(f)
+                    else:
+                        deployment_results = []
+                    for status in deployment_status:
+                        deployment_results.append({
+                            "event": "runtime_migrate",
+                            "old_backbone": old_backbone,
+                            "deployments": new_specs,
+                            "result": status,
+                        })
+                    if output_dir:
+                        os.makedirs(output_dir, exist_ok=True)
+                    with open(json_path, "w") as f:
+                        json.dump(deployment_results, f, indent=4)
+                    print(f"[SiteManager] Updated deployment results: {json_path}")
+                except Exception as e:
+                    print(f"[SiteManager] Warning: Failed to update deployment JSON: {e}")
+
+                print(f"[SiteManager] Migration complete: {old_backbone} → {new_specs[0].get('backbone')}")
+
+            except Exception as e:
+                print(f"[SiteManager] ERROR during /migrate: {e}")
+                traceback.print_exc()
+                for tname in task_names:
+                    mark_task_deployed(tname)
+
+        threading.Thread(target=migrate_in_background, daemon=True).start()
+
+        client.publish(
+            f"fmaas/deploytime/ack/site/{SITE_ID}",
+            json.dumps({"site": SITE_ID, "migrate": True, "status": "started"}),
+            qos=1,
+        )
+        print(f"[MQTT] Sent /migrate ACK for {SITE_ID} (migration running in background)")
 
     # ── Runtime update: hot-add decoder to existing device ─────────────────
     elif topic.endswith(f"deploy/site/{SITE_ID}/update"):

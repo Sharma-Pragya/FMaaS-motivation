@@ -247,14 +247,15 @@ class DeploymentState:
         old_deployment = self.remove_deployment(server_name, old_backbone)
         if not old_deployment:
             return None
-        
-        # Get base IP without port - legacy allocates new port for new backbone
-        base_ip = old_deployment.ip.split(':')[0] if ':' in old_deployment.ip else old_deployment.ip
-        
+
+        # Preserve the original ip:port so that already-queued requests (which have
+        # the old URL baked in) still reach the server after the backbone swap.
+        preserved_ip = old_deployment.ip
+
         new_deployment = Deployment(
             server_name=server_name,
             backbone=new_backbone,
-            ip=base_ip,  # Don't preserve port - let add_deployment allocate new one
+            ip=preserved_ip,  # Keep same port — migration restarts server in-place
             site_manager=old_deployment.site_manager,
             device_type=old_deployment.device_type,
             mem=old_deployment.mem,
