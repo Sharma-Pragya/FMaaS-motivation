@@ -51,14 +51,38 @@ class DeploymentState:
     
     def get_servers_with_memory(self, min_mem: float) -> List[Server]:
         """Get servers with at least the specified memory.
-        
+
         Args:
             min_mem: Minimum memory requirement in MB.
-            
+
         Returns:
             List of servers with mem >= min_mem.
         """
         return [s for s in self._servers.values() if s.mem >= min_mem]
+
+    def get_servers_by_free_capacity(
+        self, min_mem: float = 0.0, max_util: float = 1.0
+    ) -> List[Server]:
+        """Get servers sorted by free capacity (least utilized first).
+
+        Prefer servers with the most headroom so packing is maximized before
+        spilling onto new devices. Servers already at or above max_util are
+        excluded so schedulers never attempt to place on saturated GPUs.
+
+        Args:
+            min_mem: Optional minimum memory filter in MB.
+            max_util: Exclude servers whose util >= this value (default 1.0,
+                      i.e. only fully saturated servers are excluded).
+
+        Returns:
+            Servers sorted ascending by utilization (most free first),
+            filtered to those with mem >= min_mem and util < max_util.
+        """
+        servers = [
+            s for s in self._servers.values()
+            if s.mem >= min_mem and s.util < max_util
+        ]
+        return sorted(servers, key=lambda s: s.util)
     
     # --- Deployment Access ---
     
@@ -329,7 +353,7 @@ class DeploymentState:
     # --- Serialization ---
 
     @classmethod
-    def from_deployment_plan(cls, plan: dict) -> 'DeploymentState':
+    def from_deployment_plan(cls, plan: dict, devices: dict = None) -> 'DeploymentState':
         """Build DeploymentState from deployment_plan.json format.
 
         This converts the scheduler's output format (deployment_plan.json)
@@ -337,6 +361,10 @@ class DeploymentState:
 
         Args:
             plan: Deployment plan dict with "sites" key.
+            devices: Optional full devices config dict (from user_config). When
+                     provided, idle servers that have no deployments in the plan
+                     are still included in the state so the incremental planner
+                     can place new tasks on them.
 
         Returns:
             DeploymentState reconstructed from the plan.
@@ -401,6 +429,19 @@ class DeploymentState:
                     task_info=task_info,
                 )
                 deployments_list.append(deployment)
+
+        # Include idle servers from devices config that had no deployments
+        if devices:
+            for dev_name, dev_cfg in devices.items():
+                if dev_name not in servers_dict:
+                    servers_dict[dev_name] = Server(
+                        name=dev_name,
+                        type=dev_cfg['type'],
+                        mem=dev_cfg['mem'],
+                        ip=dev_cfg['ip'],
+                        site_manager=dev_cfg['site_manager'],
+                        util=0.0,
+                    )
 
         # Build state
         servers = list(servers_dict.values())

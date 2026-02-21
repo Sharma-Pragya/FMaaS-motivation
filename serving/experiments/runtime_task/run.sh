@@ -21,7 +21,7 @@ set -euo pipefail
 SCHEDULER="${SCHEDULER:-fmaas_share}"
 REQ_RATE="${REQ_RATE:-10}"
 TRACE="${TRACE:-lmsyschat}"
-DURATION="${DURATION:-360}"
+DURATION="${DURATION:-60}"
 SEED="${SEED:-42}"
 EXP_DIR="${EXP_DIR:-experiments/runtime/results}"
 EXP_TYPE="${EXP_TYPE:-runtime}"
@@ -31,7 +31,7 @@ ORCHESTRATOR_PORT="${ORCHESTRATOR_PORT:-8080}"
 NEW_TASK="${NEW_TASK:-gestureclass}"
 NEW_TASK_TYPE="${NEW_TASK_TYPE:-classification}"
 NEW_TASK_WORKLOAD="${NEW_TASK_WORKLOAD:-8.0}"
-ADD_TASK_AFTER="${ADD_TASK_AFTER:-120}"  # seconds
+ADD_TASK_AFTER="${ADD_TASK_AFTER:-10}"  # seconds
 
 # ── Paths ────────────────────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

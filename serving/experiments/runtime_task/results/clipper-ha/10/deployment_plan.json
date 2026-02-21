@@ -4,7 +4,7 @@
       "id": "site2",
       "deployments": [
         {
-          "device": "10.100.20.48:8000",
+          "device": "10.100.20.52:8000",
           "device_name": "device1",
           "device_type": "NVIDIA A16",
           "backbone": "momentbase",
@@ -22,12 +22,12 @@
               "request_per_sec": 10.0
             }
           },
-          "util": 0.449815,
+          "util": 0.096983,
           "mem": 16000
         },
         {
-          "device": "10.100.20.48:8010",
-          "device_name": "device1",
+          "device": "10.100.20.50:8000",
+          "device_name": "device2",
           "device_type": "NVIDIA A16",
           "backbone": "momentlarge",
           "decoders": [
@@ -44,7 +44,7 @@
               "request_per_sec": 8.0
             }
           },
-          "util": 0.449815,
+          "util": 0.352832,
           "mem": 16000
         }
       ]

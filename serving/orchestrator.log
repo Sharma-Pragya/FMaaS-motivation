@@ -15,60 +15,48 @@ Available endpoints:
 
 Press Ctrl+C to stop
 
-INFO:     Started server process [1101478]
+INFO:     Started server process [714604]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
-INFO:     127.0.0.1:10566 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:24116 - "GET / HTTP/1.1" 200 OK
 
 ================================================================================
 DEPLOYMENT
 ================================================================================
 
 [Server] Loading config: runtime
-[Server] Generating trace: lmsyschat (rate=120, duration=360s)
+[Server] Generating trace: lmsyschat (rate=10, duration=60s)
 /home/hshastri_umass_edu/.conda/envs/fmtk/lib/python3.10/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
   import pynvml  # type: ignore[import]
-[Server] Generated 43200 requests
+[Server] Generated 600 requests
 [Server] Planning deployment...
-[Orchestrator] Saved deployment plan to /project/pi_shenoy_umass_edu/hshastri/FMaaS-motivation/serving/experiments/runtime/results_rough/fmaas_share/120/deployment_plan.json (scheduler=fmaas_share)
+[Orchestrator] Saved deployment plan to /project/pi_shenoy_umass_edu/hshastri/FMaaS-motivation/serving/experiments/runtime/results/fmaas_share/10/deployment_plan.json (scheduler=fmaas_share)
 [Server] Routing trace...
-task_routes: {'ecgclass': [('site2', '10.100.20.52:8000', 'momentbase', 103.11053552518835)]}
-task_totals: {'ecgclass': 103.11053552518835}
-incoming_counts: {'ecgclass': 43200}
-trace_duration: 360.0
-37253
+task_routes: {'ecgclass': [('site2', '10.100.20.52:8000', 'momentbase', 10.0)]}
+task_totals: {'ecgclass': 10.0}
+incoming_counts: {'ecgclass': 600}
+trace_duration: 60.0
+600
 Connecting to broker.emqx.io:8084 ...
 Orchestrator connected to MQTT broker
 Publishing deployments + requests to all sites...
-[Orchestrator] Sent 37253 requests (total=37253)
-[MQTT] Sent deployment to site2 (output_dir=/project/pi_shenoy_umass_edu/hshastri/FMaaS-motivation/serving/experiments/runtime/results_rough/fmaas_share/120)
-Deploytime ACK from site2: {'site': 'site2', 'deploymentstatus': [{'status': 'loaded_momentbase', 'logger_summary': "{'load_backbone': {'wall time': 3658.6382189998403, 'gpu time': 3658.724365234375, 'gpu peak': 455.474688, 'cpu dRSS': 544.628736}, 'add_decoder_ecgclass_momentbase_mlp': {'wall time': 13.606947992229834, 'gpu time': 13.650943756103516, 'gpu peak': 455.871488, 'cpu dRSS': 0.524288}}"}]}
+[Orchestrator] Sent 600 requests (total=600)
+[MQTT] Sent deployment to site2 (output_dir=/project/pi_shenoy_umass_edu/hshastri/FMaaS-motivation/serving/experiments/runtime/results/fmaas_share/10)
+Deploytime ACK from site2: {'site': 'site2', 'deploymentstatus': [{'status': 'loaded_momentbase', 'logger_summary': "{'load_backbone': {'wall time': 2874.9653000268154, 'gpu time': 2875.134033203125, 'gpu peak': 455.474688, 'cpu dRSS': 544.325632}, 'add_decoder_ecgclass_momentbase_mlp': {'wall time': 7.852386974263936, 'gpu time': 7.880703926086426, 'gpu peak': 455.871488, 'cpu dRSS': 0.524288}}"}]}
 [MQTT] Sent request chunk [0:3000] to site2
-[MQTT] Sent request chunk [3000:6000] to site2
-[MQTT] Sent request chunk [6000:9000] to site2
-[MQTT] Sent request chunk [9000:12000] to site2
-[MQTT] Sent request chunk [12000:15000] to site2
-[MQTT] Sent request chunk [15000:18000] to site2
-[MQTT] Sent request chunk [18000:21000] to site2
-[MQTT] Sent request chunk [21000:24000] to site2
-[MQTT] Sent request chunk [24000:27000] to site2
-[MQTT] Sent request chunk [27000:30000] to site2
-[MQTT] Sent request chunk [30000:33000] to site2
-[MQTT] Sent request chunk [33000:36000] to site2
-[MQTT] Sent request chunk [36000:39000] to site2
-[MQTT] All 37253 requests sent to site2
+[MQTT] All 600 requests sent to site2
 Waiting for deployment ACKs from 1 sites...
-Deployment phase complete. Results in /project/pi_shenoy_umass_edu/hshastri/FMaaS-motivation/serving/experiments/runtime/results_rough/fmaas_share/120
+Deployment phase complete. Results in /project/pi_shenoy_umass_edu/hshastri/FMaaS-motivation/serving/experiments/runtime/results/fmaas_share/10
 
-[Server] Deployment complete! Results in /project/pi_shenoy_umass_edu/hshastri/FMaaS-motivation/serving/experiments/runtime/results_rough/fmaas_share/120
-INFO:     127.0.0.1:1040 - "POST /deploy HTTP/1.1" 200 OK
+[Server] Deployment complete! Results in /project/pi_shenoy_umass_edu/hshastri/FMaaS-motivation/serving/experiments/runtime/results/fmaas_share/10
+INFO:     127.0.0.1:63654 - "POST /deploy HTTP/1.1" 200 OK
 
 ================================================================================
 RUNTIME
 ================================================================================
 
-INFO:     127.0.0.1:36358 - "POST /run HTTP/1.1" 200 OK
+INFO:     127.0.0.1:23136 - "POST /run HTTP/1.1" 200 OK
 [Server] Starting inference in background thread...
 Connecting to broker.emqx.io:8084 ...
 Orchestrator connected to MQTT broker
@@ -78,47 +66,38 @@ Runtime start published to fmaas/runtime/start/site/site2
 [Server] Inference triggered (continuous mode - still running on site managers)
 
 [Server] Adding task: gestureclass
-         Type: classification, Workload: 200.0
+         Type: classification, Workload: 8.0
          Elapsed time: 10.0s
-[Orchestrator] Loading state from: /project/pi_shenoy_umass_edu/hshastri/FMaaS-motivation/serving/experiments/runtime/results_rough/fmaas_share/120/deployment_plan.json
-[Orchestrator] Planned 'gestureclass' with share_mode=True. Diffs: [DeploymentDiff(action='migrate', site_manager='site2', server_name='device1', backbone='momentsmall', ip='10.100.20.52:8000', device_type='NVIDIA A16', old_backbone='momentbase', new_decoders=[{'task': 'ecgclass', 'type': 'classification', 'path': 'ecgclass_momentsmall_mlp'}, {'task': 'gestureclass', 'type': 'classification', 'path': 'gestureclass_momentsmall_mlp'}], full_deployment={'device': '10.100.20.52:8000', 'device_name': 'device1', 'device_type': 'NVIDIA A16', 'backbone': 'momentsmall', 'decoders': [{'task': 'ecgclass', 'type': 'classification', 'path': 'ecgclass_momentsmall_mlp'}, {'task': 'gestureclass', 'type': 'classification', 'path': 'gestureclass_momentsmall_mlp'}], 'tasks': {'ecgclass': {'type': 'classification', 'total_requested_workload': 120.0, 'request_per_sec': 103.11053552518835}, 'gestureclass': {'type': 'classification', 'total_requested_workload': 200.0, 'request_per_sec': 81.6626381935885}}, 'util': 1.0, 'mem': 16000})]
-[MQTT] Published /migrate to site2 (server=device1, momentbase → momentsmall)
+[Orchestrator] Loading state from: /project/pi_shenoy_umass_edu/hshastri/FMaaS-motivation/serving/experiments/runtime/results/fmaas_share/10/deployment_plan.json
+[Orchestrator] Planned 'gestureclass' with share_mode=True. Diffs: [DeploymentDiff(action='add_decoder', site_manager='site2', server_name='device1', backbone='momentbase', ip='10.100.20.52:8000', device_type='NVIDIA A16', old_backbone=None, new_decoders=[{'task': 'gestureclass', 'type': 'classification', 'path': 'gestureclass_momentbase_mlp'}], full_deployment=None)]
+[MQTT] Published /update to site2 (server=device1)
 [Orchestrator] Waiting for ACKs from 1 site(s)...
-Deploytime ACK from site2: {'site': 'site2', 'migrate': True, 'status': 'started'}[Orchestrator] All ACKs received for diff operation.
-
-[Orchestrator] Saved updated state to /project/pi_shenoy_umass_edu/hshastri/FMaaS-motivation/serving/experiments/runtime/results_rough/fmaas_share/120/deployment_plan.json
+Deploytime ACK from site2: {'site': 'site2', 'update': True, 'status': 'started'}
+[Orchestrator] All ACKs received for diff operation.
+[Orchestrator] Saved updated state to /project/pi_shenoy_umass_edu/hshastri/FMaaS-motivation/serving/experiments/runtime/results/fmaas_share/10/deployment_plan.json
   ✓ Deployment diff applied.
-    migrate: device1 @ site2
+    add_decoder: device1 @ site2
 
-[Server] Generating workload for new task (duration=350.0s, offset=10.0s)...
-[Server] Using req_id_offset=37253
-[Server] Applied time_offset=10.0s to 70000 requests
-[Server] Generated 70000 requests (req_ids 37253 to 107252)
-[Server] Time range: 10.0s to 360.0s
-task_routes: {'ecgclass': [('site2', '10.100.20.52:8000', 'momentsmall', 103.11053552518835)], 'gestureclass': [('site2', '10.100.20.52:8000', 'momentsmall', 81.6626381935885)]}
-task_totals: {'ecgclass': 103.11053552518835, 'gestureclass': 81.6626381935885}
-incoming_counts: {'gestureclass': 70000}
-trace_duration: 350.0
-28551
+[Server] Generating workload for new task (duration=50.0s, offset=10.0s)...
+[Server] Using req_id_offset=600
+[Server] Applied time_offset=10.0s to 400 requests
+[Server] Generated 400 requests (req_ids 600 to 999)
+[Server] Time range: 10.0s to 60.0s
+task_routes: {'ecgclass': [('site2', '10.100.20.52:8000', 'momentbase', 10.0)], 'gestureclass': [('site2', '10.100.20.52:8000', 'momentbase', 8.0)]}
+task_totals: {'ecgclass': 10.0, 'gestureclass': 8.0}
+incoming_counts: {'gestureclass': 400}
+trace_duration: 50.0
+400
 [Server] Sending new workload to site managers...
-[Orchestrator] Sending 28551 new requests (total=65804)
+[Orchestrator] Sending 400 new requests (total=1000)
 [MQTT] Reusing existing MQTT connection (fast path)
 [MQTT] Sent chunk [0:3000] to site2
-[MQTT] Sent chunk [3000:6000] to site2
-[MQTT] Sent chunk [6000:9000] to site2
-[MQTT] Sent chunk [9000:12000] to site2
-[MQTT] Sent chunk [12000:15000] to site2
-[MQTT] Sent chunk [15000:18000] to site2
-[MQTT] Sent chunk [18000:21000] to site2
-[MQTT] Sent chunk [21000:24000] to site2
-[MQTT] Sent chunk [24000:27000] to site2
-[MQTT] Sent chunk [27000:30000] to site2
 [MQTT] All new requests sent.
   ✓ Workload sent!
-INFO:     127.0.0.1:38220 - "POST /add-task HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59440 - "POST /add-task HTTP/1.1" 200 OK
 Runtime ACK from site2Runtime inference complete.
 
-INFO:     127.0.0.1:30606 - "POST /wait HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59454 - "POST /wait HTTP/1.1" 200 OK
 
 ================================================================================
 CLEANUP
@@ -131,14 +110,14 @@ Cleanup ACK from site2
 Cleanup complete. All device servers killed.
 
 [Server] Cleanup complete!
-INFO:     127.0.0.1:38288 - "POST /cleanup HTTP/1.1" 200 OK
+INFO:     127.0.0.1:30882 - "POST /cleanup HTTP/1.1" 200 OK
 
 ================================================================================
 CLEANUP
 ================================================================================
 
-INFO:     127.0.0.1:47354 - "POST /cleanup HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:14750 - "POST /cleanup HTTP/1.1" 400 Bad Request
 INFO:     Shutting down
 INFO:     Waiting for application shutdown.
 INFO:     Application shutdown complete.
-INFO:     Finished server process [1101478]
+INFO:     Finished server process [714604]

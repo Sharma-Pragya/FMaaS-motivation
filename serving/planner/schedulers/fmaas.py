@@ -204,22 +204,22 @@ class FMaaSScheduler(BaseScheduler):
             # Phase 2: Iterate through all backbones and servers for new placements,
             #          carrying forward util_tracker and remaining demand from Phase 1.
             for backbone in all_backbones:
-                for server in state.get_all_servers():
-                    if server.mem >= self.data.get_component_mem(backbone):
-                        # Skip if this (server, backbone) was already in Phase 1
-                        already_shared = any(
-                            ep == (server.name, backbone) for ep in active_endpoints
-                        )
-                        if already_shared:
-                            continue
-                        temp_plan, demand_left = self._distribute_demand(
-                            state, task, [(server.name, backbone)],
-                            remaining_demand=demand_left,   # Carry forward remaining
-                            existing_plan=temp_plan,        # Accumulate plan
-                            util_tracker=shared_util_tracker  # Carry forward util
-                        )
-                        if demand_left is not None and demand_left <= self.config.demand_epsilon:
-                            return temp_plan, demand_left
+                backbone_mem = self.data.get_component_mem(backbone)
+                for server in state.get_servers_by_free_capacity(backbone_mem, max_util=self.config.util_factor):
+                    # Skip if this (server, backbone) was already in Phase 1
+                    already_shared = any(
+                        ep == (server.name, backbone) for ep in active_endpoints
+                    )
+                    if already_shared:
+                        continue
+                    temp_plan, demand_left = self._distribute_demand(
+                        state, task, [(server.name, backbone)],
+                        remaining_demand=demand_left,   # Carry forward remaining
+                        existing_plan=temp_plan,        # Accumulate plan
+                        util_tracker=shared_util_tracker  # Carry forward util
+                    )
+                    if demand_left is not None and demand_left <= self.config.demand_epsilon:
+                        return temp_plan, demand_left
         
         # Attempt fit if enabled and demand not satisfied
         if do_fit and (demand_left is None or demand_left > self.config.demand_epsilon):
@@ -280,7 +280,7 @@ class FMaaSScheduler(BaseScheduler):
         # If not in share mode, try adding new servers
         if not share_mode:
             backbone_mem = self.data.get_component_mem(backbone)
-            for server in state.get_servers_with_memory(backbone_mem):
+            for server in state.get_servers_by_free_capacity(backbone_mem, max_util=self.config.util_factor):
                 # Skip if already in endpoints
                 if (server.name, backbone) in temp_plan:
                     continue

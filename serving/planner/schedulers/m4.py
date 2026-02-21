@@ -123,16 +123,23 @@ class M4Scheduler(BaseScheduler):
         return backbones[0] if backbones else None
     
     def _deploy_task(
-        self, 
-        state: DeploymentState, 
-        task: TaskSpec
+        self,
+        state: DeploymentState,
+        task: TaskSpec,
+        accuracy_mode: bool = False
     ) -> Tuple[Optional[Dict], Optional[float]]:
         """Deploy a task using the pre-selected backbone.
-        
+
         M4 behavior: All tasks use the same backbone selected by the first task.
         Tasks CAN share deployments on the same (server, backbone).
+        accuracy_mode is accepted for compatibility with plan_new_task() but only
+        used to select the backbone when none has been chosen yet (runtime add-task).
         """
         backbone = self._selected_backbone
+        if not backbone:
+            # Runtime add-task path: no backbone selected yet, pick one now
+            backbone = self._select_best_backbone(task, accuracy_mode)
+            self._selected_backbone = backbone
         if not backbone:
             return None, task.peak_workload
         
@@ -204,12 +211,10 @@ class M4Scheduler(BaseScheduler):
             temp_plan[(server.name, backbone)] = deployment_obj
         
         # If demand not satisfied, add new servers with the same backbone
-        for server in state.get_all_servers():
+        backbone_mem = self.data.get_component_mem(backbone)
+        for server in state.get_servers_by_free_capacity(backbone_mem, max_util=self.config.util_factor):
             if task_demand <= self.config.demand_epsilon:
                 break
-            
-            if server.mem < self.data.get_component_mem(backbone):
-                continue
             
             # Skip if already processed
             if (server.name, backbone) in temp_plan:

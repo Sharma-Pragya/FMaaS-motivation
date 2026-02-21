@@ -146,8 +146,8 @@ class ClipperScheduler(BaseScheduler):
         temp_plan = {}
         task_demand = task.peak_workload
         util_tracker = {}
-        
-        for server in state.get_all_servers():
+        print(state.get_servers_by_free_capacity(self.data.get_component_mem(best_backbone), max_util=self.config.util_factor))
+        for server in state.get_servers_by_free_capacity(self.data.get_component_mem(best_backbone), max_util=self.config.util_factor):
             if task_demand <= self.config.demand_epsilon:
                 break
                 

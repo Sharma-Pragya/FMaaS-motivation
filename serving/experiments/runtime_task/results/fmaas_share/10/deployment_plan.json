@@ -4,7 +4,7 @@
       "id": "site2",
       "deployments": [
         {
-          "device": "10.100.20.48:8000",
+          "device": "10.100.20.52:8000",
           "device_name": "device1",
           "device_type": "NVIDIA A16",
           "backbone": "momentbase",

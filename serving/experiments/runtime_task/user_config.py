@@ -3,15 +3,15 @@ devices = {
   'device1': {
     'type': 'NVIDIA A16',
     'mem': 16000,  # in MB
-    'ip': '10.100.20.48',
+    'ip': '10.100.20.52',
     'site_manager':'site2'
   },
-  # 'device2': {
-  #   'type': 'NVIDIA A16',
-  #   'mem': 16000,  # in MB
-  #   'ip': '10.100.20.50',
-  #   'site_manager':'site2',
-  # },
+  'device2': {
+    'type': 'NVIDIA A16',
+    'mem': 16000,  # in MB
+    'ip': '10.100.20.50',
+    'site_manager':'site2',
+  },
   # 'device3': {
   #   'type': 'A16',
   #   'mem': 16000,  # in MB

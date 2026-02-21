@@ -46,7 +46,7 @@ class Orchestrator:
 
     def _load_state(self):
         from orchestrator.planner import load_state
-        return load_state(self._state_path())
+        return load_state(self._state_path(), devices=self.devices)
 
     def _save_state(self, state):
         from orchestrator.planner import save_state

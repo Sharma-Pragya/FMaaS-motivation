@@ -26,7 +26,7 @@ def run_scheduler(scheduler_name: str, devices: dict, tasks_slo: dict, output_di
     from planner.parser.profiler import components, pipelines, latency, metric
 
     profile = ProfileData(components, pipelines, latency, metric)
-    config = SchedulerConfig(util_factor=1)
+    config = SchedulerConfig()
 
     if scheduler_name == 'fmaas':
         scheduler = FMaaSScheduler(profile, config)
@@ -67,8 +67,14 @@ def run_scheduler(scheduler_name: str, devices: dict, tasks_slo: dict, output_di
     return scheduler, profile, pipelines, plan
 
 
-def load_state(plan_path: str):
+def load_state(plan_path: str, devices: dict = None):
     """Load DeploymentState from deployment_plan.json.
+
+    Args:
+        plan_path: Path to deployment_plan.json.
+        devices: Full devices config dict (from user_config). When provided,
+                 idle servers that have no deployments are included in the
+                 returned state so the incremental planner can place tasks on them.
 
     Returns DeploymentState, or None if file not found.
     """
@@ -82,7 +88,7 @@ def load_state(plan_path: str):
     with open(plan_path, 'r') as f:
         plan = json.load(f)
 
-    return DeploymentState.from_deployment_plan(plan)
+    return DeploymentState.from_deployment_plan(plan, devices=devices)
 
 
 def save_state(state, plan: dict, pipelines: dict, plan_path: str):
