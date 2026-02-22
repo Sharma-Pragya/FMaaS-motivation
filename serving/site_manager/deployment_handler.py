@@ -148,7 +148,7 @@ async def _ssh_kill_server(ssh_host: str, grpc_port: int):
                 f"  fuser -TERM $p/tcp 2>/dev/null; "
                 f"done; "
                 # 2. Wait for graceful shutdown
-                f"sleep 20; "
+                f"sleep 5; "
                 # 3. Force-kill survivors
                 f"for p in {' '.join(str(p) for p in ports)}; do "
                 f"  fuser -k $p/tcp 2>/dev/null; "
@@ -158,7 +158,7 @@ async def _ssh_kill_server(ssh_host: str, grpc_port: int):
                 f"rm -rf $HOME/.cache/pytriton/workspace_* 2>/dev/null; "
                 f"rm -rf /tmp/folder* 2>/dev/null;"
                 # 5. Wait for CUDA driver to reclaim GPU memory
-                f"sleep 5; "
+                f"sleep 2; "
                 f"true"
             )
             result = await conn.run(kill_cmd)
