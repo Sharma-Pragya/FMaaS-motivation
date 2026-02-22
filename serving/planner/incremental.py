@@ -101,6 +101,18 @@ def plan_new_task(
                 scheduler.config.port_increment,
             )
 
+    # 3b. Fix total_requested_workload: after merging, compute the true total
+    #     request_per_sec for task_name across all deployments and write it back
+    #     so deployment_plan.json reflects the real aggregate demand.
+    true_total_rps = sum(
+        d.task_info[task_name].request_per_sec
+        for d in state.get_all_deployments()
+        if task_name in d.task_info
+    )
+    for d in state.get_all_deployments():
+        if task_name in d.task_info:
+            d.task_info[task_name].total_requested_workload = true_total_rps
+
     # 4. Compute which old keys were removed by _fit (disappeared from state).
     #    These are the only keys eligible to be matched as migration sources.
     #    We build a mutable map: server_name → [removed_backbone, ...] so each
