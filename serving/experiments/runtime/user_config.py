@@ -3,19 +3,21 @@ devices = {
   'device1': {
     'type': 'NVIDIA A16',
     'mem': 16000,  # in MB
-    'ip': '10.100.20.48',
-    'site_manager':'site2'
+    'ip': '10.100.20.5',
+    'site_manager':'site2',
+    'cuda': 'cuda:0',
   },
-  # 'device2': {
+  'device2': {
+    'type': 'NVIDIA A16',
+    'mem': 16000,  # in MB
+    'ip': '10.100.20.5',
+    'site_manager':'site2',
+    'cuda': 'cuda:1',
+  },
+  # 'device3': {
   #   'type': 'NVIDIA A16',
   #   'mem': 16000,  # in MB
-  #   'ip': '10.100.20.50',
-  #   'site_manager':'site2',
-  # },
-  # 'device3': {
-  #   'type': 'A16',
-  #   'mem': 16000,  # in MB
-  #   'ip': 'http://10.100.20.53',
+  #   'ip': 'http://10.100.20.52',
   #   'site_manager':'site2',
   # },
   # 'device3': {
@@ -47,7 +49,7 @@ tasks={
     # 'peak_workload':50,
     # 'latency':5.55*factor, #(5.55,239.08)
     # 'metric':'mae',
-    # 'value': 100   
+    # 'value': 100
     # },
     # 'diasbp':
     # {
@@ -55,23 +57,23 @@ tasks={
     # 'peak_workload':50,
     # 'latency':5.58*factor,#(5.58,238.95)
     # 'metric':'mae',
-    # 'value':100       
+    # 'value':100
     # },
-    'ecgclass':
+    'ecgclass':            # added at runtime via EVENT 1 (add-task)
     {
     'type':'classification',
     'peak_workload':50,
     'latency':3.86*factor, #(3.86,86.34)
     'metric':'accuracy',
-    'value':0.7        
+    'value':0.7
     },
-    # 'gestureclass':
+    # 'gestureclass':        # added at runtime via EVENT 3 (add-task)
     # {
     # 'type':'classification',
     # 'peak_workload':50,
     # 'latency':3.88*factor, #(3.88,86.53)
     # 'metric':'accuracy',
-    # 'value':0.6        
+    # 'value':0.6
     # },
 
 }
