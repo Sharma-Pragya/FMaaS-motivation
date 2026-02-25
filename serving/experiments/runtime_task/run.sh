@@ -53,26 +53,46 @@ ORCHESTRATOR_PID=""
 cleanup() {
     info "Cleaning up processes..."
 
-    # Cleanup via API if orchestrator is running
-    if [[ -n "$ORCHESTRATOR_PID" ]] && kill -0 "$ORCHESTRATOR_PID" 2>/dev/null; then
-        info "Sending cleanup request to orchestrator..."
-        curl -s -X POST "$ORCHESTRATOR_URL/cleanup" || warn "Cleanup request failed"
-        sleep 2
-    fi
-
     # Kill site manager
     if [[ -n "$SITE_PID" ]] && kill -0 "$SITE_PID" 2>/dev/null; then
         warn "Killing site_manager (PID $SITE_PID)..."
-        kill "$SITE_PID" 2>/dev/null || true
+        kill -9 "$SITE_PID" 2>/dev/null || true
         wait "$SITE_PID" 2>/dev/null || true
     fi
 
-    # Kill orchestrator server
+    # Kill orchestrator server by PID, and also by port in case PID tracking drifted
     if [[ -n "$ORCHESTRATOR_PID" ]] && kill -0 "$ORCHESTRATOR_PID" 2>/dev/null; then
         warn "Killing orchestrator server (PID $ORCHESTRATOR_PID)..."
-        kill "$ORCHESTRATOR_PID" 2>/dev/null || true
+        kill -9 "$ORCHESTRATOR_PID" 2>/dev/null || true
         wait "$ORCHESTRATOR_PID" 2>/dev/null || true
     fi
+    PORT_PIDS=$(lsof -ti tcp:"$ORCHESTRATOR_PORT" 2>/dev/null || true)
+    if [[ -n "$PORT_PIDS" ]]; then
+        warn "Killing process(es) still on port $ORCHESTRATOR_PORT: $PORT_PIDS"
+        kill -9 $PORT_PIDS 2>/dev/null || true
+    fi
+
+    # Kill any site_manager and orchestrator processes on this node and all login nodes.
+    # Running this on exit (including Ctrl+C) ensures no orphan processes are left behind
+    # that would send spurious error ACKs in the next run.
+    LOCAL_SM=$(pgrep -f "site_manager.main" 2>/dev/null || true)
+    if [[ -n "$LOCAL_SM" ]]; then
+        warn "Killing remaining site_manager on $(hostname): $LOCAL_SM"
+        kill -9 $LOCAL_SM 2>/dev/null || true
+    fi
+    LOCAL_ORCH=$(pgrep -f "orchestrator.server" 2>/dev/null || true)
+    if [[ -n "$LOCAL_ORCH" ]]; then
+        warn "Killing remaining orchestrator on $(hostname): $LOCAL_ORCH"
+        kill -9 $LOCAL_ORCH 2>/dev/null || true
+    fi
+    for node in login1 login2 login3 login5; do
+        REMOTE_SM=$(ssh -o ConnectTimeout=3 -o StrictHostKeyChecking=no "$node" \
+            "pgrep -f 'site_manager.main'" 2>/dev/null || true)
+        if [[ -n "$REMOTE_SM" ]]; then
+            warn "Killing site_manager on $node: $REMOTE_SM"
+            ssh -o ConnectTimeout=3 "$node" "kill -9 $REMOTE_SM" 2>/dev/null || true
+        fi
+    done
 
     info "Logs:"
     info "  - Site manager: $SITE_LOG"
