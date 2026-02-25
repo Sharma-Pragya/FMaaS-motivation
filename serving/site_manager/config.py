@@ -19,8 +19,8 @@ pythonpath = (
 #     f"nohup {cmd}> {log_path} 2>&1 &'"
 # )
 activate_env="conda activate"
-vlm_env='benchmark-foundation-vqa'
-timeseries_env='fmtk'
+vlm_env='fmtk_vlm'
+timeseries_env='fmtk_vlm'
 
 cmds=f"cd /project/pi_shenoy_umass_edu/hshastri/FMaaS-motivation/serving && module load conda/latest && export PYTHONPATH={pythonpath}"
 

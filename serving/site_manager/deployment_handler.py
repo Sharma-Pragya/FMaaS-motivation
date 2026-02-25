@@ -73,6 +73,10 @@ async def _deploy_one(s: dict):
         print(f"[WARN] Unknown backbone {s['backbone']}; skipping {s['device']}")
         return
 
+    cuda_device = s.get("cuda", None)
+    if cuda_device:
+        server_cmd += f"--cuda {cuda_device} "
+
     log_path = f"./device/logs/{ssh_host}_{s['backbone']}.log"
 
     # 1. Start Server via SSH
@@ -110,6 +114,32 @@ async def _add_decoder_to_device(device_url: str, decoders: list) -> dict:
     payload_data = np.array([[config_str.encode("utf-8")]], dtype=object)
 
     # _send_control is synchronous; run in thread to keep async context
+    result = await asyncio.to_thread(
+        _send_control, ssh_host, grpc_port + 1, cmd_data, payload_data
+    )
+    return result
+
+
+async def _swap_backbone_on_device(device_url: str, new_backbone: str, decoders: list) -> dict:
+    """Send a swap_backbone control command to a running device server.
+
+    The device frees the old backbone from GPU memory and loads the new one
+    in-process — no SSH kill/start needed.
+
+    Args:
+        device_url: Device endpoint string (e.g. "gpu-node:8000").
+        new_backbone: Name of the new backbone to load (e.g. "chronosbase").
+        decoders: List of {"task": str, "type": str, "path": str} dicts.
+
+    Returns:
+        Status dict from the device, or False on failure.
+    """
+    ssh_host, _, grpc_port = _parse_url(device_url)
+    config_payload = {"backbone": new_backbone, "decoders": decoders}
+    config_str = json.dumps(config_payload)
+    cmd_data = np.array([[b"swap_backbone"]], dtype=object)
+    payload_data = np.array([[config_str.encode("utf-8")]], dtype=object)
+
     result = await asyncio.to_thread(
         _send_control, ssh_host, grpc_port + 1, cmd_data, payload_data
     )
