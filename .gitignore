@@ -15,3 +15,4 @@ timeseries/moment-main/data
 timeseries/Linux/nixtla-foundational-time-series/data
 *.ipynb_checkpoints
 serving/dataset
+*.log
