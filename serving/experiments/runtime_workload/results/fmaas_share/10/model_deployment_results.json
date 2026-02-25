@@ -1,6 +1,0 @@
-[
-    {
-        "status": "loaded_momentbase",
-        "logger_summary": "{'load_backbone': {'wall time': 3066.1339630023576, 'gpu time': 3066.282958984375, 'gpu peak': 455.474688, 'cpu dRSS': 542.552064}, 'add_decoder_ecgclass_momentbase_mlp': {'wall time': 8.47240601433441, 'gpu time': 8.498175621032715, 'gpu peak': 455.871488, 'cpu dRSS': 0.524288}}"
-    }
-]
