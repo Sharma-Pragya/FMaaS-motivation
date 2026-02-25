@@ -198,6 +198,7 @@ class M4Scheduler(BaseScheduler):
                 device_type=server.type,
                 mem=server.mem,
                 util=util_tracker[server.name],
+                cuda=server.cuda,
                 components=components,
                 task_info={
                     task.name: TaskInfo(
@@ -254,6 +255,7 @@ class M4Scheduler(BaseScheduler):
                 device_type=server.type,
                 mem=server.mem,
                 util=util_tracker[server.name],
+                cuda=server.cuda,
                 components=components,
                 task_info={
                     task.name: TaskInfo(

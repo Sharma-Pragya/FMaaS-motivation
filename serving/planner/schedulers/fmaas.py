@@ -397,6 +397,7 @@ class FMaaSScheduler(BaseScheduler):
                     device_type=server.type,
                     mem=server.mem,
                     util=total_util + allocated_cap,
+                    cuda=server.cuda,
                     components=components,
                     task_info={
                         task.name: TaskInfo(
@@ -498,6 +499,7 @@ class FMaaSScheduler(BaseScheduler):
                 device_type=current.device_type,
                 mem=current.mem,
                 util=current.util,
+                cuda=current.cuda,
                 components=dict(current.components),
                 task_info={k: TaskInfo(
                     type=v.type,
@@ -520,6 +522,7 @@ class FMaaSScheduler(BaseScheduler):
                     device_type=existing_at_new_key.device_type,
                     mem=existing_at_new_key.mem,
                     util=existing_at_new_key.util,
+                    cuda=existing_at_new_key.cuda,
                     components=dict(existing_at_new_key.components),
                     task_info={k: TaskInfo(
                         type=v.type,

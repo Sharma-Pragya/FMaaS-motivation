@@ -82,7 +82,8 @@ class BaseScheduler(ABC):
                 mem=d['mem'],
                 ip=d['ip'],
                 site_manager=d['site_manager'],
-                util=0.0
+                util=0.0,
+                cuda=d.get('cuda', None),
             )
             for name, d in devices.items()
         ]
