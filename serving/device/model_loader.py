@@ -138,6 +138,41 @@ def add_decoder(decoder_specs: list):
     return logger
 
 
+def swap_backbone(backbone: str, decoders: list):
+    """Swap the backbone in-process without restarting the server.
+
+    Frees the current pipeline from GPU memory, then calls load_models()
+    to load the new backbone and re-attach decoders — all inside the
+    running PyTriton process. No SSH or server restart needed.
+
+    Args:
+        backbone: New backbone name (e.g. "chronosbase").
+        decoders: List of {"task": str, "type": str, "path": str} dicts.
+
+    Returns:
+        Logger with timing measurements from load_models().
+    """
+    global _pipeline, _decoders, _loaded, _backbone_name, current_task
+    import gc
+
+    # Release old pipeline and free GPU memory
+    if _pipeline is not None:
+        print(f"[ModelLoader] Releasing old backbone '{_backbone_name}' from GPU memory...")
+        del _pipeline
+        _pipeline = None
+    _decoders = {}
+    _loaded = False
+    _backbone_name = None
+    current_task = None
+
+    import torch
+    torch.cuda.empty_cache()
+    gc.collect()
+    print("[ModelLoader] GPU memory released. Loading new backbone...")
+
+    return load_models(backbone, decoders)
+
+
 def get_loaded_pipeline():
     """Return the current loaded pipeline and decoders."""
     print(f"[ModelLoader] Retrieving loaded models. Loaded status: {_loaded}")

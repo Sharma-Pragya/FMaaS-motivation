@@ -3,7 +3,11 @@ import torch
 import os
 
 # Device selection
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+_cuda_device = os.environ.get("CUDA_DEVICE", None)
+if _cuda_device:
+    DEVICE = torch.device(_cuda_device)
+else:
+    DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Default model directory
 MODEL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "models"))
@@ -94,77 +98,77 @@ DECODERS={
         'decoder_type': 'mlp',
         'decoder_config':{
             'DEVICE': DEVICE,
-            'cfg':{'input_dim':1024,'output_dim':10,'hidden_dim':128}
+            'cfg':{'input_dim':1024,'output_dim':8,'hidden_dim':128}
         }
     },
     'mlp_momentbase_gestureclass':{
         'decoder_type': 'mlp',
         'decoder_config':{
             'DEVICE': DEVICE,
-            'cfg':{'input_dim':768,'output_dim':10,'hidden_dim':128}
+            'cfg':{'input_dim':768,'output_dim':8,'hidden_dim':128}
         }
     },
     'mlp_momentsmall_gestureclass':{
         'decoder_type': 'mlp',
         'decoder_config':{
             'DEVICE': DEVICE,
-            'cfg':{'input_dim':512,'output_dim':10,'hidden_dim':128}
+            'cfg':{'input_dim':512,'output_dim':8,'hidden_dim':128}
         }
     },
     'mlp_chronostiny_gestureclass':{
         'decoder_type': 'mlp',
         'decoder_config':{
             'DEVICE': DEVICE,
-            'cfg':{'input_dim':256,'output_dim':10,'hidden_dim':128}
+            'cfg':{'input_dim':256,'output_dim':8,'hidden_dim':128}
         }
     },
     'mlp_chronosmini_gestureclass':{
         'decoder_type': 'mlp',
         'decoder_config':{
             'DEVICE': DEVICE,
-            'cfg':{'input_dim':384,'output_dim':10,'hidden_dim':128}
+            'cfg':{'input_dim':384,'output_dim':8,'hidden_dim':128}
         }
     },
     'mlp_chronossmall_gestureclass':{
         'decoder_type': 'mlp',
         'decoder_config':{
             'DEVICE': DEVICE,
-            'cfg':{'input_dim':512,'output_dim':10,'hidden_dim':128}
+            'cfg':{'input_dim':512,'output_dim':8,'hidden_dim':128}
         }
     },
     'mlp_chronosbase_gestureclass':{
         'decoder_type': 'mlp',
         'decoder_config':{
             'DEVICE': DEVICE,
-            'cfg':{'input_dim':768,'output_dim':10,'hidden_dim':128}
+            'cfg':{'input_dim':768,'output_dim':8,'hidden_dim':128}
         }
     },
     'mlp_chronoslarge_gestureclass':{
         'decoder_type': 'mlp',
         'decoder_config':{
             'DEVICE': DEVICE,
-            'cfg':{'input_dim':1024,'output_dim':10,'hidden_dim':128}
+            'cfg':{'input_dim':1024,'output_dim':8,'hidden_dim':128}
         }
     },
     'mlp_papageis_gestureclass':{
         'decoder_type': 'mlp',
         'decoder_config':{
             'DEVICE': DEVICE,
-            'cfg':{'input_dim':512,'output_dim':10,'hidden_dim':128}
+            'cfg':{'input_dim':512,'output_dim':8,'hidden_dim':128}
         }
     },
     'mlp_papageip_gestureclass':{
         'decoder_type': 'mlp',
         'decoder_config':{
             'DEVICE': DEVICE,       
-            'cfg':{'input_dim':512,'output_dim':10,'hidden_dim':128},    
+            'cfg':{'input_dim':512,'output_dim':8,'hidden_dim':128},    
         }
     },
     'mlp_papageissvri_gestureclass':{
         'decoder_type': 'mlp',
         'decoder_config':{
             'DEVICE': DEVICE,
-            'cfg':{'input_dim':512,'output_dim':10,'hidden_dim':128}
+            'cfg':{'input_dim':512,'output_dim':8,'hidden_dim':128}
         }
     },
     'mlp_chronostiny_forecasting':{

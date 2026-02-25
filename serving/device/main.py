@@ -1,3 +1,14 @@
+import argparse
+import os
+
+# Parse --cuda before any device.* imports so that CUDA_DEVICE is set
+# before config.py evaluates DEVICE at module load time.
+_pre_parser = argparse.ArgumentParser(add_help=False)
+_pre_parser.add_argument("--cuda", type=str, default=None)
+_pre_args, _ = _pre_parser.parse_known_args()
+if _pre_args.cuda:
+    os.environ["CUDA_DEVICE"] = _pre_args.cuda
+
 import json
 import numpy as np
 import torch
@@ -5,9 +16,8 @@ import torch.nn as nn
 from pytriton.triton import Triton, TritonConfig, TritonSecurityConfig
 from pytriton.model_config import ModelConfig, Tensor
 from pytriton.decorators import batch
-from device.model_loader import load_models, add_decoder, get_loaded_pipeline
+from device.model_loader import load_models, add_decoder, swap_backbone, get_loaded_pipeline
 import time
-import argparse
 
 class UnifiedEdgeSystem:
     def __init__(self):
@@ -40,47 +50,55 @@ class UnifiedEdgeSystem:
         # print("=" * 80)
         
         st = time.time_ns()
-        if self.pipeline is None: 
+        # Capture local snapshots of pipeline and decoders at call start.
+        # This prevents a concurrent swap_backbone (running in the control thread)
+        # from changing self.pipeline mid-call, which would cause a shape mismatch
+        # between features computed from the old backbone and decoders from the new one.
+        if self.pipeline is None:
             self.pipeline, self.decoders, self.current_task = get_loaded_pipeline()
-        
+        pipeline = self.pipeline
+        decoders = self.decoders
+
         # Extract all tasks in the batch
         batch_size = x.shape[0]
         tasks = [task[i][0].decode('utf-8') for i in range(batch_size)]
-        
+
         # 1. Batch feature extraction (backbone forward pass on ALL inputs)
         bx = torch.from_numpy(x)
         b_mask = torch.from_numpy(mask) if mask is not None else None
-        feats = self.pipeline.model_instance.forward(bx, b_mask)
+        feats = pipeline.model_instance.forward(bx, b_mask)
         proc_time = time.time_ns() - st
         # 2. Process decoders sequentially per task
         logits_list = []
         swap_time_list = []
         decoder_time_list = []
+        active_decoder = None
+        current_task = None
         for i in range(batch_size):
             task_name = tasks[i]
             swap_st = time.time_ns()
-            if self.current_task != task_name:
-                self.current_task = task_name
-                decoder_name = self.decoders.get(self.current_task)
-                self.pipeline.active_decoder = self.pipeline.decoders[decoder_name]
+            if current_task != task_name:
+                current_task = task_name
+                decoder_name = decoders.get(current_task)
+                active_decoder = pipeline.decoders[decoder_name]
             swap_time = time.time_ns() - swap_st
             swap_time_list.append(swap_time)
 
             decoder_st = time.time_ns()
             # Process this sample with its decoder
             feat_i = feats[i:i+1]  # Keep batch dimension for forward pass
-            if self.pipeline.active_decoder is not None:
-                logit_i = self.pipeline.active_decoder.forward(feat_i)
-                if isinstance(self.pipeline.active_decoder.criterion, (nn.CrossEntropyLoss)):
+            if active_decoder is not None:
+                logit_i = active_decoder.forward(feat_i)
+                if isinstance(active_decoder.criterion, (nn.CrossEntropyLoss)):
                     logit_i = torch.argmax(logit_i, dim=1)
-                if (hasattr(self.pipeline.active_decoder, "requires_model") and 
-                    self.pipeline.active_decoder.requires_model and 
-                    hasattr(self.pipeline.model_instance.model, "normalizer")):
-                    logit_i = self.pipeline.model_instance.model.normalizer(x=logit_i, mode="denorm")
+                if (hasattr(active_decoder, "requires_model") and
+                    active_decoder.requires_model and
+                    hasattr(pipeline.model_instance.model, "normalizer")):
+                    logit_i = pipeline.model_instance.model.normalizer(x=logit_i, mode="denorm")
                 result_i = logit_i.detach().cpu().numpy()
             else:
-                embeddings = self.pipeline.model_instance.forward((feat_i, None))
-                result_i = self.pipeline.model_instance.postprocess(embeddings)
+                embeddings = pipeline.model_instance.forward((feat_i, None))
+                result_i = pipeline.model_instance.postprocess(embeddings)
             
             logits_list.append(result_i)
             decoder_time = time.time_ns() - decoder_st
@@ -122,6 +140,20 @@ class UnifiedEdgeSystem:
                 logger = load_models(config['backbone'], config['decoders'])
                 status_msg = f"loaded_{config['backbone']}"
 
+            elif cmd_str == "swap_backbone":
+                # In-process backbone swap: free old GPU memory, load new backbone + decoders
+                config_json = payload[0][0].decode("utf-8")
+                config = json.loads(config_json)
+
+                print(f"[System] Swapping backbone to: {config['backbone']}, decoders: {config['decoders']}")
+                logger = swap_backbone(config['backbone'], config['decoders'])
+                # Refresh cached references so infer() sees the new backbone + decoders.
+                # Force current_task=None so the next infer() always re-selects the
+                # active_decoder from the new pipeline (avoids stale decoder reference).
+                self.pipeline, self.decoders, _ = get_loaded_pipeline()
+                self.current_task = None
+                status_msg = f"swapped_{config['backbone']}"
+
             elif cmd_str == "add_decoder":
                 # Hot-add decoders to the already-loaded backbone
                 config_json = payload[0][0].decode("utf-8")
@@ -148,6 +180,7 @@ class UnifiedEdgeSystem:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, required=True, help="gRPC port")
+    parser.add_argument("--cuda", type=str, default=None, help="CUDA device (e.g. cuda:0, cuda:1). Defaults to first available GPU.")
     args = parser.parse_args()
 
     system = UnifiedEdgeSystem()
@@ -180,7 +213,7 @@ if __name__ == "__main__":
                 Tensor(name="swap_time", dtype=np.int64, shape=(-1,)),  
                 Tensor(name="decoder_time", dtype=np.int64, shape=(-1,)),
             ],
-            config=ModelConfig(max_batch_size=32)
+            config=ModelConfig(max_batch_size=1)
         )
 
         # Bind the Control Model
