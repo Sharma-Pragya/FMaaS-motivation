@@ -1,13 +1,13 @@
-from fmtk.datasets.etth1 import ETTh1Dataset
-from fmtk.datasets.weather import WeatherDataset
-from fmtk.datasets.exchange import ExchangeDataset
-from fmtk.datasets.ecg5000 import ECG5000Dataset
-from fmtk.datasets.uwavegesture import UWaveGestureLibraryALLDataset
-from fmtk.datasets.ppg import PPGDataset
-from fmtk.datasets.illness import IllnessDataset
-from fmtk.datasets.ecl import ECLDataset
-from fmtk.datasets.traffic import TrafficDataset
-from fmtk.datasets.vqa import VQADataset
+from fmtk.datasetloaders.etth1 import ETTh1Dataset
+from fmtk.datasetloaders.weather import WeatherDataset
+from fmtk.datasetloaders.exchange import ExchangeDataset
+from fmtk.datasetloaders.ecg5000 import ECG5000Dataset
+from fmtk.datasetloaders.uwavegesture import UWaveGestureLibraryALLDataset
+from fmtk.datasetloaders.ppg import PPGDataset
+from fmtk.datasetloaders.illness import IllnessDataset
+from fmtk.datasetloaders.ecl import ECLDataset
+from fmtk.datasetloaders.traffic import TrafficDataset
+from fmtk.datasetloaders.vqa import VQADataset
 import asyncio
 import time
 import numpy as np
@@ -32,7 +32,7 @@ def initialize_dataloaders():
     DATASET_LOADERS = {
         "ecgclass": DataLoader(ECG5000Dataset({"dataset_path": f"{d}/ECG5000"}, {"task_type": "classification"}, "test"), **inference_config),
         "heartrate": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"hr"}, "test"), **inference_config),
-        # "diasbp": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"diasbp"}, "test"), **inference_config),
+        "diasbp": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"diasbp"}, "test"), **inference_config),
         "sysbp": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"sysbp"}, "test"), **inference_config),
         "gestureclass": DataLoader(UWaveGestureLibraryALLDataset({"dataset_path": f"{d}/UWaveGestureLibraryAll"}, {"task_type": "classification"}, "test"), **inference_config),
         # "ecl": DataLoader(ECLDataset({"dataset_path": f"{d}/ElectricityLoad-data"}, {"task_type": "forecasting"}, "test"), **inference_config),
@@ -195,8 +195,8 @@ async def handle_runtime_request_continuous():
             if current_time >= target_time:
                 heapq.heappop(pending_queue)
 
-                # Check if the task's deployment is still in progress — defer if so
-                if is_task_deploying(req['task']):
+                # Check if this (task, device) is still deploying — defer if so
+                if is_task_deploying(req['task'], req['device']):
                     # Push back with a small delay so we retry soon
                     heapq.heappush(pending_queue, (req_time + 0.5, req_counter, req))
                     req_counter += 1

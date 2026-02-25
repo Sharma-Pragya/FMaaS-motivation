@@ -4,6 +4,25 @@ import os
 import ssl
 import threading
 import traceback
+from contextlib import contextmanager
+
+# File lock for safe concurrent reads/writes to model_deployment_results.json
+_deployment_json_lock = threading.Lock()
+
+@contextmanager
+def _deployment_json(json_path, output_dir):
+    """Read, yield, write model_deployment_results.json under a lock."""
+    with _deployment_json_lock:
+        if os.path.exists(json_path):
+            with open(json_path, "r") as f:
+                data = json.load(f)
+        else:
+            data = []
+        yield data
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+        with open(json_path, "w") as f:
+            json.dump(data, f, indent=4)
 
 import paho.mqtt.client as mqtt
 
@@ -14,7 +33,7 @@ from site_manager.storage import (
     mark_task_deploying, mark_task_deployed
 )
 from site_manager.runtime_executor import handle_runtime_request_continuous, initialize_dataloaders
-from site_manager.deployment_handler import deploy_models, shutdown_devices, _add_decoder_to_device
+from site_manager.deployment_handler import deploy_models, shutdown_devices, _add_decoder_to_device, _swap_backbone_on_device
 
 
 def on_connect(client, userdata, flags, rc):
@@ -55,6 +74,8 @@ def _save_results(reqs_latency):
                     "end_to_end_latency(ms),proc_time(ms),swap_time(ms),decoder_time(ms),"
                     "pred,true\n")
             for entry in reqs_latency:
+                if entry is None:
+                    continue  # timed-out or errored requests return None
                 (req_id, device_url, site_manager_send_time, device_start_time,
                 device_end_time, e2e_latency, proc_time, swap_time, decoder_time, pred, true_val) = entry
                 req = reqs_dict.get(req_id, {})
@@ -132,47 +153,35 @@ def on_message(client, userdata, msg):
                 if not new_specs:
                     raise ValueError("No deployments in /add payload")
 
-                # Extract task names and mark them as deploying BEFORE starting
-                task_names = []
+                # Extract (task, device) pairs and mark them as deploying BEFORE starting
+                task_device_pairs = []
                 for spec in new_specs:
+                    device_url = spec.get("device", "")
                     for dec in spec.get("decoders", []):
                         tname = dec.get("task")
                         if tname:
-                            task_names.append(tname)
-                            mark_task_deploying(tname)
+                            task_device_pairs.append((tname, device_url))
+                            mark_task_deploying(tname, device_url)
 
-                print(f"[SiteManager] Starting background deployment for /add (deploying tasks: {task_names})...")
+                print(f"[SiteManager] Starting background deployment for /add (deploying: {task_device_pairs})...")
                 deployment_status = asyncio.run(deploy_models(new_specs))
                 append_deployments(new_specs)
 
                 # Mark all tasks as deployed now that deployment is complete
-                for tname in task_names:
-                    mark_task_deployed(tname)
+                for tname, device_url in task_device_pairs:
+                    mark_task_deployed(tname, device_url)
 
                 # Append to model_deployment_results.json
                 output_dir = get_output_dir()
                 json_path = os.path.join(output_dir, "model_deployment_results.json") if output_dir else "model_deployment_results.json"
                 try:
-                    # Read existing deployment results
-                    if os.path.exists(json_path):
-                        with open(json_path, "r") as f:
-                            deployment_results = json.load(f)
-                    else:
-                        deployment_results = []
-
-                    # Append runtime add event
-                    for status in deployment_status:
-                        deployment_results.append({
-                            "event": "runtime_add",
-                            "deployments": new_specs,
-                            "result": status
-                        })
-
-                    # Write back
-                    if output_dir:
-                        os.makedirs(output_dir, exist_ok=True)
-                    with open(json_path, "w") as f:
-                        json.dump(deployment_results, f, indent=4)
+                    with _deployment_json(json_path, output_dir) as deployment_results:
+                        for status in deployment_status:
+                            deployment_results.append({
+                                "event": "runtime_add",
+                                "deployments": new_specs,
+                                "result": status
+                            })
                     print(f"[SiteManager] Updated deployment results: {json_path}")
                 except Exception as e:
                     print(f"[SiteManager] Warning: Failed to update deployment JSON: {e}")
@@ -182,8 +191,8 @@ def on_message(client, userdata, msg):
                 print(f"[SiteManager] ERROR during background /add deployment: {e}")
                 traceback.print_exc()
                 # Unblock requests even on failure so they aren't deferred forever
-                for tname in task_names:
-                    mark_task_deployed(tname)
+                for tname, device_url in task_device_pairs:
+                    mark_task_deployed(tname, device_url)
 
         threading.Thread(target=deploy_in_background, daemon=True).start()
 
@@ -207,67 +216,54 @@ def on_message(client, userdata, msg):
                 if not new_specs or not old_backbone:
                     raise ValueError("deployments and old_backbone required in /migrate payload")
 
-                # Mark all tasks on the migrating server as deploying BEFORE starting
-                for spec in new_specs:
-                    for dec in spec.get("decoders", []):
-                        tname = dec.get("task")
-                        if tname:
-                            task_names.append(tname)
-                            mark_task_deploying(tname)
+                new_backbone = new_specs[0].get("backbone")
+                device_url = new_specs[0].get("device")
+                decoders = new_specs[0].get("decoders", [])
 
-                print(f"[SiteManager] Starting migration: {old_backbone} → "
-                      f"{new_specs[0].get('backbone')} (tasks: {task_names})")
+                # Mark all (task, device) pairs as deploying BEFORE swap — defers new requests
+                for dec in decoders:
+                    tname = dec.get("task")
+                    if tname:
+                        task_names.append(tname)
+                        mark_task_deploying(tname, device_url)
 
-                # Step 1: find and kill the old server
-                old_deployments = [d for d in get_deployments()
-                                   if d.get("backbone") == old_backbone]
-                if old_deployments:
-                    asyncio.run(shutdown_devices(old_deployments))
-                else:
-                    print(f"[SiteManager] Warning: no stored deployment found for backbone '{old_backbone}'")
+                print(f"[SiteManager] Swapping backbone in-process: {old_backbone} → "
+                      f"{new_backbone} on {device_url} (tasks: {task_names})")
 
-                # Step 2: start the new server with the new backbone + all decoders
-                deployment_status = asyncio.run(deploy_models(new_specs))
+                # Send swap_backbone control command — device handles GPU memory
+                # release and new backbone load without any server restart
+                swap_status = asyncio.run(_swap_backbone_on_device(device_url, new_backbone, decoders))
 
-                # Step 3: update stored deployments
-                for spec in new_specs:
-                    replace_deployment(old_backbone, spec)
+                # Update stored deployment so cleanup later targets the right backbone
+                replace_deployment(old_backbone, new_specs[0])
 
-                # Step 4: unblock requests
+                # Unblock deferred requests — new backbone is ready
                 for tname in task_names:
-                    mark_task_deployed(tname)
+                    mark_task_deployed(tname, device_url)
 
                 # Append to model_deployment_results.json
                 output_dir = get_output_dir()
                 json_path = os.path.join(output_dir, "model_deployment_results.json") if output_dir else "model_deployment_results.json"
                 try:
-                    if os.path.exists(json_path):
-                        with open(json_path, "r") as f:
-                            deployment_results = json.load(f)
-                    else:
-                        deployment_results = []
-                    for status in deployment_status:
+                    with _deployment_json(json_path, output_dir) as deployment_results:
                         deployment_results.append({
                             "event": "runtime_migrate",
                             "old_backbone": old_backbone,
-                            "deployments": new_specs,
-                            "result": status,
+                            "new_backbone": new_backbone,
+                            "device": device_url,
+                            "result": swap_status,
                         })
-                    if output_dir:
-                        os.makedirs(output_dir, exist_ok=True)
-                    with open(json_path, "w") as f:
-                        json.dump(deployment_results, f, indent=4)
                     print(f"[SiteManager] Updated deployment results: {json_path}")
                 except Exception as e:
                     print(f"[SiteManager] Warning: Failed to update deployment JSON: {e}")
 
-                print(f"[SiteManager] Migration complete: {old_backbone} → {new_specs[0].get('backbone')}")
+                print(f"[SiteManager] Migration complete: {old_backbone} → {new_backbone}")
 
             except Exception as e:
                 print(f"[SiteManager] ERROR during /migrate: {e}")
                 traceback.print_exc()
                 for tname in task_names:
-                    mark_task_deployed(tname)
+                    mark_task_deployed(tname, device_url)
 
         threading.Thread(target=migrate_in_background, daemon=True).start()
 
@@ -290,41 +286,28 @@ def on_message(client, userdata, msg):
                 if not device_url or not decoders:
                     raise ValueError("device and decoders required in /update payload")
 
-                # Extract task names and mark them as deploying BEFORE starting
+                # Extract task names and mark (task, device) as deploying BEFORE starting
                 task_names = [dec.get("task") for dec in decoders if dec.get("task")]
                 for tname in task_names:
-                    mark_task_deploying(tname)
+                    mark_task_deploying(tname, device_url)
 
-                print(f"[SiteManager] Starting background deployment for /update (deploying tasks: {task_names})...")
+                print(f"[SiteManager] Starting background deployment for /update (deploying tasks: {task_names} on {device_url})...")
                 result = asyncio.run(_add_decoder_to_device(device_url, decoders))
 
                 # Mark all tasks as deployed now that deployment is complete
                 for tname in task_names:
-                    mark_task_deployed(tname)
+                    mark_task_deployed(tname, device_url)
 
                 # Append to model_deployment_results.json
                 output_dir = get_output_dir()
                 json_path = os.path.join(output_dir, "model_deployment_results.json") if output_dir else "model_deployment_results.json"
                 try:
-                    # Read existing deployment results
-                    if os.path.exists(json_path):
-                        with open(json_path, "r") as f:
-                            deployment_results = json.load(f)
-                    else:
-                        deployment_results = []
-
-                    # Append runtime update event
-                    deployment_results.append({
-                        "event": "runtime_update",
-                        "device": device_url,
-                        "result": result
-                    })
-
-                    # Write back
-                    if output_dir:
-                        os.makedirs(output_dir, exist_ok=True)
-                    with open(json_path, "w") as f:
-                        json.dump(deployment_results, f, indent=4)
+                    with _deployment_json(json_path, output_dir) as deployment_results:
+                        deployment_results.append({
+                            "event": "runtime_update",
+                            "device": device_url,
+                            "result": result
+                        })
                     print(f"[SiteManager] Updated deployment results: {json_path}")
                 except Exception as e:
                     print(f"[SiteManager] Warning: Failed to update deployment JSON: {e}")
@@ -335,7 +318,7 @@ def on_message(client, userdata, msg):
                 traceback.print_exc()
                 # Unblock requests even on failure so they aren't deferred forever
                 for tname in task_names:
-                    mark_task_deployed(tname)
+                    mark_task_deployed(tname, device_url)
 
         threading.Thread(target=deploy_in_background, daemon=True).start()
 

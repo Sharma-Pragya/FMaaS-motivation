@@ -2,7 +2,7 @@ DEPLOYMENTS = []
 RUNTIME_REQUESTS = []
 PROCESSED_COUNT = 0  # Track how many requests have been processed
 OUTPUT_DIR = None  # Set by orchestrator to save results in the right experiment directory
-DEPLOYING_TASKS = set()  # Track tasks whose deployment is currently in progress
+DEPLOYING_TASKS = set()  # Track (task, device) pairs whose deployment is currently in progress
 
 
 def clear_state():
@@ -93,27 +93,30 @@ def append_deployments(new_specs: list):
           f"Total: {len(DEPLOYMENTS)}")
 
 
-def mark_task_deploying(task_name: str):
-    """Mark a task as currently being deployed.
+def mark_task_deploying(task_name: str, device: str):
+    """Mark a (task, device) pair as currently being deployed.
 
-    Used to defer requests for this task until deployment completes.
+    Used to defer requests for this task on this specific device
+    until deployment completes. Other devices serving the same task
+    are unaffected.
     """
-    DEPLOYING_TASKS.add(task_name)
-    print(f"[RuntimeBuffer] Task '{task_name}' marked as DEPLOYING (total deploying: {len(DEPLOYING_TASKS)})")
+    DEPLOYING_TASKS.add((task_name, device))
+    print(f"[RuntimeBuffer] Task '{task_name}' on '{device}' marked as DEPLOYING (total deploying: {len(DEPLOYING_TASKS)})")
 
 
-def mark_task_deployed(task_name: str):
-    """Mark a task as deployment complete.
+def mark_task_deployed(task_name: str, device: str):
+    """Mark a (task, device) pair as deployment complete.
 
-    Requests for this task can now be executed.
+    Requests for this task on this device can now be executed.
     """
-    DEPLOYING_TASKS.discard(task_name)
-    print(f"[RuntimeBuffer] Task '{task_name}' marked as DEPLOYED (remaining deploying: {len(DEPLOYING_TASKS)})")
+    DEPLOYING_TASKS.discard((task_name, device))
+    print(f"[RuntimeBuffer] Task '{task_name}' on '{device}' marked as DEPLOYED (remaining deploying: {len(DEPLOYING_TASKS)})")
 
 
-def is_task_deploying(task_name: str) -> bool:
-    """Check if a task is currently being deployed.
+def is_task_deploying(task_name: str, device: str) -> bool:
+    """Check if a (task, device) pair is currently being deployed.
 
-    Returns True if deployment is in progress, False otherwise.
+    Returns True only if this specific task+device combination is
+    deploying — other devices serving the same task are unaffected.
     """
-    return task_name in DEPLOYING_TASKS
+    return (task_name, device) in DEPLOYING_TASKS
