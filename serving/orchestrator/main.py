@@ -12,6 +12,9 @@ import time
 import threading
 from collections import defaultdict
 
+# Unique suffix per process so EMQX never reuses a queued session from a previous run
+_MQTT_ID_SUFFIX = f"{os.getpid()}-{int(time.time())}"
+
 import paho.mqtt.client as mqtt
 import ssl
 
@@ -117,7 +120,7 @@ class Orchestrator:
     def initial_deployment(self, plan, routed_trace, output_dir=None):
         """Deploy all sites and wait for ACKs before returning."""
         self._mqtt.reset_acks({site["id"] for site in plan["sites"]}, ack_type='deploytime')
-        client = self._mqtt.connect("orchestrator-deploy")
+        client = self._mqtt.connect(f"orchestrator-deploy-{_MQTT_ID_SUFFIX}")
 
         print("Publishing deployments + requests to all sites...")
         self.publish_deployments(client, plan, routed_trace, output_dir=output_dir)
@@ -190,7 +193,7 @@ class Orchestrator:
     def run_inference_requests(self):
         """Trigger runtime start on site managers (non-blocking — continuous mode)."""
         self._mqtt.reset_acks({site["id"] for site in self.plan["sites"]}, ack_type='runtime')
-        client = self._mqtt.connect("orchestrator-inference")
+        client = self._mqtt.connect(f"orchestrator-inference-{_MQTT_ID_SUFFIX}")
 
         self.trigger_runtime_start(client, self.plan)
 
@@ -227,7 +230,7 @@ class Orchestrator:
     def cleanup_only(self, plan):
         """Kill all Triton servers without running experiments."""
         self._mqtt.reset_acks({site["id"] for site in plan["sites"]}, ack_type='cleanup')
-        client = self._mqtt.connect("orchestrator-cleanup")
+        client = self._mqtt.connect(f"orchestrator-cleanup-{_MQTT_ID_SUFFIX}")
 
         self.trigger_cleanup(client, plan)
 

@@ -21,10 +21,13 @@ class MQTTManager:
         self._connected_event = threading.Event()
         self._expected_sites = set()
         self._waiting_for_ack_type = None
+        self._active_client = None  # kept so reset_acks can flush stale messages
 
     def _make_client(self, client_id: str) -> mqtt.Client:
         """Create and configure a new MQTT client with TLS."""
-        client = mqtt.Client(client_id=client_id, transport="websockets")
+        # clean_session=True: broker discards any queued messages from previous
+        # sessions for this client ID, preventing stale ACK replays on reconnect.
+        client = mqtt.Client(client_id=client_id, transport="websockets", clean_session=True)
         client.enable_logger()
         try:
             client.tls_set(cert_reqs=ssl.CERT_NONE)
@@ -48,11 +51,12 @@ class MQTTManager:
         if not self._connected_event.wait(timeout=10):
             raise RuntimeError("MQTT not connected/subscribed in time.")
         self._connected_event.clear()  # Reset for next connection
+        self._active_client = client
         return client
 
     def _on_connect(self, client, userdata, flags, rc):
         if rc == 0:
-            print("Orchestrator connected to MQTT broker")
+            print(f"Orchestrator connected to MQTT broker")
             client.subscribe("fmaas/deploytime/ack/#", qos=1)
             client.subscribe("fmaas/runtime/ack/#", qos=1)
             client.subscribe("fmaas/cleanup/ack/#", qos=1)
@@ -78,9 +82,12 @@ class MQTTManager:
 
         if topic.startswith("fmaas/deploytime/ack"):
             site = payload.get("site", "unknown")
+            print(f"Deploytime ACK from {site}: {payload}")
+            if "error" in payload:
+                print(f"[MQTT] Ignoring error ACK from {site} (deployment failed on site manager)")
+                return
             if waiting_for == 'deploytime' or waiting_for is None:
                 self._record_ack(site, payload)
-            print(f"Deploytime ACK from {site}: {payload}")
         elif topic.startswith("fmaas/runtime/ack"):
             site = payload.get("site", "unknown")
             if waiting_for == 'runtime' or waiting_for is None:

@@ -120,6 +120,8 @@ def load_config(exp_type: str):
         from experiments.batching.user_config import devices, tasks
     elif exp_type == "runtime":
         from experiments.runtime.user_config import devices, tasks
+    elif exp_type == "runtime_task":
+        from experiments.runtime_task.user_config import devices, tasks
     else:
         raise ValueError(f"Unknown exp_type: {exp_type}")
     return devices, tasks
@@ -471,6 +473,21 @@ async def add_workload(req: AddWorkloadRequest):
             print(f"[Server] Generated {len(trace)} additional requests for {req.task_name} "
                   f"(t={req.elapsed_time}s → {req.elapsed_time + remaining_duration:.0f}s)")
 
+            # Update internal workload accounting BEFORE routing so that any
+            # backbone migrate triggered by handle_add_task (e.g. fit/downsize)
+            # is reflected in state.orchestrator.plan before route_trace runs.
+            # This ensures spike requests are labeled with the new backbone, not the old one.
+            task_spec_for_state = {
+                'type': req.task_type,
+                'peak_workload': req.task_workload,
+                'latency': 1000,
+                'metric': 'accuracy' if req.task_type == 'classification' else 'mae',
+                'value': 0.9 if req.task_type == 'classification' else 0.5,
+            }
+            scheduler_name = state.config['scheduler'].lower()
+            scheduler_mode = scheduler_name == 'fmaas_share'
+            state.orchestrator.handle_add_task(req.task_name, task_spec_for_state, scheduler_mode)
+
             routed_trace = route_trace(trace, state.orchestrator.plan, state.config['seed'])
             state.orchestrator.send_new_requests(routed_trace)
             print(f"  ✓ Workload spike sent!")
@@ -480,17 +497,17 @@ async def add_workload(req: AddWorkloadRequest):
             print(f"  ✓ Workload drop recorded (no new requests sent).")
             n_new = 0
 
-        # Update internal workload accounting via handle_add_task (accumulates rate)
-        task_spec_for_state = {
-            'type': req.task_type,
-            'peak_workload': req.task_workload,
-            'latency': 1000,
-            'metric': 'accuracy' if req.task_type == 'classification' else 'mae',
-            'value': 0.9 if req.task_type == 'classification' else 0.5,
-        }
-        scheduler_name = state.config['scheduler'].lower()
-        scheduler_mode = scheduler_name == 'fmaas_share'
-        state.orchestrator.handle_add_task(req.task_name, task_spec_for_state, scheduler_mode)
+            # Still update internal workload accounting for drops
+            task_spec_for_state = {
+                'type': req.task_type,
+                'peak_workload': req.task_workload,
+                'latency': 1000,
+                'metric': 'accuracy' if req.task_type == 'classification' else 'mae',
+                'value': 0.9 if req.task_type == 'classification' else 0.5,
+            }
+            scheduler_name = state.config['scheduler'].lower()
+            scheduler_mode = scheduler_name == 'fmaas_share'
+            state.orchestrator.handle_add_task(req.task_name, task_spec_for_state, scheduler_mode)
 
         return {
             "status": "workload_updated",
