@@ -58,6 +58,7 @@ class Server:
     ip: str
     site_manager: str
     util: float = 0.0
+    cuda: str = None
 
 
 @dataclass
@@ -116,6 +117,7 @@ class Deployment:
     device_type: str
     mem: float
     util: float = 0.0
+    cuda: str = None
     components: Dict[str, float] = field(default_factory=dict)
     task_info: Dict[str, TaskInfo] = field(default_factory=dict)
 

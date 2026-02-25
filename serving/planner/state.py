@@ -284,6 +284,7 @@ class DeploymentState:
             device_type=old_deployment.device_type,
             mem=old_deployment.mem,
             util=new_util,
+            cuda=old_deployment.cuda,
             components=new_components,
             task_info=old_deployment.task_info
         )
@@ -425,6 +426,7 @@ class DeploymentState:
                     device_type=device_type,
                     mem=mem,
                     util=util,
+                    cuda=deploy_spec.get("cuda"),
                     components=components,
                     task_info=task_info,
                 )
@@ -441,6 +443,7 @@ class DeploymentState:
                         ip=dev_cfg['ip'],
                         site_manager=dev_cfg['site_manager'],
                         util=0.0,
+                        cuda=dev_cfg.get('cuda'),
                     )
 
         # Build state
@@ -505,6 +508,7 @@ class DeploymentState:
                 "device_name": deployment.server_name,
                 "device_type": deployment.device_type,
                 "backbone": real_backbone,
+                "cuda": deployment.cuda,
                 "decoders": decoders,
                 "tasks": {
                     t_name: {
