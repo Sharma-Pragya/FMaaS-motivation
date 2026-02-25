@@ -26,9 +26,13 @@ def parse_plan(plan_json):
 def route_trace(trace_requests, plan_json, seed=42):
     """Route a unified trace to devices according to the deployment plan.
 
-    Probabilistically assigns each request to a device proportional to
-    its allocated request rate. Drops requests if incoming rate exceeds
-    planned capacity.
+    Assigns each request to a device probabilistically, proportional to
+    each device's allocated request rate for that task.
+
+    No requests are dropped — generate_trace() already produces exactly
+    the right count for the planned rate, so acceptance sampling is not
+    needed and would incorrectly drop spike requests (which are generated
+    at the delta rate but routed against the pre-update plan rate).
     """
     np.random.seed(seed)
     task_routes, task_totals = parse_plan(plan_json)
@@ -37,17 +41,9 @@ def route_trace(trace_requests, plan_json, seed=42):
     for req in trace_requests:
         incoming_counts[req.task] = incoming_counts.get(req.task, 0) + 1
 
-    if trace_requests:
-        min_time = min(req.req_time for req in trace_requests)
-        max_time = max(req.req_time for req in trace_requests)
-        trace_duration = max_time - min_time if max_time > min_time else 1.0
-    else:
-        trace_duration = 1.0
-
     print("task_routes:", task_routes)
     print("task_totals:", task_totals)
     print("incoming_counts:", incoming_counts)
-    print("trace_duration:", trace_duration)
 
     routed = []
     for req in trace_requests:
@@ -58,13 +54,6 @@ def route_trace(trace_requests, plan_json, seed=42):
 
         routes = task_routes[task]
         total_task_rate = task_totals[task]
-        incoming_count = incoming_counts[task]
-
-        expected_count = total_task_rate * trace_duration
-        if incoming_count > expected_count:
-            accept_prob = expected_count / incoming_count
-            if np.random.random() > accept_prob:
-                continue
 
         probs = np.array([r[3] for r in routes]) / total_task_rate
         idx = np.random.choice(len(routes), p=probs)
