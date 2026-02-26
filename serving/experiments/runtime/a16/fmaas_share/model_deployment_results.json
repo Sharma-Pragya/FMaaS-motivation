@@ -1,0 +1,74 @@
+[
+    {
+        "status": "loaded_momentbase",
+        "logger_summary": "{'load_backbone': {'wall time': 5031.736360047944, 'gpu time': 5031.83349609375, 'gpu peak': 455.474688, 'gpu energy': 135.642, 'cpu dRSS': 644.48512}, 'add_decoder_ecgclass_momentbase_mlp': {'wall time': 37.36943798139691, 'gpu time': 37.403648376464844, 'gpu peak': 455.871488, 'gpu energy': 0.0, 'cpu dRSS': 0.524288}}"
+    },
+    {
+        "event": "runtime_update",
+        "device": "10.100.20.53:8000",
+        "result": {
+            "status": "added_1_decoders",
+            "logger_summary": "{'add_decoder': {'wall time': 59.15186810307205, 'gpu time': 59.177982330322266, 'gpu peak': 467.61216, 'gpu energy': 0.0, 'cpu dRSS': 0.0}}"
+        }
+    },
+    {
+        "event": "runtime_update",
+        "device": "10.100.20.53:8000",
+        "result": {
+            "status": "added_1_decoders",
+            "logger_summary": "{'add_decoder': {'wall time': 13.565914006903768, 'gpu time': 13.590527534484863, 'gpu peak': 465.18528, 'gpu energy': 0.0, 'cpu dRSS': 0.0}}"
+        }
+    },
+    {
+        "event": "runtime_add",
+        "deployments": [
+            {
+                "device": "10.100.20.53:8010",
+                "device_name": "device2",
+                "device_type": "NVIDIA A16",
+                "backbone": "chronosbase",
+                "cuda": "cuda:1",
+                "decoders": [
+                    {
+                        "task": "sysbp",
+                        "type": "regression",
+                        "path": "sysbp_chronosbase_mlp"
+                    }
+                ],
+                "tasks": {
+                    "sysbp": {
+                        "type": "regression",
+                        "total_requested_workload": 8.0,
+                        "request_per_sec": 0.8469532247400017
+                    }
+                },
+                "util": 0.074147,
+                "mem": 16000
+            }
+        ],
+        "result": {
+            "status": "loaded_chronosbase",
+            "logger_summary": "{'load_backbone': {'wall time': 4320.189777994528, 'gpu time': 4320.89501953125, 'gpu peak': 420.18304, 'gpu energy': 123.377, 'cpu dRSS': 399.548416}, 'add_decoder_sysbp_chronosbase_mlp': {'wall time': 8.269428042694926, 'gpu time': 7.483039855957031, 'gpu peak': 420.577792, 'gpu energy': 0.0, 'cpu dRSS': 0.0}}"
+        }
+    },
+    {
+        "event": "runtime_migrate",
+        "old_backbone": "chronosbase",
+        "new_backbone": "chronossmall",
+        "device": "10.100.20.53:8010",
+        "result": {
+            "status": "swapped_chronossmall",
+            "logger_summary": "{'load_backbone': {'wall time': 345.99837998393923, 'gpu time': 346.0809326171875, 'gpu peak': 521.672704, 'gpu energy': 8.147, 'cpu dRSS': 0.434176}, 'add_decoder_sysbp_chronossmall_mlp': {'wall time': 7.157427025958896, 'gpu time': 7.188992023468018, 'gpu peak': 521.936384, 'gpu energy': 0.0, 'cpu dRSS': 0.0}, 'add_decoder_diasbp_chronossmall_mlp': {'wall time': 6.67742604855448, 'gpu time': 6.706399917602539, 'gpu peak': 522.200064, 'gpu energy': 2.702, 'cpu dRSS': 0.0}}"
+        }
+    },
+    {
+        "event": "runtime_migrate",
+        "old_backbone": "chronossmall",
+        "new_backbone": "chronosmini",
+        "device": "10.100.20.53:8010",
+        "result": {
+            "status": "swapped_chronosmini",
+            "logger_summary": "{'load_backbone': {'wall time': 324.1589820245281, 'gpu time': 324.24017333984375, 'gpu peak': 143.715328, 'gpu energy': 8.301, 'cpu dRSS': 1.1264}, 'add_decoder_sysbp_chronosmini_mlp': {'wall time': 8.274164982140064, 'gpu time': 8.30835247039795, 'gpu peak': 143.913472, 'gpu energy': 0.0, 'cpu dRSS': 0.0}, 'add_decoder_diasbp_chronosmini_mlp': {'wall time': 7.633690955117345, 'gpu time': 7.665152072906494, 'gpu peak': 144.111616, 'gpu energy': 0.0, 'cpu dRSS': 0.0}, 'add_decoder_ecgclass_chronosmini_mlp': {'wall time': 7.120911031961441, 'gpu time': 7.148831844329834, 'gpu peak': 144.311808, 'gpu energy': 2.765, 'cpu dRSS': 0.0}}"
+        }
+    }
+]

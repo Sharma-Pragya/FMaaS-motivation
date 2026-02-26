@@ -25,16 +25,6 @@
 # ─────────────────────────────────────────────────────────────────────
 set -euo pipefail
 
-# ── Verify SSH agent is available (asyncssh requires it for auth) ─────
-if ! ssh-add -l &>/dev/null; then
-    echo "[ERROR] SSH agent has no keys (ssh-add -l failed)."
-    echo "        asyncssh uses the agent to authenticate to compute nodes."
-    echo "        Make sure you started this script from a terminal with a live SSH agent:"
-    echo "          ssh-add -l   # should list your key"
-    echo "        If running via VSCode remote, reconnect your SSH session."
-    exit 1
-fi
-
 # ── Schedulers to run ────────────────────────────────────────────────
 SCHEDULERS="${SCHEDULERS:-fmaas_share}"
 
@@ -89,17 +79,17 @@ EVENT7_TASK_TYPE="${EVENT7_TASK_TYPE:-classification}"
 EVENT7_SPIKE="${EVENT7_SPIKE:-15}"
 EVENT7_AT="${EVENT7_AT:-420}"
 
-# Event 8: new task — add_decoder (shares device1 momentbase backbone)
-EVENT8_TASK="${EVENT8_TASK:-heartrate}"
-EVENT8_TASK_TYPE="${EVENT8_TASK_TYPE:-regression}"
-EVENT8_WORKLOAD="${EVENT8_WORKLOAD:-8.0}"
-EVENT8_AT="${EVENT8_AT:-480}"
+# # Event 8: new task — add_decoder (shares device1 momentbase backbone)
+# EVENT8_TASK="${EVENT8_TASK:-heartrate}"
+# EVENT8_TASK_TYPE="${EVENT8_TASK_TYPE:-regression}"
+# EVENT8_WORKLOAD="${EVENT8_WORKLOAD:-8.0}"
+# EVENT8_AT="${EVENT8_AT:-480}"
 
-# Event 9: large workload spike — fit (device1 backbone downsize)
-EVENT9_TASK="${EVENT9_TASK:-heartrate}"
-EVENT9_TASK_TYPE="${EVENT9_TASK_TYPE:-regression}"
-EVENT9_SPIKE="${EVENT9_SPIKE:-15}"
-EVENT9_AT="${EVENT9_AT:-540}"
+# # Event 9: large workload spike — fit (device1 backbone downsize)
+# EVENT9_TASK="${EVENT9_TASK:-heartrate}"
+# EVENT9_TASK_TYPE="${EVENT9_TASK_TYPE:-regression}"
+# EVENT9_SPIKE="${EVENT9_SPIKE:-15}"
+# EVENT9_AT="${EVENT9_AT:-540}"
 
 # ── Paths ────────────────────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -197,8 +187,8 @@ run_scheduler() {
     info "  t=${EVENT5_AT}s     [EVENT 5] add-task:      ${EVENT5_TASK} @ ${EVENT5_WORKLOAD} req/s        (runtime_add, device2)"
     info "  t=${EVENT6_AT}s     [EVENT 6] add-task:      ${EVENT6_TASK} @ ${EVENT6_WORKLOAD} req/s        (add_decoder, device2)"
     info "  t=${EVENT7_AT}s     [EVENT 7] add-workload:  ${EVENT7_TASK} +${EVENT7_SPIKE} req/s            (fit/device2 backbone downsize)"
-    info "  t=${EVENT8_AT}s     [EVENT 8] add-task:      ${EVENT8_TASK} @ ${EVENT8_WORKLOAD} req/s        (add_decoder, device1)"
-    info "  t=${EVENT9_AT}s     [EVENT 9] add-workload:  ${EVENT9_TASK} +${EVENT9_SPIKE} req/s            (fit/device1 backbone downsize)"
+    # info "  t=${EVENT8_AT}s     [EVENT 8] add-task:      ${EVENT8_TASK} @ ${EVENT8_WORKLOAD} req/s        (add_decoder, device1)"
+    # info "  t=${EVENT9_AT}s     [EVENT 9] add-workload:  ${EVENT9_TASK} +${EVENT9_SPIKE} req/s            (fit/device1 backbone downsize)"
     echo ""
 
     # ── Start orchestrator ────────────────────────────────────────────

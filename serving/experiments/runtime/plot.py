@@ -8,7 +8,7 @@ Five timeline panels stacked vertically:
   4. Deployment event durations (Gantt)
   5. Per-task + total system throughput
 
-Nine-event timeline:
+Seven-event timeline:
   t=0s    Initial deploy: ecgclass @ 10 req/s
   t=60s   EVENT 1: gestureclass added         → add_decoder (shares device1 momentbase)
   t=120s  EVENT 2: ecgclass +5 req/s (→15)   → ramp step 1
@@ -17,12 +17,11 @@ Nine-event timeline:
   t=300s  EVENT 5: sysbp added               → runtime_add (new backbone, device2)
   t=360s  EVENT 6: diasbp added              → add_decoder (shares device2 backbone)
   t=420s  EVENT 7: ecgclass +15 req/s (→40)  → fit (device2 backbone downsize)
-  t=480s  EVENT 8: heartrate added           → add_decoder (shares device1 momentbase)
-  t=540s  EVENT 9: heartrate +15 req/s (→23) → fit (device1 backbone downsize)
 
 Setup:
-  - 2 GPUs on 10.100.20.48: :8000 (cuda:0, momentbase) and :8010 (cuda:1, chronostiny)
-  - Initial task: ecgclass on momentbase @ :8000
+  - 2 GPUs, device1 (cuda:0, momentbase) and device2 (cuda:1)
+  - Initial task: ecgclass on device1 @ momentbase
+  - Device IPs/ports are inferred from data (not hardcoded)
 """
 
 import csv
@@ -53,10 +52,8 @@ EVENTS = [
     {"t": 300, "label": "EVENT 5\nsysbp\n(new backbone)",                "color": "#f1a340"},
     {"t": 360, "label": "EVENT 6\ndiabp\n(add decoder)",                 "color": "#ca0020"},
     {"t": 420, "label": "EVENT 7\necgclass +15\n(fit/dev2 downsize)",    "color": "#5e3c99"},
-    {"t": 480, "label": "EVENT 8\nheartrate\n(add decoder)",             "color": "#2ca02c"},
-    {"t": 540, "label": "EVENT 9\nheartrate +15\n(fit/dev1 downsize)",   "color": "#8c6d31"},
 ]
-DURATION = 600  # seconds
+DURATION = 480  # seconds
 
 # ── Visual style ───────────────────────────────────────────────────────────────
 TASK_COLORS = {
@@ -64,23 +61,16 @@ TASK_COLORS = {
     "gestureclass": "#C44E52",
     "sysbp":        "#DD8452",
     "diasbp":       "#8172B2",
-    "heartrate":    "#55A868",
 }
 TASK_LABELS = {
     "ecgclass":     "ECG Classification",
     "gestureclass": "Gesture Classification",
     "sysbp":        "Sys. Blood Pressure",
     "diasbp":       "Dias. Blood Pressure",
-    "heartrate":    "Heart Rate",
 }
-DEVICE_COLORS = {
-    "10.100.20.48:8000": "#1f77b4",
-    "10.100.20.48:8010": "#ff7f0e",
-}
-DEVICE_LABELS = {
-    "10.100.20.48:8000": "Device 1 — :8000 (cuda:0)",
-    "10.100.20.48:8010": "Device 2 — :8010 (cuda:1)",
-}
+# Device colors/labels are assigned dynamically from data (not hardcoded by IP).
+# device1 = first device seen in CSV (earliest exec_time), device2 = second.
+DEVICE_COLOR_PALETTE = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]
 BACKBONE_HATCH = {
     "momentbase":   "",
     "momentlarge":  "---",
@@ -144,39 +134,44 @@ def rolling_throughput(rows, task, window_s=BIN):
         ys.append(count / window_s)
     return xs, ys
 
-# ── Parse deployment JSON into gantt segments ──────────────────────────────────
-# Map event type → which EVENTS entry to use for color
-# runtime_update entries are ordered: first N belong to EVENT 1 (gestureclass add),
-# later ones belong to EVENT 6 (diasbp add on device2). We detect by device.
-# runtime_add entries belong to EVENT 5 (sysbp → new backbone on device2).
-# runtime_migrate entries (if any) belong to EVENT 7 (fit/backbone downsize).
+# ── Infer device1 / device2 from data (no hardcoded IPs) ──────────────────────
+# device1 = device serving the initial task (ecgclass); device2 = the other one.
+# We determine order by first appearance in sorted rows (by exec_time).
+_devices_seen = []
+for r in sorted(rows, key=lambda x: x["exec_time"]):
+    d = r.get("device", "")
+    if d and d not in _devices_seen:
+        _devices_seen.append(d)
+DEVICE1 = _devices_seen[0] if len(_devices_seen) > 0 else ""
+DEVICE2 = _devices_seen[1] if len(_devices_seen) > 1 else ""
 
-EVENT_T = {ev["label"].split("\n")[0]: ev["t"] for ev in EVENTS}
-# Quick lookup: event index → t
-EV_T = [ev["t"] for ev in EVENTS]  # [60, 120, 180, 240, 300, 360, 420, 480, 540]
+DEVICE_COLORS = {d: DEVICE_COLOR_PALETTE[i] for i, d in enumerate(_devices_seen)}
+DEVICE_LABELS = {d: f"Device {i+1} — {d}" for i, d in enumerate(_devices_seen)}
+
+# ── Parse deployment JSON into gantt segments ──────────────────────────────────
+# runtime_update on device1 → EVENT 1 (gestureclass add_decoder)
+# runtime_add              → EVENT 5 (sysbp new backbone on device2)
+# runtime_update on device2 → EVENT 6 (diasbp add_decoder)
+# runtime_migrate on device2 → EVENT 7 (fit/backbone downsize)
+
+EV_T = [ev["t"] for ev in EVENTS]  # [60, 120, 180, 240, 300, 360, 420]
 
 gantt = []
 
-# Separate update entries by device
 update_entries_dev1 = [e for e in deploy_data
                        if e.get("event") == "runtime_update"
-                       and e.get("device", "").endswith(":8000")]
+                       and e.get("device", "") == DEVICE1]
 update_entries_dev2 = [e for e in deploy_data
                        if e.get("event") == "runtime_update"
-                       and e.get("device", "").endswith(":8010")]
-add_entries     = [e for e in deploy_data if e.get("event") == "runtime_add"]
-# Separate migrate entries by device: dev2 = EVENT 7, dev1 = EVENT 9
+                       and e.get("device", "") == DEVICE2]
+add_entries = [e for e in deploy_data if e.get("event") == "runtime_add"]
 migrate_entries_dev2 = [e for e in deploy_data
                         if e.get("event") == "runtime_migrate"
-                        and e.get("device", "").endswith(":8010")]
-migrate_entries_dev1 = [e for e in deploy_data
-                        if e.get("event") == "runtime_migrate"
-                        and e.get("device", "").endswith(":8000")]
-# Fall back: any migrate not matched by device goes to dev2 (EVENT 7) bucket
+                        and e.get("device", "") == DEVICE2]
+# Fallback: unmatched migrates go to dev2 bucket (EVENT 7)
 migrate_entries_unmatched = [e for e in deploy_data
                               if e.get("event") == "runtime_migrate"
-                              and not e.get("device", "").endswith(":8000")
-                              and not e.get("device", "").endswith(":8010")]
+                              and e.get("device", "") not in (DEVICE1, DEVICE2)]
 migrate_entries_dev2 = migrate_entries_dev2 + migrate_entries_unmatched
 
 def parse_summary(entry):
@@ -186,7 +181,7 @@ def parse_summary(entry):
     except Exception:
         return {}
 
-# EVENT 1 (t=60): gestureclass add_decoder on device1 — sequential
+# EVENT 1 (t=60): gestureclass add_decoder on device1
 cur_t = EV_T[0]  # 60
 for entry in update_entries_dev1:
     summary = parse_summary(entry)
@@ -259,48 +254,6 @@ for entry in migrate_entries_dev2:
         })
         cur_t += total_s
 
-# EVENT 8 (t=480): heartrate add_decoder on device1
-# These are runtime_update entries on :8000 that arrive after EVENT 1's entries.
-# We reuse update_entries_dev1 but skip the first batch (EVENT 1 already consumed them).
-# Since update_entries_dev1 is ordered, entries beyond the first group belong to EVENT 8.
-# We detect this by checking if there are 2+ separate update batches on dev1.
-# Simple heuristic: if there are >1 entries on dev1, the last one is EVENT 8.
-if len(update_entries_dev1) > 1:
-    cur_t = EV_T[7]  # 480
-    for entry in update_entries_dev1[1:]:
-        summary = parse_summary(entry)
-        dur = sum(v.get("wall time", 0) for v in summary.values()
-                  if isinstance(v, dict)) / 1000
-        if dur > 0:
-            gantt.append({
-                "t_start":  cur_t,
-                "duration": dur,
-                "label":    "add_decoder\n(heartrate)",
-                "device":   entry.get("device", ""),
-                "color":    EVENTS[7]["color"],
-            })
-            cur_t += dur
-
-# EVENT 9 (t=540): backbone migrate/fit on device1
-cur_t = EV_T[8]  # 540
-for entry in migrate_entries_dev1:
-    summary = parse_summary(entry)
-    backbone_ms = summary.get("load_backbone", {}).get("wall time", 0)
-    decoder_ms  = sum(v.get("wall time", 0) for k, v in summary.items()
-                      if k.startswith("add_decoder") and isinstance(v, dict))
-    total_s = (backbone_ms + decoder_ms) / 1000
-    if total_s > 0:
-        old_bb = entry.get("old_backbone", "?")
-        new_bb = entry.get("new_backbone", "?")
-        gantt.append({
-            "t_start":  cur_t,
-            "duration": total_s,
-            "label":    f"swap_backbone\n({old_bb}→{new_bb})",
-            "device":   entry.get("device", ""),
-            "color":    EVENTS[8]["color"],
-        })
-        cur_t += total_s
-
 # ── Backbone timeline per device ───────────────────────────────────────────────
 device_backbone_timeline = defaultdict(list)
 for r in sorted(rows, key=lambda x: x["exec_time"]):
@@ -310,7 +263,7 @@ for r in sorted(rows, key=lambda x: x["exec_time"]):
 fig, axes = plt.subplots(5, 1, figsize=(16, 22),
                          gridspec_kw={"height_ratios": [3, 3, 1.5, 2, 2]})
 fig.suptitle(
-    "FMaaS System in Action — Runtime Dynamics (fmaas_share, 2 GPUs, 10.100.20.48)",
+    "FMaaS System in Action — Runtime Dynamics (fmaas_share, 2 GPUs)",
     fontsize=13, fontweight="bold", y=0.995
 )
 fig.subplots_adjust(hspace=0.55, left=0.10, right=0.97, top=0.97, bottom=0.04)
@@ -436,7 +389,7 @@ ax4.grid(True, axis="x", alpha=0.2)
 
 ev_patches = [mpatches.Patch(color=ev["color"],
                               label=ev["label"].replace("\n", " "), alpha=0.85)
-              for ev in EVENTS if ev["t"] not in (120, 180, 240, 420, 540)]  # skip ramp/fit (no gantt bar)
+              for ev in EVENTS if ev["t"] not in (120, 180, 240, 420)]  # skip ramp/fit events (no gantt bar)
 ax4.legend(handles=ev_patches, fontsize=7, loc="upper right", framealpha=0.9)
 
 # ── Panel 5: Per-task + total throughput ───────────────────────────────────────
