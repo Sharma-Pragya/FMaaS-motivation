@@ -4,7 +4,7 @@ import asyncssh
 import numpy as np
 from urllib.parse import urlparse
 from pytriton.client import ModelClient
-from site_manager.config import cmds, activate_env, vlm_env, timeseries_env
+from site_manager.config import cmds, activate_env, vlm_env, timeseries_env, username
 
 
 def _parse_url(device_url: str) -> tuple[str, str, int]:
@@ -24,12 +24,12 @@ def _parse_url(device_url: str) -> tuple[str, str, int]:
         triton_url = f"{device_url}:{port+1}"
     return ssh_host, triton_url, port
 
-async def _ssh_start_server(ssh_host: str, conda_env: str, cmd: str, log_path: str):
+async def _ssh_start_server(ssh_host: str, username: str, conda_env: str, cmd: str, log_path: str):
     """Run remote command on gpu node via SSH (agent forwarding must be enabled)."""
     try:
         async with asyncssh.connect(
             ssh_host,
-            username="hshastri_umass_edu",
+            username=username,
             agent_forwarding=True,
         ) as conn:
             remote_cmd=(f"bash -lc '{cmds} && {activate_env} {conda_env} && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CONDA_PREFIX/lib && nohup {cmd}> {log_path} 2>&1 &'")
@@ -80,7 +80,7 @@ async def _deploy_one(s: dict):
     log_path = f"./device/logs/{ssh_host}_{s['backbone']}.log"
 
     # 1. Start Server via SSH
-    await _ssh_start_server(ssh_host, conda_env, server_cmd, log_path)
+    await _ssh_start_server(ssh_host, username, conda_env, server_cmd, log_path)
     
     # 2. Send Deployment Config via Control Plane
     config_payload = {
@@ -154,7 +154,7 @@ async def deploy_models(specs: list):
 
 # ── Device cleanup ───────────────────────────────────────────────────────────
 
-async def _ssh_kill_server(ssh_host: str, grpc_port: int):
+async def _ssh_kill_server(ssh_host: str, username: str, grpc_port: int):
     """Gracefully kill a Triton server on a remote host, then clean up resources.
 
     Steps:
@@ -167,7 +167,7 @@ async def _ssh_kill_server(ssh_host: str, grpc_port: int):
     try:
         async with asyncssh.connect(
             ssh_host,
-            username="hshastri_umass_edu",
+            username=username,
             agent_forwarding=True,
         ) as conn:
             ports = [grpc_port, grpc_port + 1, grpc_port + 2]
@@ -217,7 +217,7 @@ async def shutdown_devices(specs: list):
         key = (ssh_host, grpc_port)
         if key not in seen:
             seen.add(key)
-            tasks.append(_ssh_kill_server(ssh_host, grpc_port))
+            tasks.append(_ssh_kill_server(ssh_host, username, grpc_port))
 
     if tasks:
         await asyncio.gather(*tasks)
