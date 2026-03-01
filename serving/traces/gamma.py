@@ -11,13 +11,14 @@ import numpy as np
 class Request:
     def __init__(self, req_id, task, site_manager, device, req_time):
         self.req_id = req_id
-        self.task = task 
+        self.task = task
         # self.dataloader = dataloader
         self.site_manager=site_manager
         self.device=device
         self.req_time = req_time
+        self.backbone = None
 
-    
+
     def __repr__(self):
         return f"req_id={self.req_id}, " \
                f"task={self.task}, "  \
@@ -31,12 +32,13 @@ class Request:
             'task': self.task,
             'site_manager': self.site_manager,
             'device': self.device,
+            'backbone': self.backbone,
             'req_time': self.req_time
         }
 
 def generate_requests(num_tasks, alpha, req_rate, cv, duration,
-                      tasks, 
-                      seed=42)-> List[Request]:
+                      tasks,
+                      seed=42, req_id_offset=0)-> List[Request]:
     np.random.seed(seed)
 
     tot_req = int(req_rate * duration)
@@ -54,7 +56,7 @@ def generate_requests(num_tasks, alpha, req_rate, cv, duration,
     intervals = np.random.gamma(shape, scale, tot_req)
     for i in range(tot_req):
         tic += intervals[i]
-        requests.append(Request(i, tasks[ind[i]][0], tasks[ind[i]][1], tasks[ind[i]][2], tic))
+        requests.append(Request(req_id_offset + i, tasks[ind[i]][0], tasks[ind[i]][1], tasks[ind[i]][2], tic))
     #get per task mean rate per second per task
     task_counts = Counter([req.task for req in requests])
     mean_rps_per_task: Dict[str, float] = {task: cnt / float(duration) for task, cnt in task_counts.items()}

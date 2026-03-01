@@ -9,6 +9,7 @@ class Request:
         self.site_manager = site_manager
         self.device = device
         self.req_time = req_time
+        self.backbone = None
 
     def __repr__(self):
         return f"req_id={self.req_id}, task={self.task}, site_manager={self.site_manager}, device={self.device}, req_time={self.req_time}"
@@ -19,6 +20,7 @@ class Request:
             "task": self.task,
             "site_manager": self.site_manager,
             "device": self.device,
+            "backbone": self.backbone,
             "req_time": self.req_time,
         }
 
