@@ -1,0 +1,85 @@
+{
+  "sites": [
+    {
+      "id": "site2",
+      "deployments": [
+        {
+          "device": "10.100.40.30:8000",
+          "device_name": "device1",
+          "device_type": "NVIDIA GEFORCE RTX 2080 TI",
+          "backbone": "momentbase",
+          "cuda": "cuda:0",
+          "decoders": [
+            {
+              "task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentbase_mlp"
+            },
+            {
+              "task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_momentbase_mlp"
+            }
+          ],
+          "tasks": {
+            "ecgclass": {
+              "type": "classification",
+              "total_requested_workload": 30.0,
+              "request_per_sec": 30.0
+            },
+            "diasbp": {
+              "type": "regression",
+              "total_requested_workload": 20.0,
+              "request_per_sec": 10.871864384931524
+            }
+          },
+          "util": 0.6,
+          "mem": 16000
+        },
+        {
+          "device": "10.100.40.30:8010",
+          "device_name": "device2",
+          "device_type": "NVIDIA GEFORCE RTX 2080 TI",
+          "backbone": "chronostiny",
+          "cuda": "cuda:1",
+          "decoders": [
+            {
+              "task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_chronostiny_mlp"
+            },
+            {
+              "task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_chronostiny_mlp"
+            },
+            {
+              "task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_chronostiny_mlp"
+            }
+          ],
+          "tasks": {
+            "diasbp": {
+              "type": "regression",
+              "total_requested_workload": 20.0,
+              "request_per_sec": 9.128135615068476
+            },
+            "gestureclass": {
+              "type": "classification",
+              "total_requested_workload": 8.0,
+              "request_per_sec": 8.0
+            },
+            "sysbp": {
+              "type": "regression",
+              "total_requested_workload": 8.0,
+              "request_per_sec": 8.0
+            }
+          },
+          "util": 0.31656,
+          "mem": 16000
+        }
+      ]
+    }
+  ]
+}

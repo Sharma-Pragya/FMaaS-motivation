@@ -1,0 +1,42 @@
+{
+  "sites": [
+    {
+      "id": "site2",
+      "deployments": [
+        {
+          "device": "10.100.40.30:8000",
+          "device_name": "device1",
+          "device_type": "NVIDIA GEFORCE RTX 2080 TI",
+          "backbone": "momentbase",
+          "cuda": "cuda:0",
+          "decoders": [
+            {
+              "task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentbase_mlp"
+            },
+            {
+              "task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentbase_mlp"
+            }
+          ],
+          "tasks": {
+            "ecgclass": {
+              "type": "classification",
+              "total_requested_workload": 30.0,
+              "request_per_sec": 30.0
+            },
+            "gestureclass": {
+              "type": "classification",
+              "total_requested_workload": 8.0,
+              "request_per_sec": 8.0
+            }
+          },
+          "util": 0.488379,
+          "mem": 16000
+        }
+      ]
+    }
+  ]
+}

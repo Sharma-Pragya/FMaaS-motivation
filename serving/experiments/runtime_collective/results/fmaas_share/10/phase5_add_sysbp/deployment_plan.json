@@ -1,0 +1,75 @@
+{
+  "sites": [
+    {
+      "id": "site2",
+      "deployments": [
+        {
+          "device": "10.100.40.30:8000",
+          "device_name": "device1",
+          "device_type": "NVIDIA GEFORCE RTX 2080 TI",
+          "backbone": "momentbase",
+          "cuda": "cuda:0",
+          "decoders": [
+            {
+              "task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentbase_mlp"
+            },
+            {
+              "task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentbase_mlp"
+            },
+            {
+              "task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_momentbase_mlp"
+            }
+          ],
+          "tasks": {
+            "ecgclass": {
+              "type": "classification",
+              "total_requested_workload": 30.0,
+              "request_per_sec": 30.0
+            },
+            "gestureclass": {
+              "type": "classification",
+              "total_requested_workload": 8.0,
+              "request_per_sec": 8.0
+            },
+            "sysbp": {
+              "type": "regression",
+              "total_requested_workload": 8.0,
+              "request_per_sec": 5.592128025298049
+            }
+          },
+          "util": 0.6,
+          "mem": 16000
+        },
+        {
+          "device": "10.100.40.30:8010",
+          "device_name": "device2",
+          "device_type": "NVIDIA GEFORCE RTX 2080 TI",
+          "backbone": "chronosbase",
+          "cuda": "cuda:1",
+          "decoders": [
+            {
+              "task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_chronosbase_mlp"
+            }
+          ],
+          "tasks": {
+            "sysbp": {
+              "type": "regression",
+              "total_requested_workload": 8.0,
+              "request_per_sec": 2.4078719747019512
+            }
+          },
+          "util": 0.164469,
+          "mem": 16000
+        }
+      ]
+    }
+  ]
+}

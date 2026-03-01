@@ -1,0 +1,6 @@
+[
+    {
+        "status": "loaded_momentbase",
+        "logger_summary": "{'load_backbone': {'wall time': 8015.465494943783, 'gpu time': 8015.59521484375, 'gpu peak': 455.474688, 'gpu energy': 521.687, 'cpu dRSS': 650.387456}, 'add_decoder_ecgclass_momentbase_mlp': {'wall time': 3.698142012581229, 'gpu time': 3.74783992767334, 'gpu peak': 455.871488, 'gpu energy': 0.0, 'cpu dRSS': 0.196608}, 'add_decoder_gestureclass_momentbase_mlp': {'wall time': 2.046397072263062, 'gpu time': 2.0904641151428223, 'gpu peak': 456.269824, 'gpu energy': 0.0, 'cpu dRSS': 0.0}}"
+    }
+]

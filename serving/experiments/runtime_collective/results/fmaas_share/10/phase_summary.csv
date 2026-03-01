@@ -1,0 +1,9 @@
+phase,rows,avg_lat_ms,p95_lat_ms,max_lat_ms,avg_queue_ms,p95_queue_ms
+phase0_base_ecgclass,200,35.652,35.612,284.584,6.010,4.925
+phase1_add_gestureclass,360,32.597,35.127,281.747,6.565,4.831
+phase2_ecgclass_plus5,460,32.661,34.335,295.315,7.256,4.668
+phase3_ecgclass_plus10,660,29.009,28.574,275.931,8.778,4.465
+phase4_ecgclass_plus5,760,33.628,105.591,282.168,12.660,81.648
+phase5_add_sysbp,920,46.597,199.692,350.250,25.558,177.846
+phase6_add_diasbp,1320,49.572,224.895,483.782,29.630,194.343
+phase7_ecgclass_plus15,1620,112.350,449.196,525.882,94.437,430.941
