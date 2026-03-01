@@ -148,10 +148,48 @@ def generate_trace(trace_type: str, req_rate: int, duration: int, tasks: dict, s
         trace, avg_workload, peak_workload = generate_requests(
             req_rate, duration, routed_tasks, seed, req_id_offset
         )
+    elif trace_type == 'deterministic':
+        from traces.deterministic import generate_requests
+        trace, avg_workload, peak_workload = generate_requests(
+            req_rate, duration, routed_tasks, seed, req_id_offset
+        )
     else:
         raise ValueError(f"Unknown trace: {trace_type}")
 
     return trace, avg_workload, peak_workload
+
+
+def _incremental_plan_to_json(incremental_plan: dict) -> dict:
+    """Convert incremental_plan to a minimal plan JSON for route_trace.
+
+    incremental_plan: {task: [(site_manager, device_ip, backbone, rps), ...]}
+    Returns a plan_json dict with the same structure as deployment_plan.json,
+    but only containing the newly allocated entries.
+    """
+    # Collect unique (site_manager, device_ip, backbone) combos
+    deployments = {}  # (site_manager, device_ip, backbone) -> {task: rps}
+    for task, entries in incremental_plan.items():
+        for site_manager, device_ip, backbone, rps in entries:
+            key = (site_manager, device_ip, backbone)
+            deployments.setdefault(key, {})[task] = rps
+
+    # Group by site_manager
+    sites = {}
+    for (site_manager, device_ip, backbone), task_rates in deployments.items():
+        deploy = {
+            "device": device_ip,
+            "backbone": backbone,
+            "decoders": [{"task": t} for t in task_rates],
+            "tasks": {t: {"request_per_sec": r} for t, r in task_rates.items()},
+        }
+        sites.setdefault(site_manager, []).append(deploy)
+
+    return {
+        "sites": [
+            {"id": site_id, "deployments": deps}
+            for site_id, deps in sites.items()
+        ]
+    }
 
 
 # ============================================================================
@@ -361,7 +399,7 @@ async def add_task(req: AddTaskRequest):
             scheduler_mode = False  # default
 
         # Add task to deployment
-        success, message, actions = state.orchestrator.handle_add_task(
+        success, message, actions, _ = state.orchestrator.handle_add_task(
             req.task_name, task_spec, scheduler_mode
         )
 
@@ -476,7 +514,9 @@ async def add_workload(req: AddWorkloadRequest):
             # Update internal workload accounting BEFORE routing so that any
             # backbone migrate triggered by handle_add_task (e.g. fit/downsize)
             # is reflected in state.orchestrator.plan before route_trace runs.
-            # This ensures spike requests are labeled with the new backbone, not the old one.
+            # Use incremental_plan (only newly allocated rates) to route the spike
+            # trace so that requests go to the devices _deploy_task just assigned,
+            # not distributed across the full cumulative plan.
             task_spec_for_state = {
                 'type': req.task_type,
                 'peak_workload': req.task_workload,
@@ -486,9 +526,14 @@ async def add_workload(req: AddWorkloadRequest):
             }
             scheduler_name = state.config['scheduler'].lower()
             scheduler_mode = scheduler_name == 'fmaas_share'
-            state.orchestrator.handle_add_task(req.task_name, task_spec_for_state, scheduler_mode)
+            _, _, _, incremental_plan = state.orchestrator.handle_add_task(
+                req.task_name, task_spec_for_state, scheduler_mode
+            )
 
-            routed_trace = route_trace(trace, state.orchestrator.plan, state.config['seed'])
+            # Build a minimal plan JSON from incremental_plan for routing the spike.
+            # incremental_plan: {task: [(site_manager, device_ip, backbone, rps), ...]}
+            inc_plan_json = _incremental_plan_to_json(incremental_plan)
+            routed_trace = route_trace(trace, inc_plan_json, state.config['seed'])
             state.orchestrator.send_new_requests(routed_trace)
             print(f"  ✓ Workload spike sent!")
             n_new = len(trace)
@@ -507,7 +552,7 @@ async def add_workload(req: AddWorkloadRequest):
             }
             scheduler_name = state.config['scheduler'].lower()
             scheduler_mode = scheduler_name == 'fmaas_share'
-            state.orchestrator.handle_add_task(req.task_name, task_spec_for_state, scheduler_mode)
+            state.orchestrator.handle_add_task(req.task_name, task_spec_for_state, scheduler_mode)  # incremental_plan unused for drops
 
         return {
             "status": "workload_updated",

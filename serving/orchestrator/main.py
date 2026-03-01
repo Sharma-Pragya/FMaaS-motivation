@@ -292,7 +292,7 @@ class Orchestrator:
             scheduler_mode: True/False (share_mode or accuracy_mode depending on scheduler).
 
         Returns:
-            (success: bool, message: str, actions: list)
+            (success: bool, message: str, actions: list, incremental_plan: dict)
         """
         with self._add_task_lock:
             from planner.incremental import plan_new_task
@@ -300,7 +300,7 @@ class Orchestrator:
 
             state = self._load_state()
             if state is None:
-                return False, "No deployment state; run initial deploy first.", []
+                return False, "No deployment state; run initial deploy first.", [], {}
 
             task_spec_dict = {
                 "type": task_spec.get("type", "classification"),
@@ -312,15 +312,16 @@ class Orchestrator:
 
             kwargs, mode_str = scheduler_kwargs(self.scheduler_name, scheduler_mode)
 
-            state, diffs = plan_new_task(
+            state, diffs, incremental_plan = plan_new_task(
                 self._scheduler, state, task_name, task_spec_dict,
                 self._profile_data, self._pipelines, **kwargs
             )
             print(f"[Orchestrator] Planned '{task_name}' with {mode_str}. Diffs: {diffs}")
+            print(f"[Orchestrator] incremental_plan: {incremental_plan}")
 
             if not diffs:
                 self._save_state(state)
-                return True, "Task planned (no new deployments).", []
+                return True, "Task planned (no new deployments).", [], incremental_plan
 
             self._publish_diff(diffs)
             self._save_state(state)
@@ -338,7 +339,7 @@ class Orchestrator:
                 }
                 for d in diffs
             ]
-            return True, "Deployment diff applied.", actions
+            return True, "Deployment diff applied.", actions, incremental_plan
 
     # ------------------------------------------------------------------ #
     # Utilities                                                            #

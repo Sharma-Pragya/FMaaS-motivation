@@ -71,7 +71,11 @@ def plan_new_task(
             accuracy_mode for Clipper/M4).
 
     Returns:
-        Tuple of (updated state, list of DeploymentDiff actions).
+        Tuple of (updated state, list of DeploymentDiff actions, incremental_plan).
+        incremental_plan: {task_name: [(site_manager, device_ip, backbone, rps), ...]}
+            Contains only the rates newly allocated by this call.  Used by
+            add-workload in server.py to route the delta trace exclusively to the
+            devices that _deploy_task() just assigned, not against the full plan totals.
     """
     # 1. Snapshot existing deployment keys and their tasks.
     #    Also build a per-server set of old backbones so we can detect backbone
@@ -92,14 +96,41 @@ def plan_new_task(
     logger.info(f"Incremental plan for '{task_name}': demand_left={demand_left}, "
                 f"temp_plan keys={list(temp_plan.keys()) if temp_plan else []}")
 
-    # 3. Commit temp_plan to state
+    # 3. Commit temp_plan to state.
+    #    Also capture the incremental routing table: per-device rps newly allocated
+    #    for task_name.  This is derived from temp_plan BEFORE add_deployment() merges
+    #    it into existing state, so it reflects only what _deploy_task() just decided.
+    incremental_plan: Dict[str, List[tuple]] = {}
     if temp_plan:
+        for deployment in temp_plan.values():
+            if task_name in deployment.task_info:
+                rps = deployment.task_info[task_name].request_per_sec
+                entry = (
+                    deployment.site_manager,
+                    deployment.ip,      # placeholder ip at this point; updated by add_deployment
+                    deployment.backbone,
+                    rps,
+                )
+                incremental_plan.setdefault(task_name, []).append(entry)
+
         for deployment in temp_plan.values():
             state.add_deployment(
                 deployment,
                 scheduler.config.base_port,
                 scheduler.config.port_increment,
             )
+
+    # Patch incremental_plan with the real (port-assigned) ip after add_deployment().
+    # add_deployment() may have assigned a port to deployment.ip for new servers.
+    for deployment in state.get_all_deployments():
+        if task_name in deployment.task_info and deployment.backbone in {
+            d.backbone for d in temp_plan.values()
+        } if temp_plan else False:
+            entries = incremental_plan.get(task_name, [])
+            for i, (sm, ip, bb, rps) in enumerate(entries):
+                if bb == deployment.backbone and sm == deployment.site_manager:
+                    entries[i] = (sm, deployment.ip, bb, rps)
+            incremental_plan[task_name] = entries
 
     # 3b. Fix total_requested_workload: after merging, compute the true total
     #     request_per_sec for task_name across all deployments and write it back
@@ -187,4 +218,4 @@ def plan_new_task(
                 ))
 
     logger.info(f"Computed {len(diffs)} diff(s) for task '{task_name}'")
-    return state, diffs
+    return state, diffs, incremental_plan
