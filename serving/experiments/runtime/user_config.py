@@ -1,16 +1,16 @@
 
 devices = {
   'device1': {
-    'type': 'NVIDIA A16',
+    'type': 'NVIDIA GEFORCE RTX 2080 TI',
     'mem': 16000,  # in MB
-    'ip': '10.100.20.5',
+    'ip': '10.100.40.30',
     'site_manager':'site2',
     'cuda': 'cuda:0',
   },
   'device2': {
-    'type': 'NVIDIA A16',
+    'type': 'NVIDIA GEFORCE RTX 2080 TI',
     'mem': 16000,  # in MB
-    'ip': '10.100.20.5',
+    'ip': '10.100.40.30',
     'site_manager':'site2',
     'cuda': 'cuda:1',
   },
