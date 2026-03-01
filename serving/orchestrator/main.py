@@ -10,6 +10,7 @@ import json
 import os
 import time
 import threading
+import uuid
 from collections import defaultdict
 
 # Unique suffix per process so EMQX never reuses a queued session from a previous run
@@ -39,6 +40,7 @@ class Orchestrator:
         self._pipelines = None
         self._total_requests_generated = 0  # for unique req_id generation across add-task calls
         self._inference_client = None       # kept alive during continuous inference mode
+        self._runtime_start_epoch = None
 
     # ------------------------------------------------------------------ #
     # State helpers                                                        #
@@ -199,6 +201,7 @@ class Orchestrator:
 
         # Keep client alive to receive runtime ACKs throughout the experiment
         self._inference_client = client
+        self._runtime_start_epoch = time.time()
         print("[Orchestrator] Runtime inference triggered (continuous mode)")
 
     def wait_for_inference_completion(self, timeout=TIMEOUT):
@@ -214,6 +217,7 @@ class Orchestrator:
             self._inference_client.disconnect()
             self._inference_client.loop_stop()
             self._inference_client = None
+        self._runtime_start_epoch = None
 
     # ------------------------------------------------------------------ #
     # Cleanup                                                              #
@@ -241,47 +245,63 @@ class Orchestrator:
         client.disconnect()
         client.loop_stop()
         print("Cleanup complete. All device servers killed.")
+        self._runtime_start_epoch = None
 
     # ------------------------------------------------------------------ #
     # Runtime task addition                                                #
     # ------------------------------------------------------------------ #
 
     def _publish_diff(self, diffs):
-        """Publish deployment diffs to site managers and wait for ACKs."""
+        """Publish deployment diffs to site managers.
+
+        Returns a list of action dicts with ack_id values that can be waited on
+        before sending workload to the newly ready routes.
+        """
         if not diffs:
             print("[Orchestrator] No diffs to publish.")
-            return
+            return []
 
         client = self._inference_client
         if client is None:
             raise RuntimeError("No active MQTT client. Call run_inference_requests() first.")
 
-        self._mqtt.reset_acks({d.site_manager for d in diffs})
+        actions = []
 
         for d in diffs:
+            ack_id = f"deploy-{uuid.uuid4().hex[:12]}"
             if d.action == "add_full" and d.full_deployment:
-                payload = json.dumps({"deployments": [d.full_deployment]})
+                payload = json.dumps({"deployments": [d.full_deployment], "ack_id": ack_id})
                 client.publish(f"fmaas/deploy/site/{d.site_manager}/add", payload, qos=1)
                 print(f"[MQTT] Published /add to {d.site_manager} (server={d.server_name})")
             elif d.action == "add_decoder":
-                payload = json.dumps({"device": d.ip, "decoders": d.new_decoders})
+                payload = json.dumps({"device": d.ip, "decoders": d.new_decoders, "ack_id": ack_id})
                 client.publish(f"fmaas/deploy/site/{d.site_manager}/update", payload, qos=1)
                 print(f"[MQTT] Published /update to {d.site_manager} (server={d.server_name})")
             elif d.action == "migrate" and d.full_deployment:
                 payload = json.dumps({
                     "deployments": [d.full_deployment],
                     "old_backbone": d.old_backbone,
+                    "ack_id": ack_id,
                 })
                 client.publish(f"fmaas/deploy/site/{d.site_manager}/migrate", payload, qos=1)
                 print(f"[MQTT] Published /migrate to {d.site_manager} "
                       f"(server={d.server_name}, {d.old_backbone} → {d.backbone})")
+            else:
+                continue
 
-        print(f"[Orchestrator] Waiting for ACKs from {len(self._mqtt._expected_sites)} site(s)...")
-        if not self._mqtt.wait_for_acks(timeout=60):
-            print(f"[WARN] Timeout waiting for ACKs. "
-                  f"Received: {len(self._mqtt._acks)}/{len(self._mqtt._expected_sites)}")
-        else:
-            print("[Orchestrator] All ACKs received for diff operation.")
+            actions.append({
+                "ack_id": ack_id,
+                "action": d.action,
+                "site_manager": d.site_manager,
+                "server_name": d.server_name,
+                "backbone": d.backbone,
+                "old_backbone": d.old_backbone,
+                "ip": d.ip,
+                "device_type": d.device_type,
+                "new_decoders": d.new_decoders,
+            })
+
+        return actions
 
     def handle_add_task(self, task_name, task_spec, scheduler_mode):
         """Add a new task at runtime: plan → publish diff → save state.
@@ -321,25 +341,18 @@ class Orchestrator:
 
             if not diffs:
                 self._save_state(state)
-                return True, "Task planned (no new deployments).", [], incremental_plan
+                return True, "Task planned (no runtime deployment).", [], incremental_plan
 
-            self._publish_diff(diffs)
+            actions = self._publish_diff(diffs)
             self._save_state(state)
 
-            actions = [
-                {
-                    "action": d.action,
-                    "site_manager": d.site_manager,
-                    "server_name": d.server_name,
-                    "backbone": d.backbone,
-                    "old_backbone": d.old_backbone,
-                    "ip": d.ip,
-                    "device_type": d.device_type,
-                    "new_decoders": d.new_decoders,
-                }
-                for d in diffs
-            ]
             return True, "Deployment diff applied.", actions, incremental_plan
+
+    def current_runtime_elapsed(self, fallback: float = 0.0) -> float:
+        """Return elapsed experiment time based on runtime start."""
+        if self._runtime_start_epoch is None:
+            return fallback
+        return max(fallback, time.time() - self._runtime_start_epoch)
 
     # ------------------------------------------------------------------ #
     # Utilities                                                            #

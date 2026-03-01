@@ -16,7 +16,7 @@ from pytriton.client import ModelClient
 from torch.utils.data import DataLoader
 from urllib.parse import urlparse
 from site_manager.config import *
-from site_manager.storage import get_new_requests, is_task_deploying
+from site_manager.storage import get_new_requests, wait_for_new_requests
 import tritonclient.grpc as grpcclient
 from tritonclient.grpc import InferInput
 import tritonclient.grpc.aio as grpc_aio
@@ -95,6 +95,8 @@ async def send_request(req_id, device_url, inputs_dict, ouputs_dict):
     # 1. Get the raw gRPC client
     st = time.time()
     client = await get_client(device_url) 
+    if client is None:
+        return
     # 2. Prepare Inputs List
     triton_inputs = []
     
@@ -147,6 +149,7 @@ async def handle_runtime_request_continuous():
     await close_clients()
 
     tasks: List[asyncio.Task] = []
+    completed_results = []
     start = time.time()
     pending_queue = []  # Min-heap priority queue: [(req_time, counter, req), ...]
     processed_count = 0
@@ -184,53 +187,56 @@ async def handle_runtime_request_continuous():
             # Log every 100 polls to confirm loop is running
             print(f"[RuntimeExecutor] Poll #{poll_iteration}: queue={len(pending_queue)}, processed={processed_count}")
 
-        # Process requests whose scheduled time has arrived
-        current_time = time.time()
+        # Process requests whose scheduled time has arrived.
+        # Re-check time each dispatch so requests keep their intended spacing
+        # instead of being flushed in a 10-100ms burst.
         sent_this_iteration = 0
-        deferred_this_iteration = 0
         while pending_queue:
             req_time, counter, req = pending_queue[0]  # Peek at earliest request
             target_time = start + req_time
+            current_time = time.time()
 
-            if current_time >= target_time:
-                heapq.heappop(pending_queue)
-
-                # Check if this (task, device) is still deploying — defer if so
-                if is_task_deploying(req['task'], req['device']):
-                    # Push back with a small delay so we retry soon
-                    heapq.heappush(pending_queue, (req_time + 0.5, req_counter, req))
-                    req_counter += 1
-                    deferred_this_iteration += 1
-                    continue
-
-                batch = DATA.get(req['task'])
-
-                # Prepare inputs
-                inputs = {}
-                outputs = {}
-                inputs['x'] = batch['x'].numpy().astype(np.float32)
-                outputs['y'] = batch['y'].numpy().astype(np.float32)
-                inputs['task'] = np.array([[req['task'].encode('utf-8')]], dtype=object)
-
-                if 'mask' in batch:
-                    inputs['mask'] = batch['mask'].numpy().astype(np.float32)
-                if 'question' in batch:
-                    inputs['question'] = np.array([[batch['question'].encode('utf-8')]], dtype=object)
-
-                # Schedule the request
-                task = asyncio.create_task(send_request(req['req_id'], req['device'], inputs, outputs))
-                tasks.append(task)
-                processed_count += 1
-                sent_this_iteration += 1
-            else:
-                # Next request is in the future, stop processing for now
-                next_wait = target_time - current_time
+            if current_time < target_time:
                 if sent_this_iteration > 0:
-                    print(f"[RuntimeExecutor] Sent {sent_this_iteration} requests, next in {next_wait:.2f}s (at t={req_time:.1f}s)")
+                    next_wait = target_time - current_time
+                    print(f"[RuntimeExecutor] Sent {sent_this_iteration} requests, next in {next_wait:.3f}s (at t={req_time:.3f}s)")
                 break
 
-        if deferred_this_iteration > 0:
-            print(f"[RuntimeExecutor] Deferred {deferred_this_iteration} request(s) — deployment in progress")
+            heapq.heappop(pending_queue)
+
+            batch = DATA.get(req['task'])
+
+            # Prepare inputs
+            inputs = {}
+            outputs = {}
+            inputs['x'] = batch['x'].numpy().astype(np.float32)
+            outputs['y'] = batch['y'].numpy().astype(np.float32)
+            inputs['task'] = np.array([[req['task'].encode('utf-8')]], dtype=object)
+
+            if 'mask' in batch:
+                inputs['mask'] = batch['mask'].numpy().astype(np.float32)
+            if 'question' in batch:
+                inputs['question'] = np.array([[batch['question'].encode('utf-8')]], dtype=object)
+
+            # Schedule the request
+            task = asyncio.create_task(send_request(req['req_id'], req['device'], inputs, outputs))
+            tasks.append(task)
+            processed_count += 1
+            sent_this_iteration += 1
+
+        # Harvest completed tasks so this list does not grow for the whole run.
+        if tasks:
+            active_tasks = []
+            for task in tasks:
+                if task.done():
+                    try:
+                        completed_results.append(task.result())
+                    except Exception as e:
+                        print(f"[RuntimeExecutor] Task failed: {e}")
+                        completed_results.append(None)
+                else:
+                    active_tasks.append(task)
+            tasks = active_tasks
 
         # Check if we should exit
         idle_time = time.time() - last_request_received_time
@@ -238,26 +244,30 @@ async def handle_runtime_request_continuous():
             print(f"[RuntimeExecutor] No new requests for {idle_time:.1f}s and queue empty, completing...")
             break
 
-        # Sleep briefly before checking again
-        # Use shorter sleep if we have pending requests with near-future timestamps
-        # Keep sleep short (0.1s max) to frequently check for newly arrived requests
+        # Wait until either the next known request is due or a new request chunk
+        # arrives that may introduce an earlier deadline.
         if pending_queue:
-            next_req_time, _, _ = pending_queue[0]  # Unpack with counter
+            next_req_time, _, _ = pending_queue[0]
             next_target = start + next_req_time
-            time_until_next = next_target - time.time()
-            sleep_time = min(0.1, max(0.01, time_until_next))  # Max 0.1s to check for new reqs
+            wait_timeout = max(0.0, next_target - time.time())
         else:
-            sleep_time = 0.1  # Check for new requests every 100ms
+            wait_timeout = 0.1
 
-        await asyncio.sleep(sleep_time)
+        if wait_timeout > 0:
+            await asyncio.to_thread(wait_for_new_requests, wait_timeout)
 
     # Wait for all pending tasks to complete
     if tasks:
         print(f"[RuntimeExecutor] Waiting for {len(tasks)} pending requests to complete...")
-        results = await asyncio.gather(*tasks)
-        return results
-    else:
-        return []
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        for result in results:
+            if isinstance(result, Exception):
+                print(f"[RuntimeExecutor] Task failed: {result}")
+                completed_results.append(None)
+            else:
+                completed_results.append(result)
+
+    return completed_results
 
 
 # async def handle_runtime_request(reqs: dict, mode: str = 'trace'):

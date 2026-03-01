@@ -3,6 +3,7 @@
 import json
 import ssl
 import threading
+import time
 import paho.mqtt.client as mqtt
 from orchestrator.config import BROKER, PORT
 
@@ -83,10 +84,9 @@ class MQTTManager:
         if topic.startswith("fmaas/deploytime/ack"):
             site = payload.get("site", "unknown")
             print(f"Deploytime ACK from {site}: {payload}")
-            if "error" in payload:
-                print(f"[MQTT] Ignoring error ACK from {site} (deployment failed on site manager)")
-                return
-            if waiting_for == 'deploytime' or waiting_for is None:
+            # Runtime deployment ACKs use ack_id and must still be recorded even
+            # while the orchestrator is in the long-lived runtime phase.
+            if payload.get("ack_id") or waiting_for == 'deploytime' or waiting_for is None:
                 self._record_ack(site, payload)
         elif topic.startswith("fmaas/runtime/ack"):
             site = payload.get("site", "unknown")
@@ -100,8 +100,9 @@ class MQTTManager:
             print(f"Cleanup ACK from {site}")
 
     def _record_ack(self, site: str, payload: dict):
+        ack_key = payload.get("ack_id") or site
         with self._acks_lock:
-            self._acks[site] = payload
+            self._acks[ack_key] = payload
             if self._expected_sites and all(s in self._acks for s in self._expected_sites):
                 self._all_acks_event.set()
 
@@ -117,3 +118,14 @@ class MQTTManager:
         received = self._all_acks_event.wait(timeout=timeout)
         self._waiting_for_ack_type = None
         return received
+
+    def wait_for_any_ack(self, expected_keys: set, timeout: float):
+        """Return the first matching ACK key/payload that arrives within timeout."""
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            with self._acks_lock:
+                for key in expected_keys:
+                    if key in self._acks:
+                        return key, self._acks[key]
+            time.sleep(0.05)
+        return None, None

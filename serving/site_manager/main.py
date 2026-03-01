@@ -29,8 +29,7 @@ import paho.mqtt.client as mqtt
 from site_manager.config import BROKER, PORT, SITE_ID
 from site_manager.storage import (
     store_plan, store_requests, get_requests, get_deployments,
-    get_output_dir, clear_state, append_deployments, replace_deployment,
-    mark_task_deploying, mark_task_deployed
+    get_output_dir, clear_state, append_deployments, replace_deployment
 )
 from site_manager.runtime_executor import handle_runtime_request_continuous, initialize_dataloaders
 from site_manager.deployment_handler import deploy_models, shutdown_devices, _add_decoder_to_device, _swap_backbone_on_device
@@ -96,6 +95,24 @@ def _save_results(reqs_latency):
         raise
 
 
+def _publish_runtime_deploy_ack(client, ack_id, status, action, extra=None):
+    """Publish completion ACK for a runtime deployment operation."""
+    payload = {
+        "site": SITE_ID,
+        "ack_id": ack_id,
+        "status": status,
+        "action": action,
+    }
+    if extra:
+        payload.update(extra)
+    client.publish(
+        f"fmaas/deploytime/ack/site/{SITE_ID}",
+        json.dumps(payload),
+        qos=1,
+    )
+    print(f"[MQTT] Sent runtime deploy ACK for {SITE_ID}: {payload}")
+
+
 def on_message(client, userdata, msg):
     topic = msg.topic
     try:
@@ -148,28 +165,15 @@ def on_message(client, userdata, msg):
 
         # Run deployment in background thread to avoid blocking MQTT message reception
         def deploy_in_background():
+            ack_id = payload.get("ack_id")
             try:
                 new_specs = payload.get("deployments", [payload] if isinstance(payload, dict) and "device" in payload else [])
                 if not new_specs:
                     raise ValueError("No deployments in /add payload")
 
-                # Extract (task, device) pairs and mark them as deploying BEFORE starting
-                task_device_pairs = []
-                for spec in new_specs:
-                    device_url = spec.get("device", "")
-                    for dec in spec.get("decoders", []):
-                        tname = dec.get("task")
-                        if tname:
-                            task_device_pairs.append((tname, device_url))
-                            mark_task_deploying(tname, device_url)
-
-                print(f"[SiteManager] Starting background deployment for /add (deploying: {task_device_pairs})...")
+                print(f"[SiteManager] Starting background deployment for /add...")
                 deployment_status = asyncio.run(deploy_models(new_specs))
                 append_deployments(new_specs)
-
-                # Mark all tasks as deployed now that deployment is complete
-                for tname, device_url in task_device_pairs:
-                    mark_task_deployed(tname, device_url)
 
                 # Append to model_deployment_results.json
                 output_dir = get_output_dir()
@@ -186,30 +190,24 @@ def on_message(client, userdata, msg):
                 except Exception as e:
                     print(f"[SiteManager] Warning: Failed to update deployment JSON: {e}")
 
+                _publish_runtime_deploy_ack(
+                    client, ack_id, "completed", "add",
+                    {"deployments": len(new_specs)},
+                )
                 print(f"[SiteManager] Background deployment complete for /add")
             except Exception as e:
                 print(f"[SiteManager] ERROR during background /add deployment: {e}")
                 traceback.print_exc()
-                # Unblock requests even on failure so they aren't deferred forever
-                for tname, device_url in task_device_pairs:
-                    mark_task_deployed(tname, device_url)
+                _publish_runtime_deploy_ack(client, ack_id, "error", "add", {"error": str(e)})
 
         threading.Thread(target=deploy_in_background, daemon=True).start()
-
-        # Send ACK immediately (don't wait for deployment to complete)
-        client.publish(
-            f"fmaas/deploytime/ack/site/{SITE_ID}",
-            json.dumps({"site": SITE_ID, "add": True, "status": "started"}),
-            qos=1,
-        )
-        print(f"[MQTT] Sent /add ACK for {SITE_ID} (deployment running in background)")
 
     # ── Runtime migrate: swap backbone on existing server ──────────────────
     elif topic.endswith(f"deploy/site/{SITE_ID}/migrate"):
         print(f"[MQTT] Received /migrate for {SITE_ID}")
 
         def migrate_in_background():
-            task_names = []
+            ack_id = payload.get("ack_id")
             try:
                 new_specs = payload.get("deployments", [])
                 old_backbone = payload.get("old_backbone")
@@ -220,15 +218,8 @@ def on_message(client, userdata, msg):
                 device_url = new_specs[0].get("device")
                 decoders = new_specs[0].get("decoders", [])
 
-                # Mark all (task, device) pairs as deploying BEFORE swap — defers new requests
-                for dec in decoders:
-                    tname = dec.get("task")
-                    if tname:
-                        task_names.append(tname)
-                        mark_task_deploying(tname, device_url)
-
                 print(f"[SiteManager] Swapping backbone in-process: {old_backbone} → "
-                      f"{new_backbone} on {device_url} (tasks: {task_names})")
+                      f"{new_backbone} on {device_url}")
 
                 # Send swap_backbone control command — device handles GPU memory
                 # release and new backbone load without any server restart
@@ -236,10 +227,6 @@ def on_message(client, userdata, msg):
 
                 # Update stored deployment so cleanup later targets the right backbone
                 replace_deployment(old_backbone, new_specs[0])
-
-                # Unblock deferred requests — new backbone is ready
-                for tname in task_names:
-                    mark_task_deployed(tname, device_url)
 
                 # Append to model_deployment_results.json
                 output_dir = get_output_dir()
@@ -257,22 +244,18 @@ def on_message(client, userdata, msg):
                 except Exception as e:
                     print(f"[SiteManager] Warning: Failed to update deployment JSON: {e}")
 
+                _publish_runtime_deploy_ack(
+                    client, ack_id, "completed", "migrate",
+                    {"device": device_url, "old_backbone": old_backbone, "new_backbone": new_backbone},
+                )
                 print(f"[SiteManager] Migration complete: {old_backbone} → {new_backbone}")
 
             except Exception as e:
                 print(f"[SiteManager] ERROR during /migrate: {e}")
                 traceback.print_exc()
-                for tname in task_names:
-                    mark_task_deployed(tname, device_url)
+                _publish_runtime_deploy_ack(client, ack_id, "error", "migrate", {"error": str(e)})
 
         threading.Thread(target=migrate_in_background, daemon=True).start()
-
-        client.publish(
-            f"fmaas/deploytime/ack/site/{SITE_ID}",
-            json.dumps({"site": SITE_ID, "migrate": True, "status": "started"}),
-            qos=1,
-        )
-        print(f"[MQTT] Sent /migrate ACK for {SITE_ID} (migration running in background)")
 
     # ── Runtime update: hot-add decoder to existing device ─────────────────
     elif topic.endswith(f"deploy/site/{SITE_ID}/update"):
@@ -280,23 +263,15 @@ def on_message(client, userdata, msg):
 
         # Run deployment in background thread to avoid blocking MQTT message reception
         def deploy_in_background():
+            ack_id = payload.get("ack_id")
             try:
                 device_url = payload.get("device")
                 decoders = payload.get("decoders", [])
                 if not device_url or not decoders:
                     raise ValueError("device and decoders required in /update payload")
 
-                # Extract task names and mark (task, device) as deploying BEFORE starting
-                task_names = [dec.get("task") for dec in decoders if dec.get("task")]
-                for tname in task_names:
-                    mark_task_deploying(tname, device_url)
-
-                print(f"[SiteManager] Starting background deployment for /update (deploying tasks: {task_names} on {device_url})...")
+                print(f"[SiteManager] Starting background deployment for /update ({device_url})...")
                 result = asyncio.run(_add_decoder_to_device(device_url, decoders))
-
-                # Mark all tasks as deployed now that deployment is complete
-                for tname in task_names:
-                    mark_task_deployed(tname, device_url)
 
                 # Append to model_deployment_results.json
                 output_dir = get_output_dir()
@@ -312,23 +287,17 @@ def on_message(client, userdata, msg):
                 except Exception as e:
                     print(f"[SiteManager] Warning: Failed to update deployment JSON: {e}")
 
+                _publish_runtime_deploy_ack(
+                    client, ack_id, "completed", "update",
+                    {"device": device_url, "decoders": len(decoders)},
+                )
                 print(f"[SiteManager] Background deployment complete for /update")
             except Exception as e:
                 print(f"[SiteManager] ERROR during background /update deployment: {e}")
                 traceback.print_exc()
-                # Unblock requests even on failure so they aren't deferred forever
-                for tname in task_names:
-                    mark_task_deployed(tname, device_url)
+                _publish_runtime_deploy_ack(client, ack_id, "error", "update", {"error": str(e)})
 
         threading.Thread(target=deploy_in_background, daemon=True).start()
-
-        # Send ACK immediately (don't wait for deployment to complete)
-        client.publish(
-            f"fmaas/deploytime/ack/site/{SITE_ID}",
-            json.dumps({"site": SITE_ID, "update": True, "status": "started"}),
-            qos=1,
-        )
-        print(f"[MQTT] Sent /update ACK for {SITE_ID} (deployment running in background)")
 
     # ── Receive request chunks ───────────────────────────────────────────
     elif topic.endswith(f"deploy/site/{SITE_ID}/req"):

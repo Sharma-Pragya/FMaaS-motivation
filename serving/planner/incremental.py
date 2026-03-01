@@ -101,6 +101,7 @@ def plan_new_task(
     #    for task_name.  This is derived from temp_plan BEFORE add_deployment() merges
     #    it into existing state, so it reflects only what _deploy_task() just decided.
     incremental_plan: Dict[str, List[tuple]] = {}
+    entry_keys: List[tuple] = []  # (site_manager, placeholder_ip, backbone, server_name)
     if temp_plan:
         for deployment in temp_plan.values():
             if task_name in deployment.task_info:
@@ -112,6 +113,12 @@ def plan_new_task(
                     rps,
                 )
                 incremental_plan.setdefault(task_name, []).append(entry)
+                entry_keys.append((
+                    deployment.site_manager,
+                    deployment.ip,       # placeholder ip before add_deployment mutates it
+                    deployment.backbone,
+                    deployment.server_name,
+                ))
 
         for deployment in temp_plan.values():
             state.add_deployment(
@@ -122,14 +129,33 @@ def plan_new_task(
 
     # Patch incremental_plan with the real (port-assigned) ip after add_deployment().
     # add_deployment() may have assigned a port to deployment.ip for new servers.
-    for deployment in state.get_all_deployments():
-        if task_name in deployment.task_info and deployment.backbone in {
-            d.backbone for d in temp_plan.values()
-        } if temp_plan else False:
+    # Build a lookup from (site_manager, server_name, backbone) -> real ip so that
+    # when multiple GPUs in the same site share a backbone, each entry is updated
+    # with the correct device's ip rather than the last one iterated.
+    if temp_plan:
+        temp_plan_server_names = {d.server_name for d in temp_plan.values()}
+        ip_lookup = {}  # (site_manager, server_name, backbone) -> real ip
+        for deployment in state.get_all_deployments():
+            if (task_name in deployment.task_info
+                    and deployment.server_name in temp_plan_server_names
+                    and deployment.backbone in {d.backbone for d in temp_plan.values()}):
+                key = (deployment.site_manager, deployment.server_name, deployment.backbone)
+                ip_lookup[key] = deployment.ip
+
+        # Match each incremental_plan entry back to the temp_plan deployment that
+        # created it using the original placeholder ip captured before
+        # add_deployment() mutated deployment.ip to include the assigned port.
+        if ip_lookup:
             entries = incremental_plan.get(task_name, [])
             for i, (sm, ip, bb, rps) in enumerate(entries):
-                if bb == deployment.backbone and sm == deployment.site_manager:
-                    entries[i] = (sm, deployment.ip, bb, rps)
+                server_name = None
+                for key_sm, key_ip, key_bb, key_server_name in entry_keys:
+                    if key_sm == sm and key_ip == ip and key_bb == bb:
+                        server_name = key_server_name
+                        break
+                real_ip = ip_lookup.get((sm, server_name, bb)) if server_name else None
+                if real_ip is not None:
+                    entries[i] = (sm, real_ip, bb, rps)
             incremental_plan[task_name] = entries
 
     # 3b. Fix total_requested_workload: after merging, compute the true total
