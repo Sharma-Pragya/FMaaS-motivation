@@ -192,6 +192,76 @@ def _incremental_plan_to_json(incremental_plan: dict) -> dict:
     }
 
 
+def _route_key_from_action(action: dict):
+    return (action["site_manager"], action["ip"], action["backbone"])
+
+
+def _normalized_backbone(backbone: str):
+    if backbone and "__clipper__" in backbone:
+        return backbone.split("__clipper__")[0]
+    return backbone
+
+
+def _match_action_for_route(action_by_route, route_key):
+    action = action_by_route.get(route_key)
+    if action:
+        return action
+
+    site_manager, device, backbone = route_key
+    norm_key = (site_manager, device, _normalized_backbone(backbone))
+    return action_by_route.get(norm_key)
+
+
+def _shift_requests_to_elapsed(requests, target_elapsed):
+    """Shift a routed batch so its earliest request starts at target_elapsed."""
+    if not requests:
+        return
+    min_req_time = min(r.req_time for r in requests)
+    shift = max(0.0, target_elapsed - min_req_time)
+    if shift <= 0:
+        return
+    for req in requests:
+        req.req_time += shift
+
+
+def _send_incremental_batches(orchestrator, trace, incremental_plan, actions, seed, fallback_elapsed):
+    """Route once, then send per-action batches only after matching deploy ACKs."""
+    inc_plan_json = _incremental_plan_to_json(incremental_plan)
+    routed_trace = route_trace(trace, inc_plan_json, seed)
+
+    action_by_route = {
+        _route_key_from_action(action): action
+        for action in actions
+    }
+
+    immediate = []
+    pending = {}
+    for req in routed_trace:
+        route_key = (req.site_manager, req.device, req.backbone)
+        action = _match_action_for_route(action_by_route, route_key)
+        if action and action.get("ack_id"):
+            pending.setdefault(action["ack_id"], {"action": action, "requests": []})["requests"].append(req)
+        else:
+            immediate.append(req)
+
+    if immediate:
+        orchestrator.send_new_requests(immediate)
+
+    remaining = {ack_id: batch for ack_id, batch in pending.items() if batch["requests"]}
+    while remaining:
+        ack_id, payload = orchestrator._mqtt.wait_for_any_ack(set(remaining.keys()), timeout=120)
+        if ack_id is None:
+            raise TimeoutError(f"Timed out waiting for deployment completion ACKs: {sorted(remaining.keys())}")
+
+        batch = remaining.pop(ack_id)
+        if payload.get("error"):
+            raise RuntimeError(f"Deployment failed for {ack_id}: {payload['error']}")
+
+        target_elapsed = orchestrator.current_runtime_elapsed(fallback=fallback_elapsed)
+        _shift_requests_to_elapsed(batch["requests"], target_elapsed)
+        orchestrator.send_new_requests(batch["requests"])
+
+
 # ============================================================================
 # API Endpoints
 # ============================================================================
@@ -372,13 +442,17 @@ async def add_task(req: AddTaskRequest):
         print(f"         Type: {req.task_type}, Workload: {req.task_workload}")
         print(f"         Elapsed time: {req.elapsed_time}s")
 
-        # Build task spec
+        # Build task spec — use SLO values from the loaded task config when
+        # available so that the scheduler sees real latency/quality constraints
+        # rather than the hardcoded placeholders.
+        devices, tasks = load_config(state.config['exp_type'])
+        known = tasks.get(req.task_name, {})
         task_spec = {
             'type': req.task_type,
             'peak_workload': req.task_workload,
-            'latency': 1000,
-            'metric': 'accuracy' if req.task_type == 'classification' else 'mae',
-            'value': 0.9 if req.task_type == 'classification' else 0.5,
+            'latency': known.get('latency', 1000),
+            'metric': known.get('metric', 'accuracy' if req.task_type == 'classification' else 'mae'),
+            'value': known.get('value', 0.9 if req.task_type == 'classification' else 0.5),
         }
 
         # Determine scheduler mode based on scheduler name
@@ -398,8 +472,8 @@ async def add_task(req: AddTaskRequest):
         else:
             scheduler_mode = False  # default
 
-        # Add task to deployment
-        success, message, actions, _ = state.orchestrator.handle_add_task(
+        # Add task to deployment — capture incremental_plan for routing
+        success, message, actions, incremental_plan = state.orchestrator.handle_add_task(
             req.task_name, task_spec, scheduler_mode
         )
 
@@ -421,8 +495,8 @@ async def add_task(req: AddTaskRequest):
             req_id_offset = state.orchestrator.get_total_requests_generated()
             print(f"[Server] Using req_id_offset={req_id_offset}")
 
-            # Generate trace
-            req_rate = int(task_spec.get('peak_workload', 10))
+            # Generate trace — keep as float so fractional rates are not truncated
+            req_rate = task_spec.get('peak_workload', 10)
             trace, _, _ = generate_trace(
                 state.config['trace'],
                 req_rate,
@@ -441,11 +515,19 @@ async def add_task(req: AddTaskRequest):
             print(f"[Server] Generated {len(trace)} requests (req_ids {req_id_offset} to {req_id_offset + len(trace) - 1})")
             print(f"[Server] Time range: {req.elapsed_time:.1f}s to {req.elapsed_time + remaining_duration:.1f}s")
 
-            # Route and send
-            routed_trace = route_trace(trace, state.orchestrator.plan, state.config['seed'])
-
             print(f"[Server] Sending new workload to site managers...")
-            state.orchestrator.send_new_requests(routed_trace)
+            if incremental_plan:
+                _send_incremental_batches(
+                    state.orchestrator,
+                    trace,
+                    incremental_plan,
+                    actions,
+                    state.config['seed'],
+                    req.elapsed_time,
+                )
+            else:
+                routed_trace = route_trace(trace, state.orchestrator.plan, state.config['seed'])
+                state.orchestrator.send_new_requests(routed_trace)
             print(f"  ✓ Workload sent!")
 
         return {
@@ -488,18 +570,21 @@ async def add_workload(req: AddWorkloadRequest):
         # For a drop we still record the workload change but don't send
         # negative requests — the existing queued requests simply thin out.
         if req.task_workload > 0:
+            # Use SLO values from the loaded task config when available.
+            _, tasks = load_config(state.config['exp_type'])
+            known = tasks.get(req.task_name, {})
             task_spec = {
                 'type': req.task_type,
                 'peak_workload': req.task_workload,  # delta only
-                'latency': 1000,
-                'metric': 'accuracy' if req.task_type == 'classification' else 'mae',
-                'value': 0.9 if req.task_type == 'classification' else 0.5,
+                'latency': known.get('latency', 1000),
+                'metric': known.get('metric', 'accuracy' if req.task_type == 'classification' else 'mae'),
+                'value': known.get('value', 0.9 if req.task_type == 'classification' else 0.5),
             }
 
             req_id_offset = state.orchestrator.get_total_requests_generated()
             trace, _, _ = generate_trace(
                 state.config['trace'],
-                int(req.task_workload),
+                req.task_workload,  # keep as float so fractional rates are not truncated
                 remaining_duration,
                 {req.task_name: task_spec},
                 state.config['seed'],
@@ -517,42 +602,35 @@ async def add_workload(req: AddWorkloadRequest):
             # Use incremental_plan (only newly allocated rates) to route the spike
             # trace so that requests go to the devices _deploy_task just assigned,
             # not distributed across the full cumulative plan.
-            task_spec_for_state = {
-                'type': req.task_type,
-                'peak_workload': req.task_workload,
-                'latency': 1000,
-                'metric': 'accuracy' if req.task_type == 'classification' else 'mae',
-                'value': 0.9 if req.task_type == 'classification' else 0.5,
-            }
+            task_spec_for_state = task_spec  # reuse the spec with real SLO values
             scheduler_name = state.config['scheduler'].lower()
             scheduler_mode = scheduler_name == 'fmaas_share'
-            _, _, _, incremental_plan = state.orchestrator.handle_add_task(
+            _, _, actions, incremental_plan = state.orchestrator.handle_add_task(
                 req.task_name, task_spec_for_state, scheduler_mode
             )
 
-            # Build a minimal plan JSON from incremental_plan for routing the spike.
-            # incremental_plan: {task: [(site_manager, device_ip, backbone, rps), ...]}
-            inc_plan_json = _incremental_plan_to_json(incremental_plan)
-            routed_trace = route_trace(trace, inc_plan_json, state.config['seed'])
-            state.orchestrator.send_new_requests(routed_trace)
+            if incremental_plan:
+                _send_incremental_batches(
+                    state.orchestrator,
+                    trace,
+                    incremental_plan,
+                    actions,
+                    state.config['seed'],
+                    req.elapsed_time,
+                )
+            else:
+                routed_trace = route_trace(trace, state.orchestrator.plan, state.config['seed'])
+                state.orchestrator.send_new_requests(routed_trace)
             print(f"  ✓ Workload spike sent!")
             n_new = len(trace)
         else:
-            # Drop: just log it; no new requests generated
+            # Drop: log it; no new requests generated and no scheduler call needed.
+            # handle_add_task() with a negative peak_workload is a no-op in the
+            # scheduler (negative demand is skipped), so we avoid that call entirely.
+            # Already-queued requests for the task continue to execute — cancelling
+            # them would require a site-manager-level purge mechanism not yet implemented.
             print(f"  ✓ Workload drop recorded (no new requests sent).")
             n_new = 0
-
-            # Still update internal workload accounting for drops
-            task_spec_for_state = {
-                'type': req.task_type,
-                'peak_workload': req.task_workload,
-                'latency': 1000,
-                'metric': 'accuracy' if req.task_type == 'classification' else 'mae',
-                'value': 0.9 if req.task_type == 'classification' else 0.5,
-            }
-            scheduler_name = state.config['scheduler'].lower()
-            scheduler_mode = scheduler_name == 'fmaas_share'
-            state.orchestrator.handle_add_task(req.task_name, task_spec_for_state, scheduler_mode)  # incremental_plan unused for drops
 
         return {
             "status": "workload_updated",
