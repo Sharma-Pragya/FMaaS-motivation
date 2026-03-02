@@ -122,6 +122,8 @@ def load_config(exp_type: str):
         from experiments.runtime.user_config import devices, tasks
     elif exp_type == "runtime_task":
         from experiments.runtime_task.user_config import devices, tasks
+    elif exp_type == "SystemInAction":
+        from experiments.SystemInAction.user_config import devices, tasks
     else:
         raise ValueError(f"Unknown exp_type: {exp_type}")
     return devices, tasks
