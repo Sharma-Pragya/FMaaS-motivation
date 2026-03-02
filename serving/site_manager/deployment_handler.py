@@ -2,6 +2,7 @@ import json
 import asyncio
 import asyncssh
 import numpy as np
+import os
 from urllib.parse import urlparse
 from pytriton.client import ModelClient
 from site_manager.config import cmds, activate_env, vlm_env, timeseries_env, username
@@ -31,6 +32,8 @@ async def _ssh_start_server(ssh_host: str, username: str, conda_env: str, cmd: s
             ssh_host,
             username=username,
             agent_forwarding=True,
+            agent_path=os.environ.get('SSH_AUTH_SOCK'),
+            known_hosts=None,
         ) as conn:
             remote_cmd=(f"bash -lc '{cmds} && {activate_env} {conda_env} && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CONDA_PREFIX/lib && nohup {cmd}> {log_path} 2>&1 &'")
 
@@ -169,6 +172,8 @@ async def _ssh_kill_server(ssh_host: str, username: str, grpc_port: int):
             ssh_host,
             username=username,
             agent_forwarding=True,
+            agent_path=os.environ.get('SSH_AUTH_SOCK'),
+            known_hosts=None,
         ) as conn:
             ports = [grpc_port, grpc_port + 1, grpc_port + 2]
 

@@ -35,12 +35,12 @@ def initialize_dataloaders():
         "diasbp": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"diasbp"}, "test"), **inference_config),
         "sysbp": DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression","label":"sysbp"}, "test"), **inference_config),
         "gestureclass": DataLoader(UWaveGestureLibraryALLDataset({"dataset_path": f"{d}/UWaveGestureLibraryAll"}, {"task_type": "classification"}, "test"), **inference_config),
-        # "ecl": DataLoader(ECLDataset({"dataset_path": f"{d}/ElectricityLoad-data"}, {"task_type": "forecasting"}, "test"), **inference_config),
-        # "traffic": DataLoader(TrafficDataset({"dataset_path": f"{d}/Traffic"}, {"task_type": "forecasting"}, "test"), **inference_config),
+        "etth1fore": DataLoader(ETTh1Dataset({"dataset_path": f"{d}/ETTh1"}, {"task_type": "forecasting"}, "test"), **inference_config),
+        "weatherfore": DataLoader(WeatherDataset({"dataset_path": f"{d}/Weather"}, {"task_type": "forecasting"}, "test"), **inference_config),
+        "trafficfore": DataLoader(TrafficDataset({"dataset_path": f"{d}/Traffic"}, {"task_type": "forecasting"}, "test"), **inference_config),
+        "eclfore": DataLoader(ECLDataset({"dataset_path": f"{d}/ElectricityLoad-data"}, {"task_type": "forecasting"}, "test"), **inference_config),
+        "exchangefore": DataLoader(ExchangeDataset({"dataset_path": f"{d}/Exchange"}, {"task_type": "forecasting"}, "test"), **inference_config),
         # "illness": DataLoader(IllnessDataset({"dataset_path": f"{d}/ILLNESS"}, {"task_type": "forecasting"}, "test", forecast_horizon=192), **inference_config),
-        # "etth1": DataLoader(ETTh1Dataset({"dataset_path": f"{d}/ETTh1"}, {"task_type": "forecasting"}, "test"), **inference_config),
-        # "weather": DataLoader(WeatherDataset({"dataset_path": f"{d}/Weather"}, {"task_type": "forecasting"}, "test"), **inference_config),
-        # "rate": DataLoader(ExchangeDataset({"dataset_path": f"{d}/Exchange"}, {"task_type": "forecasting"}, "test"), **inference_config),
         # 'vqa': DataLoader(VQADataset({"dataset_path": f"{d}/val2014"}, {"task_type": "forecasting"}, "test") ,  **inference_config)
     }
     global DATA
@@ -75,7 +75,17 @@ async def close_clients():
 async def get_client(url: str):
     if url not in CLIENT_CACHE:
         try:
-            client = grpc_aio.InferenceServerClient(url=url, verbose=False)
+            # Disable gRPC HTTP/2 keepalive pings — they stall the channel for
+            # ~1s every 30s (default ping interval) causing synchronized latency
+            # spikes across all GPUs.  Since all traffic stays within the cluster
+            # (low-latency LAN), keepalives provide no benefit.
+            channel_args = [
+                ("grpc.keepalive_time_ms", 300_000),       # ping every 5 min (effectively off)
+                ("grpc.keepalive_timeout_ms", 10_000),
+                ("grpc.http2.min_time_between_pings_ms", 300_000),
+                ("grpc.http2.min_ping_interval_without_data_ms", 300_000),
+            ]
+            client = grpc_aio.InferenceServerClient(url=url, verbose=False, channel_args=channel_args)
 
             if not await client.is_server_live():
                 # Server not ready yet — don't cache, caller will retry next poll
@@ -131,7 +141,10 @@ async def send_request(req_id, device_url, inputs_dict, ouputs_dict):
     swap_time = response.as_numpy("swap_time")/10**9
     decoder_time = response.as_numpy("decoder_time")/10**9
     et = time.time()
-    return req_id, device_url, st, device_start_time.item(), device_end_time.item(), et - st, proc_time.item(), swap_time.item(), decoder_time.item(), result.item(), ouputs_dict.get('y').item()
+    pred = result.item() if result.size == 1 else result.flatten().tolist()
+    true_val = ouputs_dict.get('y')
+    true_val = true_val.item() if true_val.size == 1 else true_val.flatten().tolist()
+    return req_id, device_url, st, device_start_time.item(), device_end_time.item(), et - st, proc_time.item(), swap_time.item(), decoder_time.item(), pred, true_val
     
 
 
@@ -160,6 +173,11 @@ async def handle_runtime_request_continuous():
     # Keep running until we detect no new requests for a while
     MAX_IDLE = 10  # seconds without new requests after last request scheduled
     last_request_received_time = start
+
+    # Yield to the event loop every PUSH_YIELD_EVERY pushes when ingesting a
+    # large runtime chunk, so in-flight gRPC await calls are not starved.
+    # The heap must stay on the main asyncio thread to avoid data races.
+    PUSH_YIELD_EVERY = 100
 
     poll_iteration = 0
     while True:
@@ -205,6 +223,11 @@ async def handle_runtime_request_continuous():
             heapq.heappop(pending_queue)
 
             batch = DATA.get(req['task'])
+            if batch is None:
+                print(f"[RuntimeExecutor] WARNING: No dataloader for task '{req['task']}', skipping req {req['req_id']}")
+                processed_count += 1
+                sent_this_iteration += 1
+                continue
 
             # Prepare inputs
             inputs = {}
