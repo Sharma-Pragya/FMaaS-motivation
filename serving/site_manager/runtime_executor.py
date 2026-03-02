@@ -174,11 +174,6 @@ async def handle_runtime_request_continuous():
     MAX_IDLE = 10  # seconds without new requests after last request scheduled
     last_request_received_time = start
 
-    # Yield to the event loop every PUSH_YIELD_EVERY pushes when ingesting a
-    # large runtime chunk, so in-flight gRPC await calls are not starved.
-    # The heap must stay on the main asyncio thread to avoid data races.
-    PUSH_YIELD_EVERY = 100
-
     poll_iteration = 0
     while True:
         # Get any new requests that arrived via MQTT
