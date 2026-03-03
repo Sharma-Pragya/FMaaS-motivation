@@ -6,6 +6,7 @@ import os
 from urllib.parse import urlparse
 from pytriton.client import ModelClient
 from site_manager.config import cmds, activate_env, vlm_env, timeseries_env, username
+from site_manager.storage import get_output_dir
 
 
 def _parse_url(device_url: str) -> tuple[str, str, int]:
@@ -79,6 +80,10 @@ async def _deploy_one(s: dict):
     cuda_device = s.get("cuda", None)
     if cuda_device:
         server_cmd += f"--cuda {cuda_device} "
+
+    output_dir = get_output_dir()
+    if output_dir:
+        server_cmd += f"--output-dir {output_dir} "
 
     log_path = f"./device/logs/{ssh_host}_{s['backbone']}.log"
 

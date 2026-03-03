@@ -4,6 +4,7 @@ import os
 import ssl
 import threading
 import traceback
+from collections import defaultdict
 from contextlib import contextmanager
 
 # File lock for safe concurrent reads/writes to model_deployment_results.json
@@ -59,35 +60,95 @@ def _save_results(reqs_latency):
     if output_dir:
         os.makedirs(output_dir, exist_ok=True)
         csv_path = os.path.join(output_dir, "request_latency_results.csv")
+        summary_path = os.path.join(output_dir, "serving_timing_summary.json")
     else:
         csv_path = "request_latency_results.csv"
+        summary_path = "serving_timing_summary.json"
 
     # Save latency CSV
     reqs = get_requests()
     reqs_dict = {req['req_id']: req for req in reqs}
+    valid_entries = [entry for entry in reqs_latency if entry is not None]
+
+    per_device = defaultdict(list)
+    for entry in valid_entries:
+        per_device[entry[1]].append(entry)
+
+    timing_summary = {"devices": {}}
+    for device_url, entries in per_device.items():
+        entries.sort(key=lambda item: item[4])
+        count = len(entries)
+
+        prep_ms = sum((item[3] - item[2]) * 1000.0 for item in entries) / count
+        submit_to_backend_ms = sum((item[4] - item[3]) * 1000.0 for item in entries) / count
+        backend_exec_ms = sum((item[5] - item[4]) * 1000.0 for item in entries) / count
+        backend_to_client_ms = sum((item[6] - item[5]) * 1000.0 for item in entries) / count
+        e2e_ms = sum(item[7] * 1000.0 for item in entries) / count
+
+        start_to_start_ms = None
+        idle_gap_ms = None
+        overlap_count = 0
+        if count > 1:
+            start_to_start_samples = []
+            idle_gap_samples = []
+            prev_start = entries[0][4]
+            prev_end = entries[0][5]
+            for item in entries[1:]:
+                start_to_start_samples.append((item[4] - prev_start) * 1000.0)
+                gap_ms = (item[4] - prev_end) * 1000.0
+                if gap_ms < 0:
+                    overlap_count += 1
+                    gap_ms = 0.0
+                idle_gap_samples.append(gap_ms)
+                prev_start = item[4]
+                prev_end = item[5]
+            start_to_start_ms = sum(start_to_start_samples) / len(start_to_start_samples)
+            idle_gap_ms = sum(idle_gap_samples) / len(idle_gap_samples)
+
+        timing_summary["devices"][device_url] = {
+            "request_count": count,
+            "avg_client_prep_ms": prep_ms,
+            "avg_client_submit_to_backend_start_ms": submit_to_backend_ms,
+            "avg_backend_exec_ms": backend_exec_ms,
+            "avg_backend_to_client_return_ms": backend_to_client_ms,
+            "avg_end_to_end_ms": e2e_ms,
+            "avg_backend_start_to_start_ms": start_to_start_ms,
+            "avg_backend_idle_gap_ms": idle_gap_ms,
+            "backend_overlap_pairs": overlap_count,
+        }
     
     try:
         with open(csv_path, "w") as f:
             f.write("req_id,req_time,site_manager,device,backbone,task,"
-                    "site_manager_send_time,device_start_time,device_end_time,"
+                    "site_manager_send_time,client_infer_submit_time,device_start_time,device_end_time,client_receive_time,"
+                    "client_prep_time(ms),client_submit_to_backend_start(ms),backend_exec_time(ms),backend_to_client_return(ms),"
                     "end_to_end_latency(ms),proc_time(ms),swap_time(ms),decoder_time(ms),"
                     "pred,true\n")
-            for entry in reqs_latency:
-                if entry is None:
-                    continue  # timed-out or errored requests return None
-                (req_id, device_url, site_manager_send_time, device_start_time,
-                device_end_time, e2e_latency, proc_time, swap_time, decoder_time, pred, true_val) = entry
+            for entry in valid_entries:
+                (req_id, device_url, site_manager_send_time, client_infer_submit_time, device_start_time,
+                device_end_time, client_receive_time, e2e_latency, proc_time, swap_time, decoder_time,
+                pred, true_val) = entry
                 req = reqs_dict.get(req_id, {})
                 req_time = req.get('req_time', -1)
                 backbone = req.get('backbone', 'unknown')
                 task = req.get('task', 'unknown')
+                client_prep_ms = (client_infer_submit_time - site_manager_send_time) * 1000.0
+                submit_to_backend_ms = (device_start_time - client_infer_submit_time) * 1000.0
+                backend_exec_ms = (device_end_time - device_start_time) * 1000.0
+                backend_to_client_ms = (client_receive_time - device_end_time) * 1000.0
                 f.write(f"{req_id},{req_time},{SITE_ID},{device_url},{backbone},"
-                        f"{task},{site_manager_send_time},{device_start_time},"
-                        f"{device_end_time},{e2e_latency*1000},{proc_time*1000},{swap_time*1000},{decoder_time*1000},"
+                        f"{task},{site_manager_send_time},{client_infer_submit_time},{device_start_time},"
+                        f"{device_end_time},{client_receive_time},{client_prep_ms},{submit_to_backend_ms},"
+                        f"{backend_exec_ms},{backend_to_client_ms},{e2e_latency*1000},{proc_time*1000},"
+                        f"{swap_time*1000},{decoder_time*1000},"
                         f"{pred},{true_val}\n")
 
+        with open(summary_path, "w") as f:
+            json.dump(timing_summary, f, indent=2)
+
         print(f"[SiteManager] Saved latency results to {csv_path} "
-            f"({len(reqs_latency)} entries)")
+            f"({len(valid_entries)} entries)")
+        print(f"[SiteManager] Saved serving timing summary to {summary_path}")
         return csv_path
     except Exception as e:
         print(f"[ERROR] Failed to write CSV: {e}")

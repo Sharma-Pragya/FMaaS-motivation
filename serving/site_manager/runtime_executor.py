@@ -103,7 +103,7 @@ async def get_client(url: str):
 
 async def send_request(req_id, device_url, inputs_dict, ouputs_dict):
     # 1. Get the raw gRPC client
-    st = time.time()
+    request_start_time = time.time()
     client = await get_client(device_url) 
     if client is None:
         return
@@ -125,6 +125,7 @@ async def send_request(req_id, device_url, inputs_dict, ouputs_dict):
         triton_inputs.append(inp)
 
     # 3. Send Request (Thread-safe!)
+    infer_submit_time = time.time()
     try:
         response = await client.infer(model_name="edge_infer", inputs=triton_inputs)
     except Exception as e:
@@ -140,11 +141,25 @@ async def send_request(req_id, device_url, inputs_dict, ouputs_dict):
     proc_time = response.as_numpy("proc_time")/10**9
     swap_time = response.as_numpy("swap_time")/10**9
     decoder_time = response.as_numpy("decoder_time")/10**9
-    et = time.time()
+    response_recv_time = time.time()
     pred = result.item() if result.size == 1 else result.flatten().tolist()
     true_val = ouputs_dict.get('y')
     true_val = true_val.item() if true_val.size == 1 else true_val.flatten().tolist()
-    return req_id, device_url, st, device_start_time.item(), device_end_time.item(), et - st, proc_time.item(), swap_time.item(), decoder_time.item(), pred, true_val
+    return (
+        req_id,
+        device_url,
+        request_start_time,
+        infer_submit_time,
+        device_start_time.item(),
+        device_end_time.item(),
+        response_recv_time,
+        response_recv_time - request_start_time,
+        proc_time.item(),
+        swap_time.item(),
+        decoder_time.item(),
+        pred,
+        true_val,
+    )
     
 
 
