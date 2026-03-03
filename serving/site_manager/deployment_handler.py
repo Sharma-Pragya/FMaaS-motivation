@@ -81,6 +81,10 @@ async def _deploy_one(s: dict):
     if cuda_device:
         server_cmd += f"--cuda {cuda_device} "
 
+    infer_handlers = os.environ.get("DEVICE_INFER_HANDLERS")
+    if infer_handlers:
+        server_cmd += f"--infer-handlers {infer_handlers} "
+
     output_dir = get_output_dir()
     if output_dir:
         server_cmd += f"--output-dir {output_dir} "
