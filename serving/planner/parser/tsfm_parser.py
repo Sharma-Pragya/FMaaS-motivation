@@ -18,10 +18,21 @@ pipelines = {}
 latency = {}
 metric = {}
 
+BACKBONE_TYPES = {
+    'chronos': ['chronostiny', 'chronosmini', 'chronossmall', 'chronosbase', 'chronoslarge'],
+    'moment':  ['momentsmall', 'momentbase', 'momentlarge'],
+    'papagei': ['papageip', 'papageis', 'papageissvri'],
+}
+_backbone_type_lookup = {b: t for t, bs in BACKBONE_TYPES.items() for b in bs}
+
 for i, ((backbone, decoder, task), group) in enumerate(grouped, start=1):
     # ---- components ----
     if backbone not in components:
-        components[backbone] = {'mem': float(group['backbone memory(MB)'].iloc[0])}
+        entry = {'mem': float(group['backbone memory(MB)'].iloc[0])}
+        btype = _backbone_type_lookup.get(backbone)
+        if btype:
+            entry['type'] = btype
+        components[backbone] = entry
 
     dec_key = f"{decoder}_{backbone}_{task}"
     components[dec_key] = {'mem': float(group['decoder memory(MB)'].iloc[0])}
