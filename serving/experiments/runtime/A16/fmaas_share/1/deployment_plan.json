@@ -1,0 +1,95 @@
+{
+  "sites": [
+    {
+      "id": "site2",
+      "deployments": [
+        {
+          "device": "10.100.20.50:8000",
+          "device_name": "device1",
+          "device_type": "NVIDIA A16",
+          "backbone": "momentbase",
+          "cuda": "cuda:0",
+          "decoders": [
+            {
+              "task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentbase_mlp"
+            },
+            {
+              "task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentbase_mlp"
+            },
+            {
+              "task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_momentbase_mlp"
+            }
+          ],
+          "tasks": {
+            "ecgclass": {
+              "type": "classification",
+              "total_requested_workload": 45.0,
+              "request_per_sec": 30.0
+            },
+            "gestureclass": {
+              "type": "classification",
+              "total_requested_workload": 8.0,
+              "request_per_sec": 8.0
+            },
+            "sysbp": {
+              "type": "regression",
+              "total_requested_workload": 8.0,
+              "request_per_sec": 7.153046775259998
+            }
+          },
+          "util": 0.8,
+          "mem": 16000
+        },
+        {
+          "device": "10.100.20.50:8010",
+          "device_name": "device2",
+          "device_type": "NVIDIA A16",
+          "backbone": "chronosmini",
+          "cuda": "cuda:1",
+          "decoders": [
+            {
+              "task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_chronosmini_mlp"
+            },
+            {
+              "task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_chronosmini_mlp"
+            },
+            {
+              "task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_chronosmini_mlp"
+            }
+          ],
+          "tasks": {
+            "sysbp": {
+              "type": "regression",
+              "total_requested_workload": 8.0,
+              "request_per_sec": 0.8469532247400017
+            },
+            "diasbp": {
+              "type": "regression",
+              "total_requested_workload": 20.0,
+              "request_per_sec": 20.0
+            },
+            "ecgclass": {
+              "type": "classification",
+              "total_requested_workload": 45.0,
+              "request_per_sec": 15.0
+            }
+          },
+          "util": 0.625586,
+          "mem": 16000
+        }
+      ]
+    }
+  ]
+}

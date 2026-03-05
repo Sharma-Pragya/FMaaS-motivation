@@ -1,0 +1,70 @@
+[
+    {
+        "status": "loaded_momentbase",
+        "logger_summary": "{'load_backbone': {'wall time': 8866.135316202417, 'gpu time': 8866.27734375, 'gpu peak': 455.474688, 'gpu energy': 509.058, 'cpu dRSS': 651.010048}, 'add_decoder_ecgclass_momentbase_mlp': {'wall time': 45.419248985126615, 'gpu time': 45.57331085205078, 'gpu peak': 455.871488, 'gpu energy': 0.0, 'cpu dRSS': 0.196608}}"
+    },
+    {
+        "event": "runtime_update",
+        "device": "10.100.31.61:8000",
+        "result": {
+            "status": "added_1_decoders",
+            "logger_summary": "{'add_decoder': {'wall time': 20.64226591028273, 'gpu time': 20.75948715209961, 'gpu peak': 466.31168, 'gpu energy': 0.0, 'cpu dRSS': 0.0}}"
+        }
+    },
+    {
+        "event": "runtime_update",
+        "device": "10.100.31.61:8000",
+        "result": {
+            "status": "added_1_decoders",
+            "logger_summary": "{'add_decoder': {'wall time': 16.80235401727259, 'gpu time': 16.879615783691406, 'gpu peak': 468.274176, 'gpu energy': 7.035, 'cpu dRSS': 0.196608}}"
+        }
+    },
+    {
+        "event": "runtime_update",
+        "device": "10.100.31.61:8000",
+        "result": {
+            "status": "added_1_decoders",
+            "logger_summary": "{'add_decoder': {'wall time': 14.116695150732994, 'gpu time': 14.220447540283203, 'gpu peak': 471.823872, 'gpu energy': 0.0, 'cpu dRSS': 0.0}}"
+        }
+    },
+    {
+        "event": "runtime_add",
+        "deployments": [
+            {
+                "device": "10.100.31.61:8010",
+                "device_name": "device2",
+                "device_type": "NVIDIA GEFORCE RTX 2080 TI",
+                "backbone": "chronostiny",
+                "cuda": "cuda:1",
+                "decoders": [
+                    {
+                        "task": "diasbp",
+                        "type": "regression",
+                        "path": "diasbp_chronostiny_mlp"
+                    }
+                ],
+                "tasks": {
+                    "diasbp": {
+                        "type": "regression",
+                        "total_requested_workload": 20.0,
+                        "request_per_sec": 12.349446669493155
+                    }
+                },
+                "util": 0.228376,
+                "mem": 16000
+            }
+        ],
+        "result": {
+            "status": "loaded_chronostiny",
+            "logger_summary": "{'load_backbone': {'wall time': 8754.476719070226, 'gpu time': 8755.2255859375, 'gpu peak': 16.789504, 'gpu energy': 418.98, 'cpu dRSS': 405.721088}, 'add_decoder_diasbp_chronostiny_mlp': {'wall time': 6.070580100640655, 'gpu time': 6.0160322189331055, 'gpu peak': 16.922112, 'gpu energy': 0.0, 'cpu dRSS': 0.393216}}"
+        }
+    },
+    {
+        "event": "runtime_update",
+        "device": "10.100.31.61:8010",
+        "result": {
+            "status": "added_1_decoders",
+            "logger_summary": "{'add_decoder': {'wall time': 12.00362597592175, 'gpu time': 12.082880020141602, 'gpu peak': 25.576448, 'gpu energy': 0.0, 'cpu dRSS': 0.196608}}"
+        }
+    }
+]

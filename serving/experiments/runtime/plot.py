@@ -51,7 +51,7 @@ EVENTS = [
     {"t": 240, "label": "EVENT 4\necgclass +5\n(ramp step 3)",           "color": "#0571b0"},
     {"t": 300, "label": "EVENT 5\nsysbp\n(new backbone)",                "color": "#f1a340"},
     {"t": 360, "label": "EVENT 6\ndiabp\n(add decoder)",                 "color": "#ca0020"},
-    {"t": 420, "label": "EVENT 7\necgclass +15\n(fit/dev2 downsize)",    "color": "#5e3c99"},
+    {"t": 420, "label": "EVENT 7\necgclass +15\n(workload spike)",       "color": "#5e3c99"},
 ]
 DURATION = 480  # seconds
 
@@ -149,10 +149,12 @@ DEVICE_COLORS = {d: DEVICE_COLOR_PALETTE[i] for i, d in enumerate(_devices_seen)
 DEVICE_LABELS = {d: f"Device {i+1} — {d}" for i, d in enumerate(_devices_seen)}
 
 # ── Parse deployment JSON into gantt segments ──────────────────────────────────
-# runtime_update on device1 → EVENT 1 (gestureclass add_decoder)
-# runtime_add              → EVENT 5 (sysbp new backbone on device2)
-# runtime_update on device2 → EVENT 6 (diasbp add_decoder)
-# runtime_migrate on device2 → EVENT 7 (fit/backbone downsize)
+# runtime_update on device1:
+#   - first  -> EVENT 1 (gestureclass add_decoder)
+#   - second -> EVENT 5 (sysbp add_decoder sharing device1)
+# runtime_add               -> EVENT 5 (sysbp new backbone on device2)
+# runtime_update on device2 -> EVENT 6 (diasbp add_decoder)
+# runtime_migrate on device2 -> EVENT 7 (optional replan/backbone downsize)
 
 EV_T = [ev["t"] for ev in EVENTS]  # [60, 120, 180, 240, 300, 360, 420]
 
@@ -160,10 +162,12 @@ gantt = []
 
 update_entries_dev1 = [e for e in deploy_data
                        if e.get("event") == "runtime_update"
-                       and e.get("device", "") == DEVICE1]
+                       and e.get("device", "") == DEVICE1
+                       and isinstance(e.get("result"), dict)]
 update_entries_dev2 = [e for e in deploy_data
                        if e.get("event") == "runtime_update"
-                       and e.get("device", "") == DEVICE2]
+                       and e.get("device", "") == DEVICE2
+                       and isinstance(e.get("result"), dict)]
 add_entries = [e for e in deploy_data if e.get("event") == "runtime_add"]
 migrate_entries_dev2 = [e for e in deploy_data
                         if e.get("event") == "runtime_migrate"
@@ -181,9 +185,9 @@ def parse_summary(entry):
     except Exception:
         return {}
 
-# EVENT 1 (t=60): gestureclass add_decoder on device1
+# EVENT 1 (t=60): first device1 update = gestureclass add_decoder on device1
 cur_t = EV_T[0]  # 60
-for entry in update_entries_dev1:
+for entry in update_entries_dev1[:1]:
     summary = parse_summary(entry)
     dur = sum(v.get("wall time", 0) for v in summary.values()
               if isinstance(v, dict)) / 1000
@@ -194,6 +198,22 @@ for entry in update_entries_dev1:
             "label":    "add_decoder\n(gestureclass)",
             "device":   entry.get("device", ""),
             "color":    EVENTS[0]["color"],
+        })
+        cur_t += dur
+
+# EVENT 5 (t=300): second device1 update = sysbp add_decoder on device1
+cur_t = EV_T[4]  # 300
+for entry in update_entries_dev1[1:2]:
+    summary = parse_summary(entry)
+    dur = sum(v.get("wall time", 0) for v in summary.values()
+              if isinstance(v, dict)) / 1000
+    if dur > 0:
+        gantt.append({
+            "t_start":  cur_t,
+            "duration": dur,
+            "label":    "add_decoder\n(sysbp share)",
+            "device":   entry.get("device", ""),
+            "color":    EVENTS[4]["color"],
         })
         cur_t += dur
 
@@ -218,9 +238,9 @@ for entry in add_entries:
         })
         cur_t += total_s
 
-# EVENT 6 (t=360): diasbp add_decoder on device2
+# EVENT 6 (t=360): first device2 update = diasbp add_decoder on device2
 cur_t = EV_T[5]  # 360
-for entry in update_entries_dev2:
+for entry in update_entries_dev2[:1]:
     summary = parse_summary(entry)
     dur = sum(v.get("wall time", 0) for v in summary.values()
               if isinstance(v, dict)) / 1000

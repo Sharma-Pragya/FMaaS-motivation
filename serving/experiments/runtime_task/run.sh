@@ -23,8 +23,8 @@ REQ_RATE="${REQ_RATE:-10}"
 TRACE="${TRACE:-lmsyschat}"
 DURATION="${DURATION:-60}"
 SEED="${SEED:-42}"
-EXP_DIR="${EXP_DIR:-experiments/runtime/results}"
-EXP_TYPE="${EXP_TYPE:-runtime}"
+EXP_DIR="${EXP_DIR:-experiments/runtime_task/results}"
+EXP_TYPE="${EXP_TYPE:-runtime_task}"
 ORCHESTRATOR_PORT="${ORCHESTRATOR_PORT:-8080}"
 
 # New task to add at runtime

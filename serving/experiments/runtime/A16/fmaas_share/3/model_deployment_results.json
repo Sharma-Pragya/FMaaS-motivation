@@ -1,0 +1,74 @@
+[
+    {
+        "status": "loaded_momentbase",
+        "logger_summary": "{'load_backbone': {'wall time': 5290.820574038662, 'gpu time': 5291.18798828125, 'gpu peak': 455.474688, 'gpu energy': 152.192, 'cpu dRSS': 642.62144}, 'add_decoder_ecgclass_momentbase_mlp': {'wall time': 4.684130079112947, 'gpu time': 4.7124481201171875, 'gpu peak': 455.871488, 'gpu energy': 0.0, 'cpu dRSS': 0.524288}}"
+    },
+    {
+        "event": "runtime_update",
+        "device": "10.100.20.50:8000",
+        "result": {
+            "status": "added_1_decoders",
+            "logger_summary": "{'add_decoder': {'wall time': 10.068310075439513, 'gpu time': 10.100128173828125, 'gpu peak': 464.790528, 'gpu energy': 0.0, 'cpu dRSS': 0.0}}"
+        }
+    },
+    {
+        "event": "runtime_update",
+        "device": "10.100.20.50:8000",
+        "result": {
+            "status": "added_1_decoders",
+            "logger_summary": "{'add_decoder': {'wall time': 10.255545028485358, 'gpu time': 10.283424377441406, 'gpu peak': 465.18528, 'gpu energy': 0.0, 'cpu dRSS': 0.0}}"
+        }
+    },
+    {
+        "event": "runtime_add",
+        "deployments": [
+            {
+                "device": "10.100.20.50:8010",
+                "device_name": "device2",
+                "device_type": "NVIDIA A16",
+                "backbone": "chronosbase",
+                "cuda": "cuda:1",
+                "decoders": [
+                    {
+                        "task": "sysbp",
+                        "type": "regression",
+                        "path": "sysbp_chronosbase_mlp"
+                    }
+                ],
+                "tasks": {
+                    "sysbp": {
+                        "type": "regression",
+                        "total_requested_workload": 8.0,
+                        "request_per_sec": 0.6271515419819176
+                    }
+                },
+                "util": 0.053815,
+                "mem": 16000
+            }
+        ],
+        "result": {
+            "status": "loaded_chronosbase",
+            "logger_summary": "{'load_backbone': {'wall time': 5352.922721998766, 'gpu time': 5354.330078125, 'gpu peak': 420.18304, 'gpu energy': 152.791, 'cpu dRSS': 398.475264}, 'add_decoder_sysbp_chronosbase_mlp': {'wall time': 9.446780080907047, 'gpu time': 7.472415924072266, 'gpu peak': 420.577792, 'gpu energy': 0.0, 'cpu dRSS': 0.524288}}"
+        }
+    },
+    {
+        "event": "runtime_migrate",
+        "old_backbone": "chronosbase",
+        "new_backbone": "chronossmall",
+        "device": "10.100.20.50:8010",
+        "result": {
+            "status": "swapped_chronossmall",
+            "logger_summary": "{'load_backbone': {'wall time': 331.6439560148865, 'gpu time': 331.7317199707031, 'gpu peak': 521.672704, 'gpu energy': 8.235, 'cpu dRSS': 0.118784}, 'add_decoder_sysbp_chronossmall_mlp': {'wall time': 7.9828150337561965, 'gpu time': 8.015680313110352, 'gpu peak': 521.936384, 'gpu energy': 0.0, 'cpu dRSS': 0.0}, 'add_decoder_diasbp_chronossmall_mlp': {'wall time': 1.9011679105460644, 'gpu time': 1.9248319864273071, 'gpu peak': 522.200064, 'gpu energy': 0.0, 'cpu dRSS': 0.0}}"
+        }
+    },
+    {
+        "event": "runtime_migrate",
+        "old_backbone": "chronossmall",
+        "new_backbone": "chronosmini",
+        "device": "10.100.20.50:8010",
+        "result": {
+            "status": "swapped_chronosmini",
+            "logger_summary": "{'load_backbone': {'wall time': 419.14011910557747, 'gpu time': 419.2289733886719, 'gpu peak': 230.8864, 'gpu energy': 17.794, 'cpu dRSS': 1.101824}, 'add_decoder_sysbp_chronosmini_mlp': {'wall time': 10.203717043623328, 'gpu time': 10.23526382446289, 'gpu peak': 150.079488, 'gpu energy': 0.0, 'cpu dRSS': 0.0}, 'add_decoder_diasbp_chronosmini_mlp': {'wall time': 21.062324987724423, 'gpu time': 21.109760284423828, 'gpu peak': 150.277632, 'gpu energy': 5.315, 'cpu dRSS': 0.0}, 'add_decoder_ecgclass_chronosmini_mlp': {'wall time': 21.07637596782297, 'gpu time': 21.116607666015625, 'gpu peak': 150.477824, 'gpu energy': 0.0, 'cpu dRSS': 0.0}}"
+        }
+    }
+]

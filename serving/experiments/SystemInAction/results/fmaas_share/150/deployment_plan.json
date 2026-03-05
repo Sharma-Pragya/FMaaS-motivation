@@ -1,0 +1,168 @@
+{
+  "sites": [
+    {
+      "id": "site2",
+      "deployments": [
+        {
+          "device": "10.100.20.49:8000",
+          "device_name": "device1",
+          "device_type": "NVIDIA A16",
+          "backbone": "momentsmall",
+          "cuda": "cuda:0",
+          "decoders": [
+            {
+              "task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentsmall_mlp"
+            },
+            {
+              "task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_momentsmall_mlp"
+            },
+            {
+              "task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_momentsmall_mlp"
+            },
+            {
+              "task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentsmall_mlp"
+            }
+          ],
+          "tasks": {
+            "heartrate": {
+              "type": "regression",
+              "total_requested_workload": 15.0,
+              "request_per_sec": 15.0
+            },
+            "sysbp": {
+              "type": "regression",
+              "total_requested_workload": 15.0,
+              "request_per_sec": 15.000000000000002
+            },
+            "diasbp": {
+              "type": "regression",
+              "total_requested_workload": 15.0,
+              "request_per_sec": 14.999999999999998
+            },
+            "ecgclass": {
+              "type": "classification",
+              "total_requested_workload": 15.0,
+              "request_per_sec": 0.9005983118225549
+            }
+          },
+          "util": 0.8,
+          "mem": 16000
+        },
+        {
+          "device": "10.100.20.49:8010",
+          "device_name": "device2",
+          "device_type": "NVIDIA A16",
+          "backbone": "momentbase",
+          "cuda": "cuda:1",
+          "decoders": [
+            {
+              "task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentbase_mlp"
+            },
+            {
+              "task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentbase_mlp"
+            },
+            {
+              "task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_momentbase_mlp"
+            },
+            {
+              "task": "weatherfore",
+              "type": "forecasting",
+              "path": "weatherfore_momentbase_mlp"
+            },
+            {
+              "task": "exchangefore",
+              "type": "forecasting",
+              "path": "exchangefore_momentbase_mlp"
+            },
+            {
+              "task": "eclfore",
+              "type": "forecasting",
+              "path": "eclfore_momentbase_mlp"
+            }
+          ],
+          "tasks": {
+            "ecgclass": {
+              "type": "classification",
+              "total_requested_workload": 15.0,
+              "request_per_sec": 14.099401688177446
+            },
+            "gestureclass": {
+              "type": "classification",
+              "total_requested_workload": 15.0,
+              "request_per_sec": 15.0
+            },
+            "etth1fore": {
+              "type": "forecasting",
+              "total_requested_workload": 15.0,
+              "request_per_sec": 15.0
+            },
+            "weatherfore": {
+              "type": "forecasting",
+              "total_requested_workload": 15.0,
+              "request_per_sec": 15.0
+            },
+            "exchangefore": {
+              "type": "forecasting",
+              "total_requested_workload": 15.0,
+              "request_per_sec": 15.0
+            },
+            "eclfore": {
+              "type": "forecasting",
+              "total_requested_workload": 15.0,
+              "request_per_sec": 1.694556241720611
+            }
+          },
+          "util": 0.8,
+          "mem": 16000
+        },
+        {
+          "device": "10.100.20.49:8020",
+          "device_name": "device3",
+          "device_type": "NVIDIA A16",
+          "backbone": "chronosbase",
+          "cuda": "cuda:2",
+          "decoders": [
+            {
+              "task": "eclfore",
+              "type": "forecasting",
+              "path": "eclfore_chronosbase_mlp"
+            },
+            {
+              "task": "trafficfore",
+              "type": "forecasting",
+              "path": "trafficfore_chronosbase_mlp"
+            }
+          ],
+          "tasks": {
+            "eclfore": {
+              "type": "forecasting",
+              "total_requested_workload": 15.0,
+              "request_per_sec": 13.305443758279388
+            },
+            "trafficfore": {
+              "type": "forecasting",
+              "total_requested_workload": 15.0,
+              "request_per_sec": 11.615820823120806
+            }
+          },
+          "util": 0.8,
+          "mem": 16000
+        }
+      ]
+    }
+  ]
+}
