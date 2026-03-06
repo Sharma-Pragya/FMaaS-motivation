@@ -16,3 +16,4 @@ timeseries/Linux/nixtla-foundational-time-series/data
 *.ipynb_checkpoints
 serving/dataset
 serving/**/*.log
+serving/experiments/SystemInAction/results/
