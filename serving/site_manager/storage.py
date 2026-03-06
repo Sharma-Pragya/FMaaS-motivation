@@ -88,7 +88,7 @@ def replace_deployment(old_backbone: str, new_spec: dict):
         DEPLOYMENTS = [d for d in DEPLOYMENTS if d.get("backbone") != old_backbone]
         DEPLOYMENTS.append(new_spec)
         total = len(DEPLOYMENTS)
-    print(f"[RuntimeBuffer] Replaced deployment backbone '{old_backbone}' → '{new_spec.get('backbone')}'. "
+    print(f"[RuntimeBuffer] Replaced deployment backbone '{old_backbone}' -> '{new_spec.get('backbone')}'. "
           f"Total: {total}")
 
 
@@ -98,5 +98,4 @@ def append_deployments(new_specs: list):
     with _STATE_LOCK:
         DEPLOYMENTS.extend(new_specs)
         total = len(DEPLOYMENTS)
-    print(f"[RuntimeBuffer] Appended {len(new_specs)} deployment(s). "
-          f"Total: {total}")
+    print(f"[RuntimeBuffer] Appended {len(new_specs)} deployment(s). Total: {total}")

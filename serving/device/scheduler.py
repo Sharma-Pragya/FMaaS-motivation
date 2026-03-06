@@ -26,6 +26,9 @@ class FifoPolicy:
                 if not queue:
                     continue
                 candidate = queue[0]
+                #need to check shape of the request input here to make sure the batch is homogeneous, otherwise we can end up with a batch of 2 requests where one has shape (1, 512) and the other has shape (1, 1024) which will cause an error when we try to concatenate them
+                if picked and candidate.x.shape != picked[0].x.shape:
+                    continue
                 if next_item is None or candidate.enqueued_at < next_item.enqueued_at:
                     next_item = candidate
                     next_task = task

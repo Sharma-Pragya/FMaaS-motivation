@@ -1,6 +1,7 @@
-import json
 import asyncio
 import os
+import json
+import time
 import ssl
 import threading
 import traceback
@@ -28,12 +29,23 @@ def _deployment_json(json_path, output_dir):
 import paho.mqtt.client as mqtt
 
 from site_manager.config import BROKER, PORT, SITE_ID
-from site_manager.storage import (
-    store_plan, store_requests, get_requests, get_deployments,
-    get_output_dir, clear_state, append_deployments, replace_deployment
+from site_manager.deployment_handler import (
+    _add_decoder_to_device,
+    _swap_backbone_on_device,
+    deploy_models,
+    shutdown_devices,
 )
 from site_manager.runtime_executor import handle_runtime_request_continuous, initialize_dataloaders
-from site_manager.deployment_handler import deploy_models, shutdown_devices, _add_decoder_to_device, _swap_backbone_on_device
+from site_manager.storage import (
+    append_deployments,
+    clear_state,
+    get_deployments,
+    get_output_dir,
+    get_requests,
+    replace_deployment,
+    store_plan,
+    store_requests,
+)
 
 
 def on_connect(client, userdata, flags, rc):
@@ -42,20 +54,33 @@ def on_connect(client, userdata, flags, rc):
         client.subscribe(f"fmaas/deploy/site/{SITE_ID}", qos=1)
         client.subscribe(f"fmaas/deploy/site/{SITE_ID}/req", qos=1)
         client.subscribe(f"fmaas/deploy/site/{SITE_ID}/add", qos=1)
-        client.subscribe(f"fmaas/deploy/site/{SITE_ID}/migrate", qos=1)
         client.subscribe(f"fmaas/deploy/site/{SITE_ID}/update", qos=1)
+        client.subscribe(f"fmaas/deploy/site/{SITE_ID}/migrate", qos=1)
         client.subscribe(f"fmaas/runtime/start/site/{SITE_ID}", qos=1)
         client.subscribe(f"fmaas/cleanup/site/{SITE_ID}", qos=1)
     else:
         print(f"[MQTT] Connection failed with code {rc}")
 
 
+def _publish_runtime_deploy_ack(client, ack_id, status, action, extra=None):
+    payload = {
+        "site": SITE_ID,
+        "ack_id": ack_id,
+        "status": status,
+        "action": action,
+    }
+    if extra:
+        payload.update(extra)
+    client.publish(
+        f"fmaas/deploytime/ack/site/{SITE_ID}",
+        json.dumps(payload),
+        qos=1,
+    )
+    print(f"[MQTT] Sent runtime deploy ACK for {SITE_ID}: {payload}")
+
+
 def _save_results(reqs_latency):
-    """Save request_latency_results.csv and model_deployment_results.json.
-    
-    Saves to the output_dir specified by the orchestrator (if provided),
-    otherwise saves to the current working directory.
-    """
+    """Preserve the old site_manager result outputs and timing summary."""
     output_dir = get_output_dir()
     if output_dir:
         os.makedirs(output_dir, exist_ok=True)
@@ -65,9 +90,8 @@ def _save_results(reqs_latency):
         csv_path = "request_latency_results.csv"
         summary_path = "serving_timing_summary.json"
 
-    # Save latency CSV
     reqs = get_requests()
-    reqs_dict = {req['req_id']: req for req in reqs}
+    reqs_dict = {req["req_id"]: req for req in reqs}
     valid_entries = [entry for entry in reqs_latency if entry is not None]
 
     per_device = defaultdict(list)
@@ -78,7 +102,6 @@ def _save_results(reqs_latency):
     for device_url, entries in per_device.items():
         entries.sort(key=lambda item: item[4])
         count = len(entries)
-
         prep_ms = sum((item[3] - item[2]) * 1000.0 for item in entries) / count
         submit_to_backend_ms = sum((item[4] - item[3]) * 1000.0 for item in entries) / count
         backend_exec_ms = sum((item[5] - item[4]) * 1000.0 for item in entries) / count
@@ -116,320 +139,238 @@ def _save_results(reqs_latency):
             "avg_backend_idle_gap_ms": idle_gap_ms,
             "backend_overlap_pairs": overlap_count,
         }
-    
-    try:
-        with open(csv_path, "w") as f:
-            f.write("req_id,req_time,site_manager,device,backbone,task,"
-                    "site_manager_send_time,client_infer_submit_time,device_start_time,device_end_time,client_receive_time,"
-                    "client_prep_time(ms),client_submit_to_backend_start(ms),backend_exec_time(ms),backend_to_client_return(ms),"
-                    "end_to_end_latency(ms),proc_time(ms),swap_time(ms),decoder_time(ms),"
-                    "pred,true\n")
-            for entry in valid_entries:
-                (req_id, device_url, site_manager_send_time, client_infer_submit_time, device_start_time,
-                device_end_time, client_receive_time, e2e_latency, proc_time, swap_time, decoder_time,
-                pred, true_val) = entry
-                req = reqs_dict.get(req_id, {})
-                req_time = req.get('req_time', -1)
-                backbone = req.get('backbone', 'unknown')
-                task = req.get('task', 'unknown')
-                client_prep_ms = (client_infer_submit_time - site_manager_send_time) * 1000.0
-                submit_to_backend_ms = (device_start_time - client_infer_submit_time) * 1000.0
-                backend_exec_ms = (device_end_time - device_start_time) * 1000.0
-                backend_to_client_ms = (client_receive_time - device_end_time) * 1000.0
-                f.write(f"{req_id},{req_time},{SITE_ID},{device_url},{backbone},"
-                        f"{task},{site_manager_send_time},{client_infer_submit_time},{device_start_time},"
-                        f"{device_end_time},{client_receive_time},{client_prep_ms},{submit_to_backend_ms},"
-                        f"{backend_exec_ms},{backend_to_client_ms},{e2e_latency*1000},{proc_time*1000},"
-                        f"{swap_time*1000},{decoder_time*1000},"
-                        f"{pred},{true_val}\n")
 
-        with open(summary_path, "w") as f:
-            json.dump(timing_summary, f, indent=2)
+    with open(csv_path, "w") as f:
+        f.write(
+            "req_id,req_time,site_manager,device,backbone,task,"
+            "site_manager_send_time,client_infer_submit_time,device_start_time,device_end_time,client_receive_time,"
+            "client_prep_time(ms),client_submit_to_backend_start(ms),backend_exec_time(ms),backend_to_client_return(ms),"
+            "end_to_end_latency(ms),proc_time(ms),swap_time(ms),decoder_time(ms),"
+            "pred,true\n"
+        )
+        for entry in valid_entries:
+            (
+                req_id,
+                device_url,
+                site_manager_send_time,
+                client_infer_submit_time,
+                device_start_time,
+                device_end_time,
+                client_receive_time,
+                e2e_latency,
+                proc_time,
+                swap_time,
+                decoder_time,
+                pred,
+                true_val,
+            ) = entry
+            req = reqs_dict.get(req_id, {})
+            req_time = req.get("req_time", -1)
+            backbone = req.get("backbone", "unknown")
+            task = req.get("task", "unknown")
+            client_prep_ms = (client_infer_submit_time - site_manager_send_time) * 1000.0
+            submit_to_backend_ms = (device_start_time - client_infer_submit_time) * 1000.0
+            backend_exec_ms = (device_end_time - device_start_time) * 1000.0
+            backend_to_client_ms = (client_receive_time - device_end_time) * 1000.0
+            f.write(
+                f"{req_id},{req_time},{SITE_ID},{device_url},{backbone},{task},"
+                f"{site_manager_send_time},{client_infer_submit_time},{device_start_time},{device_end_time},{client_receive_time},"
+                f"{client_prep_ms},{submit_to_backend_ms},{backend_exec_ms},{backend_to_client_ms},{e2e_latency*1000},"
+                f"{proc_time*1000},{swap_time*1000},{decoder_time*1000},{pred},{true_val}\n"
+            )
 
-        print(f"[SiteManager] Saved latency results to {csv_path} "
-            f"({len(valid_entries)} entries)")
-        print(f"[SiteManager] Saved serving timing summary to {summary_path}")
-        return csv_path
-    except Exception as e:
-        print(f"[ERROR] Failed to write CSV: {e}")
-        traceback.print_exc()
-        raise
+    with open(summary_path, "w") as f:
+        json.dump(timing_summary, f, indent=2)
 
-
-def _publish_runtime_deploy_ack(client, ack_id, status, action, extra=None):
-    """Publish completion ACK for a runtime deployment operation."""
-    payload = {
-        "site": SITE_ID,
-        "ack_id": ack_id,
-        "status": status,
-        "action": action,
-    }
-    if extra:
-        payload.update(extra)
-    client.publish(
-        f"fmaas/deploytime/ack/site/{SITE_ID}",
-        json.dumps(payload),
-        qos=1,
-    )
-    print(f"[MQTT] Sent runtime deploy ACK for {SITE_ID}: {payload}")
+    print(f"[SiteManager] Saved latency results to {csv_path} ({len(valid_entries)} entries)")
+    print(f"[SiteManager] Saved serving timing summary to {summary_path}")
+    return csv_path
 
 
 def on_message(client, userdata, msg):
     topic = msg.topic
     try:
         payload = json.loads(msg.payload.decode())
-    except Exception as e:
-        print(f"[MQTT] Failed to parse message on {topic}: {e}")
-        return
 
-    # ── New deployment: clear old state first ────────────────────────────
-    if topic.endswith(f"deploy/site/{SITE_ID}"):
-        print(f"[MQTT] Received deployment plan for {SITE_ID}")
-        try:
-            # Clear state from any previous experiment
+        if topic.endswith(f"deploy/site/{SITE_ID}"):
+            print(f"[MQTT] Received deployment plan for {SITE_ID}")
             clear_state()
             store_plan(payload)
-
+            deployment_status = asyncio.run(deploy_models(payload.get("deployments", [])))
             output_dir = get_output_dir()
             print(f"[SiteManager] output_dir = {output_dir}")
-
-            deployment_status = asyncio.run(deploy_models(payload["deployments"]))
-
-            # Save deployment status
             json_path = os.path.join(output_dir, "model_deployment_results.json") if output_dir else "model_deployment_results.json"
             if output_dir:
                 os.makedirs(output_dir, exist_ok=True)
             with open(json_path, "w") as f:
                 json.dump(deployment_status, f, indent=4)
             print(f"[SiteManager] Saved deployment results to {json_path}")
-
             client.publish(
                 f"fmaas/deploytime/ack/site/{SITE_ID}",
-                json.dumps({'site': SITE_ID, 'deploymentstatus': deployment_status}),
-                qos=1
+                json.dumps({"site": SITE_ID, "deploymentstatus": deployment_status}),
+                qos=1,
             )
             print(f"[MQTT] Sent deploytime ACK for {SITE_ID}")
+        elif topic.endswith(f"deploy/site/{SITE_ID}/req"):
+            store_requests(payload)
+        elif topic.endswith(f"deploy/site/{SITE_ID}/add"):
+            print(f"[MQTT] Received /add for {SITE_ID}")
 
-        except Exception as e:
-            print(f"[SiteManager] ERROR during deployment: {e}")
-            traceback.print_exc()
-            # Still send ACK so orchestrator doesn't hang forever
+            def deploy_in_background():
+                ack_id = payload.get("ack_id")
+                try:
+                    new_specs = payload.get(
+                        "deployments",
+                        [payload] if isinstance(payload, dict) and "device" in payload else [],
+                    )
+                    if not new_specs:
+                        raise ValueError("No deployments in /add payload")
+
+                    print(f"[SiteManager] Starting background deployment for /add...")
+                    deployment_status = asyncio.run(deploy_models(new_specs))
+                    append_deployments(new_specs)
+                    _publish_runtime_deploy_ack(
+                        client,
+                        ack_id,
+                        "completed",
+                        "add",
+                        {"deployments": len(new_specs), "deploymentstatus": deployment_status},
+                    )
+                except Exception as exc:
+                    print(f"[SiteManager] ERROR during background /add deployment: {exc}")
+                    traceback.print_exc()
+                    _publish_runtime_deploy_ack(client, ack_id, "error", "add", {"error": str(exc)})
+
+            threading.Thread(target=deploy_in_background, daemon=True).start()
+        elif topic.endswith(f"deploy/site/{SITE_ID}/update"):
+            print(f"[MQTT] Received /update for {SITE_ID}")
+
+            def update_in_background():
+                ack_id = payload.get("ack_id")
+                try:
+                    device_url = payload.get("device")
+                    decoders = payload.get("decoders", [])
+                    if not device_url or not decoders:
+                        raise ValueError("device and decoders required in /update payload")
+                    result = asyncio.run(_add_decoder_to_device(device_url, decoders))
+                    _publish_runtime_deploy_ack(
+                        client,
+                        ack_id,
+                        "completed",
+                        "update",
+                        {"device": device_url, "decoders": len(decoders), "result": result},
+                    )
+                except Exception as exc:
+                    print(f"[SiteManager] ERROR during /update: {exc}")
+                    traceback.print_exc()
+                    _publish_runtime_deploy_ack(client, ack_id, "error", "update", {"error": str(exc)})
+
+            threading.Thread(target=update_in_background, daemon=True).start()
+        elif topic.endswith(f"deploy/site/{SITE_ID}/migrate"):
+            print(f"[MQTT] Received /migrate for {SITE_ID}")
+
+            def migrate_in_background():
+                ack_id = payload.get("ack_id")
+                try:
+                    new_specs = payload.get("deployments", [])
+                    old_backbone = payload.get("old_backbone")
+                    if not new_specs or not old_backbone:
+                        raise ValueError("deployments and old_backbone required in /migrate payload")
+                    new_spec = new_specs[0]
+                    result = asyncio.run(
+                        _swap_backbone_on_device(
+                            new_spec["device"],
+                            new_spec["backbone"],
+                            new_spec.get("decoders", []),
+                        )
+                    )
+                    replace_deployment(old_backbone, new_spec)
+                    _publish_runtime_deploy_ack(
+                        client,
+                        ack_id,
+                        "completed",
+                        "migrate",
+                        {
+                            "device": new_spec["device"],
+                            "old_backbone": old_backbone,
+                            "new_backbone": new_spec["backbone"],
+                            "result": result,
+                        },
+                    )
+                except Exception as exc:
+                    print(f"[SiteManager] ERROR during /migrate: {exc}")
+                    traceback.print_exc()
+                    _publish_runtime_deploy_ack(client, ack_id, "error", "migrate", {"error": str(exc)})
+
+            threading.Thread(target=migrate_in_background, daemon=True).start()
+        elif topic.endswith(f"runtime/start/site/{SITE_ID}"):
+            print(f"[MQTT] Start signal received for {SITE_ID}")
+
+            def run_inference():
+                try:
+                    output_dir = get_output_dir()
+                    print(f"[SiteManager] Starting continuous inference mode, output_dir={output_dir}")
+                    reqs_latency = asyncio.run(handle_runtime_request_continuous())
+                    csv_path = _save_results(reqs_latency)
+
+                    ack_payload = {
+                        "site": SITE_ID,
+                        "status": "completed",
+                        "total_requests": len(reqs_latency),
+                        "results_path": csv_path,
+                    }
+                    client.publish(
+                        f"fmaas/runtime/ack/site/{SITE_ID}",
+                        json.dumps(ack_payload),
+                        qos=1,
+                    )
+                    print(f"[MQTT] Sent runtime ACK for {SITE_ID}")
+                except Exception as exc:
+                    print(f"[SiteManager] ERROR during runtime: {exc}")
+                    traceback.print_exc()
+                    client.publish(
+                        f"fmaas/runtime/ack/site/{SITE_ID}",
+                        json.dumps({"site": SITE_ID, "status": "error", "error": str(exc)}),
+                        qos=1,
+                    )
+
+            threading.Thread(target=run_inference, daemon=True).start()
+            print(f"[MQTT] Started continuous inference in background thread (non-blocking)")
+        elif topic.endswith(f"cleanup/site/{SITE_ID}"):
+            print(f"[MQTT] Received cleanup for {SITE_ID}")
+
+            def cleanup_in_background():
+                try:
+                    asyncio.run(shutdown_devices(get_deployments()))
+                    clear_state()
+                    print(f"[SiteManager] Cleanup complete for {SITE_ID}")
+                except Exception as exc:
+                    print(f"[SiteManager] ERROR during cleanup: {exc}")
+                    traceback.print_exc()
+
+            threading.Thread(target=cleanup_in_background, daemon=True).start()
+    except Exception as exc:
+        print(f"[MQTT] Error while handling topic {topic}: {exc}")
+        traceback.print_exc()
+        if topic.endswith(f"deploy/site/{SITE_ID}"):
             client.publish(
                 f"fmaas/deploytime/ack/site/{SITE_ID}",
-                json.dumps({'site': SITE_ID, 'error': str(e)}),
-                qos=1
+                json.dumps({"site": SITE_ID, "error": str(exc)}),
+                qos=1,
             )
-
-    # ── Runtime add: full new deployment (new server or new backbone) ──────
-    elif topic.endswith(f"deploy/site/{SITE_ID}/add"):
-        print(f"[MQTT] Received /add for {SITE_ID}")
-
-        # Run deployment in background thread to avoid blocking MQTT message reception
-        def deploy_in_background():
-            ack_id = payload.get("ack_id")
-            try:
-                new_specs = payload.get("deployments", [payload] if isinstance(payload, dict) and "device" in payload else [])
-                if not new_specs:
-                    raise ValueError("No deployments in /add payload")
-
-                print(f"[SiteManager] Starting background deployment for /add...")
-                deployment_status = asyncio.run(deploy_models(new_specs))
-                append_deployments(new_specs)
-
-                # Append to model_deployment_results.json
-                output_dir = get_output_dir()
-                json_path = os.path.join(output_dir, "model_deployment_results.json") if output_dir else "model_deployment_results.json"
-                try:
-                    with _deployment_json(json_path, output_dir) as deployment_results:
-                        for status in deployment_status:
-                            deployment_results.append({
-                                "event": "runtime_add",
-                                "deployments": new_specs,
-                                "result": status
-                            })
-                    print(f"[SiteManager] Updated deployment results: {json_path}")
-                except Exception as e:
-                    print(f"[SiteManager] Warning: Failed to update deployment JSON: {e}")
-
-                _publish_runtime_deploy_ack(
-                    client, ack_id, "completed", "add",
-                    {"deployments": len(new_specs)},
-                )
-                print(f"[SiteManager] Background deployment complete for /add")
-            except Exception as e:
-                print(f"[SiteManager] ERROR during background /add deployment: {e}")
-                traceback.print_exc()
-                _publish_runtime_deploy_ack(client, ack_id, "error", "add", {"error": str(e)})
-
-        threading.Thread(target=deploy_in_background, daemon=True).start()
-
-    # ── Runtime migrate: swap backbone on existing server ──────────────────
-    elif topic.endswith(f"deploy/site/{SITE_ID}/migrate"):
-        print(f"[MQTT] Received /migrate for {SITE_ID}")
-
-        def migrate_in_background():
-            ack_id = payload.get("ack_id")
-            try:
-                new_specs = payload.get("deployments", [])
-                old_backbone = payload.get("old_backbone")
-                if not new_specs or not old_backbone:
-                    raise ValueError("deployments and old_backbone required in /migrate payload")
-
-                new_backbone = new_specs[0].get("backbone")
-                device_url = new_specs[0].get("device")
-                decoders = new_specs[0].get("decoders", [])
-
-                print(f"[SiteManager] Swapping backbone in-process: {old_backbone} → "
-                      f"{new_backbone} on {device_url}")
-
-                # Send swap_backbone control command — device handles GPU memory
-                # release and new backbone load without any server restart
-                swap_status = asyncio.run(_swap_backbone_on_device(device_url, new_backbone, decoders))
-
-                # Update stored deployment so cleanup later targets the right backbone
-                replace_deployment(old_backbone, new_specs[0])
-
-                # Append to model_deployment_results.json
-                output_dir = get_output_dir()
-                json_path = os.path.join(output_dir, "model_deployment_results.json") if output_dir else "model_deployment_results.json"
-                try:
-                    with _deployment_json(json_path, output_dir) as deployment_results:
-                        deployment_results.append({
-                            "event": "runtime_migrate",
-                            "old_backbone": old_backbone,
-                            "new_backbone": new_backbone,
-                            "device": device_url,
-                            "result": swap_status,
-                        })
-                    print(f"[SiteManager] Updated deployment results: {json_path}")
-                except Exception as e:
-                    print(f"[SiteManager] Warning: Failed to update deployment JSON: {e}")
-
-                _publish_runtime_deploy_ack(
-                    client, ack_id, "completed", "migrate",
-                    {"device": device_url, "old_backbone": old_backbone, "new_backbone": new_backbone},
-                )
-                print(f"[SiteManager] Migration complete: {old_backbone} → {new_backbone}")
-
-            except Exception as e:
-                print(f"[SiteManager] ERROR during /migrate: {e}")
-                traceback.print_exc()
-                _publish_runtime_deploy_ack(client, ack_id, "error", "migrate", {"error": str(e)})
-
-        threading.Thread(target=migrate_in_background, daemon=True).start()
-
-    # ── Runtime update: hot-add decoder to existing device ─────────────────
-    elif topic.endswith(f"deploy/site/{SITE_ID}/update"):
-        print(f"[MQTT] Received /update for {SITE_ID}")
-
-        # Run deployment in background thread to avoid blocking MQTT message reception
-        def deploy_in_background():
-            ack_id = payload.get("ack_id")
-            try:
-                device_url = payload.get("device")
-                decoders = payload.get("decoders", [])
-                if not device_url or not decoders:
-                    raise ValueError("device and decoders required in /update payload")
-
-                print(f"[SiteManager] Starting background deployment for /update ({device_url})...")
-                result = asyncio.run(_add_decoder_to_device(device_url, decoders))
-
-                # Append to model_deployment_results.json
-                output_dir = get_output_dir()
-                json_path = os.path.join(output_dir, "model_deployment_results.json") if output_dir else "model_deployment_results.json"
-                try:
-                    with _deployment_json(json_path, output_dir) as deployment_results:
-                        deployment_results.append({
-                            "event": "runtime_update",
-                            "device": device_url,
-                            "result": result
-                        })
-                    print(f"[SiteManager] Updated deployment results: {json_path}")
-                except Exception as e:
-                    print(f"[SiteManager] Warning: Failed to update deployment JSON: {e}")
-
-                _publish_runtime_deploy_ack(
-                    client, ack_id, "completed", "update",
-                    {"device": device_url, "decoders": len(decoders)},
-                )
-                print(f"[SiteManager] Background deployment complete for /update")
-            except Exception as e:
-                print(f"[SiteManager] ERROR during background /update deployment: {e}")
-                traceback.print_exc()
-                _publish_runtime_deploy_ack(client, ack_id, "error", "update", {"error": str(e)})
-
-        threading.Thread(target=deploy_in_background, daemon=True).start()
-
-    # ── Receive request chunks ───────────────────────────────────────────
-    elif topic.endswith(f"deploy/site/{SITE_ID}/req"):
-        print(f"[MQTT] Received request chunk for {SITE_ID}")
-        store_requests(payload)
-
-    # ── Runtime start: execute trace and save results ────────────────────
-    elif topic.endswith(f"runtime/start/site/{SITE_ID}"):
-        print(f"[MQTT] Start signal received for {SITE_ID}")
-
-        # Run inference in a separate thread so MQTT callbacks aren't blocked
-        def run_inference():
-            try:
-                output_dir = get_output_dir()
-                print(f"[SiteManager] Starting continuous inference mode, output_dir={output_dir}")
-
-                # Use continuous mode that picks up new requests dynamically
-                reqs_latency = asyncio.run(handle_runtime_request_continuous())
-
-                # Save results to the orchestrator-specified output directory
-                csv_path = _save_results(reqs_latency)
-
-                ack_payload = {
-                    "site": SITE_ID,
-                    "status": "completed",
-                    "total_requests": len(reqs_latency),
-                    "results_path": csv_path,
-                }
-                client.publish(
-                    f"fmaas/runtime/ack/site/{SITE_ID}",
-                    json.dumps(ack_payload),
-                    qos=1
-                )
-                print(f"[MQTT] Sent runtime ACK for {SITE_ID}")
-
-            except Exception as e:
-                print(f"[SiteManager] ERROR during runtime: {e}")
-                traceback.print_exc()
-                # Still send ACK so orchestrator doesn't hang forever
-                client.publish(
-                    f"fmaas/runtime/ack/site/{SITE_ID}",
-                    json.dumps({"site": SITE_ID, "status": "error", "error": str(e)}),
-                    qos=1
-                )
-
-        threading.Thread(target=run_inference, daemon=True).start()
-        print(f"[MQTT] Started continuous inference in background thread (non-blocking)")
-
-    # ── Cleanup: kill Triton servers on devices ──────────────────────────
-    elif topic.endswith(f"cleanup/site/{SITE_ID}"):
-        print(f"[MQTT] Cleanup signal received for {SITE_ID}")
-        try:
-            deployments = get_deployments()
-            if deployments:
-                asyncio.run(shutdown_devices(deployments))
-        except Exception as e:
-            print(f"[SiteManager] Cleanup error: {e}")
-            traceback.print_exc()
-
-        client.publish(
-            f"fmaas/cleanup/ack/site/{SITE_ID}",
-            json.dumps({"site": SITE_ID, "status": "cleaned"}),
-            qos=1
-        )
-        print(f"[MQTT] Sent cleanup ACK for {SITE_ID}")
+        elif topic.endswith(f"runtime/start/site/{SITE_ID}"):
+            client.publish(
+                f"fmaas/runtime/ack/site/{SITE_ID}",
+                json.dumps({"site": SITE_ID, "status": "error", "error": str(exc)}),
+                qos=1,
+            )
 
 
 def start_site_mqtt_agent():
     import socket
+
     client_id = f"{SITE_ID}-{socket.gethostname()}-{os.getpid()}"
-    client = mqtt.Client(client_id=client_id, transport="websockets",clean_session=True)
+    client = mqtt.Client(client_id=client_id, transport="websockets", clean_session=True)
     client.enable_logger()
     client.tls_set(cert_reqs=ssl.CERT_NONE)
     client.tls_insecure_set(True)
@@ -441,7 +382,7 @@ def start_site_mqtt_agent():
     client.loop_start()
 
     initialize_dataloaders()
-    print(f"[SiteManager] {SITE_ID} ready. Entering MQTT loop")
+    print(f"[SiteManager] {SITE_ID} ready. Entering MQTT loop (custom gRPC transport, legacy control flow)")
 
     # Keep main thread alive
     try:

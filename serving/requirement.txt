@@ -6,3 +6,4 @@ pip install datasets
 pip install "huggingface-hub>=0.15.1,<1.0"
 pip install uvicorn
 pip install fastapi
+pip install "grpcio-tools==1.67.1 grpcio-tools==1.67.1"
