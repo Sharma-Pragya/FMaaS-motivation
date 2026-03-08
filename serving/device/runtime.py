@@ -110,7 +110,7 @@ class SharedModelRuntime:
                 decoder_times.append(time.time_ns() - decoder_start)
 
             end_ns = time.time_ns()
-            output_array = np.concatenate(outputs, axis=0) if outputs else np.empty((0,), dtype=np.float32)
+            output_array = np.concatenate([o.reshape(-1) for o in outputs], axis=0) if outputs else np.empty((0,), dtype=np.float32)
             return BatchRunResult(
                 outputs=output_array,
                 start_time_ns=start_ns,

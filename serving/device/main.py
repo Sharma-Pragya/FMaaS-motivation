@@ -29,9 +29,9 @@ def main():
     parser.add_argument("--output-dir", type=str, default=None, help="Reserved for future metrics output.")
     parser.add_argument("--bootstrap-json", type=str, default=None, help="Optional deployment payload used for initial model load.")
     parser.add_argument("--bootstrap-json-b64", type=str, default=None, help="Base64-encoded deployment payload used for initial model load.")
-    parser.add_argument("--max-batch-size", type=int, default=5, help="Maximum cross-task batch size.")
-    parser.add_argument("--max-batch-wait-ms", type=float, default=1000.0, help="Maximum batch formation wait.")
-    parser.add_argument("--queue-capacity", type=int, default=1024, help="Maximum total queued inference requests.")
+    parser.add_argument("--max-batch-size", type=int, default=32, help="Maximum cross-task batch size.")
+    parser.add_argument("--max-batch-wait-ms", type=float, default=10, help="Maximum batch formation wait.")
+    parser.add_argument("--queue-capacity", type=int, default=102400, help="Maximum total queued inference requests.")
     args = parser.parse_args()
     asyncio.run(
         serve(

@@ -130,7 +130,9 @@ class DeviceBatcher:
             async with self._condition:
                 if self._queues.pending_count() >= self._max_batch_size:
                     break
-            await asyncio.sleep(0)
+            remaining = deadline - time.time()
+            if remaining > 0:
+                await asyncio.sleep(min(0.001, remaining))
 
         async with self._condition:
             requests = self._queues.select_batch(self._policy, self._max_batch_size)
