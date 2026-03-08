@@ -101,7 +101,8 @@ async def _deploy_one(spec: dict):
     if output_dir:
         server_cmd += f"--output-dir {output_dir} "
 
-    log_path = f"./device/logs/{ssh_host}_{spec['backbone']}.log"
+    cuda_suffix = spec.get("cuda", "").replace(":", "")
+    log_path = f"./device/logs/{ssh_host}_{cuda_suffix}_{spec['backbone']}.log"
 
     await _ssh_start_server(ssh_host, username, conda_env, server_cmd, log_path)
 
