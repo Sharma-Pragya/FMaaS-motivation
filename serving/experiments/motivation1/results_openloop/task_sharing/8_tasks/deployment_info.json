@@ -1,0 +1,51 @@
+{
+  "strategy": "task_sharing",
+  "n_tasks": 8,
+  "backbone": "chronosbase",
+  "benchmark_mode": "open_loop",
+  "assignments": [
+    {
+      "task": "ecgclass",
+      "url": "10.100.31.64:8000"
+    },
+    {
+      "task": "gestureclass",
+      "url": "10.100.31.64:8001"
+    },
+    {
+      "task": "eclfore",
+      "url": "10.100.31.64:8002"
+    },
+    {
+      "task": "etth1fore",
+      "url": "10.100.31.64:8003"
+    },
+    {
+      "task": "exchangefore",
+      "url": "10.100.31.64:8004"
+    },
+    {
+      "task": "trafficfore",
+      "url": "10.100.31.64:8005"
+    },
+    {
+      "task": "weatherfore",
+      "url": "10.100.31.64:8006"
+    },
+    {
+      "task": "sysbp",
+      "url": "10.100.31.64:8007"
+    }
+  ],
+  "gpu_mem_mb": 4875.557887999999,
+  "log_paths": [
+    "./device/logs/10.100.31.64_cuda0_port8000_chronosbase_task_sharing_8tasks_ecgclass.log",
+    "./device/logs/10.100.31.64_cuda0_port8001_chronosbase_task_sharing_8tasks_gestureclass.log",
+    "./device/logs/10.100.31.64_cuda0_port8002_chronosbase_task_sharing_8tasks_eclfore.log",
+    "./device/logs/10.100.31.64_cuda0_port8003_chronosbase_task_sharing_8tasks_etth1fore.log",
+    "./device/logs/10.100.31.64_cuda0_port8004_chronosbase_task_sharing_8tasks_exchangefore.log",
+    "./device/logs/10.100.31.64_cuda0_port8005_chronosbase_task_sharing_8tasks_trafficfore.log",
+    "./device/logs/10.100.31.64_cuda0_port8006_chronosbase_task_sharing_8tasks_weatherfore.log",
+    "./device/logs/10.100.31.64_cuda0_port8007_chronosbase_task_sharing_8tasks_sysbp.log"
+  ]
+}

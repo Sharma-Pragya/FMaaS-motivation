@@ -1,0 +1,9 @@
+n_tasks,strategy,gpu_mem_mb,throughput_rps,avg_latency_ms,avg_batch_size,mixed_batch_fraction,batch_count
+2,deploy_sharing,420.978,12.2333,135.806,2.2147,0.4295,312
+2,task_sharing,841.161,13.05,142.016,1.679,0.0,461
+4,deploy_sharing,1026.14,24.6167,164.845,3.5622,0.8433,402
+4,task_sharing,2286.689,22.85,156.562,1.5932,0.0,853
+6,deploy_sharing,1631.301,35.5333,184.748,4.6578,0.9511,450
+6,task_sharing,3732.216,36.5833,279.18,1.6504,0.0,1227
+8,deploy_sharing,1934.277,49.0833,5869.221,27.783,0.7358,106
+8,task_sharing,4875.558,29.2833,430.351,1.8734,0.0,1074
