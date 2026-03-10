@@ -1,55 +1,50 @@
 #!/bin/bash
-# Motivation Experiment #2 — task_sharing vs deploy_sharing benchmark
-# Run from serving/ directory.
+# Motivation Experiment #1 — task_sharing vs deploy_sharing (in-process, backbone-only)
+# Run from the serving/ directory, or it will cd there automatically.
 #
-# Benchmark modes:
-#   BENCHMARK_MODE=closed_loop  (default) — fixed CONCURRENCY workers per task,
-#                                           fire as fast as possible → shows max throughput
-#   BENCHMARK_MODE=open_loop              — Poisson arrivals at TARGET_RPS per task
+# Environment variables (all optional, shown with defaults):
+#   CUDA_DEVICE           cuda:0
+#   BACKBONE              chronosbase
+#   N_TASKS               10,20,30,40,50
+#   PHASE_DURATION        60          seconds per run
+#   MAX_BATCH_SIZE        32
+#   MAX_BATCH_WAIT_MS     10
+#   STRATEGIES            task_sharing,deploy_sharing
+#   EXP_DIR               experiments/motivation1/results
 
 set -e
-cd "$(dirname "$0")/../.."  # go to serving/
+cd "$(dirname "$0")/../.."   # go to serving/
 
+CUDA_DEVICE=${CUDA_DEVICE:-"cuda:0"}
+BACKBONE=${BACKBONE:-"chronosbase"}
+N_TASKS=${N_TASKS:-"1,2,4,6,8,10"}
 PHASE_DURATION=${PHASE_DURATION:-60}
-EXP_DIR=${EXP_DIR:-"experiments/motivation2/results"}
-N_TASKS=${N_TASKS:-"2,4,8,10"}
-STRATEGIES=${STRATEGIES:-"deploy_sharing,task_sharing"}
-BENCHMARK_MODE=${BENCHMARK_MODE:-"closed_loop"}
-# closed_loop params
-CONCURRENCY=${CONCURRENCY:-8}
-# open_loop params
-TARGET_RPS=${TARGET_RPS:-8.0}
-# total_rps params (fixed total load split evenly across N tasks)
-TOTAL_RPS=${TOTAL_RPS:-48.0}
-# server batcher params
-SERVER_MAX_BATCH_SIZE=${SERVER_MAX_BATCH_SIZE:-32}
-SERVER_MAX_BATCH_WAIT_MS=${SERVER_MAX_BATCH_WAIT_MS:-10}
+MAX_BATCH_SIZE=${MAX_BATCH_SIZE:-32}
+MAX_BATCH_WAIT_MS=${MAX_BATCH_WAIT_MS:-10}
+STRATEGIES=${STRATEGIES:-"task_sharing,deploy_sharing"}
+EXP_DIR=${EXP_DIR:-"experiments/motivation1/results"}
 
 echo "=========================================="
-echo "  Motivation Experiment #2"
-echo "  Duration/run    : ${PHASE_DURATION}s"
-echo "  N tasks         : ${N_TASKS}"
+echo "  Motivation Experiment #1"
+echo "  Backbone        : ${BACKBONE}"
+echo "  CUDA device     : ${CUDA_DEVICE}"
+echo "  N tasks sweep   : ${N_TASKS}"
 echo "  Strategies      : ${STRATEGIES}"
-echo "  Benchmark mode  : ${BENCHMARK_MODE}"
-if [ "${BENCHMARK_MODE}" = "closed_loop" ]; then
-echo "  Concurrency/task: ${CONCURRENCY} workers"
-elif [ "${BENCHMARK_MODE}" = "total_rps" ]; then
-echo "  Total RPS       : ${TOTAL_RPS} req/s (split across N tasks)"
-else
-echo "  Target RPS/task : ${TARGET_RPS} req/s"
-fi
-echo "  Server batch cfg: size=${SERVER_MAX_BATCH_SIZE}, wait=${SERVER_MAX_BATCH_WAIT_MS} ms"
+echo "  Duration/run    : ${PHASE_DURATION}s"
+echo "  Workers/task    : 1 (closed-loop, N tasks concurrent)"
+echo "  Max batch size  : ${MAX_BATCH_SIZE}"
+echo "  Max batch wait  : ${MAX_BATCH_WAIT_MS} ms"
 echo "  Results         : ${EXP_DIR}"
 echo "=========================================="
 
-python experiments/motivation2/run.py \
-    --n-tasks "${N_TASKS}" \
-    --duration "${PHASE_DURATION}" \
-    --exp-dir "${EXP_DIR}" \
-    --strategies "${STRATEGIES}" \
-    --benchmark-mode "${BENCHMARK_MODE}" \
-    --concurrency "${CONCURRENCY}" \
-    --target-rps "${TARGET_RPS}" \
-    --total-rps "${TOTAL_RPS}" \
-    --server-max-batch-size "${SERVER_MAX_BATCH_SIZE}" \
-    --server-max-batch-wait-ms "${SERVER_MAX_BATCH_WAIT_MS}"
+CUDA_DEVICE=${CUDA_DEVICE} \
+BACKBONE=${BACKBONE} \
+python experiments/motivation1/run.py \
+    --n-tasks          "${N_TASKS}" \
+    --duration         "${PHASE_DURATION}" \
+    --strategies       "${STRATEGIES}" \
+    --backbone         "${BACKBONE}" \
+    --cuda             "${CUDA_DEVICE}" \
+    --max-batch-size   "${MAX_BATCH_SIZE}" \
+    --max-batch-wait-ms "${MAX_BATCH_WAIT_MS}" \
+    --exp-dir          "${EXP_DIR}"

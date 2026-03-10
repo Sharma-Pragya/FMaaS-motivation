@@ -36,7 +36,7 @@ def load_summary(path: Path) -> Dict[str, Dict[int, Dict]]:
             s = row["strategy"]
             n = int(row["n_tasks"])
             data.setdefault(s, {})[n] = {
-                "gpu_mem_mb":     float(row["gpu_mem_mb"]),
+                "gpu_mem_mb":     float(row["avg_gpu_mem_mb"]),
                 "throughput_rps": float(row["throughput_rps"]),
                 "avg_latency_ms": float(row["avg_latency_ms"]),
             }
@@ -48,8 +48,8 @@ def load_summary(path: Path) -> Dict[str, Dict[int, Dict]]:
 # ---------------------------------------------------------------------------
 
 STRATEGY_LABELS = {
-    "task_sharing":   "Task Sharing (1 model/task)",
-    "deploy_sharing": "Deploy Sharing (shared backbone)",
+    "task_sharing":   "Task Sharing",
+    "deploy_sharing": "Deploy Sharing",
 }
 
 COLORS = {
@@ -148,7 +148,7 @@ def make_plot(data: Dict, out_path: Path, strategies: List[str], all_n: List[int
 def main():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--exp-dir", default=os.environ.get("EXP_DIR", "experiments/motivation2/results"))
+    parser.add_argument("--exp-dir", default=os.environ.get("EXP_DIR", "experiments/motivation1/results"))
     parser.add_argument("--strategies", default="task_sharing,deploy_sharing")
     args = parser.parse_args()
 

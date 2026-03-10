@@ -1,0 +1,13 @@
+{
+  "backbone": "chronosbase",
+  "strategy": "deploy_sharing",
+  "n_tasks": 4,
+  "model_load_mem_mb": 434.051,
+  "peak_gpu_mem_mb": 434.051,
+  "avg_gpu_mem_mb": 439.218,
+  "throughput_rps": 36.2667,
+  "avg_latency_ms": 110.353,
+  "avg_batch_size": 4.0,
+  "mixed_batch_fraction": 1.0,
+  "batch_count": 544
+}
