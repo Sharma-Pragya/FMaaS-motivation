@@ -30,6 +30,7 @@ message InferResponse {
   int64 swap_time_ns = 6;
   int64 decoder_time_ns = 7;
   string status = 8;
+  string text_output = 9;
 }
 
 message ControlRequest {
