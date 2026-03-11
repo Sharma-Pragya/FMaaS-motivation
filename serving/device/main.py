@@ -30,7 +30,7 @@ def main():
     parser.add_argument("--bootstrap-json", type=str, default=None, help="Optional deployment payload used for initial model load.")
     parser.add_argument("--bootstrap-json-b64", type=str, default=None, help="Base64-encoded deployment payload used for initial model load.")
     parser.add_argument("--max-batch-size", type=int, default=32, help="Maximum cross-task batch size.")
-    parser.add_argument("--max-batch-wait-ms", type=float, default=10, help="Maximum batch formation wait.")
+    parser.add_argument("--max-batch-wait-ms", type=float, default=1, help="Maximum batch formation wait.")
     parser.add_argument("--queue-capacity", type=int, default=102400, help="Maximum total queued inference requests.")
     parser.add_argument("--runtime-type", choices=["pytorch", "vllm"], default="pytorch", help="Inference runtime: pytorch (TSFM) or vllm (LLM).")
     args = parser.parse_args()

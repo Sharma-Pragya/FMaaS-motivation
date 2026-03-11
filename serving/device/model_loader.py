@@ -1,181 +1,129 @@
 # device/model_loader.py
+import gc
 import torch
+
 from fmtk.pipeline import Pipeline
 from fmtk.components.decoders.regression.mlp import MLPDecoder as RegressionMLP
 from fmtk.components.decoders.classification.mlp import MLPDecoder as ClassificationMLP
 from fmtk.components.decoders.forecasting.mlp import MLPDecoder as ForecastingMLP
 from fmtk.logger import Logger
 from device.config import DEVICE, DECODERS
-from contextlib import nullcontext
 
 
-_pipeline = None
-_decoders = {}
-_loaded = False
-_backbone_name = None
-current_task = None
+def _build_pipeline(backbone: str, device, logger: Logger | None) -> Pipeline:
+    """Instantiate and return a Pipeline. Logger is passed in so Pipeline.add_decoder,
+    forward, etc. all record into the same Logger automatically."""
+    if backbone in ("momentlarge", "momentbase", "momentsmall"):
+        from fmtk.components.backbones.moment import MomentModel
+        return Pipeline(MomentModel(device, backbone.replace("moment", "")), logger=logger)
+    elif backbone in ("chronostiny", "chronosmini", "chronossmall", "chronosbase", "chronoslarge"):
+        from fmtk.components.backbones.chronos import ChronosModel
+        return Pipeline(ChronosModel(device, backbone.replace("chronos", "")), logger=logger)
+    elif backbone == "papageis":
+        from fmtk.components.backbones.papagei import PapageiModel
+        cfg = {"in_channels": 1, "base_filters": 32, "kernel_size": 3, "stride": 2,
+               "groups": 1, "n_block": 18, "n_classes": 512, "n_experts": 3}
+        return Pipeline(PapageiModel(device, "papagei_s", model_config=cfg), logger=logger)
+    elif backbone == "papageip":
+        from fmtk.components.backbones.papagei import PapageiModel
+        cfg = {"in_channels": 1, "base_filters": 32, "kernel_size": 3, "stride": 2,
+               "groups": 1, "n_block": 18, "n_classes": 512}
+        return Pipeline(PapageiModel(device, "papagei_p", model_config=cfg), logger=logger)
+    elif backbone == "papageissvri":
+        from fmtk.components.backbones.papagei import PapageiModel
+        cfg = {"in_channels": 1, "base_filters": 32, "kernel_size": 3, "stride": 2,
+               "groups": 1, "n_block": 18, "n_classes": 512}
+        return Pipeline(PapageiModel(device, "papagei_s_svri", model_config=cfg), logger=logger)
+    elif backbone == "llava":
+        from fmtk.components.backbones.llava import LlavaModel
+        return Pipeline(LlavaModel(device, "llava-1.5-7b-hf"), logger=logger)
+    else:
+        raise ValueError(f"Unsupported backbone: {backbone}")
 
 
-def load_models(backbone: str, decoders: list):
+def _build_decoder(backbone: str, task: str, dtype: str, device):
+    if dtype == "regression":
+        cfg = DECODERS[f"mlp_{backbone}_regression"]["decoder_config"]["cfg"]
+        return RegressionMLP(device=device, cfg=cfg)
+    elif dtype == "classification":
+        cfg = DECODERS[f"mlp_{backbone}_{task}"]["decoder_config"]["cfg"]
+        return ClassificationMLP(device=device, cfg=cfg)
+    elif dtype == "forecasting":
+        cfg = DECODERS[f"mlp_{backbone}_forecasting"]["decoder_config"]["cfg"]
+        return ForecastingMLP(device=device, cfg=cfg)
+    else:
+        raise ValueError(f"Unknown decoder type: {dtype}")
+
+
+class ModelLoader:
     """
-    Load a specific backbone and a set of decoders.
-    backbone: str (e.g., "moment_large")
-    decoders: list of {"task": str, "type": str, "path": str}
+    Loads backbone + decoders onto a device. Accepts a Logger in __init__ so
+    all operations (load_backbone, add_decoder, load_decoder) record into the
+    same Logger automatically via the Pipeline. No manual measure() wrappers
+    needed here — Pipeline.add_decoder already handles them.
     """
-    global _pipeline, _decoders, _loaded, _backbone_name, current_task
-    logger=Logger(DEVICE,'deploymentlogger')
-    print(f"[ModelLoader] Loading backbone: {backbone}")
-    with (logger.measure("load_backbone", device=DEVICE) if logger else nullcontext()):
-        if backbone == "momentlarge":
-            from fmtk.components.backbones.moment import MomentModel
-            _pipeline = Pipeline(MomentModel(DEVICE, "large"),logger=logger)
-        elif backbone == "momentsmall":
-            from fmtk.components.backbones.moment import MomentModel
-            _pipeline = Pipeline(MomentModel(DEVICE, "small"),logger=logger)
-        elif backbone == "momentbase":
-            from fmtk.components.backbones.moment import MomentModel
-            _pipeline = Pipeline(MomentModel(DEVICE, "base"),logger=logger)
-        elif backbone == "chronostiny":
-            from fmtk.components.backbones.chronos import ChronosModel
-            _pipeline = Pipeline(ChronosModel(DEVICE, "tiny"),logger=logger)
-        elif backbone == "chronossmall":
-            from fmtk.components.backbones.chronos import ChronosModel
-            _pipeline = Pipeline(ChronosModel(DEVICE, "small"),logger=logger)
-        elif backbone == "chronosbase":
-            from fmtk.components.backbones.chronos import ChronosModel
-            _pipeline = Pipeline(ChronosModel(DEVICE, "base"),logger=logger)
-        elif backbone == "chronoslarge":
-            from fmtk.components.backbones.chronos import ChronosModel
-            _pipeline = Pipeline(ChronosModel(DEVICE, "large"),logger=logger)
-        elif backbone == "chronosmini": 
-            from fmtk.components.backbones.chronos import ChronosModel
-            _pipeline = Pipeline(ChronosModel(DEVICE, "mini"),logger=logger)
-        elif backbone == "papageis":
-            from fmtk.components.backbones.papagei import PapageiModel
-            model_config={'in_channels':1,'base_filters': 32,'kernel_size': 3,'stride': 2,'groups': 1,'n_block': 18,'n_classes': 512,'n_experts': 3}
-            _pipeline = Pipeline(PapageiModel(DEVICE, "papagei_s", model_config=model_config),logger=logger)
-        elif backbone == "papageip":
-            from fmtk.components.backbones.papagei import PapageiModel
-            model_config={'in_channels':1, 'base_filters': 32,'kernel_size': 3,'stride': 2,'groups': 1,'n_block': 18,'n_classes': 512}
-            _pipeline = Pipeline(PapageiModel(DEVICE, "papagei_p", model_config=model_config),logger=logger)
-        elif backbone == "papageissvri":
-            from fmtk.components.backbones.papagei import PapageiModel
-            model_config={'in_channels':1, 'base_filters': 32,'kernel_size': 3,'stride': 2,'groups': 1,'n_block': 18,'n_classes': 512}
-            _pipeline = Pipeline(PapageiModel(DEVICE, "papagei_s_svri", model_config=model_config),logger=logger)
-        elif backbone == "llava":
-            from fmtk.components.backbones.llava import LlavaModel
-            _pipeline = Pipeline(LlavaModel(DEVICE, "llava-1.5-7b-hf"),logger=logger)
-        else:
-            raise ValueError(f"Unsupported backbone type: {backbone}")
-    
-    _backbone_name = backbone
-    for dec in decoders:
-        task, dtype, path = dec["task"], dec["type"], dec["path"]
-        print(f"[ModelLoader] Loading decoder: {task} ({dtype}) from {path}")
-        if dtype == "regression":
-            decoder_config=DECODERS[f'mlp_{backbone}_{dtype}']['decoder_config']
-            decoder = RegressionMLP(device=decoder_config['DEVICE'],cfg=decoder_config['cfg'])
-        elif dtype == "classification":
-            decoder_config=DECODERS[f'mlp_{backbone}_{task}']['decoder_config']
-            decoder = ClassificationMLP(device=decoder_config['DEVICE'],cfg=decoder_config['cfg'])
-        elif dtype == "forecasting":
-            decoder_config=DECODERS[f'mlp_{backbone}_{dtype}']['decoder_config']
-            decoder = ForecastingMLP(device=decoder_config['DEVICE'],cfg=decoder_config['cfg'])
-        else:
-            raise ValueError(f"Unknown decoder type: {dtype} or mlp_{backbone}_{dtype} or mlp_{backbone}_{task}")
 
-        _decoders[task] = _pipeline.add_decoder(decoder, load=True, train=False, path=path)
-        current_task=task
-    _loaded = True
-    print(f"[ModelLoader] Loaded {_pipeline.model_instance.__class__.__name__} with {len(_decoders)} decoders.")
-    return logger
+    def __init__(self, device=None, logger: Logger | None = None):
+        self.device        = device or DEVICE
+        self.logger        = logger   # shared Logger; None = no measurement
+        self.pipeline: Pipeline | None = None
+        self.decoders: dict[str, str] = {}
+        self.backbone_name: str | None = None
+        self._loaded       = False
 
+    def _op_logger(self) -> Logger:
+        """Create a fresh Logger for one operation. Pipeline will record into it,
+        and we copy records into self.logger (the runtime's shared logger) after."""
+        return Logger(self.device, "deployment")
 
-def add_decoder(decoder_specs: list):
-    """Hot-add new decoders to an already-loaded backbone.
+    def _merge(self, op_logger: Logger):
+        """Copy op_logger records into the shared runtime logger (if set)."""
+        if self.logger is not None:
+            self.logger.records.extend(op_logger.records)
 
-    This reuses the same instantiation logic as load_models() but skips
-    backbone loading — the backbone must already be loaded via load_models().
+    def load_models(self, backbone: str, decoder_specs: list) -> Logger:
+        op_log = self._op_logger()
+        print(f"[ModelLoader] Loading backbone: {backbone}")
+        with op_log.measure("load_backbone", device=self.device):
+            self.pipeline = _build_pipeline(backbone, self.device, op_log)
+        self.backbone_name = backbone
+        self.decoders = {}
+        for dec in decoder_specs:
+            task, dtype, path = dec["task"], dec["type"], dec["path"]
+            print(f"[ModelLoader] Loading decoder: {task} ({dtype}) from {path}")
+            decoder_obj = _build_decoder(backbone, task, dtype, self.device)
+            self.decoders[task] = self.pipeline.add_decoder(decoder_obj, load=True, train=False, path=path)
+        self._loaded = True
+        print(f"[ModelLoader] Loaded {self.pipeline.model_instance.__class__.__name__} "
+              f"with {len(self.decoders)} decoders.")
+        self._merge(op_log)
+        return op_log
 
-    Args:
-        decoder_specs: list of {"task": str, "type": str, "path": str}
+    def add_decoder(self, decoder_specs: list) -> Logger:
+        if not self._loaded or self.pipeline is None:
+            raise RuntimeError("No backbone loaded. Call load_models() first.")
+        op_log = self._op_logger()
+        # Temporarily swap pipeline logger so add_decoder records into op_log
+        self.pipeline.logger = op_log
+        for dec in decoder_specs:
+            task, dtype, path = dec["task"], dec["type"], dec["path"]
+            print(f"[ModelLoader] Hot-adding decoder: {task} ({dtype}) from {path}")
+            decoder_obj = _build_decoder(self.backbone_name, task, dtype, self.device)
+            self.decoders[task] = self.pipeline.add_decoder(decoder_obj, load=True, train=False, path=path)
+        self.pipeline.logger = self.logger  # restore
+        print(f"[ModelLoader] Hot-added {len(decoder_specs)} decoder(s). Total: {len(self.decoders)}")
+        self._merge(op_log)
+        return op_log
 
-    Returns:
-        Logger with timing measurements for the add operation.
-
-    Raises:
-        RuntimeError: If no backbone has been loaded yet.
-    """
-    global _decoders, current_task
-
-    if not _loaded or _pipeline is None or _backbone_name is None:
-        raise RuntimeError("No backbone loaded. Call load_models() first.")
-
-    logger = Logger(DEVICE, 'add_decoder_logger')
-    backbone = _backbone_name
-
-    for dec in decoder_specs:
-        task, dtype, path = dec["task"], dec["type"], dec["path"]
-        print(f"[ModelLoader] Hot-adding decoder: {task} ({dtype}) from {path}")
-
-        with (logger.measure("add_decoder", device=DEVICE) if logger else nullcontext()):
-            if dtype == "regression":
-                decoder_config = DECODERS[f'mlp_{backbone}_{dtype}']['decoder_config']
-                decoder = RegressionMLP(device=decoder_config['DEVICE'], cfg=decoder_config['cfg'])
-            elif dtype == "classification":
-                decoder_config = DECODERS[f'mlp_{backbone}_{task}']['decoder_config']
-                decoder = ClassificationMLP(device=decoder_config['DEVICE'], cfg=decoder_config['cfg'])
-            elif dtype == "forecasting":
-                decoder_config = DECODERS[f'mlp_{backbone}_{dtype}']['decoder_config']
-                decoder = ForecastingMLP(device=decoder_config['DEVICE'], cfg=decoder_config['cfg'])
-            else:
-                raise ValueError(f"Unknown decoder type: {dtype} or mlp_{backbone}_{dtype} or mlp_{backbone}_{task}")
-
-            _decoders[task] = _pipeline.add_decoder(decoder, load=True, train=False, path=path)
-            current_task = task
-
-    print(f"[ModelLoader] Hot-added {len(decoder_specs)} decoder(s). Total decoders: {len(_decoders)}")
-    return logger
-
-
-def swap_backbone(backbone: str, decoders: list):
-    """Swap the backbone in-process without restarting the server.
-
-    Frees the current pipeline from GPU memory, then calls load_models()
-    to load the new backbone and re-attach decoders — all inside the
-    running PyTriton process. No SSH or server restart needed.
-
-    Args:
-        backbone: New backbone name (e.g. "chronosbase").
-        decoders: List of {"task": str, "type": str, "path": str} dicts.
-
-    Returns:
-        Logger with timing measurements from load_models().
-    """
-    global _pipeline, _decoders, _loaded, _backbone_name, current_task
-    import gc
-
-    # Release old pipeline and free GPU memory
-    if _pipeline is not None:
-        print(f"[ModelLoader] Releasing old backbone '{_backbone_name}' from GPU memory...")
-        del _pipeline
-        _pipeline = None
-    _decoders = {}
-    _loaded = False
-    _backbone_name = None
-    current_task = None
-
-    import torch
-    torch.cuda.empty_cache()
-    gc.collect()
-    print("[ModelLoader] GPU memory released. Loading new backbone...")
-
-    return load_models(backbone, decoders)
-
-
-def get_loaded_pipeline():
-    """Return the current loaded pipeline and decoders."""
-    print(f"[ModelLoader] Retrieving loaded models. Loaded status: {_loaded}")
-    if not _loaded:
-        raise RuntimeError("No models are loaded. Please deploy first via /load_model.")
-    return _pipeline, _decoders, current_task
+    def swap_backbone(self, backbone: str, decoder_specs: list) -> Logger:
+        if self.pipeline is not None:
+            print(f"[ModelLoader] Releasing '{self.backbone_name}' from GPU memory...")
+            del self.pipeline
+            self.pipeline = None
+        self.decoders = {}
+        self._loaded = False
+        self.backbone_name = None
+        torch.cuda.empty_cache()
+        gc.collect()
+        print("[ModelLoader] GPU memory released. Loading new backbone...")
+        return self.load_models(backbone, decoder_specs)

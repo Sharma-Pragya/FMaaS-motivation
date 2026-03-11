@@ -164,7 +164,7 @@ class EdgeRuntimeServicer(edge_runtime_pb2_grpc.EdgeRuntimeServicer):
             LOGGER.exception("Infer failed")
             await context.abort(grpc.StatusCode.INTERNAL, str(exc))
 
-        output_values, output_shape = _encode_output(response["output"]) if response.get("output") else ([], [])
+        output_values, output_shape = _encode_output(response["output"]) if response.get("output") is not None else ([], [])
         return edge_runtime_pb2.InferResponse(
             output=output_values,
             output_shape=output_shape,

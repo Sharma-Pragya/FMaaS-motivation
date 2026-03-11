@@ -229,6 +229,11 @@ def on_message(client, userdata, msg):
                     print(f"[SiteManager] Starting background deployment for /add...")
                     deployment_status = asyncio.run(deploy_models(new_specs))
                     append_deployments(new_specs)
+                    output_dir = get_output_dir()
+                    json_path = os.path.join(output_dir, "model_deployment_results.json") if output_dir else "model_deployment_results.json"
+                    with _deployment_json(json_path, output_dir) as data:
+                        for entry in deployment_status:
+                            data.append(entry)
                     _publish_runtime_deploy_ack(
                         client,
                         ack_id,
@@ -253,6 +258,10 @@ def on_message(client, userdata, msg):
                     if not device_url or not decoders:
                         raise ValueError("device and decoders required in /update payload")
                     result = asyncio.run(_add_decoder_to_device(device_url, decoders))
+                    output_dir = get_output_dir()
+                    json_path = os.path.join(output_dir, "model_deployment_results.json") if output_dir else "model_deployment_results.json"
+                    with _deployment_json(json_path, output_dir) as data:
+                        data.append(result)
                     _publish_runtime_deploy_ack(
                         client,
                         ack_id,
@@ -285,6 +294,10 @@ def on_message(client, userdata, msg):
                         )
                     )
                     replace_deployment(old_backbone, new_spec)
+                    output_dir = get_output_dir()
+                    json_path = os.path.join(output_dir, "model_deployment_results.json") if output_dir else "model_deployment_results.json"
+                    with _deployment_json(json_path, output_dir) as data:
+                        data.append(result)
                     _publish_runtime_deploy_ack(
                         client,
                         ack_id,

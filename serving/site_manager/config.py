@@ -12,8 +12,8 @@ pythonpath = (
 )
 
 activate_env="conda activate"
-vlm_env='fmtk_vlm'
-timeseries_env='fmtk_vlm'
+vlm_env='fmtk'
+timeseries_env='fmtk'
 
 cmds=f"cd /project/pi_shenoy_umass_edu/hshastri/FMaaS-motivation/serving && module load conda/latest && export PYTHONPATH={pythonpath}"
 username="hshastri_umass_edu"
