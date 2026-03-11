@@ -8,10 +8,10 @@
 #   BENCHMARK_MODE=total_rps              — fixed total load split evenly across N tasks
 
 set -e
-cd "$(dirname "$0")/../.."  # go to serving/
+cd "$(dirname "$0")/../../.."  # go to serving/
 
 PHASE_DURATION=${PHASE_DURATION:-60}
-EXP_DIR=${EXP_DIR:-"experiments/motivation2_llm/results"}
+EXP_DIR=${EXP_DIR:-"experiments/motivation1/llm/results"}
 N_TASKS=${N_TASKS:-"2,4,8,10"}
 STRATEGIES=${STRATEGIES:-"deploy_sharing,task_sharing"}
 BENCHMARK_MODE=${BENCHMARK_MODE:-"closed_loop"}
@@ -37,7 +37,7 @@ fi
 echo "  Results         : ${EXP_DIR}"
 echo "=========================================="
 
-python experiments/motivation2_llm/run.py \
+python experiments/motivation1/llm/run.py \
     --n-tasks "${N_TASKS}" \
     --duration "${PHASE_DURATION}" \
     --exp-dir "${EXP_DIR}" \

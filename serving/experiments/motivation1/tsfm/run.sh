@@ -13,7 +13,7 @@
 #   EXP_DIR               experiments/motivation1/results
 
 set -e
-cd "$(dirname "$0")/../.."   # go to serving/
+cd "$(dirname "$0")/../../.."   # go to serving/
 
 CUDA_DEVICE=${CUDA_DEVICE:-"cuda:0"}
 BACKBONE=${BACKBONE:-"momentbase"}
@@ -21,7 +21,7 @@ DECODER_DIR=${DECODER_DIR:-"/project/pi_shenoy_umass_edu/hshastri/FMTK/models/ts
 N_TASKS=${N_TASKS:-"1,2,4,6,8,10"}
 PHASE_DURATION=${PHASE_DURATION:-180}
 STRATEGIES=${STRATEGIES:-"task_sharing,deploy_sharing"}
-EXP_DIR=${EXP_DIR:-"experiments/motivation1/results"}
+EXP_DIR=${EXP_DIR:-"experiments/motivation1/tsfm/results"}
 
 echo "=========================================="
 echo "  Motivation Experiment #1"
@@ -42,7 +42,7 @@ fi
 
 CUDA_DEVICE=${CUDA_DEVICE} \
 BACKBONE=${BACKBONE} \
-python experiments/motivation1/run.py \
+python experiments/motivation1/tsfm/run.py \
     --n-tasks          "${N_TASKS}" \
     --duration         "${PHASE_DURATION}" \
     --strategies       "${STRATEGIES}" \

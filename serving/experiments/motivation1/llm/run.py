@@ -30,13 +30,9 @@ import threading
 from pathlib import Path
 from typing import Dict, List
 
-SERVING_DIR = Path(__file__).resolve().parents[2]
+SERVING_DIR = Path(__file__).resolve().parents[3]
 if str(SERVING_DIR) not in sys.path:
     sys.path.insert(0, str(SERVING_DIR))
-
-FMTK_SRC = Path("/project/pi_shenoy_umass_edu/hshastri/FMTK/src")
-if str(FMTK_SRC) not in sys.path:
-    sys.path.insert(0, str(FMTK_SRC))
 
 import numpy as np
 
@@ -47,7 +43,7 @@ from site_manager.grpc_client import EdgeRuntimeClient
 # Hardware layout
 # ---------------------------------------------------------------------------
 
-DEVICE_HOST = "10.100.20.48"
+DEVICE_HOST = "10.100.20.52"
 CUDA_DEVICE  = "cuda:0"
 BASE_PORT    = 8000   # task_sharing: ports 8000..8009; deploy_sharing: 8000 only
 

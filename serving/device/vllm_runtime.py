@@ -98,4 +98,13 @@ class VLLMRuntime:
         """
         if self.model is None:
             raise RuntimeError("vllm_model_not_loaded")
-        return await self.model.async_forward(prompt)
+        result = await self.model.async_forward(prompt)
+        return {
+            "output": [],
+            "text_output": result,
+            "start_time_ns": 0,
+            "end_time_ns": 0,
+            "proc_time_ns": 0,
+            "swap_time_ns": 0,
+            "decoder_time_ns": 0,
+        }

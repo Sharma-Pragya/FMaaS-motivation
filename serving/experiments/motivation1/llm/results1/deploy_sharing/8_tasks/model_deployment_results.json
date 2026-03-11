@@ -1,6 +1,6 @@
 [
   {
-    "grpc_url": "10.100.20.52:8000",
+    "grpc_url": "10.100.20.48:8000",
     "model_config": {
       "max_model_len": 4096,
       "gpu_memory_utilization": 0.85

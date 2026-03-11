@@ -24,7 +24,7 @@ import time
 from pathlib import Path
 from typing import Dict, List, Optional
 
-SERVING_DIR = Path(__file__).resolve().parents[2]
+SERVING_DIR = Path(__file__).resolve().parents[3]
 if str(SERVING_DIR) not in sys.path:
     sys.path.insert(0, str(SERVING_DIR))
 
