@@ -1,0 +1,54 @@
+[
+  {
+    "grpc_url": "10.100.20.48:8000",
+    "model_config": {
+      "max_model_len": 4096,
+      "gpu_memory_utilization": 0.25
+    },
+    "memory": {
+      "total_gpu_gb": 14.612,
+      "model_memory_gb": 0.928,
+      "reserved_gb": 2.498,
+      "gpu_memory_utilization": 0.171
+    }
+  },
+  {
+    "grpc_url": "10.100.20.48:8001",
+    "model_config": {
+      "max_model_len": 4096,
+      "gpu_memory_utilization": 0.25
+    },
+    "memory": {
+      "total_gpu_gb": 14.612,
+      "model_memory_gb": 0.928,
+      "reserved_gb": 2.311,
+      "gpu_memory_utilization": 0.1581
+    }
+  },
+  {
+    "grpc_url": "10.100.20.48:8002",
+    "model_config": {
+      "max_model_len": 4096,
+      "gpu_memory_utilization": 0.25
+    },
+    "memory": {
+      "total_gpu_gb": 14.612,
+      "model_memory_gb": 0.928,
+      "reserved_gb": 2.311,
+      "gpu_memory_utilization": 0.1581
+    }
+  },
+  {
+    "grpc_url": "10.100.20.48:8003",
+    "model_config": {
+      "max_model_len": 4096,
+      "gpu_memory_utilization": 0.25
+    },
+    "memory": {
+      "total_gpu_gb": 14.612,
+      "model_memory_gb": 0.928,
+      "reserved_gb": 2.311,
+      "gpu_memory_utilization": 0.1581
+    }
+  }
+]

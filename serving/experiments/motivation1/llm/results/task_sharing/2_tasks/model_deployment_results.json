@@ -1,0 +1,28 @@
+[
+  {
+    "grpc_url": "10.100.20.48:8000",
+    "model_config": {
+      "max_model_len": 4096,
+      "gpu_memory_utilization": 0.5
+    },
+    "memory": {
+      "total_gpu_gb": 14.612,
+      "model_memory_gb": 0.928,
+      "reserved_gb": 3.855,
+      "gpu_memory_utilization": 0.2639
+    }
+  },
+  {
+    "grpc_url": "10.100.20.48:8001",
+    "model_config": {
+      "max_model_len": 4096,
+      "gpu_memory_utilization": 0.5
+    },
+    "memory": {
+      "total_gpu_gb": 14.612,
+      "model_memory_gb": 0.928,
+      "reserved_gb": 2.027,
+      "gpu_memory_utilization": 0.1387
+    }
+  }
+]

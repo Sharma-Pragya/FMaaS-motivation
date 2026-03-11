@@ -1,0 +1,13 @@
+{
+  "backbone": "momentbase",
+  "strategy": "task_sharing",
+  "n_tasks": 8,
+  "model_load_mem_mb": 3632.137,
+  "peak_gpu_mem_mb": 3632.137,
+  "avg_gpu_mem_mb": 3659.372,
+  "throughput_rps": 81.8889,
+  "avg_latency_ms": 97.72,
+  "avg_batch_size": 1.0,
+  "mixed_batch_fraction": 0.0,
+  "batch_count": 14740
+}

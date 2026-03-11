@@ -1,0 +1,15 @@
+[
+  {
+    "grpc_url": "10.100.20.48:8000",
+    "model_config": {
+      "max_model_len": 4096,
+      "gpu_memory_utilization": 0.85
+    },
+    "memory": {
+      "total_gpu_gb": 14.612,
+      "model_memory_gb": 0.928,
+      "reserved_gb": 11.027,
+      "gpu_memory_utilization": 0.7547
+    }
+  }
+]

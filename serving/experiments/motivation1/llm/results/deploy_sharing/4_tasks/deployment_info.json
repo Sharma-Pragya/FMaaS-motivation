@@ -1,0 +1,13 @@
+{
+  "strategy": "deploy_sharing",
+  "backbone": "qwen2.5-0.5b",
+  "n_tasks": 4,
+  "benchmark_mode": "closed_loop",
+  "server": "10.100.20.48:8000",
+  "tasks": [
+    "ag_news",
+    "sst2",
+    "conll2003",
+    "squad"
+  ]
+}
