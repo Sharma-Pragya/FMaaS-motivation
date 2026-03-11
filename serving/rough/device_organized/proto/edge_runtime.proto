@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package serving.device;
+
+service EdgeRuntime {
+  rpc Infer(InferRequest) returns (InferResponse);
+  rpc Control(ControlRequest) returns (ControlResponse);
+}
+
+message TensorPayload {
+  repeated int32 shape = 1;
+  string dtype = 2;
+  bytes data = 3;
+}
+
+message InferRequest {
+  int64 req_id = 1;
+  string task = 2;
+  TensorPayload x = 3;
+  optional TensorPayload mask = 4;
+  optional string question = 5;
+}
+
+message InferResponse {
+  repeated float output = 1;
+  repeated int32 output_shape = 2;
+  int64 start_time_ns = 3;
+  int64 end_time_ns = 4;
+  int64 proc_time_ns = 5;
+  int64 swap_time_ns = 6;
+  int64 decoder_time_ns = 7;
+  string status = 8;
+}
+
+message ControlRequest {
+  string command = 1;
+  string payload_json = 2;
+}
+
+message ControlResponse {
+  string status = 1;
+  string logger_summary = 2;
+}

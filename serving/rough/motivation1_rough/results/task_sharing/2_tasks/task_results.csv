@@ -1,0 +1,3 @@
+task,device_url,n_requests,throughput_rps,avg_latency_ms
+gestureclass,10.100.20.48:8001,1895,31.583333333333332,31.65156293984768
+ecgclass,10.100.20.48:8000,1818,30.3,32.99659982372825

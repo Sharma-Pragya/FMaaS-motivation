@@ -1,0 +1,23 @@
+{
+  "strategy": "deploy_sharing",
+  "n_tasks": 10,
+  "backbone": "chronosbase",
+  "benchmark_mode": "closed_loop",
+  "server": "10.100.31.64:8000",
+  "tasks": [
+    "ecgclass",
+    "gestureclass",
+    "eclfore",
+    "etth1fore",
+    "exchangefore",
+    "trafficfore",
+    "weatherfore",
+    "sysbp",
+    "diasbp",
+    "heartrate"
+  ],
+  "log_paths": [
+    "./device/logs/10.100.31.64_cuda0_port8000_chronosbase_deploy_sharing_10tasks.log"
+  ],
+  "gpu_mem_mb": 1935.066112
+}

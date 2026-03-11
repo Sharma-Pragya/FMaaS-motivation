@@ -1,0 +1,15 @@
+{
+  "strategy": "deploy_sharing",
+  "n_tasks": 2,
+  "backbone": "momentbase",
+  "benchmark_mode": "closed_loop",
+  "server": "10.100.20.48:8000",
+  "tasks": [
+    "ecgclass",
+    "gestureclass"
+  ],
+  "log_paths": [
+    "./device/logs/10.100.20.48_cuda0_port8000_momentbase_deploy_sharing_2tasks.log"
+  ],
+  "gpu_mem_mb": 456.269824
+}

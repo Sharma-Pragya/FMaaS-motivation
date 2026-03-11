@@ -1,0 +1,21 @@
+{
+  "strategy": "task_sharing",
+  "n_tasks": 2,
+  "backbone": "momentbase",
+  "benchmark_mode": "closed_loop",
+  "assignments": [
+    {
+      "task": "ecgclass",
+      "url": "10.100.20.48:8000"
+    },
+    {
+      "task": "gestureclass",
+      "url": "10.100.20.48:8001"
+    }
+  ],
+  "gpu_mem_mb": 911.744512,
+  "log_paths": [
+    "./device/logs/10.100.20.48_cuda0_port8000_momentbase_task_sharing_2tasks_ecgclass.log",
+    "./device/logs/10.100.20.48_cuda0_port8001_momentbase_task_sharing_2tasks_gestureclass.log"
+  ]
+}
