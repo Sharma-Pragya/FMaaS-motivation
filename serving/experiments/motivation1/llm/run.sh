@@ -1,5 +1,5 @@
 #!/bin/bash
-# Motivation LLM Experiment — task_sharing vs deploy_sharing with qwen2.5-0.5b vLLM
+# Motivation LLM Experiment — task_sharing vs deploy_sharing with in-process vLLM
 # Run from serving/ directory.
 #
 # Benchmark modes:
@@ -10,23 +10,30 @@
 set -e
 cd "$(dirname "$0")/../../.."  # go to serving/
 
+CUDA_DEVICE=${CUDA_DEVICE:-"cuda:0"}
+BACKBONE=${BACKBONE:-"qwen2.5-0.5b"}
 PHASE_DURATION=${PHASE_DURATION:-60}
 EXP_DIR=${EXP_DIR:-"experiments/motivation1/llm/results"}
-N_TASKS=${N_TASKS:-"2,4,8,10"}
-STRATEGIES=${STRATEGIES:-"deploy_sharing,task_sharing"}
+N_TASKS=${N_TASKS:-"1"}
+STRATEGIES=${STRATEGIES:-"task_sharing"}
 BENCHMARK_MODE=${BENCHMARK_MODE:-"closed_loop"}
-CONCURRENCY=${CONCURRENCY:-4}
+CONCURRENCY=${CONCURRENCY:-1}
 TARGET_RPS=${TARGET_RPS:-2.0}
 TOTAL_RPS=${TOTAL_RPS:-20.0}
 MAX_SAMPLES=${MAX_SAMPLES:-50}
+UNIFORM_MAX_NEW_TOKENS=${UNIFORM_MAX_NEW_TOKENS:-64}
+PROMPT_SOURCE_TASK=${PROMPT_SOURCE_TASK:-"ag_news"}
 
 echo "=========================================="
-echo "  Motivation LLM Experiment"
-echo "  Backbone        : qwen2.5-0.5b (vLLM)"
+echo "  Motivation LLM Experiment #1"
+echo "  Backbone        : ${BACKBONE} (vLLM, in-process)"
+echo "  CUDA device     : ${CUDA_DEVICE}"
 echo "  Duration/run    : ${PHASE_DURATION}s"
 echo "  N tasks         : ${N_TASKS}"
 echo "  Strategies      : ${STRATEGIES}"
 echo "  Benchmark mode  : ${BENCHMARK_MODE}"
+echo "  Uniform max out : ${UNIFORM_MAX_NEW_TOKENS} tokens"
+echo "  Prompt source   : ${PROMPT_SOURCE_TASK:-'(per-task datasets)'}"
 if [ "${BENCHMARK_MODE}" = "closed_loop" ]; then
 echo "  Concurrency/task: ${CONCURRENCY} workers"
 elif [ "${BENCHMARK_MODE}" = "total_rps" ]; then
@@ -42,7 +49,11 @@ python experiments/motivation1/llm/run.py \
     --duration "${PHASE_DURATION}" \
     --exp-dir "${EXP_DIR}" \
     --strategies "${STRATEGIES}" \
+    --backbone "${BACKBONE}" \
+    --cuda "${CUDA_DEVICE}" \
     --benchmark-mode "${BENCHMARK_MODE}" \
+    --uniform-max-new-tokens "${UNIFORM_MAX_NEW_TOKENS}" \
+    --prompt-source-task "${PROMPT_SOURCE_TASK}" \
     --concurrency "${CONCURRENCY}" \
     --target-rps "${TARGET_RPS}" \
     --total-rps "${TOTAL_RPS}" \

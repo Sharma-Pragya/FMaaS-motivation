@@ -31,7 +31,7 @@ if str(SERVING_DIR) not in sys.path:
 import numpy as np
 from torch.utils.data import DataLoader
 
-from experiments.motivation1.server import InferenceServer
+from experiments.motivation1.tsfm.server import InferenceServer
 
 # ---------------------------------------------------------------------------
 # Task library

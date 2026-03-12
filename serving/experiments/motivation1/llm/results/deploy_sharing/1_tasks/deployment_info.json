@@ -1,13 +1,11 @@
 {
   "strategy": "deploy_sharing",
   "backbone": "qwen2.5-0.5b",
-  "n_tasks": 4,
+  "n_tasks": 1,
+  "runtime": "in_process_vllm",
   "benchmark_mode": "closed_loop",
-  "server": "10.100.20.48:8000",
+  "server": "local://instance-0",
   "tasks": [
-    "ag_news",
-    "sst2",
-    "conll2003",
-    "squad"
+    "ag_news"
   ]
 }

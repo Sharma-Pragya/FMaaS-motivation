@@ -1,16 +1,13 @@
 {
   "strategy": "task_sharing",
   "backbone": "qwen2.5-0.5b",
-  "n_tasks": 2,
+  "n_tasks": 1,
+  "runtime": "in_process_vllm",
   "benchmark_mode": "closed_loop",
   "assignments": [
     {
       "task": "ag_news",
-      "url": "10.100.20.48:8000"
-    },
-    {
-      "task": "sst2",
-      "url": "10.100.20.48:8001"
+      "url": "local://process-0"
     }
   ]
 }

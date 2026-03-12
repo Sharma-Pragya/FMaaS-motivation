@@ -1,9 +1,10 @@
 [
   {
-    "grpc_url": "10.100.20.52:8000",
+    "endpoint": "local://process-1",
     "model_config": {
       "max_model_len": 4096,
-      "gpu_memory_utilization": 0.5
+      "gpu_memory_utilization": 0.5,
+      "max_new_tokens": 64
     },
     "memory": {
       "total_gpu_gb": 14.612,
@@ -13,10 +14,11 @@
     }
   },
   {
-    "grpc_url": "10.100.20.52:8001",
+    "endpoint": "local://process-0",
     "model_config": {
       "max_model_len": 4096,
-      "gpu_memory_utilization": 0.5
+      "gpu_memory_utilization": 0.5,
+      "max_new_tokens": 64
     },
     "memory": {
       "total_gpu_gb": 14.612,

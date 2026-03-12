@@ -2,23 +2,24 @@
   "strategy": "task_sharing",
   "backbone": "qwen2.5-0.5b",
   "n_tasks": 4,
+  "runtime": "in_process_vllm",
   "benchmark_mode": "closed_loop",
   "assignments": [
     {
       "task": "ag_news",
-      "url": "10.100.20.48:8000"
+      "url": "local://process-0"
     },
     {
       "task": "sst2",
-      "url": "10.100.20.48:8001"
+      "url": "local://process-1"
     },
     {
       "task": "conll2003",
-      "url": "10.100.20.48:8002"
+      "url": "local://process-2"
     },
     {
       "task": "squad",
-      "url": "10.100.20.48:8003"
+      "url": "local://process-3"
     }
   ]
 }

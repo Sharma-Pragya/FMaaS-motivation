@@ -1,16 +1,16 @@
 [
   {
-    "endpoint": "local://instance-0",
+    "endpoint": "local://process-0",
     "model_config": {
       "max_model_len": 4096,
-      "gpu_memory_utilization": 1,
+      "gpu_memory_utilization": 1.0,
       "max_new_tokens": 64
     },
     "memory": {
       "total_gpu_gb": 14.612,
       "model_memory_gb": 0.928,
-      "reserved_gb": 13.279,
-      "gpu_memory_utilization": 0.9088
+      "reserved_gb": 13.23,
+      "gpu_memory_utilization": 0.9055
     }
   }
 ]

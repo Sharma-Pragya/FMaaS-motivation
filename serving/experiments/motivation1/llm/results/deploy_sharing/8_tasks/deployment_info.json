@@ -1,9 +1,10 @@
 {
   "strategy": "deploy_sharing",
   "backbone": "qwen2.5-0.5b",
-  "n_tasks": 10,
+  "n_tasks": 8,
+  "runtime": "in_process_vllm",
   "benchmark_mode": "closed_loop",
-  "server": "10.100.20.48:8000",
+  "server": "local://instance-0",
   "tasks": [
     "ag_news",
     "sst2",
@@ -12,8 +13,6 @@
     "cnn_dailymail",
     "flores",
     "gsm8k",
-    "humaneval",
-    "fever",
-    "hellaswag"
+    "humaneval"
   ]
 }
