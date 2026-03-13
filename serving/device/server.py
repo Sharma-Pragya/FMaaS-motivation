@@ -10,7 +10,7 @@ import numpy as np
 
 from device.batcher import DeviceBatcher
 from device.proto import edge_runtime_pb2, edge_runtime_pb2_grpc
-from device.runtime import SharedModelRuntime
+from device.runtime import PyTorchRuntime, VLLMRuntime
 from device.scheduler import RequestEnvelope
 
 
@@ -48,11 +48,10 @@ class EdgeRuntimeApplication:
         self.config = config
         self.runtime_type = config.runtime_type
         if config.runtime_type == "vllm":
-            from device.vllm_runtime import VLLMRuntime
             self.runtime = VLLMRuntime()
             self.batcher = None
         else:
-            self.runtime = SharedModelRuntime()
+            self.runtime = PyTorchRuntime()
             self.batcher = DeviceBatcher(
                 runtime=self.runtime,
                 max_batch_size=config.max_batch_size,
@@ -68,10 +67,7 @@ class EdgeRuntimeApplication:
                 f"[Device] Bootstrapping backbone={payload['backbone']} "
                 f"decoders={len(payload['decoders'])}"
             )
-            if self.runtime_type == "vllm":
-                await asyncio.to_thread(self.runtime.load, payload["backbone"], payload["decoders"])
-            else:
-                await asyncio.to_thread(self.runtime.load, payload["backbone"], payload["decoders"])
+            await asyncio.to_thread(self.runtime.load, payload["backbone"], payload.get("decoders", []))
         if self.runtime_type == "pytorch" and self._batch_task is None:
             self._batch_task = asyncio.create_task(self.batcher.run_forever())
         print("[Device] Runtime application started")
@@ -111,41 +107,25 @@ class EdgeRuntimeApplication:
             payload = json.loads(payload_json) if payload_json else {}
             print(f"[Device] Control command={command}")
             if command == "load":
-                if self.runtime_type == "vllm":
-                    await asyncio.to_thread(self.runtime.load, payload["backbone"], payload.get("decoders", []),
-                                            model_config=payload.get("model_config", {}))
-                    status = f"loaded_{payload['backbone']}"
-                else:
-                    logger = await asyncio.to_thread(self.runtime.load, payload["backbone"], payload["decoders"])
-                    status = f"loaded_{payload['backbone']}"
+                logger = await asyncio.to_thread(
+                    self.runtime.load, payload["backbone"], payload.get("decoders", [])
+                )
+                status = f"loaded_{payload['backbone']}"
             elif command == "swap_backbone":
-                if self.runtime_type == "vllm":
-                    await asyncio.to_thread(self.runtime.load, payload["backbone"], payload.get("decoders", []),
-                                            model_config=payload.get("model_config", {}))
-                    status = f"swapped_{payload['backbone']}"
-                else:
-                    logger = await asyncio.to_thread(
-                        self.runtime.swap_backbone, payload["backbone"], payload["decoders"]
-                    )
-                    status = f"swapped_{payload['backbone']}"
+                logger = await asyncio.to_thread(
+                    self.runtime.swap_backbone, payload["backbone"], payload.get("decoders", [])
+                )
+                status = f"swapped_{payload['backbone']}"
             elif command == "add_decoder":
-                if self.runtime_type == "vllm":
-                    status = "vllm_no_decoders"
-                else:
-                    logger = await asyncio.to_thread(self.runtime.add_decoders, payload["decoders"])
-                    status = f"added_{len(payload['decoders'])}_decoders"
+                logger = await asyncio.to_thread(self.runtime.add_decoders, payload["decoders"])
+                status = f"added_{len(payload['decoders'])}_decoders"
             else:
                 raise ValueError(f"unknown_command_{command}")
         except Exception as exc:
             LOGGER.exception("Control operation failed")
             status = f"error_{exc}"
         print(f"[Device] Control result status={status}")
-        if logger:
-            logger_summary = str(logger.summary())
-        elif self.runtime_type == "vllm" and hasattr(self.runtime, "memory_stats") and self.runtime.memory_stats:
-            logger_summary = json.dumps(self.runtime.memory_stats)
-        else:
-            logger_summary = "no_logger"
+        logger_summary = str(logger.summary()) if logger else "no_logger"
         return {"status": status, "logger_summary": logger_summary}
 
 

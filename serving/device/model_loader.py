@@ -10,7 +10,7 @@ from fmtk.logger import Logger
 from device.config import DEVICE, DECODERS
 
 
-def _build_pipeline(backbone: str, device, logger: Logger | None) -> Pipeline:
+def _build_pipeline(backbone: str, device, logger: Logger | None, model_config: dict | None = None) -> Pipeline:
     """Instantiate and return a Pipeline. Logger is passed in so Pipeline.add_decoder,
     forward, etc. all record into the same Logger automatically."""
     if backbone in ("momentlarge", "momentbase", "momentsmall"):
@@ -34,9 +34,12 @@ def _build_pipeline(backbone: str, device, logger: Logger | None) -> Pipeline:
         cfg = {"in_channels": 1, "base_filters": 32, "kernel_size": 3, "stride": 2,
                "groups": 1, "n_block": 18, "n_classes": 512}
         return Pipeline(PapageiModel(device, "papagei_s_svri", model_config=cfg), logger=logger)
-    elif backbone == "llava":
-        from fmtk.components.backbones.llava import LlavaModel
-        return Pipeline(LlavaModel(device, "llava-1.5-7b-hf"), logger=logger)
+    elif backbone in ("phi3-mini", "phi3-small", "phi3-medium"):
+        from fmtk.components.backbones.phi3_vllm import Phi3VLLMModel
+        return Pipeline(Phi3VLLMModel(device, backbone, model_config=model_config), logger=logger)
+    elif backbone in ("qwen2.5-0.5b", "qwen2.5-1.5b", "qwen2.5-3b", "qwen2.5-7b"):
+        from fmtk.components.backbones.qwen_vllm import QwenVLLMModel
+        return Pipeline(QwenVLLMModel(device, backbone, model_config=model_config, async_only=True), logger=logger)
     else:
         raise ValueError(f"Unsupported backbone: {backbone}")
 
@@ -81,11 +84,11 @@ class ModelLoader:
         if self.logger is not None:
             self.logger.records.extend(op_logger.records)
 
-    def load_models(self, backbone: str, decoder_specs: list) -> Logger:
+    def load_models(self, backbone: str, decoder_specs: list, model_config: dict | None = None) -> Logger:
         op_log = self._op_logger()
         print(f"[ModelLoader] Loading backbone: {backbone}")
         with op_log.measure("load_backbone", device=self.device):
-            self.pipeline = _build_pipeline(backbone, self.device, op_log)
+            self.pipeline = _build_pipeline(backbone, self.device, op_log, model_config=model_config)
         self.backbone_name = backbone
         self.decoders = {}
         for dec in decoder_specs:
