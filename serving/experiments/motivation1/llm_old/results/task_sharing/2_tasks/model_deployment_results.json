@@ -1,0 +1,30 @@
+[
+  {
+    "endpoint": "local://process-1",
+    "model_config": {
+      "max_model_len": 4096,
+      "gpu_memory_utilization": 0.5,
+      "max_new_tokens": 64
+    },
+    "memory": {
+      "total_gpu_gb": 14.612,
+      "model_memory_gb": 0.928,
+      "reserved_gb": 3.434,
+      "gpu_memory_utilization": 0.235
+    }
+  },
+  {
+    "endpoint": "local://process-0",
+    "model_config": {
+      "max_model_len": 4096,
+      "gpu_memory_utilization": 0.5,
+      "max_new_tokens": 64
+    },
+    "memory": {
+      "total_gpu_gb": 14.612,
+      "model_memory_gb": 0.928,
+      "reserved_gb": 4.887,
+      "gpu_memory_utilization": 0.3344
+    }
+  }
+]

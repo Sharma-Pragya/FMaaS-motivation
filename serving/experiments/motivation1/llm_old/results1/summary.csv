@@ -1,0 +1,5 @@
+n_tasks,strategy,backbone,n_instances,gpu_memory_utilization,model_memory_mb,model_load_mem_mb,peak_gpu_mem_mb,static_peak_gpu_mem_mb,throughput_rps,avg_latency_ms
+2,deploy_sharing,qwen2.5-0.5b,1,0.85,950,11230.408,11230.408,12718.285,52.0333,38.462
+3,deploy_sharing,qwen2.5-0.5b,1,0.85,950,11230.408,11230.408,12718.285,57.5,52.19
+4,deploy_sharing,qwen2.5-0.5b,1,0.85,950,11230.408,11230.408,12718.285,68.0667,58.772
+2,task_sharing,qwen2.5-0.5b,2,0.425,1901,6157.879,6207.036,12718.285,37.7333,53.012

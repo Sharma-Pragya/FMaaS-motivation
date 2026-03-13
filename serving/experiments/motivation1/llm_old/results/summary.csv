@@ -1,0 +1,9 @@
+n_tasks,strategy,backbone,n_instances,gpu_memory_utilization,model_memory_mb,model_load_mem_mb,peak_gpu_mem_mb,static_peak_gpu_mem_mb,throughput_rps,avg_latency_ms
+1,deploy_sharing,qwen2.5-0.5b,1,1,950,13458.846,13458.846,14962.688,35.9167,27.841
+2,deploy_sharing,qwen2.5-0.5b,1,1,950,13544.252,13544.252,14962.688,50.2,39.855
+4,deploy_sharing,qwen2.5-0.5b,1,1,950,13544.252,13544.252,14962.688,64.7,61.839
+6,deploy_sharing,qwen2.5-0.5b,1,1,950,13544.252,13544.252,14962.688,72.7,82.591
+8,deploy_sharing,qwen2.5-0.5b,1,1,950,13559.377,13559.377,14962.688,80.0,100.052
+10,deploy_sharing,qwen2.5-0.5b,1,1,950,13559.377,13559.377,14962.688,86.1667,116.271
+2,task_sharing,qwen2.5-0.5b,2,0.5,1901,8396.066,8440.145,14962.688,37.5167,53.321
+1,task_sharing,qwen2.5-0.5b,1,1.0,950,13458.846,13484.948,14962.688,35.3,28.324

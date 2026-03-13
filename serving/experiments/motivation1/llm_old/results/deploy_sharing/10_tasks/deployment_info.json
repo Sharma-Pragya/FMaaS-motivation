@@ -1,0 +1,20 @@
+{
+  "strategy": "deploy_sharing",
+  "backbone": "qwen2.5-0.5b",
+  "n_tasks": 10,
+  "runtime": "in_process_vllm",
+  "benchmark_mode": "closed_loop",
+  "server": "local://instance-0",
+  "tasks": [
+    "ag_news",
+    "sst2",
+    "conll2003",
+    "squad",
+    "cnn_dailymail",
+    "flores",
+    "gsm8k",
+    "humaneval",
+    "fever",
+    "hellaswag"
+  ]
+}
