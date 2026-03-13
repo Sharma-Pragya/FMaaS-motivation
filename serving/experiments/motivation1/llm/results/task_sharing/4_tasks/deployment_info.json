@@ -4,22 +4,10 @@
   "n_tasks": 4,
   "runtime": "in_process_vllm",
   "benchmark_mode": "closed_loop",
-  "assignments": [
-    {
-      "task": "ag_news",
-      "url": "local://process-0"
-    },
-    {
-      "task": "sst2",
-      "url": "local://process-1"
-    },
-    {
-      "task": "conll2003",
-      "url": "local://process-2"
-    },
-    {
-      "task": "squad",
-      "url": "local://process-3"
-    }
+  "tasks": [
+    "ag_news",
+    "sst2",
+    "conll2003",
+    "squad"
   ]
 }

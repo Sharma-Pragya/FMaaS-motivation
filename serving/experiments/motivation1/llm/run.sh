@@ -7,15 +7,14 @@
 #   BENCHMARK_MODE=open_loop              — Poisson arrivals at TARGET_RPS per task
 #   BENCHMARK_MODE=total_rps              — fixed total load split evenly across N tasks
 
-set -e
 cd "$(dirname "$0")/../../.."  # go to serving/
 
 CUDA_DEVICE=${CUDA_DEVICE:-"cuda:0"}
 BACKBONE=${BACKBONE:-"qwen2.5-0.5b"}
 PHASE_DURATION=${PHASE_DURATION:-60}
 EXP_DIR=${EXP_DIR:-"experiments/motivation1/llm/results"}
-N_TASKS=${N_TASKS:-"1"}
-STRATEGIES=${STRATEGIES:-"task_sharing"}
+N_TASKS=${N_TASKS:-"4,6,8,10"}
+STRATEGIES=${STRATEGIES:-"task_sharing,deploy_sharing"}
 BENCHMARK_MODE=${BENCHMARK_MODE:-"closed_loop"}
 CONCURRENCY=${CONCURRENCY:-1}
 TARGET_RPS=${TARGET_RPS:-2.0}
@@ -44,17 +43,31 @@ fi
 echo "  Results         : ${EXP_DIR}"
 echo "=========================================="
 
-python experiments/motivation1/llm/run.py \
-    --n-tasks "${N_TASKS}" \
-    --duration "${PHASE_DURATION}" \
-    --exp-dir "${EXP_DIR}" \
-    --strategies "${STRATEGIES}" \
-    --backbone "${BACKBONE}" \
-    --cuda "${CUDA_DEVICE}" \
-    --benchmark-mode "${BENCHMARK_MODE}" \
-    --uniform-max-new-tokens "${UNIFORM_MAX_NEW_TOKENS}" \
-    --prompt-source-task "${PROMPT_SOURCE_TASK}" \
-    --concurrency "${CONCURRENCY}" \
-    --target-rps "${TARGET_RPS}" \
-    --total-rps "${TOTAL_RPS}" \
-    --max-samples "${MAX_SAMPLES}"
+
+# Run each (strategy, n_tasks) pair in its own fresh Python process for full GPU isolation
+IFS=',' read -ra STRATEGY_LIST <<< "${STRATEGIES}"
+IFS=',' read -ra N_TASKS_LIST <<< "${N_TASKS}"
+for N in "${N_TASKS_LIST[@]}"; do
+    for STRATEGY in "${STRATEGY_LIST[@]}"; do
+        echo ""
+        echo ">>> [run.sh] strategy=${STRATEGY} n_tasks=${N} — fresh Python process"
+        python experiments/motivation1/llm/run.py \
+            --n-tasks "${N}" \
+            --duration "${PHASE_DURATION}" \
+            --exp-dir "${EXP_DIR}" \
+            --strategies "${STRATEGY}" \
+            --backbone "${BACKBONE}" \
+            --cuda "${CUDA_DEVICE}" \
+            --benchmark-mode "${BENCHMARK_MODE}" \
+            --uniform-max-new-tokens "${UNIFORM_MAX_NEW_TOKENS}" \
+            --prompt-source-task "${PROMPT_SOURCE_TASK}" \
+            --concurrency "${CONCURRENCY}" \
+            --target-rps "${TARGET_RPS}" \
+            --total-rps "${TOTAL_RPS}" \
+            --max-samples "${MAX_SAMPLES}"
+        if [ $? -ne 0 ]; then
+            echo "Error occurred for strategy=${STRATEGY} n_tasks=${N}. Continuing with next iteration."
+            continue
+        fi
+    done
+done

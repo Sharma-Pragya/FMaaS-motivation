@@ -1,3 +1,3 @@
 task,device_url,n_requests,throughput_rps,avg_latency_ms,error
-sst2,local://instance-0,1506,25.1,39.85478282766355,
-ag_news,local://instance-0,1506,25.1,39.85449754859347,
+sst2,local://instance-0,257,25.7,38.94092415093448,
+ag_news,local://instance-0,257,25.7,38.94167373152558,
