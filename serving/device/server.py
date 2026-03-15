@@ -11,7 +11,7 @@ import numpy as np
 from device.batcher import DeviceBatcher
 from device.proto import edge_runtime_pb2, edge_runtime_pb2_grpc
 from device.runtime import PyTorchRuntime, VLLMRuntime
-from device.scheduler import RequestEnvelope
+from device.scheduler import FifoPolicy, RequestEnvelope, RoundRobinPolicy
 
 
 LOGGER = logging.getLogger(__name__)
@@ -39,6 +39,7 @@ class RuntimeServerConfig:
     queue_capacity: int = 1024
     stop_grace_s: float = 5.0
     runtime_type: str = "pytorch"
+    scheduler_policy: str = "fifo"
 
 
 class EdgeRuntimeApplication:
@@ -52,11 +53,13 @@ class EdgeRuntimeApplication:
             self.batcher = None
         else:
             self.runtime = PyTorchRuntime()
+            policy = RoundRobinPolicy() if config.scheduler_policy == "round_robin" else FifoPolicy()
             self.batcher = DeviceBatcher(
                 runtime=self.runtime,
                 max_batch_size=config.max_batch_size,
                 max_batch_wait_ms=config.max_batch_wait_ms,
                 queue_capacity=config.queue_capacity,
+                policy=policy,
             )
         self._batch_task: asyncio.Task | None = None
 

@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from device.runtime import SharedModelRuntime
-from device.scheduler import FifoPolicy, RequestEnvelope, TenantQueues
+from device.scheduler import FifoPolicy, RequestEnvelope, RoundRobinPolicy, TenantQueues
 
 
 @dataclass
@@ -32,10 +32,11 @@ class DeviceBatcher:
         max_batch_size: int = 1,
         max_batch_wait_ms: float = 1.0,
         queue_capacity: int = 1024,
+        policy: "FifoPolicy | RoundRobinPolicy | None" = None,
     ):
         self._runtime = runtime
         self._queues = TenantQueues()
-        self._policy = FifoPolicy()
+        self._policy = policy if policy is not None else FifoPolicy()
         self._max_batch_size = max_batch_size
         self._max_batch_wait_s = max_batch_wait_ms / 1000.0
         self._queue_capacity = queue_capacity

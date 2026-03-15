@@ -33,6 +33,7 @@ def main():
     parser.add_argument("--max-batch-wait-ms", type=float, default=1, help="Maximum batch formation wait.")
     parser.add_argument("--queue-capacity", type=int, default=102400, help="Maximum total queued inference requests.")
     parser.add_argument("--runtime-type", choices=["pytorch", "vllm"], default="pytorch", help="Inference runtime: pytorch (TSFM) or vllm (LLM).")
+    parser.add_argument("--scheduler-policy", choices=["fifo", "round_robin"], default="fifo", help="Batch scheduling policy: fifo (default) or round_robin.")
     args = parser.parse_args()
     asyncio.run(
         serve(
@@ -43,6 +44,7 @@ def main():
                 max_batch_wait_ms=args.max_batch_wait_ms,
                 queue_capacity=args.queue_capacity,
                 runtime_type=args.runtime_type,
+                scheduler_policy=args.scheduler_policy,
             ),
             bootstrap_json=_resolve_bootstrap_json(args),
         )
