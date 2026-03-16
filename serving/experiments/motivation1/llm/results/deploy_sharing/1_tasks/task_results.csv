@@ -1,0 +1,2 @@
+task,device_url,n_requests,throughput_rps,avg_latency_ms,error
+ag_news,local://instance-0,2165,36.083333333333336,27.717620726270432,

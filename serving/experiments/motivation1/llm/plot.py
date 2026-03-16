@@ -2,11 +2,10 @@
 """Plot Motivation Experiment #1 (LLM) results.
 
 Dual y-axis figure:
-  Left  axis  (stacked bars) — GPU memory (GB)
-      - model memory
-      - extra static peak memory (= static_peak - model)
-  Right axis  (lines)        — Throughput (req/s)
-  X-axis                     — Number of tasks
+  Left  axis  (bars)  — GPU memory (GB)
+  Right axis  (lines) — Throughput (req/s)
+  X-axis              — Number of tasks
+  Two series          — task_sharing vs deployment_sharing
 """
 
 from __future__ import annotations
@@ -34,12 +33,8 @@ def load_summary(path: Path) -> Dict[str, Dict[int, Dict[str, float]]]:
         for row in csv.DictReader(f):
             strategy = row["strategy"]
             n_tasks = int(row["n_tasks"])
-            model_mem_mb = float(row["model_memory_mb"])
-            static_peak_mb = float(row["static_peak_gpu_mem_mb"])
-            extra_static_mb = max(static_peak_mb - model_mem_mb, 0.0)
             data.setdefault(strategy, {})[n_tasks] = {
-                "model_memory_mb": model_mem_mb,
-                "extra_static_mb": extra_static_mb,
+                "gpu_mem_mb": float(row["model_memory_mb"]),
                 "throughput_rps": float(row["throughput_rps"]),
                 "avg_latency_ms": float(row["avg_latency_ms"]),
             }
@@ -48,7 +43,7 @@ def load_summary(path: Path) -> Dict[str, Dict[int, Dict[str, float]]]:
 
 STRATEGY_LABELS = {
     "task_sharing": "Task Sharing",
-    "deploy_sharing": "Deploy Sharing",
+    "deploy_sharing": "Deployment Sharing",
 }
 
 PAPER_PALETTE = {
@@ -63,11 +58,6 @@ PAPER_PALETTE = {
 COLORS = {
     "task_sharing": PAPER_PALETTE["blue"],
     "deploy_sharing": PAPER_PALETTE["peach"],
-}
-
-LINE_COLORS = {
-    "task_sharing": "#2E5E7E",
-    "deploy_sharing": "#A85C3A",
 }
 
 HATCHES = {
@@ -88,8 +78,6 @@ LINE_STYLES = {
 BAR_ALPHA = 0.94
 LINE_ALPHA = 0.98
 BAR_EDGEWIDTH = 0.9
-EXTRA_STATIC_COLOR = "#C5CBD4"
-EXTRA_STATIC_ALPHA = 0.28
 
 
 def mb_to_gb(value_mb: float) -> float:
@@ -176,7 +164,7 @@ def make_plot(
     all_n: List[int],
     normalize_throughput: str,
 ) -> None:
-    fig, ax_mem = plt.subplots(figsize=(8.8, 5.0))
+    fig, ax_mem = plt.subplots(figsize=(8.6, 4.8))
     ax_thr = ax_mem.twinx()
 
     n_strategies = len(strategies)
@@ -189,34 +177,19 @@ def make_plot(
 
     for si, strategy in enumerate(strategies):
         strategy_data = data.get(strategy, {})
-        model_vals = [mb_to_gb(strategy_data.get(n, {}).get("model_memory_mb", 0.0)) for n in all_n]
-        extra_vals = [mb_to_gb(strategy_data.get(n, {}).get("extra_static_mb", 0.0)) for n in all_n]
-        mem_values_all.extend([m + e for m, e in zip(model_vals, extra_vals)])
+        mem_vals = [mb_to_gb(strategy_data.get(n, {}).get("gpu_mem_mb", 0.0)) for n in all_n]
+        mem_values_all.extend(mem_vals)
 
         offset = (si - (n_strategies - 1) / 2) * bar_width
-        x = x_positions + offset
-
         ax_mem.bar(
-            x,
-            model_vals,
+            x_positions + offset,
+            mem_vals,
             width=bar_width,
             color=COLORS.get(strategy, "gray"),
             edgecolor=PAPER_PALETTE["charcoal"],
             linewidth=BAR_EDGEWIDTH,
             hatch=HATCHES.get(strategy, ""),
             alpha=BAR_ALPHA,
-            zorder=2,
-        )
-        ax_mem.bar(
-            x,
-            extra_vals,
-            bottom=model_vals,
-            width=bar_width,
-            color=EXTRA_STATIC_COLOR,
-            edgecolor=PAPER_PALETTE["slate"],
-            linewidth=0.8,
-            hatch="..",
-            alpha=EXTRA_STATIC_ALPHA,
             zorder=2,
         )
 
@@ -228,16 +201,15 @@ def make_plot(
         ax_thr.plot(
             x_positions,
             thr_vals,
-            color=LINE_COLORS.get(strategy, PAPER_PALETTE["charcoal"]),
-            linewidth=2.8,
+            color=COLORS.get(strategy, "gray"),
+            linewidth=2.3,
             linestyle=LINE_STYLES.get(strategy, "-"),
             marker=LINE_MARKERS.get(strategy, "o"),
             markersize=6.5,
-            markerfacecolor="white",
-            markeredgewidth=1.2,
-            markeredgecolor=LINE_COLORS.get(strategy, PAPER_PALETTE["charcoal"]),
+            markeredgewidth=0.8,
+            markeredgecolor="white",
             alpha=LINE_ALPHA,
-            zorder=4,
+            zorder=3,
         )
 
     ax_mem.set_xlabel("Number of Tasks", fontsize=13, fontweight="semibold")
@@ -250,9 +222,11 @@ def make_plot(
     ax_mem.tick_params(axis="y", labelsize=11)
     ax_thr.tick_params(axis="y", labelsize=11)
 
-    # End both y-axes at clean rounded values.
-    mem_upper = nice_axis_upper(mem_values_all, steps=(1, 1.2, 1.5, 1.6, 2, 2.5, 3, 5, 10), headroom=1.01)
-    thr_upper = nice_axis_upper(thr_values_all, steps=(1, 1.2, 1.5, 1.6, 2, 2.5, 3, 5, 10), headroom=1.01)
+    mem_upper = nice_axis_upper(mem_values_all)
+    if normalize_throughput == "none":
+        thr_upper = nice_axis_upper(thr_values_all, steps=(1, 1.2, 1.5, 1.6, 2, 2.5, 3, 5, 10), headroom=1.05)
+    else:
+        thr_upper = nice_axis_upper(thr_values_all)
     ax_mem.set_ylim(0, mem_upper)
     ax_thr.set_ylim(0, thr_upper)
 
@@ -270,13 +244,6 @@ def make_plot(
 
     legend_handles = strategy_handles(strategies) + [
         mpatches.Patch(
-            facecolor=EXTRA_STATIC_COLOR,
-            edgecolor=PAPER_PALETTE["slate"],
-            alpha=EXTRA_STATIC_ALPHA,
-            hatch="..",
-            label="KV Cache Reserve",
-        ),
-        mpatches.Patch(
             facecolor="white",
             edgecolor=PAPER_PALETTE["charcoal"],
             label="GPU Memory",
@@ -292,15 +259,82 @@ def make_plot(
     ax_mem.legend(
         handles=legend_handles,
         loc="lower center",
-        bbox_to_anchor=(0.5, 1.002),
-        ncol=len(legend_handles),
-        fontsize=8.8,
+        bbox_to_anchor=(0.5, 1.01),
+        ncol=4,
+        fontsize=9.5,
         frameon=False,
-        columnspacing=0.7,
-        handletextpad=0.4,
-        borderaxespad=0.05,
+        columnspacing=1.1,
+        handletextpad=0.5,
+        borderaxespad=0.0,
     )
-    fig.tight_layout(rect=(0, 0, 1, 0.985))
+    fig.tight_layout(rect=(0, 0, 1, 0.95))
+    save_figure(fig, out_path)
+    plt.close(fig)
+
+
+def _plot_single(
+    data: Dict,
+    out_path: Path,
+    strategies: List[str],
+    all_n: List[int],
+    metric: str,
+    ylabel: str,
+    normalize_throughput: str = "none",
+) -> None:
+    fig, ax = plt.subplots(figsize=(6.8, 4.2))
+    n_strategies = len(strategies)
+    bar_width = 0.35
+    group_gap = bar_width * n_strategies + 0.15
+    x_positions = np.arange(len(all_n)) * (group_gap + 0.1)
+
+    all_values = []
+    for si, strategy in enumerate(strategies):
+        strategy_data = data.get(strategy, {})
+        vals = [strategy_data.get(n, {}).get(metric, float("nan")) for n in all_n]
+        if metric == "gpu_mem_mb":
+            vals = [mb_to_gb(v) for v in vals]
+        if metric == "throughput_rps":
+            vals = throughput_scale(vals, normalize_throughput)
+        all_values.extend(vals)
+
+        offset = (si - (n_strategies - 1) / 2) * bar_width
+        ax.bar(
+            x_positions + offset,
+            vals,
+            width=bar_width,
+            color=COLORS.get(strategy, "gray"),
+            edgecolor=PAPER_PALETTE["charcoal"],
+            linewidth=BAR_EDGEWIDTH,
+            hatch=HATCHES.get(strategy, ""),
+            alpha=BAR_ALPHA,
+            zorder=2,
+        )
+
+    y_upper = nice_axis_upper(all_values)
+    ax.set_xlabel("Number of Tasks", fontsize=12, fontweight="semibold")
+    ax.set_ylabel(ylabel, fontsize=12, fontweight="semibold")
+    ax.set_xticks(x_positions)
+    ax.set_xticklabels([str(n) for n in all_n], fontsize=10)
+    ax.tick_params(axis="y", labelsize=10)
+    ax.set_ylim(0, y_upper)
+
+    if metric == "gpu_mem_mb":
+        ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{v:.1f}"))
+    else:
+        ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{v:.0f}" if y_upper >= 20 else f"{v:.1f}"))
+
+    ax.grid(axis="y", zorder=0)
+    ax.set_axisbelow(True)
+    ax.legend(
+        handles=strategy_handles(strategies),
+        loc="lower center",
+        bbox_to_anchor=(0.5, 1.01),
+        ncol=2,
+        fontsize=9,
+        frameon=False,
+        borderaxespad=0.0,
+    )
+    fig.tight_layout(rect=(0, 0, 1, 0.95))
     save_figure(fig, out_path)
     plt.close(fig)
 
@@ -330,7 +364,21 @@ def main() -> int:
         return 1
 
     print(f"[Plot] strategies={strategies}  n_tasks={all_n}")
-    make_plot(data, result_root / "motivation1_llm_memory_throughput.png", strategies, all_n, args.normalize_throughput)
+
+    out_dir = result_root
+    make_plot(data, out_dir / "motivation1_llm_memory_throughput.png", strategies, all_n, args.normalize_throughput)
+    _plot_single(data, out_dir / "motivation1_llm_memory.png", strategies, all_n, metric="gpu_mem_mb", ylabel="GPU Memory (GB)")
+    thr_ylabel = "Throughput (req/s)" if args.normalize_throughput == "none" else "Normalized Throughput"
+    _plot_single(
+        data,
+        out_dir / "motivation1_llm_throughput.png",
+        strategies,
+        all_n,
+        metric="throughput_rps",
+        ylabel=thr_ylabel,
+        normalize_throughput=args.normalize_throughput,
+    )
+    _plot_single(data, out_dir / "motivation1_llm_latency.png", strategies, all_n, metric="avg_latency_ms", ylabel="Avg Latency (ms)")
     return 0
 
 

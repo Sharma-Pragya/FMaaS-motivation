@@ -1,2 +1,0 @@
-task,device_url,n_requests,throughput_rps,avg_latency_ms,error
-ag_news,local://process-ag_news,2108,35.13333333333333,28.459784993636767,

@@ -1,5 +1,5 @@
 task,device_url,n_requests,throughput_rps,avg_latency_ms,error
-squad,local://instance-0,162,16.2,61.79534211570834,
-conll2003,local://instance-0,162,16.2,61.80140265712031,
-ag_news,local://instance-0,162,16.2,61.856980677004216,
-sst2,local://instance-0,162,16.2,61.82024508346746,
+sst2,local://instance-0,983,16.383333333333333,61.039436142417934,
+conll2003,local://instance-0,983,16.383333333333333,61.039367745633285,
+squad,local://instance-0,983,16.383333333333333,61.03934082349465,
+ag_news,local://instance-0,983,16.383333333333333,61.03952321492037,

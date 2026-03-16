@@ -5,7 +5,7 @@
       "max_model_len": 256,
       "gpu_memory_utilization": 0.85,
       "max_new_tokens": 64,
-      "duration": 10.0,
+      "duration": 60.0,
       "concurrency": 1,
       "prompts": {
         "ag_news": [

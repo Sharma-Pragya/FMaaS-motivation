@@ -1,7 +1,7 @@
 task,device_url,n_requests,throughput_rps,avg_latency_ms,error
-squad,local://instance-0,128,12.8,78.45787331461906,
-conll2003,local://instance-0,128,12.8,78.48725840449333,
-flores,local://instance-0,128,12.8,78.46101000905037,
-cnn_dailymail,local://instance-0,128,12.8,78.4691721200943,
-sst2,local://instance-0,128,12.8,78.49376648664474,
-ag_news,local://instance-0,128,12.8,78.52809503674507,
+conll2003,local://instance-0,742,12.366666666666667,80.93680461461975,
+flores,local://instance-0,742,12.366666666666667,80.93750284045855,
+sst2,local://instance-0,742,12.366666666666667,80.9489305449946,
+squad,local://instance-0,742,12.366666666666667,80.93748613187887,
+ag_news,local://instance-0,742,12.366666666666667,80.94976404606493,
+cnn_dailymail,local://instance-0,742,12.366666666666667,80.93846936752854,
