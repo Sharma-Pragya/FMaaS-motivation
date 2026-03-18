@@ -29,12 +29,21 @@ def main():
     parser.add_argument("--output-dir", type=str, default=None, help="Reserved for future metrics output.")
     parser.add_argument("--bootstrap-json", type=str, default=None, help="Optional deployment payload used for initial model load.")
     parser.add_argument("--bootstrap-json-b64", type=str, default=None, help="Base64-encoded deployment payload used for initial model load.")
-    parser.add_argument("--max-batch-size", type=int, default=32, help="Maximum cross-task batch size.")
+    parser.add_argument("--max-batch-size", type=int, default=1, help="Maximum cross-task batch size.")
     parser.add_argument("--max-batch-wait-ms", type=float, default=1, help="Maximum batch formation wait.")
     parser.add_argument("--queue-capacity", type=int, default=102400, help="Maximum total queued inference requests.")
     parser.add_argument("--runtime-type", choices=["pytorch", "vllm"], default="pytorch", help="Inference runtime: pytorch (TSFM) or vllm (LLM).")
-    parser.add_argument("--scheduler-policy", choices=["fifo", "round_robin"], default="fifo", help="Batch scheduling policy: fifo (default) or round_robin.")
+    parser.add_argument("--scheduler-policy", choices=["fifo", "round_robin", "wfq", "token_bucket"], default="fifo", help="Batch scheduling policy: fifo, round_robin, wfq, or token_bucket (credit-based fair scheduling).")
+    parser.add_argument("--task-rates", type=str, default=None, help="Comma-separated task:rps pairs e.g. ecgclass:10,gestureclass:100 — used by WFQ/TokenBucket policies.")
+    parser.add_argument("--isolation-mode", choices=["shared", "process", "none"], default="shared", help="Isolation mode: shared (default, all tasks in one process) or process (one process per task).")
     args = parser.parse_args()
+    # Parse task rates: "ecgclass:10,gestureclass:100" -> {"ecgclass": 10.0, ...}
+    task_rates: dict[str, float] = {}
+    if args.task_rates:
+        for pair in args.task_rates.split(","):
+            task, rate = pair.strip().split(":")
+            task_rates[task.strip()] = float(rate.strip())
+
     asyncio.run(
         serve(
             RuntimeServerConfig(
@@ -45,6 +54,8 @@ def main():
                 queue_capacity=args.queue_capacity,
                 runtime_type=args.runtime_type,
                 scheduler_policy=args.scheduler_policy,
+                isolation_mode=args.isolation_mode,
+                task_rates=task_rates,
             ),
             bootstrap_json=_resolve_bootstrap_json(args),
         )

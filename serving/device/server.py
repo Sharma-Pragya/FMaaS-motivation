@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import os
 import signal
 import time
 from dataclasses import dataclass
@@ -11,7 +12,7 @@ import numpy as np
 from device.batcher import DeviceBatcher
 from device.proto import edge_runtime_pb2, edge_runtime_pb2_grpc
 from device.runtime import PyTorchRuntime, VLLMRuntime
-from device.scheduler import FifoPolicy, RequestEnvelope, RoundRobinPolicy
+from device.scheduler import FifoPolicy, RequestEnvelope, RoundRobinPolicy, WFQPolicy, TokenBucketPolicy
 
 
 LOGGER = logging.getLogger(__name__)
@@ -40,6 +41,8 @@ class RuntimeServerConfig:
     stop_grace_s: float = 5.0
     runtime_type: str = "pytorch"
     scheduler_policy: str = "fifo"
+    isolation_mode: str = "shared"   # "shared" | "process" | "none"
+    task_rates: dict = None          # {task: rps} — used by WFQ/TokenBucket
 
 
 class EdgeRuntimeApplication:
@@ -48,19 +51,41 @@ class EdgeRuntimeApplication:
     def __init__(self, config: RuntimeServerConfig):
         self.config = config
         self.runtime_type = config.runtime_type
+        self.isolation_mode = config.isolation_mode
+        if config.isolation_mode == "process":
+            raise ValueError("Use IsolatedRuntimeApplication for isolation_mode=process")
         if config.runtime_type == "vllm":
             self.runtime = VLLMRuntime()
             self.batcher = None
         else:
             self.runtime = PyTorchRuntime()
-            policy = RoundRobinPolicy() if config.scheduler_policy == "round_robin" else FifoPolicy()
-            self.batcher = DeviceBatcher(
-                runtime=self.runtime,
-                max_batch_size=config.max_batch_size,
-                max_batch_wait_ms=config.max_batch_wait_ms,
-                queue_capacity=config.queue_capacity,
-                policy=policy,
-            )
+            if config.isolation_mode == "none":
+                # No batcher — requests go directly to runtime.run_batch()
+                self.batcher = None
+            else:
+                task_rates = config.task_rates or {}
+                if config.scheduler_policy == "round_robin":
+                    policy = RoundRobinPolicy()
+                elif config.scheduler_policy == "wfq":
+                    # WFQ weight = 1/rps so low-RPS victim gets high weight
+                    # (slow VFT advance = higher priority = served promptly)
+                    inv_weights = {t: 1.0/r for t, r in task_rates.items()} if task_rates else None
+                    policy = WFQPolicy(weights=inv_weights)
+                elif config.scheduler_policy == "token_bucket":
+                    # TokenBucket: accrue at 1/rps so victim accrues faster
+                    # → victim always has more credit → served first when present
+                    policy = TokenBucketPolicy()
+                    for task, rate in task_rates.items():
+                        policy.set_rate(task, 1.0 / rate if rate > 0 else 1.0)
+                else:
+                    policy = FifoPolicy()
+                self.batcher = DeviceBatcher(
+                    runtime=self.runtime,
+                    max_batch_size=config.max_batch_size,
+                    max_batch_wait_ms=config.max_batch_wait_ms,
+                    queue_capacity=config.queue_capacity,
+                    policy=policy,
+                )
         self._batch_task: asyncio.Task | None = None
 
     async def start(self, bootstrap_json: str | None = None):
@@ -71,7 +96,7 @@ class EdgeRuntimeApplication:
                 f"decoders={len(payload['decoders'])}"
             )
             await asyncio.to_thread(self.runtime.load, payload["backbone"], payload.get("decoders", []))
-        if self.runtime_type == "pytorch" and self._batch_task is None:
+        if self.runtime_type == "pytorch" and self.batcher is not None and self._batch_task is None:
             self._batch_task = asyncio.create_task(self.batcher.run_forever())
         print("[Device] Runtime application started")
 
@@ -89,6 +114,22 @@ class EdgeRuntimeApplication:
         if self.runtime_type == "vllm":
             prompt = request.question if request.HasField("question") else ""
             return await self.runtime.infer(request.req_id, prompt)
+        if self.isolation_mode == "none":
+            # Direct path: no queue, call runtime.run_batch() inline
+            x    = _decode_tensor(request.x)
+            mask = _decode_tensor(request.mask) if request.HasField("mask") else None
+            result = await asyncio.to_thread(
+                self.runtime.run_batch, x, [request.task], mask
+            )
+            return {
+                "req_id":          request.req_id,
+                "output":          result.outputs[0],
+                "start_time_ns":   result.start_time_ns,
+                "end_time_ns":     result.end_time_ns,
+                "proc_time_ns":    result.proc_time_ns,
+                "swap_time_ns":    result.swap_time_ns[0],
+                "decoder_time_ns": result.decoder_time_ns[0],
+            }
         loop = asyncio.get_running_loop()
         future = loop.create_future()
         envelope = RequestEnvelope(
@@ -122,6 +163,18 @@ class EdgeRuntimeApplication:
             elif command == "add_decoder":
                 logger = await asyncio.to_thread(self.runtime.add_decoders, payload["decoders"])
                 status = f"added_{len(payload['decoders'])}_decoders"
+            elif command == "set_rates":
+                # payload: {"rates": {"task": rps, ...}}
+                # Registers per-task offered rates (rps) with TokenBucketPolicy
+                # if active. We invert here so low-RPS tasks accrue more credit
+                # and get protected under noisy-neighbor overload.
+                if self.batcher and isinstance(self.batcher._policy, TokenBucketPolicy):
+                    for task, rate in payload.get("rates", {}).items():
+                        r = float(rate)
+                        self.batcher._policy.set_rate(task, 1.0 / r if r > 0 else 1.0)
+                    status = f"rates_set_{list(payload.get('rates', {}).keys())}"
+                else:
+                    status = "rates_ignored_policy_not_token_bucket"
             else:
                 raise ValueError(f"unknown_command_{command}")
         except Exception as exc:
@@ -170,7 +223,11 @@ class EdgeRuntimeServicer(edge_runtime_pb2_grpc.EdgeRuntimeServicer):
 
 async def serve(config: RuntimeServerConfig, bootstrap_json: str | None = None):
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    app = EdgeRuntimeApplication(config)
+    if config.isolation_mode == "process":
+        from device.isolated_app import IsolatedRuntimeApplication
+        app = IsolatedRuntimeApplication(config)
+    else:
+        app = EdgeRuntimeApplication(config)  # handles both "shared" and "none"
     await app.start(bootstrap_json=bootstrap_json)
 
     server = grpc.aio.server()

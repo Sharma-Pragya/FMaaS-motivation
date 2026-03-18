@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from device.runtime import SharedModelRuntime
-from device.scheduler import FifoPolicy, RequestEnvelope, RoundRobinPolicy, TenantQueues
+from device.scheduler import FifoPolicy, RequestEnvelope, RoundRobinPolicy, WFQPolicy, TokenBucketPolicy, TenantQueues
 
 
 @dataclass
@@ -32,7 +32,7 @@ class DeviceBatcher:
         max_batch_size: int = 1,
         max_batch_wait_ms: float = 1.0,
         queue_capacity: int = 1024,
-        policy: "FifoPolicy | RoundRobinPolicy | None" = None,
+        policy: "FifoPolicy | RoundRobinPolicy | WFQPolicy | TokenBucketPolicy | None" = None,
     ):
         self._runtime = runtime
         self._queues = TenantQueues()
@@ -120,12 +120,16 @@ class DeviceBatcher:
             loop.call_soon_threadsafe(self._work_done.set)
 
     async def _next_batch(self):
+        # Wait until at least one request is queued
         async with self._condition:
             while self._queues.pending_count() == 0 and not self._stopped:
                 await self._condition.wait()
             if self._stopped:
                 return None
 
+        # Brief accumulation window — lets a few more requests arrive before
+        # scheduling, so the policy has something to choose between.
+        # Once the batch is full we stop waiting early.
         deadline = time.time() + self._max_batch_wait_s
         while time.time() < deadline:
             async with self._condition:
@@ -135,6 +139,7 @@ class DeviceBatcher:
             if remaining > 0:
                 await asyncio.sleep(min(0.001, remaining))
 
+        # Policy selects which requests to run next
         async with self._condition:
             requests = self._queues.select_batch(self._policy, self._max_batch_size)
         if not requests:
