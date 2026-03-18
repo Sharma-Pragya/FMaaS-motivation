@@ -1,0 +1,10 @@
+isolation_mode,backbone,task,duration_s,n_completed,avg_lat_ms,p50_lat_ms,p95_lat_ms,p99_lat_ms,throughput_rps,gpu_allocated_mb,gpu_reserved_mb
+shared,momentbase,ecgclass,60.0,5558,10.796,10.735,10.851,11.144,92.6333,911.35,948.0
+none,momentbase,ecgclass,60.0,6111,9.818,9.784,9.981,10.195,101.85,911.35,948.0
+process,momentbase,ecgclass,60.0,3638,16.495,16.433,16.495,16.553,60.6333,434.75,474.38
+process,momentbase,diasbp,60.0,3650,16.438,16.375,16.44,16.494,60.8333,434.75,474.38
+shared,momentbase,diasbp,60.0,5578,10.756,10.692,10.831,11.098,92.9667,911.34,948.0
+none,momentbase,diasbp,60.0,6143,9.767,9.737,9.943,10.135,102.3833,911.34,948.0
+shared,momentlarge,ecgclass,60.0,1959,30.64,30.54,30.955,31.16,32.65,2924.44,2792.0
+none,momentlarge,ecgclass,60.0,2007,29.906,29.801,30.284,30.594,33.45,2924.44,2792.0
+process,momentlarge,ecgclass,60.0,1638,36.648,37.002,37.07,37.108,27.3,1394.73,1396.5
