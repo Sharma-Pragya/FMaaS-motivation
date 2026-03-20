@@ -1,0 +1,12 @@
+backbone,victim_task,victim_rps,aggressor_task,aggressor_rps,role,task,input_rps,output_rps,n_sent,n_completed,n_errors,avg_lat_ms,p50_lat_ms,p95_lat_ms,p99_lat_ms
+momentbase,ecgclass,10.0,gestureclass,0.0,victim,ecgclass,10.1,10.1,303,303,0,60.569,62.37,73.281,74.753
+momentbase,ecgclass,10.0,gestureclass,2.0,victim,ecgclass,10.1667,10.1667,305,305,0,62.257,62.221,74.315,268.207
+momentbase,ecgclass,10.0,gestureclass,2.0,aggressor,gestureclass,1.7,1.7,51,51,0,64.538,62.627,76.628,208.839
+momentbase,ecgclass,10.0,gestureclass,5.0,victim,ecgclass,9.8667,9.8667,296,296,0,61.413,62.147,74.235,185.356
+momentbase,ecgclass,10.0,gestureclass,5.0,aggressor,gestureclass,4.9667,4.9667,149,149,0,61.343,62.3,73.752,208.44
+momentbase,ecgclass,10.0,gestureclass,10.0,victim,ecgclass,10.2,10.2,306,306,0,61.725,62.848,78.396,159.914
+momentbase,ecgclass,10.0,gestureclass,10.0,aggressor,gestureclass,9.9667,9.9667,299,299,0,63.651,62.234,79.445,290.092
+momentbase,ecgclass,10.0,gestureclass,20.0,victim,ecgclass,10.5667,10.5667,317,317,0,61.766,62.288,83.162,141.908
+momentbase,ecgclass,10.0,gestureclass,20.0,aggressor,gestureclass,20.3,20.3,609,609,0,63.296,63.287,84.016,240.902
+momentbase,ecgclass,10.0,gestureclass,30.0,victim,ecgclass,9.1,9.1,273,273,0,64.619,65.711,91.883,253.626
+momentbase,ecgclass,10.0,gestureclass,30.0,aggressor,gestureclass,30.3,30.3,909,909,0,63.824,62.937,86.04,286.499
