@@ -1,0 +1,13 @@
+Experiment config - Wed Mar 18 09:17:08 PM UTC 2026
+Backbone: momentbase
+Victim: ecgclass @ 20  rps (constant)
+Aggressor: gestureclass
+Phase 1 (30s): aggressor @ 20 rps
+Phase 2 (30s): aggressor @ 50 rps
+Phase 3 (30s): aggressor @ 150 rps
+Phase 4 (30s): aggressor @ 300 rps
+Total duration: 120s
+Schedulers: deadline_split
+BatchWait: 20ms
+Max batch size: 8
+Results base: experiments/noisy_neighbor/tsfm_inaction/results_4phase
