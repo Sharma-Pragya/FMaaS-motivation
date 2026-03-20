@@ -12,7 +12,7 @@ import numpy as np
 from device.batcher import DeviceBatcher
 from device.proto import edge_runtime_pb2, edge_runtime_pb2_grpc
 from device.runtime import PyTorchRuntime, VLLMRuntime
-from device.scheduler import FifoPolicy, RequestEnvelope, RoundRobinPolicy, WFQPolicy, TokenBucketPolicy
+from device.scheduler import FifoPolicy, RequestEnvelope, RoundRobinPolicy, WFQPolicy, STFQPolicy, TokenBucketPolicy, SABAPolicy, DeadlineSplitPolicy
 
 
 LOGGER = logging.getLogger(__name__)
@@ -66,6 +66,11 @@ class EdgeRuntimeApplication:
                 task_rates = config.task_rates or {}
                 if config.scheduler_policy == "round_robin":
                     policy = RoundRobinPolicy()
+                elif config.scheduler_policy == "stfq":
+                    # STFQ weight = 1/rps so low-RPS victim gets high weight
+                    # (slow VFT advance = stays near front = served promptly)
+                    inv_weights = {t: 1.0/r for t, r in task_rates.items()} if task_rates else None
+                    policy = STFQPolicy(weights=inv_weights)
                 elif config.scheduler_policy == "wfq":
                     # WFQ weight = 1/rps so low-RPS victim gets high weight
                     # (slow VFT advance = higher priority = served promptly)
@@ -77,6 +82,14 @@ class EdgeRuntimeApplication:
                     policy = TokenBucketPolicy()
                     for task, rate in task_rates.items():
                         policy.set_rate(task, 1.0 / rate if rate > 0 else 1.0)
+                elif config.scheduler_policy == "saba":
+                    # SABA: allocate batch slots proportional to arrival rate
+                    policy = SABAPolicy(rates=task_rates)
+                elif config.scheduler_policy == "deadline_split":
+                    # DeadlineSplit: fire small dedicated batches for low-rate
+                    # protected tasks on a per-task deadline timer; high-rate
+                    # tasks get full batches in between.
+                    policy = DeadlineSplitPolicy(rates=task_rates)
                 else:
                     policy = FifoPolicy()
                 self.batcher = DeviceBatcher(

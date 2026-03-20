@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from device.runtime import SharedModelRuntime
-from device.scheduler import FifoPolicy, RequestEnvelope, RoundRobinPolicy, WFQPolicy, TokenBucketPolicy, TenantQueues
+from device.scheduler import FifoPolicy, RequestEnvelope, RoundRobinPolicy, WFQPolicy, STFQPolicy, TokenBucketPolicy, SABAPolicy, TenantQueues
 
 
 @dataclass
@@ -60,6 +60,8 @@ class DeviceBatcher:
                 )
                 raise RuntimeError("queue_full")
             self._queues.push(request)
+            if isinstance(self._policy, STFQPolicy):
+                self._policy.assign_start_time(request)
             pending_after = pending_before + 1
             if pending_after == 1 or pending_after % 50 == 0:
                 print(
@@ -170,6 +172,11 @@ class DeviceBatcher:
             f"req_ids={batch_ids} tasks={prepared.task_names}"
         )
         result = self._runtime.run_batch(prepared.x, prepared.task_names, prepared.mask)
+        duration_s = (result.end_time_ns - result.start_time_ns) / 1e9
+        if isinstance(self._policy, SABAPolicy):
+            self._policy.update_batch_duration(duration_s)
+        if isinstance(self._policy, STFQPolicy):
+            self._policy.update_after_execution(prepared.task_names, duration_s, self._queues._queues)
         for index, request in enumerate(prepared.requests):
             payload = {
                 "output": result.outputs[index],
