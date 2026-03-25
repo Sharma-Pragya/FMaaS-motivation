@@ -334,5 +334,109 @@ DECODERS={
             'DEVICE': DEVICE,
             'cfg':{'input_dim':512,'output_dim':1,'hidden_dim':128},
         }
-    }
+    },
+
+    # Vision linear decoders (10-class EuroSAT)
+    # DINOv2 variants
+    'linear_dinosmall_eurosatclass':{
+        'decoder_type': 'linear',
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':384,'output_dim':10}}
+    },
+    'linear_dinobase_eurosatclass':{
+        'decoder_type': 'linear',
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':768,'output_dim':10}}
+    },
+    'linear_dinolarge_eurosatclass':{
+        'decoder_type': 'linear',
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':1024,'output_dim':10}}
+    },
+    'linear_dinogiant_eurosatclass':{
+        'decoder_type': 'linear',
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':1536,'output_dim':10}}
+    },
+    # Swin Transformer variants
+    'linear_swintiny_eurosatclass':{
+        'decoder_type': 'linear',
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':768,'output_dim':10}}
+    },
+    'linear_swinsmall_eurosatclass':{
+        'decoder_type': 'linear',
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':768,'output_dim':10}}
+    },
+    'linear_swinbase_eurosatclass':{
+        'decoder_type': 'linear',
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':1024,'output_dim':10}}
+    },
+    'linear_swinlarge_eurosatclass':{
+        'decoder_type': 'linear',
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':1536,'output_dim':10}}
+    },
+    # MAE (ViT-MAE) variants
+    'linear_maebase_eurosatclass':{
+        'decoder_type': 'linear',
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':768,'output_dim':10}}
+    },
+    'linear_maelarge_eurosatclass':{
+        'decoder_type': 'linear',
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':1024,'output_dim':10}}
+    },
+    'linear_maehuge_eurosatclass':{
+        'decoder_type': 'linear',
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':1280,'output_dim':10}}
+    },
+    # VGG variants (4096-dim features after classifier head)
+    'linear_vgg11_eurosatclass':{
+        'decoder_type': 'linear',
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':4096,'output_dim':10}}
+    },
+    'linear_vgg13_eurosatclass':{
+        'decoder_type': 'linear',
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':4096,'output_dim':10}}
+    },
+    'linear_vgg16_eurosatclass':{
+        'decoder_type': 'linear',
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':4096,'output_dim':10}}
+    },
+    'linear_vgg19_eurosatclass':{
+        'decoder_type': 'linear',
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':4096,'output_dim':10}}
+    },
+    # ResNet variants (pooler_output flattened: resnet18/34 = 512*7*7, resnet50/101 = 2048*7*7)
+    'linear_resnet18_eurosatclass':{
+        'decoder_type': 'linear',
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':25088,'output_dim':10}}
+    },
+    'linear_resnet34_eurosatclass':{
+        'decoder_type': 'linear',
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':25088,'output_dim':10}}
+    },
+    'linear_resnet50_eurosatclass':{
+        'decoder_type': 'linear',
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':100352,'output_dim':10}}
+    },
+    'linear_resnet101_eurosatclass':{
+        'decoder_type': 'linear',
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':100352,'output_dim':10}}
+    },
+}
+
+ADAPTERS = {
+    'lora': {
+        'adapter_type': 'lora',
+        'adapter_config': {
+            'r': 64,
+            'lora_alpha': 32,
+            'target_modules': ["q", "v"],
+            'lora_dropout': 0.05,
+        }
+    },
+    'lora_vlm': {
+        'adapter_type': 'lora',
+        'adapter_config': {
+            'r': 16,
+            'lora_alpha': 32,
+            'target_modules': ["q_proj", "v_proj"],
+            'lora_dropout': 0.05,
+        }
+    },
 }

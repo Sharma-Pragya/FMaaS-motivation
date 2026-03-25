@@ -176,6 +176,9 @@ class EdgeRuntimeApplication:
             elif command == "add_decoder":
                 logger = await asyncio.to_thread(self.runtime.add_decoders, payload["decoders"])
                 status = f"added_{len(payload['decoders'])}_decoders"
+            elif command == "add_adapter":
+                logger = await asyncio.to_thread(self.runtime.add_adapters, payload["adapters"])
+                status = f"added_{len(payload['adapters'])}_adapters"
             elif command == "set_rates":
                 # payload: {"rates": {"task": rps, ...}}
                 # Registers per-task offered rates (rps) with TokenBucketPolicy
