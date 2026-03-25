@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
-# noisy_neighbor/tsfm_inaction — Time-series interference experiment
+# noisy_neighbor/tsfm_withadapters — Time-series interference experiment with LoRA adapters
 #
-# Loops over all scheduler policies, running each with a fresh device server.
+# Same structure as noisy_neighbor/tsfm but tasks use momentbase + MLP + LoRA:
+#   victim:    ecgclass   (ecgclass_momentbase_mlp_lora)
+#   aggressor: gestureclass (gestureclass_momentbase_mlp_lora)
+#
 # Run from serving/:
-#   bash experiments/noisy_neighbor/tsfm_inaction/run.sh
+#   bash experiments/noisy_neighbor/tsfm_withadapters/run.sh
 #
 # Override policies:
-#   SCHEDULERS=fifo,wfq bash experiments/noisy_neighbor/tsfm_inaction/run.sh
+#   SCHEDULERS=fifo,wfq bash experiments/noisy_neighbor/tsfm_withadapters/run.sh
 #
 # Configure phases (comma-separated lists, must be same length):
 #   AGGRESSOR_RPS_PHASES=20,30,50,150       # aggressor RPS per phase
@@ -38,12 +41,12 @@ PHASE_DURATIONS="${PHASE_DURATIONS:-30,10,30}"
 
 # Runs: "scheduler  batch_size  batch_wait_ms  run_name"
 RUNS=(
-    "fifo  3  0  fcfs"
+    "fcfs  5  0  fcfs"
     "stfq  1  0  stfq"
-    "stfq  3  0  bfq"
+    "bfq  5  0  bfq"
 )
 
-RESULTS_BASE="${RESULTS_BASE:-experiments/noisy_neighbor/tsfm/results}"
+RESULTS_BASE="${RESULTS_BASE:-experiments/noisy_neighbor/tsfm_withadapters/results}"
 DEVICE_STARTUP_WAIT="${DEVICE_STARTUP_WAIT:-5}"
 PYTHON="${PYTHON:-/home/hshastri_umass_edu/.conda/envs/fmtk/bin/python}"
 
@@ -55,7 +58,6 @@ NUM_PHASES="${#AGGRESSOR_RPS_LIST[@]}"
 
 IFS=',' read -ra RAW_DURATIONS <<< "$PHASE_DURATIONS"
 if [[ "${#RAW_DURATIONS[@]}" -eq 1 ]]; then
-    # Expand single value to all phases
     DURATION_LIST=()
     for (( i=0; i<NUM_PHASES; i++ )); do
         DURATION_LIST+=("${RAW_DURATIONS[0]}")
@@ -82,7 +84,7 @@ CONFIG_FILE="$RESULTS_BASE/config.txt"
 mkdir -p "$(dirname "$CONFIG_FILE")"
 {
     echo "Experiment config - $(date)"
-    echo "Backbone: $BACKBONE"
+    echo "Backbone: $BACKBONE + LoRA adapters"
     echo "Victim: $VICTIM_TASK @ ${VICTIM_RPS} rps (constant)"
     echo "Aggressor: $AGGRESSOR_TASK"
     echo "Number of phases: $NUM_PHASES"
@@ -99,8 +101,8 @@ mkdir -p "$(dirname "$CONFIG_FILE")"
 } > "$CONFIG_FILE"
 
 echo "================================================================"
-echo "  noisy_neighbor/tsfm — ${NUM_PHASES}-phase experiment"
-echo "  Backbone     : $BACKBONE"
+echo "  noisy_neighbor/tsfm_withadapters — ${NUM_PHASES}-phase experiment"
+echo "  Backbone     : $BACKBONE + LoRA adapters"
 echo "  Victim       : $VICTIM_TASK @ ${VICTIM_RPS} rps (constant)"
 echo "  Aggressor    : $AGGRESSOR_TASK"
 for (( i=0; i<NUM_PHASES; i++ )); do
@@ -127,9 +129,8 @@ stop_device() {
         wait "$DEVICE_PID" 2>/dev/null || true
         DEVICE_PID=""
     fi
-    # Kill any other device/main.py still holding the port
     pkill -f "device/main.py.*--port ${DEVICE_PORT}" 2>/dev/null || true
-    sleep 2   # give OS time to release port
+    sleep 2
 }
 trap 'stop_device' EXIT
 
@@ -137,7 +138,7 @@ start_device() {
     local scheduler="$1" batch_size="$2" batch_wait="$3" log="$4"
     local task_rates="${VICTIM_TASK}:${VICTIM_RPS},${AGGRESSOR_TASK}:${VICTIM_RPS}"
     pkill -f "device/main.py.*--port ${DEVICE_PORT}" 2>/dev/null || true
-    pkill -f "tsfm/run.py" 2>/dev/null || true
+    pkill -f "tsfm_withadapters/run.py" 2>/dev/null || true
     sleep 1
     echo "[run.sh] Starting device server (scheduler=$scheduler, bsize=$batch_size, bwait=${batch_wait}ms, rates=$task_rates)..."
     "$PYTHON" -u "$SERVING_DIR/device/main.py" \
@@ -175,7 +176,7 @@ for run in "${RUNS[@]}"; do
 
     start_device "$SCHEDULER" "$BATCH_SIZE" "$BATCH_WAIT" "$DEVICE_LOG"
 
-    "$PYTHON" -u experiments/noisy_neighbor/tsfm/run.py \
+    "$PYTHON" -u experiments/noisy_neighbor/tsfm_withadapters/run.py \
         --device-url            "localhost:${DEVICE_PORT}"   \
         --backbone              "$BACKBONE"                  \
         --victim-task           "$VICTIM_TASK"               \

@@ -1,0 +1,2 @@
+task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms
+ecgclass,single_ecgclass,10264,60.3765,16.929,13.366,33.768,44.356

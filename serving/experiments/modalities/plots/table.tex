@@ -1,0 +1,30 @@
+% Microbenchmark table — Memory / Load Time / Latency per backbone
+% Usage: \input{table.tex}  requires booktabs
+\begin{table}[t]
+\centering
+\caption{Microbenchmark results across modalities.
+  Memory and load time are split into backbone / task-component.
+  Latency shows mean per-request backbone inference time.}
+\label{tab:microbenchmark}
+\setlength{\tabcolsep}{3pt}
+\footnotesize
+\begin{tabular}{lrrrrrr}
+\toprule
+& \multicolumn{2}{c}{\textbf{Memory (MB)}} & \multicolumn{2}{c}{\textbf{Load (ms)}} & \multicolumn{2}{c}{\textbf{Latency (ms)}} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
+\textbf{Backbone} & BB & Task & BB & Task & BB & Task \\
+\midrule
+\textbf{Time Series} \\
+~~Moment    & 455      & 0.40 & 1{,}256 &   1.9 &   9.8 & 0.35 \\
+~~Chronos   & 420      & 0.40 &    767  &   1.7 &  30.1 & 0.91 \\
+\midrule
+\textbf{Vision} \\
+~~DINOv2    & 347      & 0.03 &    677  &   1.4 &  29.6 & 0.32 \\
+~~Swin-S    & 197      & 0.03 &    794  &   1.3 &  19.9 & 0.26 \\
+\midrule
+\textbf{VLM} \\
+~~Phi-3.5   & 8{,}294  & 12.6 & 5{,}485 & 181   & 1{,}482 & ---  \\
+~~Qwen-2B   & 4{,}420  & 17.4 & 3{,}569 & 120   &    521  & ---  \\
+\bottomrule
+\end{tabular}
+\end{table}

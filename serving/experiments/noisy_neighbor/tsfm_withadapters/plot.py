@@ -175,7 +175,7 @@ def _add_phase_annotations(
 ) -> None:
     """Add vertical lines at phase transitions (no background shading)."""
     for bnd in phase_boundaries[:-1]:  # skip last (end of experiment)
-        ax.axvline(bnd, color=PALETTE["charcoal"], linewidth=1.2,
+        ax.axvline(bnd, color=PALETTE["charcoal"], linewidth=0.8,
                    linestyle=":", zorder=4)
 
 
@@ -321,6 +321,7 @@ def plot_all_policies(
         ax_v.plot(centers, means, color=cfg["color"],
                   linestyle=cfg["ls"], linewidth=1.2, zorder=3, label=cfg["label"])
 
+    ylim_cap = 200 * scale
     ylim_v = min(max((float(np.nanmax(m)) for _, m in v_binned.values()), default=1.0), ylim_cap)
     xlim_max, _ = _set_clean_ticks(ax_v, xlim_max, ylim_v, n_y=4)
     if phase_boundaries:
@@ -539,7 +540,7 @@ def _bin_rate(
         idx = int(t)
         if 0 <= idx < n_bins:
             counts[idx] += 1.0
-    centers = np.arange(n_bins) + 0.5
+    centers = np.arange(n_bins) + 0.5   # centre of each 1s bin
     return centers, counts
 
 
@@ -549,7 +550,7 @@ def _bin_latency(
     max_time: float,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Mean latency in exact 1s bins [0,1), [1,2), ..., returning (bin_centers, mean_lat).
-    Bins with no requests are NaN so line breaks naturally."""
+    Bins with no requests are omitted (NaN-masked so line breaks naturally)."""
     n_bins  = int(np.ceil(max_time))
     sums    = np.zeros(n_bins, dtype=float)
     counts  = np.zeros(n_bins, dtype=float)
@@ -675,13 +676,14 @@ def plot_throughput(
         for bnd in phase_boundaries[:-1]:
             ax.axvline(bnd, color=PALETTE["charcoal"], linewidth=0.8, linestyle=":", zorder=4)
 
+        ax.set_xlim(0, xlim_max)
         _set_clean_ticks(ax, xlim_max, ylim_max)
         ax.set_ylabel("Req/s")
         ax.text(0.02, 0.96, task_labels[task_name], transform=ax.transAxes,
                 fontsize=6.5, va="top", ha="left", color=PALETTE["charcoal"])
 
     axes[1].set_xlabel("Time (s)")
-    # Single shared legend above the figure with 4 columns
+    # # Single shared legend above the figure with 4 columns
     # handles, labels = axes[0].get_legend_handles_labels()
     fig.tight_layout(pad=0.4)
     # leg = fig.legend(handles, labels, loc="upper center", bbox_to_anchor=(0.5, 1.0),
@@ -731,7 +733,7 @@ def _resolve_max_time(meta: dict, num_phases: Optional[int]) -> Optional[float]:
 # ---------------------------------------------------------------------------
 
 def main() -> int:
-    default_base = "experiments/noisy_neighbor/tsfm/results"
+    default_base = "experiments/noisy_neighbor/tsfm_withadapters/results"
     parser = argparse.ArgumentParser()
     parser.add_argument("--results-base",   default=default_base,
                         help="Directory containing per-scheduler subdirectories")
