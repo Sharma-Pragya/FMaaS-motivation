@@ -51,6 +51,10 @@ class BaseRuntime(ABC):
     def add_decoders(self, decoders: list) -> Logger:
         """Hot-add decoder heads to the loaded backbone."""
 
+    @abstractmethod
+    def add_adapters(self, adapters: list) -> Logger:
+        """Hot-add LoRA adapters to the loaded backbone."""
+
 
 # ---------------------------------------------------------------------------
 # PyTorch runtime (TSFM backbones + MLP decoders)
@@ -71,10 +75,12 @@ class PyTorchRuntime(BaseRuntime):
         self._loader.logger = self.logger
         self.pipeline = None
         self.decoders = None
+        self.adapters = None
 
     def _sync(self):
         self.pipeline = self._loader.pipeline
         self.decoders = self._loader.decoders
+        self.adapters = self._loader.adapters
 
     def load(self, backbone: str, decoders: list, **kwargs) -> Logger:
         with self._lock:
@@ -94,28 +100,76 @@ class PyTorchRuntime(BaseRuntime):
             self._sync()
             return op_log
 
+    def add_adapters(self, adapters: list) -> Logger:
+        with self._lock:
+            op_log = self._loader.add_adapter(adapters)
+            self._sync()
+            return op_log
+
     def run_batch(
         self,
         x: np.ndarray,
         task_names: list[str],
         mask: np.ndarray | None = None,
     ) -> BatchRunResult:
-        """Run one backbone pass + per-task decoder passes."""
+        """Run backbone forward(s) + per-task decoder passes.
+
+        If tasks in the batch use different adapters (or no adapter), the batch
+        is split into adapter-groups and one backbone forward is run per group.
+        Tasks sharing the same adapter (including None) are forwarded together.
+        """
         import torch
         import torch.nn as nn
         with self._lock:
             device   = self._loader.device
+            is_cuda  = str(device).startswith("cuda")
             start_ns = time.time_ns()
 
             bx     = torch.from_numpy(x)
             b_mask = torch.from_numpy(mask) if mask is not None else None
 
-            with torch.no_grad():
-                backbone_start = time.time_ns()
-                feats = self.pipeline.model_instance.forward(bx, b_mask)
-                proc_time_ns = time.time_ns() - backbone_start
-                peak_bytes = torch.cuda.memory_allocated(device) if str(device).startswith("cuda") else 0
+            # --- Build adapter groups: list of (adapter_name, [indices]) ---
+            # Consecutive items with the same adapter are merged into one group.
+            adapters_map = self.adapters or {}
+            groups: list[tuple[str | None, list[int]]] = []
+            for idx, task in enumerate(task_names):
+                adapter_name = adapters_map.get(task)  # None if no adapter
+                if groups and groups[-1][0] == adapter_name:
+                    groups[-1][1].append(idx)
+                else:
+                    groups.append((adapter_name, [idx]))
 
+            # --- Backbone forward per adapter group ---
+            feats_by_idx: dict[int, object] = {}
+            proc_time_ns = 0
+            peak_bytes   = 0
+
+            with torch.no_grad():
+                for adapter_name, indices in groups:
+                    # Set / unload adapter on the backbone
+                    if adapter_name is not None:
+                        self.pipeline.set_adapter(adapter_name)
+                    else:
+                        self.pipeline.unload_adapter()
+
+                    sub_x    = bx[indices]
+                    sub_mask = b_mask[indices] if b_mask is not None else None
+
+                    bb_start = time.time_ns()
+                    sub_feats = self.pipeline.model_instance.forward(sub_x, sub_mask)
+                    if is_cuda:
+                        torch.cuda.synchronize(device)
+                    proc_time_ns += time.time_ns() - bb_start
+
+                    if is_cuda:
+                        cur_bytes = torch.cuda.memory_allocated(device)
+                        if cur_bytes > peak_bytes:
+                            peak_bytes = cur_bytes
+
+                    for out_pos, orig_idx in enumerate(indices):
+                        feats_by_idx[orig_idx] = sub_feats[out_pos : out_pos + 1]
+
+            # --- Decoder pass (same as before, no adapter switching needed) ---
             outputs        = []
             swap_times     = []
             decoder_times  = []
@@ -131,13 +185,15 @@ class PyTorchRuntime(BaseRuntime):
                 swap_times.append(time.time_ns() - swap_start)
 
                 dec_start = time.time_ns()
-                feat_i = feats[index : index + 1]
+                feat_i = feats_by_idx[index]
                 if active_decoder is not None:
                     with torch.no_grad():
                         logit_i = active_decoder.forward(feat_i)
-                    dec_bytes = torch.cuda.memory_allocated(device) if str(device).startswith("cuda") else 0
-                    if dec_bytes > peak_bytes:
-                        peak_bytes = dec_bytes
+                    if is_cuda:
+                        torch.cuda.synchronize(device)
+                        dec_bytes = torch.cuda.memory_allocated(device)
+                        if dec_bytes > peak_bytes:
+                            peak_bytes = dec_bytes
                     if isinstance(active_decoder.criterion, nn.CrossEntropyLoss):
                         logit_i = torch.argmax(logit_i, dim=1)
                     if (
