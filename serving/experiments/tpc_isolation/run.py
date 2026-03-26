@@ -36,7 +36,7 @@ from pathlib import Path
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 SERVING_DIR = Path(__file__).resolve().parents[3]
-TPC_LIB_DIR = Path("/project/pi_shenoy_umass_edu/hshastri/tpc-burn-controller")
+TPC_LIB_DIR = Path("/project/pi_shenoy_umass_edu/hshastri/TPC_controller/tpc_controller")
 
 for p in [str(SERVING_DIR), str(TPC_LIB_DIR)]:
     if p not in sys.path:
