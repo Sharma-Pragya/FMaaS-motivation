@@ -217,7 +217,7 @@ class ClipperScheduler(BaseScheduler):
         """Sort backbones by latency (lowest first)."""
         heap = []
         for pid, backbone in pid_backbones.items():
-            latency = self.data.get_pipeline_latency(pid, 'A16')
+            latency = self.data.get_pipeline_latency(pid, 'NVIDIA A16')
             if latency is not None:
                 heapq.heappush(heap, (latency, backbone))
         return [backbone for _, backbone in heap]
