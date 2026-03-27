@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────
-#  FMaaS System-in-Action Experiment
+#  FMaaS System-in-Action Experiment  (local mode — no MQTT)
 #
 #  Setup: 3 GPUs, 1 initial task (ecgclass @ REQ_RATE req/s)
 #  No runtime events — shows the system deploying and serving a
-#  5-minute trace end-to-end.
+#  trace end-to-end in a single process.
 #
 #  Usage:
 #    cd serving
@@ -20,20 +20,22 @@ SCHEDULERS="${SCHEDULERS:-fmaas_share}"
 
 # ── Shared configuration ─────────────────────────────────────────────
 REQ_RATE="${REQ_RATE:-150}"
-TRACE="${TRACE:-deterministic}"
-DURATION="${DURATION:-360}"
+TRACE="${TRACE:-poisson_per_task}"
+DURATION="${DURATION:-60}"
 SEED="${SEED:-42}"
 EXP_DIR="${EXP_DIR:-experiments/SystemInAction/results}"
 EXP_TYPE="${EXP_TYPE:-SystemInAction}"
-ORCHESTRATOR_PORT="${ORCHESTRATOR_PORT:-8080}"
+MAX_BATCH_SIZE="${MAX_BATCH_SIZE:-5}"
+MAX_BATCH_WAIT_MS="${MAX_BATCH_WAIT_MS:-0}"
+ISOLATION_MODE="${ISOLATION_MODE:-shared}"
+WARMUP_GAP="${WARMUP_GAP:-2.0}"
 
 # ── Paths ────────────────────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SERVING_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
-ORCHESTRATOR_URL="http://localhost:$ORCHESTRATOR_PORT"
 
 # ── Colors ───────────────────────────────────────────────────────────
-RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[0;33m'; BLUE='\033[0;34m'; CYAN='\033[0;36m'; NC='\033[0m'
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[0;33m'; CYAN='\033[0;36m'; NC='\033[0m'
 info()    { echo -e "${GREEN}[INFO]${NC}   $*"; }
 warn()    { echo -e "${YELLOW}[WARN]${NC}   $*"; }
 error()   { echo -e "${RED}[ERROR]${NC}  $*"; }
@@ -42,21 +44,14 @@ section() { echo -e "${CYAN}[RUN]${NC}    $*"; }
 # ── Per-scheduler run function ────────────────────────────────────────
 run_scheduler() {
     local SCHEDULER="$1"
-    local SITE_LOG="$SERVING_DIR/site_manager.log"
-    local ORCHESTRATOR_LOG="$SERVING_DIR/orchestrator.log"
-    local SITE_PID="" ORCHESTRATOR_PID=""
+    local LOG="$SERVING_DIR/$EXP_DIR/$SCHEDULER/$REQ_RATE/orchestrator.log"
+    local RUNNER_PID=""
 
     cleanup_scheduler() {
-        info "Cleaning up [$SCHEDULER]..."
-        if [[ -n "$ORCHESTRATOR_PID" ]] && kill -0 "$ORCHESTRATOR_PID" 2>/dev/null; then
-            curl -s -X POST "$ORCHESTRATOR_URL/cleanup" > /dev/null 2>&1 || true
-            sleep 2
-            kill "$ORCHESTRATOR_PID" 2>/dev/null || true
-            wait "$ORCHESTRATOR_PID" 2>/dev/null || true
-        fi
-        if [[ -n "$SITE_PID" ]] && kill -0 "$SITE_PID" 2>/dev/null; then
-            kill "$SITE_PID" 2>/dev/null || true
-            wait "$SITE_PID" 2>/dev/null || true
+        if [[ -n "$RUNNER_PID" ]] && kill -0 "$RUNNER_PID" 2>/dev/null; then
+            info "Interrupting local runner [$SCHEDULER]..."
+            kill "$RUNNER_PID" 2>/dev/null || true
+            wait "$RUNNER_PID" 2>/dev/null || true
         fi
     }
     trap cleanup_scheduler EXIT INT TERM
@@ -66,90 +61,40 @@ run_scheduler() {
     section "SCHEDULER: $SCHEDULER"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     info "Setup:    3 GPUs, ecgclass @ ${REQ_RATE} req/s, ${DURATION}s trace"
+    info "Mode:     local (single process, no MQTT)"
     info "Timeline:"
-    info "  t=0s    Deploy ecgclass @ ${REQ_RATE} req/s and run for ${DURATION}s"
+    info "  t=0s    Deploy + run ecgclass @ ${REQ_RATE} req/s for ${DURATION}s"
     echo ""
 
-    # ── Kill any leftover processes from previous runs ────────────────
-    pkill -f "site_manager.main" 2>/dev/null || true
-    pkill -f "orchestrator.server" 2>/dev/null || true
-    sleep 1
+    # ── Run experiment (single process) ──────────────────────────────
+    info "Starting orchestrator (local mode)..."
+    mkdir -p "$SERVING_DIR/$EXP_DIR/$SCHEDULER/$REQ_RATE"
+    python -u -m orchestrator.server \
+        --mode              local \
+        --exp-type          "$EXP_TYPE" \
+        --scheduler         "$SCHEDULER" \
+        --req-rate          "$REQ_RATE" \
+        --duration          "$DURATION" \
+        --trace             "$TRACE" \
+        --seed              "$SEED" \
+        --exp-dir           "$EXP_DIR" \
+        --max-batch-size    "$MAX_BATCH_SIZE" \
+        --max-batch-wait-ms "$MAX_BATCH_WAIT_MS" \
+        --isolation-mode    "$ISOLATION_MODE" \
+        --warmup-gap        "$WARMUP_GAP" \
+        2>&1 | tee "$LOG" &
+    RUNNER_PID=$!
 
-    # ── Start orchestrator ────────────────────────────────────────────
-    info "Starting orchestrator..."
-    python -u -m orchestrator.server --port "$ORCHESTRATOR_PORT" \
-        > "$ORCHESTRATOR_LOG" 2>&1 &
-    ORCHESTRATOR_PID=$!
-
-    local elapsed=0
-    while ! curl -s "$ORCHESTRATOR_URL/" > /dev/null 2>&1; do
-        if ! kill -0 "$ORCHESTRATOR_PID" 2>/dev/null; then
-            error "Orchestrator exited unexpectedly:"; tail -20 "$ORCHESTRATOR_LOG"; return 1
-        fi
-        if (( elapsed >= 30 )); then
-            error "Timed out waiting for orchestrator."; return 1
-        fi
-        sleep 1; (( elapsed += 1 ))
-    done
-    info "Orchestrator ready (PID=$ORCHESTRATOR_PID)."
-
-    # ── Start site manager ────────────────────────────────────────────
-    info "Starting site_manager..."
-    python -u -m site_manager.main > "$SITE_LOG" 2>&1 &
-    SITE_PID=$!
-
-    elapsed=0
-    while ! grep -q "ready. Entering MQTT loop" "$SITE_LOG" 2>/dev/null; do
-        if ! kill -0 "$SITE_PID" 2>/dev/null; then
-            error "site_manager exited unexpectedly:"; tail -20 "$SITE_LOG"; return 1
-        fi
-        if (( elapsed >= 300 )); then
-            error "Timed out waiting for site_manager."; return 1
-        fi
-        sleep 2; (( elapsed += 2 ))
-    done
-    info "Site manager ready (PID=$SITE_PID)."
-
-    # ── Initial deployment ────────────────────────────────────────────
-    info "Deploying initial task (ecgclass)..."
-    local deploy_resp
-    deploy_resp=$(curl -s -X POST "$ORCHESTRATOR_URL/deploy" \
-        -H "Content-Type: application/json" \
-        -d "{\"exp_type\":\"$EXP_TYPE\",\"trace\":\"$TRACE\",\"req_rate\":$REQ_RATE,\"duration\":$DURATION,\"seed\":$SEED,\"scheduler\":\"$SCHEDULER\",\"exp_dir\":\"$EXP_DIR\"}")
-    if echo "$deploy_resp" | grep -q '"detail"'; then
-        error "Deployment failed: $deploy_resp"; return 1
-    fi
-    info "Initial deployment complete."
-
-    # ── Start inference ───────────────────────────────────────────────
-    local run_resp
-    run_resp=$(curl -s -X POST "$ORCHESTRATOR_URL/run")
-    if echo "$run_resp" | grep -q '"detail"'; then
-        error "Failed to start inference: $run_resp"; return 1
-    fi
-    info "Inference started at $(date '+%H:%M:%S') — running for ${DURATION}s."
-
-    # ── Wait for inference to complete ────────────────────────────────
-    info "Waiting for inference to complete..."
-    local wait_resp
-    wait_resp=$(curl -s -X POST "$ORCHESTRATOR_URL/wait")
-    if echo "$wait_resp" | grep -q "completed"; then
-        info "Inference completed."
-    else
-        warn "Wait response: $wait_resp"
-    fi
-
-    # ── Cleanup ───────────────────────────────────────────────────────
-    info "Cleaning up..."
-    curl -s -X POST "$ORCHESTRATOR_URL/cleanup" > /dev/null 2>&1 || true
-    sleep 10
-
-    kill "$SITE_PID" 2>/dev/null || true
-    wait "$SITE_PID" 2>/dev/null || true
-    kill "$ORCHESTRATOR_PID" 2>/dev/null || true
-    wait "$ORCHESTRATOR_PID" 2>/dev/null || true
-
+    # Wait for it to finish
+    wait "$RUNNER_PID"
+    local exit_code=$?
+    RUNNER_PID=""
     trap - EXIT INT TERM
+
+    if [[ $exit_code -ne 0 ]]; then
+        error "Local runner failed (exit=$exit_code). See $LOG"
+        return 1
+    fi
 
     # ── Results summary ───────────────────────────────────────────────
     local result_dir="$EXP_DIR/$SCHEDULER/$REQ_RATE"
@@ -167,7 +112,7 @@ run_scheduler() {
 # ── Main: iterate schedulers ──────────────────────────────────────────
 cd "$SERVING_DIR"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  FMaaS System-in-Action Experiment"
+echo "  FMaaS System-in-Action Experiment  (local mode)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 info "Schedulers: $SCHEDULERS"
 info "Duration:   ${DURATION}s  |  Rate: ${REQ_RATE} req/s  |  Trace: $TRACE"
@@ -175,8 +120,10 @@ info "Exp dir:    $EXP_DIR"
 
 for SCHEDULER in $SCHEDULERS; do
     run_scheduler "$SCHEDULER"
-    info "Pausing 15s before next scheduler run..."
-    sleep 15
+    if [[ "${SCHEDULERS}" == *" "* ]]; then
+        info "Pausing 15s before next scheduler run..."
+        sleep 15
+    fi
 done
 
 echo ""

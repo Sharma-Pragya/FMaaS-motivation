@@ -139,7 +139,11 @@ async def send_request(req_id, device_url, inputs_dict, ouputs_dict):
     )
 
 
-async def handle_runtime_request_continuous():
+async def handle_runtime_request_continuous(
+    request_queue=None,
+    live_plan: dict = None,
+    output_dir: str = None,
+):
     """Continuous inference mode that dynamically picks up new requests.
 
     This mode is used when tasks can be added at runtime. It continuously
@@ -147,6 +151,15 @@ async def handle_runtime_request_continuous():
 
     Uses a priority queue to ensure requests are sent in timestamp order,
     even when they arrive in different batches at runtime.
+
+    Args:
+        request_queue: asyncio.Queue of request dicts (local mode).
+                       If None, falls back to MQTT storage globals.
+        live_plan:     Shared dict updated by orchestrator on add_task (local mode).
+                       When provided, device routing is resolved lazily at dispatch time
+                       via route_single() instead of using the pre-baked req["device"].
+        output_dir:    Where to write results (local mode).
+                       If None, falls back to storage.get_output_dir().
     """
     import heapq
 
@@ -154,12 +167,15 @@ async def handle_runtime_request_continuous():
 
     tasks: List[asyncio.Task] = []
     completed_results = []
+    req_metadata = {}   # req_id → req dict (for result enrichment in local mode)
     start = time.time()
     pending_queue = []  # Min-heap priority queue: [(req_time, counter, req), ...]
     processed_count = 0
     req_counter = 0  # Unique counter for tiebreaking in heap
 
-    print(f"[RuntimeExecutor] Starting continuous inference mode (start_time={start:.2f})...")
+    local_mode = request_queue is not None
+    print(f"[RuntimeExecutor] Starting continuous inference mode "
+          f"({'local' if local_mode else 'MQTT'}, start_time={start:.2f})...")
 
     # Keep running until we detect no new requests for a while
     MAX_IDLE = 10  # seconds without new requests after last request scheduled
@@ -167,8 +183,14 @@ async def handle_runtime_request_continuous():
 
     poll_iteration = 0
     while True:
-        # Get any new requests that arrived via MQTT
-        new_reqs = get_new_requests()
+        # Get any new requests
+        if local_mode:
+            new_reqs = []
+            while not request_queue.empty():
+                new_reqs.append(request_queue.get_nowait())
+        else:
+            # MQTT mode: use storage globals
+            new_reqs = get_new_requests()
         poll_iteration += 1
 
         if new_reqs:
@@ -178,6 +200,7 @@ async def handle_runtime_request_continuous():
             # Add to priority queue (sorted by req_time, with counter as tiebreaker)
             for req in new_reqs:
                 heapq.heappush(pending_queue, (req["req_time"], req_counter, req))
+                req_metadata[req["req_id"]] = req
                 req_counter += 1
 
             # Show timestamp range of newly added requests
@@ -227,8 +250,24 @@ async def handle_runtime_request_continuous():
             if "question" in batch:
                 inputs["question"] = batch["question"]
 
+            # Resolve device: lazily route via live_plan (local mode) or use pre-baked device (MQTT mode)
+            if live_plan is not None:
+                from orchestrator.router import route_single, parse_plan
+                device_url = route_single(req["task"], live_plan)
+                # Enrich metadata with backbone and site_manager for CSV output
+                if req["req_id"] in req_metadata:
+                    task_routes, _ = parse_plan(live_plan)
+                    routes = task_routes.get(req["task"], [])
+                    for site_mgr, dev, backbone, _ in routes:
+                        if dev == device_url:
+                            req_metadata[req["req_id"]]["backbone"] = backbone
+                            req_metadata[req["req_id"]]["site_manager"] = site_mgr
+                            break
+            else:
+                device_url = req["device"]
+
             # Schedule the request
-            task = asyncio.create_task(send_request(req["req_id"], req["device"], inputs, outputs))
+            task = asyncio.create_task(send_request(req["req_id"], device_url, inputs, outputs))
             tasks.append(task)
             processed_count += 1
             sent_this_iteration += 1
@@ -263,7 +302,10 @@ async def handle_runtime_request_continuous():
             wait_timeout = 0.1
 
         if wait_timeout > 0:
-            await asyncio.to_thread(wait_for_new_requests, wait_timeout)
+            if local_mode:
+                await asyncio.sleep(min(wait_timeout, 0.05))
+            else:
+                await asyncio.to_thread(wait_for_new_requests, wait_timeout)
 
     # Wait for all pending tasks to complete
     if tasks:
@@ -276,4 +318,4 @@ async def handle_runtime_request_continuous():
             else:
                 completed_results.append(result)
 
-    return completed_results
+    return completed_results, req_metadata

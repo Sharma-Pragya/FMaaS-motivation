@@ -4,80 +4,12 @@
       "id": "site2",
       "deployments": [
         {
-          "device": "10.100.20.49:8000",
+          "device": "10.100.20.50:8000",
           "device_name": "device1",
           "device_type": "NVIDIA A16",
-          "backbone": "momentsmall",
+          "backbone": "momentbase",
           "cuda": "cuda:0",
           "decoders": [
-            {
-              "task": "heartrate",
-              "type": "regression",
-              "path": "heartrate_momentsmall_mlp"
-            },
-            {
-              "task": "sysbp",
-              "type": "regression",
-              "path": "sysbp_momentsmall_mlp"
-            },
-            {
-              "task": "diasbp",
-              "type": "regression",
-              "path": "diasbp_momentsmall_mlp"
-            },
-            {
-              "task": "ecgclass",
-              "type": "classification",
-              "path": "ecgclass_momentsmall_mlp"
-            }
-          ],
-          "tasks": {
-            "heartrate": {
-              "type": "regression",
-              "total_requested_workload": 15.0,
-              "request_per_sec": 15.0
-            },
-            "sysbp": {
-              "type": "regression",
-              "total_requested_workload": 15.0,
-              "request_per_sec": 15.000000000000002
-            },
-            "diasbp": {
-              "type": "regression",
-              "total_requested_workload": 15.0,
-              "request_per_sec": 14.999999999999998
-            },
-            "ecgclass": {
-              "type": "classification",
-              "total_requested_workload": 15.0,
-              "request_per_sec": 0.9005983118225549
-            }
-          },
-          "util": 0.8,
-          "mem": 16000
-        },
-        {
-          "device": "10.100.20.49:8010",
-          "device_name": "device2",
-          "device_type": "NVIDIA A16",
-          "backbone": "momentbase",
-          "cuda": "cuda:1",
-          "decoders": [
-            {
-              "task": "ecgclass",
-              "type": "classification",
-              "path": "ecgclass_momentbase_mlp"
-            },
-            {
-              "task": "gestureclass",
-              "type": "classification",
-              "path": "gestureclass_momentbase_mlp"
-            },
-            {
-              "task": "etth1fore",
-              "type": "forecasting",
-              "path": "etth1fore_momentbase_mlp"
-            },
             {
               "task": "weatherfore",
               "type": "forecasting",
@@ -89,77 +21,92 @@
               "path": "exchangefore_momentbase_mlp"
             },
             {
-              "task": "eclfore",
+              "task": "trafficfore",
               "type": "forecasting",
-              "path": "eclfore_momentbase_mlp"
+              "path": "trafficfore_momentbase_mlp"
+            },
+            {
+              "task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentbase_mlp"
             }
           ],
           "tasks": {
-            "ecgclass": {
-              "type": "classification",
-              "total_requested_workload": 15.0,
-              "request_per_sec": 14.099401688177446
-            },
-            "gestureclass": {
-              "type": "classification",
-              "total_requested_workload": 15.0,
-              "request_per_sec": 15.0
-            },
-            "etth1fore": {
-              "type": "forecasting",
-              "total_requested_workload": 15.0,
-              "request_per_sec": 15.0
-            },
             "weatherfore": {
               "type": "forecasting",
-              "total_requested_workload": 15.0,
-              "request_per_sec": 15.0
+              "total_requested_workload": 22.166666666666668,
+              "request_per_sec": 22.166666666666668
             },
             "exchangefore": {
               "type": "forecasting",
-              "total_requested_workload": 15.0,
-              "request_per_sec": 15.0
+              "total_requested_workload": 21.616666666666667,
+              "request_per_sec": 21.616666666666667
             },
-            "eclfore": {
+            "trafficfore": {
               "type": "forecasting",
-              "total_requested_workload": 15.0,
-              "request_per_sec": 1.694556241720611
+              "total_requested_workload": 21.616666666666667,
+              "request_per_sec": 21.616666666666667
+            },
+            "ecgclass": {
+              "type": "classification",
+              "total_requested_workload": 21.366666666666667,
+              "request_per_sec": 17.916314969948104
             }
           },
           "util": 0.8,
           "mem": 16000
         },
         {
-          "device": "10.100.20.49:8020",
-          "device_name": "device3",
+          "device": "10.100.20.50:8010",
+          "device_name": "device2",
           "device_type": "NVIDIA A16",
-          "backbone": "chronosbase",
-          "cuda": "cuda:2",
+          "backbone": "momentbase",
+          "cuda": "cuda:1",
           "decoders": [
+            {
+              "task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentbase_mlp"
+            },
             {
               "task": "eclfore",
               "type": "forecasting",
-              "path": "eclfore_chronosbase_mlp"
+              "path": "eclfore_momentbase_mlp"
             },
             {
-              "task": "trafficfore",
+              "task": "etth1fore",
               "type": "forecasting",
-              "path": "trafficfore_chronosbase_mlp"
+              "path": "etth1fore_momentbase_mlp"
+            },
+            {
+              "task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentbase_mlp"
             }
           ],
           "tasks": {
+            "ecgclass": {
+              "type": "classification",
+              "total_requested_workload": 21.366666666666667,
+              "request_per_sec": 3.4503516967185632
+            },
             "eclfore": {
               "type": "forecasting",
-              "total_requested_workload": 15.0,
-              "request_per_sec": 13.305443758279388
+              "total_requested_workload": 20.916666666666668,
+              "request_per_sec": 20.916666666666668
             },
-            "trafficfore": {
+            "etth1fore": {
               "type": "forecasting",
-              "total_requested_workload": 15.0,
-              "request_per_sec": 11.615820823120806
+              "total_requested_workload": 20.9,
+              "request_per_sec": 20.9
+            },
+            "gestureclass": {
+              "type": "classification",
+              "total_requested_workload": 20.7,
+              "request_per_sec": 20.7
             }
           },
-          "util": 0.8,
+          "util": 0.732265,
           "mem": 16000
         }
       ]

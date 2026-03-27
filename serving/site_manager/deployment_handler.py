@@ -101,6 +101,22 @@ async def _deploy_one(spec: dict):
     if output_dir:
         server_cmd += f"--output-dir {output_dir} "
 
+    scheduler_policy = spec.get("scheduler_policy", "stfq")
+    server_cmd += f"--scheduler-policy {scheduler_policy} "
+
+    max_batch_size = spec.get("max_batch_size", 5)
+    max_batch_wait_ms = spec.get("max_batch_wait_ms", 0)
+    server_cmd += f"--max-batch-size {max_batch_size} --max-batch-wait-ms {max_batch_wait_ms} "
+
+    isolation_mode = spec.get("isolation_mode", "shared")
+    server_cmd += f"--isolation-mode {isolation_mode} "
+
+    # Build --task-rates from tasks dict if present
+    tasks_dict = spec.get("tasks", {})
+    if tasks_dict and scheduler_policy in ("stfq", "wfq", "token_bucket", "saba", "deadline_split"):
+        rates_str = ",".join(f"{t}:{info['request_per_sec']:.4f}" for t, info in tasks_dict.items())
+        server_cmd += f"--task-rates {rates_str} "
+
     cuda_suffix = spec.get("cuda", "").replace(":", "")
     log_path = f"./device/logs/{ssh_host}_{cuda_suffix}_{spec['backbone']}.log"
 

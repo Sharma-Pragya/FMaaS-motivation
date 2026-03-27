@@ -1,67 +1,83 @@
-from typing import List, Tuple, Dict, Any
 import math
+from typing import Dict, List, Union
+
 import numpy as np
 import pandas as pd
 
+
 class Request:
-    def __init__(self, req_id, task, site_manager, device, backbone, req_time):
+    def __init__(self, req_id, task, req_time):
         self.req_id = req_id
         self.task = task
-        self.site_manager = site_manager
-        self.device = device
-        self.backbone=backbone
         self.req_time = req_time
+
     def __repr__(self):
-        return f"req_id={self.req_id}, task={self.task}, site_manager={self.site_manager}, device={self.device}, backbone={self.backbone}, req_time={self.req_time}"
+        return f"req_id={self.req_id}, task={self.task}, req_time={self.req_time}"
+
     def to_dict(self):
-        return {"req_id": self.req_id, "task": self.task, "site_manager": self.site_manager, "device": self.device, "backbone":self.backbone, "req_time": self.req_time}
+        return {
+            "req_id": self.req_id,
+            "task": self.task,
+            "req_time": self.req_time,
+        }
 
-def generate_requests(req_rate:float | None, duration: float | None,
-                                 tasks: List[Tuple[str,str,str]],
-                                 seed: int = 42) -> Tuple[List[Request], Dict[str,float], Dict[str,float]]:
+
+def generate_requests(
+    req_rate: Union[float, List[float]],
+    duration: float,
+    task_names: List[str],
+    seed: int = 42,
+    req_id_offset: int = 0,
+) -> tuple:
+    """Generate a trace from the Chatbot Arena dataset.
+
+    Distinct models are mapped round-robin to task names. Timestamps are
+    rescaled to [0, duration].
+
+    If req_rate is a float: total requests = req_rate * duration.
+    If req_rate is a list: total requests = sum(req_rate) * duration.
+
+    Args:
+        req_rate:      Total req/s (float) or per-task req/s (list).
+        duration:      Experiment duration in seconds.
+        task_names:    List of task name strings.
+        seed:          RNG seed.
+        req_id_offset: Starting request ID.
+
+    Returns:
+        (requests, mean_rps_per_task, peak_rps_per_task)
+    """
     np.random.seed(seed)
-    tot_req = int(req_rate * duration)
 
-    # Use Chatbot Arena Conversations (has timestamps)
+    total_rate = sum(req_rate) if isinstance(req_rate, list) else req_rate
+    tot_req = int(total_rate * duration)
+
     df = pd.read_parquet("traces/data/train-00000-of-00001-cced8514c7ed782a.parquet")
 
-    # Pick columns
     time_col = 'tstamp'
-    model_a  = 'model_a'
-    model_b  = 'model_b'
-    # Expand to one row per (model, timestamp)
-    cols = [time_col, model_a] + ([model_b] if model_b else [])
-    df = df[cols].dropna(subset=[time_col])
-    left = df[[time_col, model_a]].rename(columns={model_a: "model"})
-    parts = [left]
-    if model_b:
-        right = df[[time_col, model_b]].dropna().rename(columns={model_b: "model"})
-        parts.append(right)
-    dfm = pd.concat(parts, ignore_index=True).dropna(subset=["model"])
+    df = df[[time_col, 'model_a', 'model_b']].dropna(subset=[time_col])
+    left = df[[time_col, 'model_a']].rename(columns={'model_a': 'model'})
+    right = df[[time_col, 'model_b']].dropna().rename(columns={'model_b': 'model'})
+    dfm = pd.concat([left, right], ignore_index=True).dropna(subset=['model'])
     dfm = dfm.sort_values(time_col).reset_index(drop=True)
 
-    print(f"Total rows after expansion: {len(dfm)}")
     if len(dfm) < tot_req:
-        raise ValueError(f"not enough rows after filtering: have {len(dfm)} need {tot_req}")
+        raise ValueError(f"not enough rows: have {len(dfm)} need {tot_req}")
 
-    # Sample N, sort by time, rescale to [0, duration]
     samp = dfm.sample(n=tot_req, replace=False, random_state=seed).sort_values(time_col).reset_index(drop=True)
-    t0 = float(samp[time_col].iloc[0]); t1 = float(samp[time_col].iloc[-1])
+    t0 = float(samp[time_col].iloc[0])
+    t1 = float(samp[time_col].iloc[-1])
     span = max(t1 - t0, 1e-12)
-    samp["t"] = (samp[time_col].astype(float) - t0) / span * duration
+    samp['t'] = (samp[time_col].astype(float) - t0) / span * duration
 
-    # Map distinct models -> tasks round-robin
-    uniq_models = samp["model"].drop_duplicates().tolist()
-    k = len(tasks)
-    model_to_task = {m: tasks[i % k] for i, m in enumerate(uniq_models)}
+    k = len(task_names)
+    uniq_models = samp['model'].drop_duplicates().tolist()
+    model_to_task = {m: task_names[i % k] for i, m in enumerate(uniq_models)}
 
-    # Build requests
     reqs: List[Request] = []
     for i, row in samp.iterrows():
-        task_name, site_manager, device, backbone = model_to_task[row["model"]]
-        reqs.append(Request(i, task_name, site_manager, device, backbone, float(row["t"])))
+        reqs.append(Request(req_id_offset + i, model_to_task[row['model']], float(row['t'])))
 
-    # Per-task mean & peak workload (RPS using 1s bins over [0, duration])
     counts_per_task: Dict[str, int] = {}
     bins_per_task: Dict[str, Dict[int, int]] = {}
     for r in reqs:
@@ -70,7 +86,7 @@ def generate_requests(req_rate:float | None, duration: float | None,
         d = bins_per_task.setdefault(r.task, {})
         d[sec] = d.get(sec, 0) + 1
 
-    mean_rps_per_task = {task: cnt / float(duration) for task, cnt in counts_per_task.items()}
-    peak_rps_per_task = {task: float(max(sec_counts.values())) for task, sec_counts in bins_per_task.items()} if bins_per_task else {}
+    mean_rps: Dict[str, float] = {t: cnt / float(duration) for t, cnt in counts_per_task.items()}
+    peak_rps: Dict[str, float] = {t: float(max(v.values())) for t, v in bins_per_task.items()} if bins_per_task else {}
 
-    return reqs, mean_rps_per_task, peak_rps_per_task
+    return reqs, mean_rps, peak_rps

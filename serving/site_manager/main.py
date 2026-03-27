@@ -323,7 +323,7 @@ def on_message(client, userdata, msg):
                 try:
                     output_dir = get_output_dir()
                     print(f"[SiteManager] Starting continuous inference mode, output_dir={output_dir}")
-                    reqs_latency = asyncio.run(handle_runtime_request_continuous())
+                    reqs_latency, _ = asyncio.run(handle_runtime_request_continuous())
                     csv_path = _save_results(reqs_latency)
 
                     ack_payload = {

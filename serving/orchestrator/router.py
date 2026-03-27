@@ -1,6 +1,8 @@
 import numpy as np
 from orchestrator.request import Request
 
+_rng = np.random.default_rng(42)  # module-level RNG for route_single
+
 
 def parse_plan(plan_json):
     """Parse deployment plan into per-task routing tables.
@@ -63,3 +65,28 @@ def route_trace(trace_requests, plan_json, seed=42):
 
     print(len(routed))
     return routed
+
+
+def route_single(task: str, plan_json: dict) -> str:
+    """Return a device URL for one request, routing lazily against the live plan.
+
+    Used by LocalSiteManager's inference loop so routing decisions reflect the
+    current deployment plan rather than a pre-committed snapshot.
+
+    Args:
+        task:      Task name (e.g. "ecgclass").
+        plan_json: Current deployment plan dict (same structure as deployment_plan.json).
+
+    Returns:
+        device URL string (e.g. "gpu1:8000").
+    """
+    task_routes, task_totals = parse_plan(plan_json)
+    if task not in task_routes:
+        raise ValueError(f"[route_single] No route found for task '{task}' in live plan.")
+
+    routes = task_routes[task]
+    total = task_totals[task]
+    probs = np.array([r[3] for r in routes]) / total
+    idx = int(_rng.choice(len(routes), p=probs))
+    _, device, _, _ = routes[idx]
+    return device
