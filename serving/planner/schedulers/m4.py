@@ -108,7 +108,8 @@ class M4Scheduler(BaseScheduler):
             peak_workload=spec['peak_workload'],
             latency=spec.get('latency', float('inf')),
             metric=spec.get('metric', 'mae'),
-            value=spec.get('value', 0)
+            value=spec.get('value', 0),
+            backbone=spec.get('backbone', None),
         )
     
     def _select_best_backbone(self, task: TaskSpec, accuracy_mode: bool) -> str:

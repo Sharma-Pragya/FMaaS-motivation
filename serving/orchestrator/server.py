@@ -119,14 +119,6 @@ def load_config(exp_type: str):
     return devices, tasks
 
 
-def _fmaas_to_device_scheduler(scheduler_name: str) -> str:
-    name = scheduler_name.lower()
-    if name in ("fmaas", "fmaas_share"):
-        return "stfq"
-    if name in ("clipper-ht", "clipper-ha", "m4-ht", "m4-ha"):
-        return "wfq"
-    return "stfq"
-
 
 def _incremental_plan_to_json(incremental_plan: dict) -> dict:
     deployments = {}
@@ -271,7 +263,6 @@ class LocalExperiment:
 
         for site in plan.get("sites", []):
             for dep in site.get("deployments", []):
-                dep.setdefault("scheduler_policy", _fmaas_to_device_scheduler(self.scheduler))
                 dep.setdefault("max_batch_size", self.max_batch_size)
                 dep.setdefault("max_batch_wait_ms", self.max_batch_wait_ms)
                 dep.setdefault("isolation_mode", self.isolation_mode)
@@ -331,7 +322,6 @@ class LocalExperiment:
 
         for diff in diffs:
             if diff.full_deployment is not None:
-                diff.full_deployment.setdefault("scheduler_policy", _fmaas_to_device_scheduler(self.scheduler))
                 diff.full_deployment.setdefault("max_batch_size", self.max_batch_size)
                 diff.full_deployment.setdefault("max_batch_wait_ms", self.max_batch_wait_ms)
                 diff.full_deployment.setdefault("isolation_mode", self.isolation_mode)
@@ -379,7 +369,6 @@ class LocalExperiment:
 
         for diff in diffs:
             if diff.full_deployment is not None:
-                diff.full_deployment.setdefault("scheduler_policy", _fmaas_to_device_scheduler(self.scheduler))
                 diff.full_deployment.setdefault("max_batch_size", self.max_batch_size)
                 diff.full_deployment.setdefault("max_batch_wait_ms", self.max_batch_wait_ms)
                 diff.full_deployment.setdefault("isolation_mode", self.isolation_mode)

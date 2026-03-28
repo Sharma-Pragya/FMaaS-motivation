@@ -54,18 +54,31 @@ async def _ssh_start_server(ssh_host: str, username: str, conda_env: str, cmd: s
         raise RuntimeError(f"ssh_start_failed[{ssh_host}]: {exc}") from exc
 
 
-async def _send_control(grpc_url: str, command: str, payload_json: str):
-    client = EdgeRuntimeClient(grpc_url)
-    try:
-        print(f"[SiteManager] Connected to control plane at {grpc_url}")
-        resp = await client.control(command, payload_json)
-        print(f"[CustomGRPC] {grpc_url} Status: {resp['status']}")
-        return resp
-    except Exception as exc:
-        print(f"[CustomGRPC] Failed to deploy to {grpc_url}: {exc}")
-        return False
-    finally:
-        await client.close()
+async def _send_control(grpc_url: str, command: str, payload_json: str,
+                        max_retries: int = 10, retry_delay: float = 5.0):
+    """Send a control command to a device, retrying until the server is ready.
+
+    The device process may take several seconds to start (especially when
+    multiple instances share a GPU). Retrying avoids silently dropping the
+    load command and leaving pipeline=None.
+    """
+    for attempt in range(1, max_retries + 1):
+        client = EdgeRuntimeClient(grpc_url)
+        try:
+            print(f"[SiteManager] Sending '{command}' to {grpc_url} (attempt {attempt}/{max_retries})")
+            resp = await client.control(command, payload_json)
+            print(f"[CustomGRPC] {grpc_url} Status: {resp['status']}")
+            return resp
+        except Exception as exc:
+            print(f"[CustomGRPC] Failed to reach {grpc_url}: {exc}")
+            if attempt < max_retries:
+                print(f"[CustomGRPC] Retrying in {retry_delay}s...")
+                await asyncio.sleep(retry_delay)
+            else:
+                print(f"[CustomGRPC] Giving up after {max_retries} attempts for {grpc_url}")
+                return False
+        finally:
+            await client.close()
 
 
 async def _deploy_one(spec: dict):
@@ -118,7 +131,7 @@ async def _deploy_one(spec: dict):
         server_cmd += f"--task-rates {rates_str} "
 
     cuda_suffix = spec.get("cuda", "").replace(":", "")
-    log_path = f"./device/logs/{ssh_host}_{cuda_suffix}_{spec['backbone']}.log"
+    log_path = f"./device/logs/{ssh_host}_{cuda_suffix}_{spec['backbone']}_port{grpc_port}.log"
 
     await _ssh_start_server(ssh_host, username, conda_env, server_cmd, log_path)
 
@@ -145,20 +158,33 @@ async def _swap_backbone_on_device(device_url: str, new_backbone: str, decoders:
 
 
 async def deploy_models(specs: list):
-    results = await asyncio.gather(*[_deploy_one(s) for s in specs], return_exceptions=True)
-    normalized = []
-    for spec, result in zip(specs, results):
-        if isinstance(result, Exception):
-            normalized.append(
-                {
+    # Group specs by cuda device so deployments on the same physical GPU are
+    # serialized. Loading two models concurrently on the same GPU causes the
+    # second load to block on the device lock, making _send_control time out.
+    # Deployments on different GPUs still run in parallel.
+    from collections import defaultdict
+    groups = defaultdict(list)  # cuda_key -> [spec, ...]
+    for spec in specs:
+        cuda_key = (spec.get("device", "").rsplit(":", 1)[0], spec.get("cuda", ""))
+        groups[cuda_key].append(spec)
+
+    async def _deploy_group(group_specs):
+        results = []
+        for spec in group_specs:
+            try:
+                result = await _deploy_one(spec)
+                results.append(result)
+            except Exception as exc:
+                results.append({
                     "status": "error",
                     "device": spec.get("device"),
                     "backbone": spec.get("backbone"),
-                    "error": str(result),
-                }
-            )
-        else:
-            normalized.append(result)
+                    "error": str(exc),
+                })
+        return results
+
+    group_results = await asyncio.gather(*[_deploy_group(g) for g in groups.values()])
+    normalized = [r for group in group_results for r in group]
     print(f"[SiteManager] Deployment complete for {len(specs)} devices.")
     return normalized
 

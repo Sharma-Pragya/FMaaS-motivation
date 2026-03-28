@@ -117,7 +117,14 @@ class DeviceBatcher:
                 # Shutdown sentinel
                 return
 
-            self._execute_prepared(prepared)
+            try:
+                self._execute_prepared(prepared)
+            except Exception as exc:
+                import traceback
+                print(f"[DeviceBatcher] ERROR in _execute_prepared: {exc}")
+                traceback.print_exc()
+                for request in prepared.requests:
+                    loop.call_soon_threadsafe(self._fail_future_if_pending, request.future, exc)
             # Signal async side that we're done — it can dispatch the next batch
             loop.call_soon_threadsafe(self._work_done.set)
 
@@ -196,3 +203,8 @@ class DeviceBatcher:
     def _set_result_if_pending(future, payload):
         if not future.done():
             future.set_result(payload)
+
+    @staticmethod
+    def _fail_future_if_pending(future, exc):
+        if not future.done():
+            future.set_exception(exc)

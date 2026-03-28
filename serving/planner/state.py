@@ -83,6 +83,29 @@ class DeploymentState:
             if s.mem >= min_mem and s.util < max_util
         ]
         return sorted(servers, key=lambda s: s.util)
+
+    def get_servers_by_least_capacity(self, min_mem: float = 0.0, max_util: float = 1.0) -> List[Server]:
+        """Get servers sorted by least capacity (most utilized first).
+
+        Prefer servers with the least headroom so existing deployments are
+        filled up before new devices are used. Servers already at or above
+        max_util are excluded so schedulers never attempt to place on saturated
+        GPUs.
+
+        Args:
+            min_mem: Optional minimum memory filter in MB.
+            max_util: Exclude servers whose util >= this value (default 1.0,
+                      i.e. only fully saturated servers are excluded).
+
+        Returns:
+            Servers sorted descending by utilization (least free first),
+            filtered to those with mem >= min_mem and util < max_util.
+        """
+        servers = [
+            s for s in self._servers.values()
+            if s.mem >= min_mem and s.util < max_util
+        ]
+        return sorted(servers, key=lambda s: s.util, reverse=True)
     
     # --- Deployment Access ---
     

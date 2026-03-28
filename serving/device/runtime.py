@@ -121,6 +121,8 @@ class PyTorchRuntime(BaseRuntime):
         import torch
         import torch.nn as nn
         with self._lock:
+            if self.pipeline is None:
+                raise RuntimeError("pipeline_not_loaded: backbone has not been loaded yet")
             device   = self._loader.device
             is_cuda  = str(device).startswith("cuda")
             start_ns = time.time_ns()

@@ -23,6 +23,10 @@ def run_scheduler(scheduler_name: str, devices: dict, tasks_slo: dict, output_di
     from planner.schedulers import fmaas as fmaas_mod
     from planner.schedulers import clipper as clipper_mod
     from planner.schedulers import m4 as m4_mod
+    from planner.schedulers import fmaas_place as fmaas_place_mod
+    from planner.schedulers.fmaas_place import FMaaSPlacementScheduler
+    from planner.schedulers import clipper_place as clipper_place_mod
+    from planner.schedulers.clipper_place import ClipperPlacementScheduler
     from planner.parser.profiler import components, pipelines, latency, metric
 
     profile = ProfileData(components, pipelines, latency, metric)
@@ -52,9 +56,17 @@ def run_scheduler(scheduler_name: str, devices: dict, tasks_slo: dict, output_di
         scheduler = M4Scheduler(profile, config)
         deployments = scheduler.schedule(devices, tasks_slo, accuracy_mode=True)
         plan = m4_mod.build_final_json(deployments, pipelines)
+    elif scheduler_name == 'fmaas_place':
+        scheduler = FMaaSPlacementScheduler(profile, config)
+        deployments = scheduler.schedule(devices, tasks_slo)
+        plan = fmaas_place_mod.build_final_json(deployments, pipelines)
+    elif scheduler_name == 'clipper_place':
+        scheduler = ClipperPlacementScheduler(profile, config)
+        deployments = scheduler.schedule(devices, tasks_slo)
+        plan = clipper_place_mod.build_final_json(deployments, pipelines)
     else:
         raise ValueError(f"Unknown scheduler: {scheduler_name}. "
-                         f"Use: fmaas, fmaas_share, clipper-ht, clipper-ha, m4-ht, m4-ha")
+                         f"Use: fmaas, fmaas_share, fmaas_place, clipper_place, clipper-ht, clipper-ha, m4-ht, m4-ha")
 
     plan_path = (os.path.join(output_dir, "deployment_plan.json") if output_dir
                  else f"{DEPLOYMENT_PLAN_PATH}.json")
@@ -116,9 +128,9 @@ def scheduler_kwargs(scheduler_name: str, scheduler_mode: bool) -> tuple[dict, s
         (kwargs dict for plan_new_task, human-readable mode string)
     """
     name = scheduler_name.lower()
-    if name in ('fmaas', 'fmaas_share'):
+    if name in ('fmaas', 'fmaas_share', 'fmaas_place'):
         return {'share_mode': scheduler_mode}, f"share_mode={scheduler_mode}"
-    elif name in ('clipper-ht', 'clipper-ha', 'm4-ht', 'm4-ha'):
+    elif name in ('clipper-ht', 'clipper-ha', 'm4-ht', 'm4-ha', 'clipper_place'):
         return {'accuracy_mode': scheduler_mode}, f"accuracy_mode={scheduler_mode}"
     else:
         return {'share_mode': scheduler_mode}, f"share_mode={scheduler_mode}"

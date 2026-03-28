@@ -64,7 +64,7 @@ class Server:
 @dataclass
 class TaskSpec:
     """Specification for a task to be deployed.
-    
+
     Attributes:
         name: Task name (e.g., 'heartrate', 'ecgclass').
         type: Task type ('classification' or 'regression').
@@ -72,6 +72,9 @@ class TaskSpec:
         latency: Maximum acceptable latency in ms.
         metric: Metric name ('accuracy' or 'mae').
         value: Required metric threshold.
+        backbone: Optional user-specified backbone name. When set, the scheduler
+                  uses this backbone directly instead of selecting one automatically.
+                  Required for fmaas_place; optional for fmaas/fmaas_share.
     """
     name: str
     type: str  # 'classification' or 'regression'
@@ -79,6 +82,7 @@ class TaskSpec:
     latency: float
     metric: str  # 'accuracy' or 'mae'
     value: float
+    backbone: Optional[str] = None
 
 
 @dataclass
