@@ -16,7 +16,7 @@
 set -euo pipefail
 
 # ── Schedulers to run ────────────────────────────────────────────────
-SCHEDULERS="${SCHEDULERS:-fmaas_share}"
+SCHEDULERS="${SCHEDULERS:-fmaas_place clipper_place}"
 
 # ── Shared configuration ─────────────────────────────────────────────
 REQ_RATE="${REQ_RATE:-150}"

@@ -77,6 +77,29 @@ BACKBONE_COLORS = {
     "chronoslarge": "#67001f",
 }
 DECODER_BG   = "#f7f7f7"
+
+# ── Short-name mappings (for space-constrained labels) ─────────────────────────
+BACKBONE_ABBREV = {
+    "momentsmall":  "MS",
+    "momentbase":   "MB",
+    "momentlarge":  "ML",
+    "chronostiny":  "CT",
+    "chronossmall": "CS",
+    "chronosbase":  "CB",
+    "chronoslarge": "CL",
+}
+
+# Task abbreviations are assigned dynamically in sorted order (T1, T2, ...)
+# so they stay consistent across plots within a run.
+_TASK_ABBREV_CACHE: dict = {}
+
+def _task_abbrev(task_names_sorted: list) -> dict:
+    """Return {full_name: 'T1', 'T2', ...} sorted by task_names_sorted."""
+    global _TASK_ABBREV_CACHE
+    key = tuple(task_names_sorted)
+    if key not in _TASK_ABBREV_CACHE:
+        _TASK_ABBREV_CACHE[key] = {t: f"T{i+1}" for i, t in enumerate(task_names_sorted)}
+    return _TASK_ABBREV_CACHE[key]
 TASK_TYPE_COLOR = {
     "classification": "#1b7837",
     "regression":     "#762a83",
@@ -105,12 +128,12 @@ def apply_paper_style() -> None:
         "ytick.major.size":   2.5,
         "text.color":         "black",
         "font.family":        "sans-serif",
-        "font.size":          7,
-        "axes.titlesize":     7.5,
-        "axes.labelsize":     7,
-        "xtick.labelsize":    6.5,
-        "ytick.labelsize":    6.5,
-        "legend.fontsize":    6.5,
+        "font.size":          8,
+        "axes.titlesize":     8.5,
+        "axes.labelsize":     8,
+        "xtick.labelsize":    7.5,
+        "ytick.labelsize":    7.5,
+        "legend.fontsize":    7.5,
         "lines.linewidth":    1.2,
         "pdf.fonttype":       42,
         "ps.fonttype":        42,
@@ -131,16 +154,17 @@ def _set_clean_ticks(ax: plt.Axes, xdata_max: float, ydata_max: float, n_y: int 
         ticks = np.round(np.arange(0, nice_limit + step * 0.01, step), 10)
         return ticks, float(nice_limit)
 
-    xt, _      = _ticks_and_limit(xdata_max, n=5)
+    xt, xlim_nice = _ticks_and_limit(xdata_max, n=5)
     yt, ylim_nice = _ticks_and_limit(ydata_max, n=n_y)
-    # Use the actual data max for xlim (no over-extension from nice rounding)
-    ax.set_xlim(0, xdata_max)
+    # Snap xlim to the last tick so the axis always ends on a number
+    xt = xt[xt <= xlim_nice]
+    ax.set_xlim(0, float(xt[-1]) if len(xt) else xlim_nice)
     ax.set_ylim(0, ylim_nice)
-    ax.set_xticks(xt[xt <= xdata_max])
+    ax.set_xticks(xt)
     ax.set_yticks(yt)
     ax.xaxis.set_major_formatter(ticker.FormatStrFormatter("%g"))
     ax.yaxis.set_major_formatter(ticker.FormatStrFormatter("%g"))
-    return xdata_max, ylim_nice
+    return float(xt[-1]) if len(xt) else xlim_nice, ylim_nice
 
 
 def save_figure(fig: plt.Figure, out_path: str) -> None:
@@ -196,6 +220,10 @@ if args.compare:
             "#4C72B0", "#C44E52", "#55A868", "#DD8452",
             "#8172B2", "#937860", "#DA8BC3", "#8C8C8C",
         ]
+        METHOD_DISPLAY = {
+            "clipper_place": "Without Sharing",
+            "fmaas_place":   "FMvisor",
+        }
 
         def _load_method(results_root, method, run):
             """Load rows and device→GPU-label map for one method/run."""
@@ -246,7 +274,7 @@ if args.compare:
             t_max_lat = max(t_max_lat, t_max_m)
             xs, ys = _bin_latency(times, lats, t_max_m)
             color = METHOD_COLORS[m_idx % len(METHOD_COLORS)]
-            ax_lat.plot(xs, ys, color=color, linewidth=1.0, label=m)
+            ax_lat.plot(xs, ys, color=color, linewidth=1.0, label=METHOD_DISPLAY.get(m, m))
             all_ys_lat.extend([v for v in ys if np.isfinite(v)])
 
         ax_lat.set_xlabel("Time (s)")
@@ -276,7 +304,7 @@ if args.compare:
             t_max_thr = max(t_max_thr, t_max_m)
             xs, ys = _bin_rate(completion_times, t_max_m)
             color = METHOD_COLORS[m_idx % len(METHOD_COLORS)]
-            ax_thr.plot(xs, ys, color=color, linewidth=1.0, label=m)
+            ax_thr.plot(xs, ys, color=color, linewidth=1.0, label=METHOD_DISPLAY.get(m, m))
             all_ys_thr.extend(list(ys))
 
         ax_thr.set_xlabel("Time (s)")
@@ -336,9 +364,9 @@ def _plot_single_method(data_dir):
             device_name = d.get("device_name", "")
             gpu_idx = cuda.replace("cuda:", "") if cuda else str(len(device_info))
             label = f"GPU {gpu_idx} ({cuda})" if cuda else f"GPU {len(device_info)}"
-            # Key by (device_name, backbone) so multiple deployments on the same
-            # physical device (e.g. Clipper) don't overwrite each other.
-            key = (device_name, d["backbone"])
+            # Key by device URL (unique per port) so clipper_place deployments
+            # sharing the same device_name+backbone don't overwrite each other.
+            key = d["device"]
             device_info[key] = {
                 "label":       label,
                 "backbone":    d["backbone"],
@@ -363,6 +391,7 @@ def _plot_single_method(data_dir):
 
     all_tasks  = sorted(set(r["task"] for r in rows))
     task_color = {t: TASK_PALETTE[i % len(TASK_PALETTE)] for i, t in enumerate(all_tasks)}
+    tabbrev    = _task_abbrev(all_tasks)  # {full_name: "T1", "T2", ...}
 
     def per_second_avg_latency(device_rows, task=None, max_time=None):
         subset = [r for r in device_rows if (r["task"] == task if task else True)]
@@ -397,15 +426,13 @@ def _plot_single_method(data_dir):
     url_task_to_key = {}
     for site in plan["sites"]:
         for d in site["deployments"]:
-            dname = d.get("device_name", "")
-            bb = d["backbone"]
-            key = (dname, bb)
+            key = d["device"]
             for dec in d.get("decoders", []):
                 url_task_to_key[(d["device"], dec["task"])] = key
 
     rows_by_device = defaultdict(list)
     for r in rows:
-        dev_key = url_task_to_key.get((r["device"], r["task"]), (r["device"], ""))
+        dev_key = url_task_to_key.get((r["device"], r["task"]), r["device"])
         rows_by_device[dev_key].append(r)
 
     t_max = max(r["completion_time"] for r in rows)
@@ -425,13 +452,14 @@ def _plot_single_method(data_dir):
             xs, ys = per_second_avg_latency(dev_rows, task, max_time=t_max)
             if not len(xs):
                 continue
-            ax.plot(xs, ys, color=task_color[task], linewidth=1.0, label=task)
+            ax.plot(xs, ys, color=task_color[task], linewidth=1.0, label=tabbrev.get(task, task))
             all_ys.extend([v for v in ys if np.isfinite(v)])
         ymax = max(all_ys) if all_ys else 1.0
         _set_clean_ticks(ax, t_max, ymax, n_y=4)
         ax.grid(axis="both", zorder=0)
         ax.set_axisbelow(True)
-        dname, bb = dev
+        dname = device_info[dev]["device_name"]
+        bb    = BACKBONE_ABBREV.get(device_info[dev]["backbone"], device_info[dev]["backbone"])
         ax.set_title(f"{dname} ({bb})", pad=2)
         ax.set_xlabel("Time (s)")
         if col_idx == 0:
@@ -461,7 +489,7 @@ def _plot_single_method(data_dir):
             xs, ys = per_second_throughput(dev_rows, task, max_time=t_max)
             if not len(xs):
                 continue
-            ax.plot(xs, ys, color=task_color[task], linewidth=1.0, label=task)
+            ax.plot(xs, ys, color=task_color[task], linewidth=1.0, label=tabbrev.get(task, task))
             all_ys.extend(list(ys))
         xs_tot, ys_tot = per_second_throughput(dev_rows, max_time=t_max)
         if len(xs_tot):
@@ -472,7 +500,8 @@ def _plot_single_method(data_dir):
         _set_clean_ticks(ax, t_max, ymax, n_y=4)
         ax.grid(axis="both", zorder=0)
         ax.set_axisbelow(True)
-        dname, bb = dev
+        dname = device_info[dev]["device_name"]
+        bb    = BACKBONE_ABBREV.get(device_info[dev]["backbone"], device_info[dev]["backbone"])
         ax.set_title(f"{dname} ({bb})", pad=2)
         ax.set_xlabel("Time (s)")
         if col_idx == 0:
@@ -513,8 +542,8 @@ def _plot_single_method(data_dir):
     ))
     task_pastel = {t: TASK_PASTELS[i % len(TASK_PASTELS)] for i, t in enumerate(all_tasks_deploy)}
 
-    GPU_COLOR      = "#56c4d8"
-    BACKBONE_COLOR = "#f0a830"
+    GPU_COLOR      = "#a8dde8"
+    BACKBONE_COLOR = "#fdd58a"
 
     def _wrap_task_name(name: str) -> str:
         """Split a task name into two lines at a natural break (digit/letter boundary or midpoint)."""
@@ -543,14 +572,13 @@ def _plot_single_method(data_dir):
     # total number of sub-columns (deployments) across all GPUs
     total_deps  = sum(len(devs) for devs in gpu_groups.values())
 
-    # Heights in inches — keep very compact for paper
-    # Tasks are side by side (not stacked), so height = 1 task row regardless of task count
-    TASK_H_IN = 0.28    # one task row height (fits 2-line label)
-    BB_H_IN   = 0.18    # backbone bar
-    GPU_H_IN  = 0.15    # GPU bar at bottom
-    PAD_IN    = 0.05    # between rows
-    fig_h = GPU_H_IN + PAD_IN + BB_H_IN + PAD_IN + TASK_H_IN + 0.10
-    fig_w = max(2.0, 0.45 * total_deps + 0.10 * n_gpus)
+    # Heights in inches — compact for paper
+    TASK_H_IN = 0.22    # one task row height
+    BB_H_IN   = 0.14    # backbone bar
+    GPU_H_IN  = 0.12    # GPU bar at bottom
+    PAD_IN    = 0.04    # between rows
+    fig_h = GPU_H_IN + PAD_IN + BB_H_IN + PAD_IN + TASK_H_IN + 0.08
+    fig_w = max(1.5, 0.35 * total_deps + 0.08 * n_gpus)
 
     fig3, ax3 = plt.subplots(1, 1, figsize=(fig_w, fig_h))
     fig3.subplots_adjust(left=0.01, right=0.99, top=0.99, bottom=0.01)
@@ -583,11 +611,11 @@ def _plot_single_method(data_dir):
         # GPU bar spanning entire GPU group (bottom)
         ax3.add_patch(FancyBboxPatch(
             (x_cursor, BOTTOM), gpu_col_w, GPU_H, boxstyle="round,pad=0.006",
-            facecolor=GPU_COLOR, edgecolor="#2a9ab5", linewidth=0.6,
+            facecolor=GPU_COLOR, edgecolor="#5aafc4", linewidth=0.6,
             transform=ax3.transAxes, clip_on=False))
         ax3.text(x_cursor + gpu_col_w / 2, BOTTOM + GPU_H / 2, simple_label,
                  transform=ax3.transAxes, ha="center", va="center",
-                 fontsize=5.5, fontweight="bold", color="white")
+                 fontsize=6.5, fontweight="bold", color="black")
 
         # Sub-columns for each deployment on this GPU
         sub_x = x_cursor
@@ -600,11 +628,11 @@ def _plot_single_method(data_dir):
             bb_y = BOTTOM + GPU_H + PAD
             ax3.add_patch(FancyBboxPatch(
                 (sub_x, bb_y), sub_w, BB_H, boxstyle="round,pad=0.006",
-                facecolor=BACKBONE_COLOR, edgecolor="#c07800", linewidth=0.6,
+                facecolor=BACKBONE_COLOR, edgecolor="#c8950a", linewidth=0.6,
                 transform=ax3.transAxes, clip_on=False))
-            ax3.text(sub_x + sub_w / 2, bb_y + BB_H / 2, bb,
+            ax3.text(sub_x + sub_w / 2, bb_y + BB_H / 2, BACKBONE_ABBREV.get(bb, bb),
                      transform=ax3.transAxes, ha="center", va="center",
-                     fontsize=4.5, fontweight="bold", color="white")
+                     fontsize=6.0, fontweight="bold", color="black")
 
             # Task boxes side by side above backbone
             task_y   = bb_y + BB_H + PAD
@@ -619,9 +647,9 @@ def _plot_single_method(data_dir):
                     (tx, task_y), t_w, TASK_H, boxstyle="round,pad=0.004",
                     facecolor=fill, edgecolor="#555555", linewidth=0.5, linestyle="--",
                     transform=ax3.transAxes, clip_on=False))
-                ax3.text(tx + t_w / 2, task_y + TASK_H / 2, _wrap_task_name(task_name),
+                ax3.text(tx + t_w / 2, task_y + TASK_H / 2, tabbrev.get(task_name, task_name),
                          transform=ax3.transAxes, ha="center", va="center",
-                         fontsize=4.5, fontweight="bold", color="#222222",
+                         fontsize=6.0, fontweight="bold", color="black",
                          linespacing=1.1)
 
             sub_x += sub_w + SUB_GAP
@@ -639,7 +667,7 @@ def _plot_single_method(data_dir):
         xs, ys = binned_workload(rows, task=task, bin_s=TRACE_BIN)
         if not len(xs):
             continue
-        ax4.plot(xs, ys, color=task_color[task], linewidth=1.0, label=task)
+        ax4.plot(xs, ys, color=task_color[task], linewidth=1.0, label=tabbrev.get(task, task))
         all_workload_ys.extend(list(ys))
     xs_tot, ys_tot = binned_workload(rows, task=None, bin_s=TRACE_BIN)
     if len(xs_tot):
