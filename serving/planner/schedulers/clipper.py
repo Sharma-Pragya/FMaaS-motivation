@@ -152,9 +152,6 @@ class ClipperScheduler(BaseScheduler):
             if task_demand <= self.config.demand_epsilon:
                 break
                 
-            if server.mem < self.data.get_component_mem(best_backbone):
-                continue
-            
             # Check if we can use this server (has capacity)
             if server.name not in util_tracker:
                 util_tracker[server.name] = server.util
