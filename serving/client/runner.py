@@ -70,6 +70,8 @@ def _initialize_data():
     from fmtk.datasetloaders.ppg import PPGDataset
     from fmtk.datasetloaders.ecl import ECLDataset
     from fmtk.datasetloaders.traffic import TrafficDataset
+    from fmtk.datasetloaders.vlm_dataset import VLMDataset, vlm_collate_fn
+    from fmtk.tasks.vlm_utils import get_vlm_dataset_config
     from site_manager.config import DATASET_DIR, DEFAULT_BATCH_SIZE
 
     d = DATASET_DIR
@@ -86,7 +88,36 @@ def _initialize_data():
         "eclfore":      DataLoader(ECLDataset({"dataset_path": f"{d}/ElectricityLoad-data"}, {"task_type": "forecasting"}, "test"), **cfg),
         "exchangefore": DataLoader(ExchangeDataset({"dataset_path": f"{d}/Exchange"}, {"task_type": "forecasting"}, "test"), **cfg),
     }
+    # VLM tasks use a separate dataset loader and collate function
+    # Task name prefix "vlm_" maps to the sub-task name in TASK_REGISTRY
+    _VLM_TASK_MAP = {
+        "vlm_ocr":     "ocr",
+        "vlm_traffic": "traffic",
+        "vlm_vqa":     "vqa",
+    }
+    for task_key, sub_task in _VLM_TASK_MAP.items():
+        try:
+            dataset_cfg, task_cfg = get_vlm_dataset_config(sub_task)
+            ds = VLMDataset(dataset_cfg, task_cfg, split="test")
+            loaders[task_key] = DataLoader(ds, batch_size=DEFAULT_BATCH_SIZE, shuffle=False, collate_fn=vlm_collate_fn)
+        except Exception as e:
+            print(f"[TraceRunner] WARNING: could not load VLM dataset for '{task_key}': {e}")
+
+    _LLM_TASK_MAP = {
+        "llm_sst2": ("sst2", "SST2Dataset"),
+        "llm_ag_news": ("ag_news", "AGNewsDataset"),
+        "llm_conll2003": ("conll2003", "CoNLL2003Dataset"),
+    }
+    for task_key, (module_name, cls_name) in _LLM_TASK_MAP.items():
+        try:
+            mod = __import__("fmtk.datasetloaders." + module_name, fromlist=[cls_name])
+            cls = getattr(mod, cls_name)
+            ds = cls({}, {}, split='test')
+            loaders[task_key] = DataLoader(ds, batch_size=DEFAULT_BATCH_SIZE, shuffle=False)
+        except Exception as e:
+            print('[TraceRunner] WARNING: could not load LLM dataset for ' + repr(task_key) + ': ' + str(e))
     _DATA = {task: next(iter(loader)) for task, loader in loaders.items()}
+
     print(f"[TraceRunner] Initialized {len(_DATA)} dataloaders.")
 
 
@@ -132,9 +163,9 @@ async def _send_request(req_id, device_url, inputs_dict, outputs_dict, client_ke
         response = await client.infer({
             "req_id": req_id,
             "task": inputs_dict["task"],
-            "x": inputs_dict["x"],
-            "mask": inputs_dict.get("mask"),
-            "question": inputs_dict.get("question"),
+            "x": inputs_dict.get("x",None),
+            "mask": inputs_dict.get("mask",None),
+            "question": inputs_dict.get("question",None),
         })
     except Exception as e:
         print(f"[TraceRunner] Inference error req {req_id}: {e}")
@@ -146,10 +177,20 @@ async def _send_request(req_id, device_url, inputs_dict, outputs_dict, client_ke
     proc_time = response["proc_time_ns"]  / 1e9
     swap_time = response["swap_time_ns"]  / 1e9
     dec_time  = response["decoder_time_ns"] / 1e9
-    result    = response["output"]
-    pred  = result.item() if getattr(result, "size", 1) == 1 else result.flatten().tolist()
+    result = response["output"]
+    text_out = response.get("text_output", "")
+    if text_out:
+        # VLM response: use generated text as prediction
+        pred = text_out
+    elif getattr(result, "size", 1) == 1:
+        pred = result.item()
+    else:
+        pred = result.flatten().tolist()
     true_val = outputs_dict.get("y")
-    true_val = true_val.item() if true_val.size == 1 else true_val.flatten().tolist()
+    if isinstance(true_val, (list, str)):
+        true_val = true_val[0] if isinstance(true_val, list) else true_val
+    elif true_val is not None:
+        true_val = true_val.item() if true_val.size == 1 else true_val.flatten().tolist()
 
     return (
         req_id, device_url,
@@ -357,12 +398,14 @@ class TraceRunner:
             batch = _DATA.get(task)
             if batch is None:
                 continue
-            inputs = {"task": task, "x": batch["x"].numpy().astype(np.float32)}
+            inputs = {"task": task}
+            if 'x' in batch:
+                inputs["x"] = {"x":  batch["x"] if isinstance(batch["x"], (list, str)) else batch["x"].numpy().astype(np.float32)}
             if "mask" in batch:
                 inputs["mask"] = batch["mask"].numpy().astype(np.float32)
             if "question" in batch:
                 inputs["question"] = batch["question"]
-            outputs = {"y": batch["y"].numpy().astype(np.float32)}
+            outputs = {"y":  batch["y"] if isinstance(batch["y"], (list, str)) else batch["y"].numpy().astype(np.float32)}
             for _, dev, _, _ in routes:
                 warmup_jobs.append(
                     _send_request(warmup_id, dev, inputs, outputs, client_key=task)
@@ -381,12 +424,14 @@ class TraceRunner:
             batch = _DATA.get(task)
             if batch is None:
                 continue
-            inp = {"task": task, "x": batch["x"].numpy().astype(np.float32)}
+            inp = {"task": task}
+            if "x" in batch:
+                inp["x"] = {"x":  batch["x"] if isinstance(batch["x"], (list, str)) else batch["x"].numpy().astype(np.float32)}
             if "mask" in batch:
                 inp["mask"] = batch["mask"].numpy().astype(np.float32)
             if "question" in batch:
                 inp["question"] = batch["question"]
-            out = {"y": batch["y"].numpy().astype(np.float32)}
+            out = {"y":  batch["y"] if isinstance(batch["y"], (list, str)) else batch["y"].numpy().astype(np.float32)}
             self._input_cache[task] = (inp, out)
 
         await self._run_pretrace_warmup()
