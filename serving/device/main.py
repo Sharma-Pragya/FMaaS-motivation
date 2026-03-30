@@ -36,6 +36,8 @@ def main():
     parser.add_argument("--scheduler-policy", choices=["fifo", "round_robin", "wfq", "token_bucket", "saba", "deadline_split","stfq"], default="stfq", help="Batch scheduling policy: fifo, round_robin, wfq, token_bucket, saba, or deadline_split (deadline-driven batch splitting).")
     parser.add_argument("--task-rates", type=str, default=None, help="Comma-separated task:rps pairs e.g. ecgclass:10,gestureclass:100 — used by WFQ/TokenBucket policies.")
     parser.add_argument("--isolation-mode", choices=["shared", "process", "none"], default="shared", help="Isolation mode: shared (default, all tasks in one process) or process (one process per task).")
+    parser.add_argument("--gpu-memory-utilization", type=float, default=0.9, help="Fraction of GPU memory vLLM may use for KV cache (0.0–1.0). Lower values allow multiple engines on one GPU.")
+    parser.add_argument("--max-model-len", type=int, default=None, help="vLLM max sequence length. Set to a small value (e.g. 256) to reduce KV cache size and allow multiple engines on one GPU.")
     args = parser.parse_args()
     # Parse task rates: "ecgclass:10,gestureclass:100" -> {"ecgclass": 10.0, ...}
     task_rates: dict[str, float] = {}
@@ -56,6 +58,8 @@ def main():
                 scheduler_policy=args.scheduler_policy,
                 isolation_mode=args.isolation_mode,
                 task_rates=task_rates,
+                gpu_memory_utilization=args.gpu_memory_utilization,
+                max_model_len=args.max_model_len,
             ),
             bootstrap_json=_resolve_bootstrap_json(args),
         )

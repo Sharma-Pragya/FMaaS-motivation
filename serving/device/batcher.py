@@ -15,6 +15,7 @@ class PreparedBatch:
     x: np.ndarray
     task_names: list[str]
     mask: np.ndarray | None
+    questions: list[str | None] | None = None  # per-request question strings for VLM
 
 
 class DeviceBatcher:
@@ -162,14 +163,18 @@ class DeviceBatcher:
             f"[DeviceBatcher] Prepared batch_size={len(requests)} "
             f"req_ids={batch_ids} tasks={task_names}"
         )
-        x = np.concatenate([request.x for request in requests], axis=0)
+        xs = [request.x for request in requests]
+        x = None if xs[0] is None else np.concatenate(xs, axis=0)
         masks = [request.mask for request in requests if request.mask is not None]
         mask = np.concatenate(masks, axis=0) if len(masks) == len(requests) and masks else None
+        questions_raw = [request.question for request in requests]
+        questions = questions_raw if any(q is not None for q in questions_raw) else None
         return PreparedBatch(
             requests=requests,
             x=x,
             task_names=task_names,
             mask=mask,
+            questions=questions,
         )
 
     def _execute_prepared(self, prepared: PreparedBatch):
@@ -178,7 +183,7 @@ class DeviceBatcher:
             f"[DeviceBatcher] Executing batch_size={len(prepared.requests)} "
             f"req_ids={batch_ids} tasks={prepared.task_names}"
         )
-        result = self._runtime.run_batch(prepared.x, prepared.task_names, prepared.mask)
+        result = self._runtime.run_batch(prepared.x, prepared.task_names, prepared.mask, prepared.questions)
         duration_s = (result.end_time_ns - result.start_time_ns) / 1e9
         if isinstance(self._policy, SABAPolicy):
             self._policy.update_batch_duration(duration_s)

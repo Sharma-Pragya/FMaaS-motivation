@@ -27,7 +27,13 @@ def _decode_tensor(payload: edge_runtime_pb2.TensorPayload | None) -> np.ndarray
 
 
 def _encode_output(output: np.ndarray) -> tuple[list[float], list[int]]:
-    array = np.asarray(output, dtype=np.float32)
+    # Normalize to ndarray first; callers may pass Python lists.
+    array = np.asarray(output)
+    # VLM outputs are string/object arrays — return empty numeric output;
+    # text travels via InferResponse.text_output.
+    if array.dtype == object:
+        return [], []
+    array = array.astype(np.float32, copy=False)
     return array.reshape(-1).tolist(), list(array.shape)
 
 
@@ -43,6 +49,8 @@ class RuntimeServerConfig:
     scheduler_policy: str = "fifo"
     isolation_mode: str = "shared"   # "shared" | "process" | "none"
     task_rates: dict = None          # {task: rps} — used by WFQ/TokenBucket
+    gpu_memory_utilization: float = 0.9  # vLLM GPU memory fraction (0.0–1.0)
+    max_model_len: int = None            # vLLM max sequence length (None = vLLM default)
 
 
 class EdgeRuntimeApplication:
@@ -108,7 +116,15 @@ class EdgeRuntimeApplication:
                 f"[Device] Bootstrapping backbone={payload['backbone']} "
                 f"decoders={len(payload['decoders'])}"
             )
-            await asyncio.to_thread(self.runtime.load, payload["backbone"], payload.get("decoders", []))
+            model_config = {"gpu_memory_utilization": self.config.gpu_memory_utilization}
+            if self.config.max_model_len is not None:
+                model_config["max_model_len"] = self.config.max_model_len
+            await asyncio.to_thread(
+                self.runtime.load,
+                payload["backbone"],
+                payload.get("decoders", []),
+                model_config=model_config,
+            ) 
         if self.runtime_type == "pytorch" and self.batcher is not None and self._batch_task is None:
             self._batch_task = asyncio.create_task(self.batcher.run_forever())
         print("[Device] Runtime application started")
@@ -129,10 +145,12 @@ class EdgeRuntimeApplication:
             return await self.runtime.infer(request.req_id, prompt)
         if self.isolation_mode == "none":
             # Direct path: no queue, call runtime.run_batch() inline
-            x    = _decode_tensor(request.x)
-            mask = _decode_tensor(request.mask) if request.HasField("mask") else None
+            x        = _decode_tensor(request.x)
+            mask     = _decode_tensor(request.mask) if request.HasField("mask") else None
+            question = request.question if request.HasField("question") else None
+            questions = [question] if question is not None else None
             result = await asyncio.to_thread(
-                self.runtime.run_batch, x, [request.task], mask
+                self.runtime.run_batch, x, [request.task], mask, questions
             )
             return {
                 "req_id":          request.req_id,
@@ -163,10 +181,15 @@ class EdgeRuntimeApplication:
         try:
             payload = json.loads(payload_json) if payload_json else {}
             print(f"[Device] Control command={command}")
+
             if command == "load":
+                model_config = {"gpu_memory_utilization": self.config.gpu_memory_utilization}
+                if self.config.max_model_len is not None:
+                    model_config["max_model_len"] = self.config.max_model_len
                 logger = await asyncio.to_thread(
-                    self.runtime.load, payload["backbone"], payload.get("decoders", [])
-                )
+                            self.runtime.load, payload["backbone"], payload.get("decoders", []),
+                            model_config=model_config
+                        )
                 status = f"loaded_{payload['backbone']}"
             elif command == "swap_backbone":
                 logger = await asyncio.to_thread(
@@ -216,7 +239,13 @@ class EdgeRuntimeServicer(edge_runtime_pb2_grpc.EdgeRuntimeServicer):
             LOGGER.exception("Infer failed")
             await context.abort(grpc.StatusCode.INTERNAL, str(exc))
 
-        output_values, output_shape = _encode_output(response["output"]) if response.get("output") is not None else ([], [])
+        raw_output = response.get("output")
+        text_output = response.get("text_output", "")
+        # VLM outputs are object-dtype arrays containing the generated text string
+        if raw_output is not None and isinstance(raw_output, np.ndarray) and raw_output.dtype == object:
+            text_output = str(raw_output.flat[0]) if raw_output.size > 0 else ""
+            raw_output = None
+        output_values, output_shape = _encode_output(raw_output) if raw_output is not None else ([], [])
         return edge_runtime_pb2.InferResponse(
             output=output_values,
             output_shape=output_shape,
@@ -226,7 +255,7 @@ class EdgeRuntimeServicer(edge_runtime_pb2_grpc.EdgeRuntimeServicer):
             swap_time_ns=response["swap_time_ns"],
             decoder_time_ns=response["decoder_time_ns"],
             status="ok",
-            text_output=response.get("text_output", ""),
+            text_output=text_output,
         )
 
     async def Control(self, request, context):

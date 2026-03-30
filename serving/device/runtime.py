@@ -111,6 +111,7 @@ class PyTorchRuntime(BaseRuntime):
         x: np.ndarray,
         task_names: list[str],
         mask: np.ndarray | None = None,
+        questions: list[str | None] | None = None,
     ) -> BatchRunResult:
         """Run backbone forward(s) + per-task decoder passes.
 
@@ -127,8 +128,13 @@ class PyTorchRuntime(BaseRuntime):
             is_cuda  = str(device).startswith("cuda")
             start_ns = time.time_ns()
 
-            bx     = torch.from_numpy(x)
-            b_mask = torch.from_numpy(mask) if mask is not None else None
+            # LLM path: x is None, prompts arrive via questions
+            if x is None:
+                bx     = None
+                b_mask = None
+            else:
+                bx = torch.from_numpy(x)
+                mask = torch.from_numpy(mask)
 
             # --- Build adapter groups: list of (adapter_name, [indices]) ---
             # Consecutive items with the same adapter are merged into one group.
@@ -154,11 +160,20 @@ class PyTorchRuntime(BaseRuntime):
                     else:
                         self.pipeline.unload_adapter()
 
-                    sub_x    = bx[indices]
                     sub_mask = b_mask[indices] if b_mask is not None else None
 
                     bb_start = time.time_ns()
-                    sub_feats = self.pipeline.model_instance.forward(sub_x, sub_mask)
+                    if questions is not None:
+                        #LLM and VLM backbones can both have questions — only LLMs ignore the image tensor input.
+                        sub_q = [questions[i] for i in indices]
+                        if bx is not None:
+                            sub_x = bx[indices]
+                            sub_feats = self.pipeline.model_instance.forward((sub_x, sub_q), sub_mask)
+                        else:
+                            sub_feats = self.pipeline.model_instance.forward((None, questions), sub_mask)
+                    else:
+                        sub_x = bx[indices]
+                        sub_feats = self.pipeline.model_instance.forward(sub_x, sub_mask)
                     if is_cuda:
                         torch.cuda.synchronize(device)
                     proc_time_ns += time.time_ns() - bb_start
@@ -205,6 +220,10 @@ class PyTorchRuntime(BaseRuntime):
                     ):
                         logit_i = self.pipeline.model_instance.model.normalizer(x=logit_i, mode="denorm")
                     result_i = logit_i.detach().cpu().numpy()
+                elif isinstance(feat_i, (list, str)):
+                    # VLM output: list of text strings — take the first element
+                    text = feat_i[0] if isinstance(feat_i, list) else feat_i
+                    result_i = np.array([text], dtype=object)
                 else:
                     result_i = feat_i.detach().cpu().float().numpy()
 
@@ -253,10 +272,20 @@ class VLLMRuntime(BaseRuntime):
         except Exception:
             return 0
 
-    def load(self, backbone: str, decoders: list, device: str = "cuda:0",
+    def load(self, backbone: str, decoders: list, device: str = None,
              model_config: dict | None = None) -> Logger:
-        self._loader.device = device
-        self.logger = Logger(device, "runtime")
+        import os as _os
+        if device is not None:
+            self._loader.device = device
+        physical_device = str(self._loader.device)  # e.g. "cuda:1"
+        # Set CUDA_VISIBLE_DEVICES so vLLM uses the right physical GPU.
+        # After this, the logical device within this process is always cuda:0.
+        gpu_index = int(physical_device.split(':')[1]) if ':' in physical_device else 0
+        _os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu_index)
+        # Use cuda:0 for the loader and logger — after CUDA_VISIBLE_DEVICES
+        # remapping, cuda:1 is no longer a valid device in this process.
+        self._loader.device = "cuda:0"
+        self.logger = Logger("cuda:0", "runtime")
         self._loader.logger = self.logger
         op_log = self._loader.load_models(backbone, decoders, model_config=model_config)
         self.pipeline = self._loader.pipeline
@@ -272,6 +301,10 @@ class VLLMRuntime(BaseRuntime):
 
     def add_decoders(self, decoders: list) -> Logger:
         # LLMs have no task-specific decoder heads — no-op
+        return Logger(self._loader.device, "noop")
+
+    def add_adapters(self, adapters: list) -> Logger:
+        # LLMs managed by vLLM don't use hot-added LoRA adapters here — no-op
         return Logger(self._loader.device, "noop")
 
     async def infer(self, req_id: int, prompt: str) -> dict:

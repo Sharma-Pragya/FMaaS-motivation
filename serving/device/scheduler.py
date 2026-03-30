@@ -16,6 +16,19 @@ class RequestEnvelope:
     virtual_start: float = 0.0
 
 
+def _request_shape(request: RequestEnvelope):
+    """Return a comparable shape key for batch compatibility checks.
+
+    LLM requests carry prompt text (question) and have x=None.
+    Treat those as shape-compatible with each other by using None as key.
+    """
+    return None if request.x is None else request.x.shape
+
+
+def _same_batch_shape(a: RequestEnvelope, b: RequestEnvelope) -> bool:
+    return _request_shape(a) == _request_shape(b)
+
+
 class FifoPolicy:
     """Simple cross-task FIFO baseline."""
 
@@ -28,8 +41,9 @@ class FifoPolicy:
                 if not queue:
                     continue
                 candidate = queue[0]
-                #need to check shape of the request input here to make sure the batch is homogeneous, otherwise we can end up with a batch of 2 requests where one has shape (1, 512) and the other has shape (1, 1024) which will cause an error when we try to concatenate them
-                if picked and candidate.x.shape != picked[0].x.shape:
+                # Keep batch homogeneous by input shape; for LLM requests x=None,
+                # and None is considered compatible with None.
+                if picked and not _same_batch_shape(candidate, picked[0]):
                     continue
                 if next_item is None or candidate.enqueued_at < next_item.enqueued_at:
                     next_item = candidate
@@ -80,7 +94,7 @@ class RoundRobinPolicy:
                 if not queue:
                     continue
                 candidate = queue[0]
-                if picked and candidate.x.shape != picked[0].x.shape:
+                if picked and not _same_batch_shape(candidate, picked[0]):
                     continue
                 picked.append(queue.popleft())
                 made_progress = True
@@ -130,7 +144,7 @@ class WFQPolicy:
                 if not queue:
                     continue
                 candidate = queue[0]
-                if picked and candidate.x.shape != picked[0].x.shape:
+                if picked and not _same_batch_shape(candidate, picked[0]):
                     continue
                 vft = self._vft.get(task, 0.0)
                 if best_task is None or vft < best_vft:
@@ -208,7 +222,7 @@ class STFQPolicy:
                 if not queue:
                     continue
                 candidate = queue[0]
-                if picked and candidate.x.shape != picked[0].x.shape:
+                if picked and not _same_batch_shape(candidate, picked[0]):
                     continue
                 # S_i was frozen at enqueue time — just read it
                 s = candidate.virtual_start
@@ -318,7 +332,7 @@ class TokenBucketPolicy:
                 if not queue:
                     continue
                 candidate = queue[0]
-                if picked and candidate.x.shape != picked[0].x.shape:
+                if picked and not _same_batch_shape(candidate, picked[0]):
                     continue
                 # Unknown tasks (not registered) get credit=0 — treated fairly
                 credit = self._credits.get(task, 0.0)
@@ -381,8 +395,8 @@ class SABAPolicy:
             if not queue:
                 continue
             if ref_shape is None:
-                ref_shape = queue[0].x.shape
-            if queue[0].x.shape == ref_shape:
+                ref_shape = _request_shape(queue[0])
+            if _request_shape(queue[0]) == ref_shape:
                 eligible[task] = queue
 
         if not eligible:
@@ -505,7 +519,7 @@ class DeadlineSplitPolicy:
         ref_shape = None
         for queue in queues.values():
             if queue:
-                ref_shape = queue[0].x.shape
+                ref_shape = _request_shape(queue[0])
                 break
         if ref_shape is None:
             return []
@@ -514,7 +528,7 @@ class DeadlineSplitPolicy:
         for task, queue in queues.items():
             if not queue or not self._is_protected(task):
                 continue
-            if queue[0].x.shape != ref_shape:
+            if _request_shape(queue[0]) != ref_shape:
                 continue
             rps = self._rates.get(task, 1.0)
             deadline_interval = 1.0 / rps
@@ -537,10 +551,10 @@ class DeadlineSplitPolicy:
                 if self._is_protected(task) != protected:
                     continue
                 candidate = queue[0]
-                if picked and candidate.x.shape != picked[0].x.shape:
+                if picked and not _same_batch_shape(candidate, picked[0]):
                     continue
                 while queue and len(picked) < max_batch_size:
-                    if queue[0].x.shape != ref_shape:
+                    if _request_shape(queue[0]) != ref_shape:
                         break
                     picked.append(queue.popleft())
                 if len(picked) >= max_batch_size:

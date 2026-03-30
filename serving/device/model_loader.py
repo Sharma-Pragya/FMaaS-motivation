@@ -58,9 +58,12 @@ def _build_pipeline(backbone: str, device, logger: Logger | None, model_config: 
     elif backbone in ("phi3-mini", "phi3-small", "phi3-medium"):
         from fmtk.components.backbones.phi3_vllm import Phi3VLLMModel
         return Pipeline(Phi3VLLMModel(device, backbone, model_config=model_config), logger=logger)
-    elif backbone in ("phi"):
+    elif backbone == "phi-3.5-vision-instruct":
         return Pipeline(PhiModel(device, backbone, model_config=model_config), logger=logger)
-    elif backbone in ("qwen2.5-0.5b", "qwen2.5-1.5b", "qwen2.5-3b", "qwen2.5-7b"):
+    elif backbone == "qwen2.5-3b":
+        from fmtk.components.backbones.qwen import QwenTextModel
+        return Pipeline(QwenTextModel(device, backbone, model_config=model_config), logger=logger)
+    elif backbone in ("qwen2.5-0.5b", "qwen2.5-1.5b", "qwen2.5-7b"):
         from fmtk.components.backbones.qwen_vllm import QwenVLLMModel
         return Pipeline(QwenVLLMModel(device, backbone, model_config=model_config, async_only=True), logger=logger)
     else:
