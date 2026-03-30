@@ -60,6 +60,20 @@ class DeploymentState:
         """
         return [s for s in self._servers.values() if s.mem >= min_mem]
 
+    def get_server_used_mem(self, server_name: str) -> float:
+        """Sum of all component memory currently deployed on a server.
+
+        Args:
+            server_name: Name of the server.
+
+        Returns:
+            Total memory in MB used by all components on the server.
+        """
+        return sum(
+            sum(d.components.values())
+            for d in self.find_deployments_by_server(server_name)
+        )
+
     def get_servers_by_free_capacity(
         self, min_mem: float = 0.0, max_util: float = 1.0
     ) -> List[Server]:
@@ -68,19 +82,22 @@ class DeploymentState:
         Prefer servers with the most headroom so packing is maximized before
         spilling onto new devices. Servers already at or above max_util are
         excluded so schedulers never attempt to place on saturated GPUs.
+        Servers without enough free memory for min_mem are also excluded.
 
         Args:
-            min_mem: Optional minimum memory filter in MB.
+            min_mem: Minimum free memory required in MB (additional memory
+                     that must be available beyond what is already used).
             max_util: Exclude servers whose util >= this value (default 1.0,
                       i.e. only fully saturated servers are excluded).
 
         Returns:
             Servers sorted ascending by utilization (most free first),
-            filtered to those with mem >= min_mem and util < max_util.
+            filtered to those with free_mem >= min_mem and util < max_util.
         """
         servers = [
             s for s in self._servers.values()
-            if s.mem >= min_mem and s.util < max_util
+            if s.util < max_util
+            and (s.mem - self.get_server_used_mem(s.name)) >= min_mem
         ]
         return sorted(servers, key=lambda s: s.util)
 
@@ -90,20 +107,22 @@ class DeploymentState:
         Prefer servers with the least headroom so existing deployments are
         filled up before new devices are used. Servers already at or above
         max_util are excluded so schedulers never attempt to place on saturated
-        GPUs.
+        GPUs. Servers without enough free memory for min_mem are also excluded.
 
         Args:
-            min_mem: Optional minimum memory filter in MB.
+            min_mem: Minimum free memory required in MB (additional memory
+                     that must be available beyond what is already used).
             max_util: Exclude servers whose util >= this value (default 1.0,
                       i.e. only fully saturated servers are excluded).
 
         Returns:
             Servers sorted descending by utilization (least free first),
-            filtered to those with mem >= min_mem and util < max_util.
+            filtered to those with free_mem >= min_mem and util < max_util.
         """
         servers = [
             s for s in self._servers.values()
-            if s.mem >= min_mem and s.util < max_util
+            if s.util < max_util
+            and (s.mem - self.get_server_used_mem(s.name)) >= min_mem
         ]
         return sorted(servers, key=lambda s: s.util, reverse=True)
     
@@ -543,6 +562,7 @@ class DeploymentState:
                 },
                 "util": round(deployment.util, 6),
                 "mem": deployment.mem,
+                "used_mem": round(self.get_server_used_mem(deployment.server_name), 2),
             }
             site_id = deployment.site_manager
             sites.setdefault(site_id, {"id": site_id, "deployments": []})["deployments"].append(entry)

@@ -50,6 +50,18 @@ class LocalSiteManager(BaseSiteManager):
         print("[LocalSiteManager] Deploying models...")
         for site in plan["sites"]:
             deployment_status = asyncio.run(deploy_models(site["deployments"]))
+            failures = []
+            for entry in deployment_status:
+                if not isinstance(entry, dict):
+                    failures.append({"status": "invalid_status_entry", "entry": entry})
+                    continue
+                status = str(entry.get("status", ""))
+                if not status or status.startswith("error"):
+                    failures.append(entry)
+            if failures:
+                raise RuntimeError(
+                    f"[LocalSiteManager] Deployment failed for {len(failures)} device(s): {failures}"
+                )
             _output_dir = output_dir or self.output_dir
             if _output_dir:
                 os.makedirs(_output_dir, exist_ok=True)

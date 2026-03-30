@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+from turtle import delay
 from urllib.parse import urlparse
 
 import asyncssh
@@ -27,7 +28,13 @@ def _parse_url(device_url: str) -> tuple[str, str, int]:
     return ssh_host, grpc_url, port
 
 
-async def _ssh_start_server(ssh_host: str, username: str, conda_env: str, cmd: str, log_path: str):
+def _split_grpc_url(grpc_url: str) -> tuple[str, int]:
+    host, port = grpc_url.rsplit(":", 1)
+    return host, int(port)
+
+
+async def _ssh_start_server(ssh_host: str, username: str, conda_env: str, cmd: str, log_path: str,
+                            cuda_visible: str | None = None):
     """Run remote command on gpu node via SSH (agent forwarding must be enabled)."""
     try:
         async with asyncssh.connect(
@@ -37,10 +44,19 @@ async def _ssh_start_server(ssh_host: str, username: str, conda_env: str, cmd: s
             agent_path=os.environ.get("SSH_AUTH_SOCK"),
             known_hosts=None,
         ) as conn:
+            cuda_env = f"export CUDA_VISIBLE_DEVICES={cuda_visible} && " if cuda_visible is not None else ""
+            launch_cmd = (
+                "nohup bash -lc "
+                "\"echo \\\"[Launcher] START ts=$(date -Is) shell_pid=$$\\\"; "
+                f"{cmd}; "
+                "rc=$?; "
+                "echo \\\"[Launcher] EXIT ts=$(date -Is) rc=${rc}\\\"\" "
+                f"> {log_path} 2>&1 &"
+            )
             remote_cmd = (
                 f"bash -lc '{cmds} && {activate_env} {conda_env} "
                 f"&& export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CONDA_PREFIX/lib "
-                f"&& nohup {cmd}> {log_path} 2>&1 &'"
+                f"&& {cuda_env}{launch_cmd}'"
             )
 
             print(f"[SSH] Launching on {ssh_host}: {remote_cmd}")
@@ -66,7 +82,8 @@ async def _send_control(grpc_url: str, command: str, payload_json: str,
         client = EdgeRuntimeClient(grpc_url)
         try:
             print(f"[SiteManager] Sending '{command}' to {grpc_url} (attempt {attempt}/{max_retries})")
-            resp = await client.control(command, payload_json)
+            timeout_s = 180.0 if command in ("load", "swap_backbone") else 60.0
+            resp = await client.control(command, payload_json,timeout_s=timeout_s)
             print(f"[CustomGRPC] {grpc_url} Status: {resp['status']}")
             return resp
         except Exception as exc:
@@ -84,7 +101,10 @@ async def _send_control(grpc_url: str, command: str, payload_json: str,
 async def _deploy_one(spec: dict):
     ssh_host, grpc_url, grpc_port = _parse_url(spec["device"])
     print(ssh_host, grpc_port, grpc_url)
-    if spec["backbone"] == "llava":
+    if spec["backbone"] in ("qwen2.5-0.5b", "qwen2.5-1.5b", "qwen2.5-7b"):
+        conda_env = vlm_env
+        server_cmd = f"python -u device/main.py --port {grpc_port} --runtime-type vllm "
+    elif spec["backbone"] == "llava" or spec["backbone"] in ("phi-3.5-vision-instruct", "phi") or spec["backbone"].startswith("qwen2.5"):
         conda_env = vlm_env
         server_cmd = f"python -u device/main.py --port {grpc_port} "
     elif spec["backbone"] in [
@@ -124,6 +144,14 @@ async def _deploy_one(spec: dict):
     isolation_mode = spec.get("isolation_mode", "shared")
     server_cmd += f"--isolation-mode {isolation_mode} "
 
+    gpu_memory_utilization = spec.get("gpu_memory_utilization", None)
+    if gpu_memory_utilization is not None:
+        server_cmd += f"--gpu-memory-utilization {gpu_memory_utilization} "
+
+    max_model_len = spec.get("max_model_len", None)
+    if max_model_len is not None:
+        server_cmd += f"--max-model-len {max_model_len} "
+
     # Build --task-rates from tasks dict if present
     tasks_dict = spec.get("tasks", {})
     if tasks_dict and scheduler_policy in ("stfq", "wfq", "token_bucket", "saba", "deadline_split"):
@@ -133,7 +161,14 @@ async def _deploy_one(spec: dict):
     cuda_suffix = spec.get("cuda", "").replace(":", "")
     log_path = f"./device/logs/{ssh_host}_{cuda_suffix}_{spec['backbone']}_port{grpc_port}.log"
 
-    await _ssh_start_server(ssh_host, username, conda_env, server_cmd, log_path)
+    # Extract GPU index from "cuda:N" for CUDA_VISIBLE_DEVICES so vLLM picks the right GPU
+    cuda_visible = None
+    if cuda_device:
+        # "cuda:0" -> "0", "cuda:1" -> "1"
+        cuda_visible = cuda_device.split(":")[-1] if ":" in cuda_device else None
+
+    await _ssh_start_server(ssh_host, username, conda_env, server_cmd, log_path,
+                            cuda_visible=cuda_visible)
 
     config_payload = {
         "backbone": spec["backbone"],

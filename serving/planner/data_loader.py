@@ -154,17 +154,27 @@ class ProfileData:
     
     def get_pipeline_components_mem(self, pipeline: Pipeline) -> Dict[str, float]:
         """Get memory footprint for all components in a pipeline.
-        
+
         Args:
             pipeline: Pipeline object.
-            
+
         Returns:
             Dictionary mapping component names to memory in MB.
         """
         backbone_name = pipeline.backbone
+
+        # VLM pipelines have no separate decoder — profiler stores inference mem
+        # under "{task}_{backbone}" (no decoder suffix).
+        if pipeline.decoder == 'none':
+            task_name = f"{pipeline.task}_{pipeline.backbone}"
+            return {
+                backbone_name: self.get_component_mem(backbone_name),
+                task_name: self.get_component_mem(task_name),
+            }
+
         decoder_name = f"{pipeline.decoder}_{pipeline.backbone}_{pipeline.task}"
         task_name = f"{pipeline.task}_{pipeline.backbone}_{pipeline.decoder}"
-        
+
         return {
             backbone_name: self.get_component_mem(backbone_name),
             decoder_name: self.get_component_mem(decoder_name),

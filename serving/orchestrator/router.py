@@ -17,8 +17,13 @@ def parse_plan(plan_json):
         for deploy in site["deployments"]:
             device = deploy["device"]
             backbone = deploy["backbone"]
-            for dec in deploy["decoders"]:
-                task = dec["task"]
+            decoders = deploy.get("decoders", [])
+            if decoders:
+                task_names = [dec["task"] for dec in decoders]
+            else:
+                # VLM deployments have no decoders — read tasks directly
+                task_names = list(deploy.get("tasks", {}).keys())
+            for task in task_names:
                 rate = deploy["tasks"][task]["request_per_sec"]
                 task_routes.setdefault(task, []).append((site_manager, device, backbone, rate))
                 task_totals[task] = task_totals.get(task, 0.0) + rate

@@ -230,12 +230,24 @@ components={
     'trafficfore_papageissvri_mlp':{'mem': 16.388105364284996},
     'mlp_papageissvri_weatherfore':{'mem': 0.3942399999999999},
     'weatherfore_papageissvri_mlp':{'mem': 16.389026684190185},
+    'phi-3.5-vision-instruct':{'mem': 8293.510144},
+    'vlm_ocr_phi-3.5-vision-instruct':{'mem': 809.748992},
+    'vlm_traffic_phi-3.5-vision-instruct':{'mem': 809.357568},
+    'vlm_vqa_phi-3.5-vision-instruct':{'mem': 771.84833536},
+    'qwen2.5-3b':{'mem': 6285.648384},
+    'llm_sst2_qwen2.5-3b':{'mem': 9.615458303999999},
+    'llm_ag_news_qwen2.5-3b':{'mem': 14.505104384},
+    'llm_conll2003_qwen2.5-3b':{'mem': 16.069829631999998},
+    'qwen2.5-0.5b':{'mem': 6000},  
+    'llm_sst2_qwen2.5-0.5b':{'mem': 3.80},
+    'llm_ag_news_qwen2.5-0.5b':{'mem': 6.10},
+    'llm_conll2003_qwen2.5-0.5b':{'mem': 6.87},
 }
 
 pipelines={
-    'p1':{'backbone': 'chronosbase', 'decoder': 'mlp', 'task': 'diasbp'},
-    'p2':{'backbone': 'chronosbase', 'decoder': 'mlp', 'task': 'ecgclass'},
-    'p3':{'backbone': 'chronosbase', 'decoder': 'mlp', 'task': 'eclfore'},
+    'p1':{'backbone': 'phi-3.5-vision-instruct', 'decoder': 'none', 'task': 'vlm_ocr'},
+    'p2':{'backbone': 'phi-3.5-vision-instruct', 'decoder': 'none', 'task': 'vlm_traffic'},
+    'p3':{'backbone': 'phi-3.5-vision-instruct', 'decoder': 'none', 'task': 'vlm_vqa'},
     'p4':{'backbone': 'chronosbase', 'decoder': 'mlp', 'task': 'etth1fore'},
     'p5':{'backbone': 'chronosbase', 'decoder': 'mlp', 'task': 'exchangefore'},
     'p6':{'backbone': 'chronosbase', 'decoder': 'mlp', 'task': 'gestureclass'},
@@ -343,12 +355,41 @@ pipelines={
     'p108':{'backbone': 'papageissvri', 'decoder': 'mlp', 'task': 'sysbp'},
     'p109':{'backbone': 'papageissvri', 'decoder': 'mlp', 'task': 'trafficfore'},
     'p110':{'backbone': 'papageissvri', 'decoder': 'mlp', 'task': 'weatherfore'},
+    # 'p111':{'backbone': 'qwen2.5-3b', 'decoder': 'none', 'task': 'llm_sst2'},
+    # 'p112':{'backbone': 'qwen2.5-3b', 'decoder': 'none', 'task': 'llm_ag_news'},
+    # 'p113':{'backbone': 'qwen2.5-3b', 'decoder': 'none', 'task': 'llm_conll2003'},
+
+    'p111':{'backbone': 'qwen2.5-0.5b', 'decoder': 'none', 'task': 'llm_sst2'},
+    'p112':{'backbone': 'qwen2.5-0.5b', 'decoder': 'none', 'task': 'llm_ag_news'},
+    'p113':{'backbone': 'qwen2.5-0.5b', 'decoder': 'none', 'task': 'llm_conll2003'},
 }
 
 latency={
-    'p1':{'NVIDIA A16': 85.76482, 'NVIDIA A2': 88.20801, 'NVIDIA GEFORCE RTX 2080 TI': 68.42804, 'TESLA V100-PCIE-16GB': 52.55359, 'NVIDIA L40S': 12.67984, 'NVIDIA A100-SXM4-80GB': 15.43086},
-    'p2':{'NVIDIA A16': 30.81038, 'NVIDIA A2': 32.56929, 'NVIDIA GEFORCE RTX 2080 TI': 26.29162, 'TESLA V100-PCIE-16GB': 26.44506, 'NVIDIA L40S': 5.77146, 'NVIDIA A100-SXM4-80GB': 7.27142},
-    'p3':{'NVIDIA A16': 32.09869, 'NVIDIA A2': 33.80152, 'NVIDIA GEFORCE RTX 2080 TI': 26.40508, 'TESLA V100-PCIE-16GB': 26.36425, 'NVIDIA L40S': 5.9607, 'NVIDIA A100-SXM4-80GB': 7.24634},
+    'p1':{'NVIDIA A16': 1121.3153},
+    'p2':{'NVIDIA A16': 1048.81342},
+    'p3':{'NVIDIA A16': 994.04761},
+    # #clipper_place with batch size 5
+    # 'p111':{'NVIDIA A16':119.04},
+    # 'p112':{'NVIDIA A16': 141.32},
+    # 'p113':{'NVIDIA A16': 149.78},
+
+    # #fmaas_place with batch size 5
+    # 'p111':{'NVIDIA A16':20.89},
+    # 'p112':{'NVIDIA A16': 24.184},
+    # 'p113':{'NVIDIA A16': 25.70},
+
+    # #clipper_place with batch size 5
+    'p111':{'NVIDIA A16': 35.64},
+    'p112':{'NVIDIA A16': 39.86},
+    'p113':{'NVIDIA A16': 156.72},
+
+    # #fmaas_place with batch size 5
+    # 'p111':{'NVIDIA A16': 23.41},
+    # 'p112':{'NVIDIA A16': 26.075},
+
+    # 'p111':{'NVIDIA A16': {1:225.97,2:304.48,4:394.69,6:482.55,8:567.83,10:651.23}},
+    # 'p112':{'NVIDIA A16': {1:271.83,2:366.45,4:474.56,6:579.82,8:682.73,10:782.47}},
+    # 'p113':{'NVIDIA A16': {1:291.81,2:393.36,4:509.00,6:621.63,8:731.02,10:837.89}},
     'p4':{'NVIDIA A16': 32.38587, 'NVIDIA A2': 33.21951, 'NVIDIA GEFORCE RTX 2080 TI': 26.27822, 'TESLA V100-PCIE-16GB': 26.3503, 'NVIDIA L40S': 6.13544, 'NVIDIA A100-SXM4-80GB': 7.24289},
     'p5':{'NVIDIA A16': 32.12251, 'NVIDIA A2': 33.82795, 'NVIDIA GEFORCE RTX 2080 TI': 26.31797, 'TESLA V100-PCIE-16GB': 26.46731, 'NVIDIA L40S': 6.11765, 'NVIDIA A100-SXM4-80GB': 7.31357},
     'p6':{'NVIDIA A16': 30.86975, 'NVIDIA A2': 32.05445, 'NVIDIA GEFORCE RTX 2080 TI': 26.29587, 'TESLA V100-PCIE-16GB': 26.48962, 'NVIDIA L40S': 5.82575, 'NVIDIA A100-SXM4-80GB': 7.27353},
@@ -459,9 +500,12 @@ latency={
 }
 
 metric={
-    'p1':10.04,
-    'p2':0.88,
-    'p3':0.43,
+    'p1':0.6,
+    'p2':0.29,
+    'p3':0.15,
+    'p111':0.918,
+    'p112':0.706,
+    'p113':0.0,
     'p4':0.72,
     'p5':1.68,
     'p6':0.79,

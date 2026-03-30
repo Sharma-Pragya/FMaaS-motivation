@@ -223,7 +223,7 @@ class LocalExperiment:
 
     def __init__(self, exp_type, scheduler, req_rate, duration, trace_type, seed, exp_dir,
                  max_batch_size=5, max_batch_wait_ms=0.0, isolation_mode="shared",
-                 warmup_gap=2.0, pretrace_warmup_secs=20.0):
+                 warmup_gap=2.0, pretrace_warmup_secs=20.0, max_model_len=None):
         self.exp_type = exp_type
         self.scheduler = scheduler
         self.req_rate = req_rate
@@ -233,6 +233,7 @@ class LocalExperiment:
         self.max_batch_size = max_batch_size
         self.max_batch_wait_ms = max_batch_wait_ms
         self.isolation_mode = isolation_mode
+        self.max_model_len = max_model_len
         self._warmup_gap = warmup_gap
         self._pretrace_warmup_secs = pretrace_warmup_secs
 
@@ -261,11 +262,23 @@ class LocalExperiment:
         plan = self._orchestrator.run_deployment_plan(
             self.devices, self.tasks, scheduler_name=self.scheduler, output_dir=self.output_dir)
 
+        # Count deployments per (ip, cuda) to split GPU memory fairly across vLLM engines
+        from collections import Counter
+        gpu_counts: Counter = Counter()
+        for site in plan.get("sites", []):
+            for dep in site.get("deployments", []):
+                gpu_counts[(dep.get("device", "").rsplit(":", 1)[0], dep.get("cuda", ""))] += 1
+
         for site in plan.get("sites", []):
             for dep in site.get("deployments", []):
                 dep.setdefault("max_batch_size", self.max_batch_size)
                 dep.setdefault("max_batch_wait_ms", self.max_batch_wait_ms)
                 dep.setdefault("isolation_mode", self.isolation_mode)
+                n = gpu_counts.get((dep.get("device", "").rsplit(":", 1)[0], dep.get("cuda", "")), 1)
+                # Keep vLLM split consistent with motivation1 defaults.
+                dep.setdefault("gpu_memory_utilization", round(0.85 / n, 4))
+                if self.max_model_len is not None:
+                    dep.setdefault("max_model_len", self.max_model_len)
 
         self._site_manager.deploy(plan, self.output_dir)
         self._orchestrator.increment_requests_generated(len(trace))
@@ -675,7 +688,7 @@ def main():
     # Local mode args
     parser.add_argument("--exp-type", default="SystemInAction")
     parser.add_argument("--scheduler", default="fmaas_share")
-    parser.add_argument("--req-rate", type=int, default=10)
+    parser.add_argument("--req-rate", type=float, default=10)
     parser.add_argument("--duration", type=int, default=480)
     parser.add_argument("--trace", default="deterministic")
     parser.add_argument("--seed", type=int, default=42)
@@ -684,6 +697,8 @@ def main():
     parser.add_argument("--max-batch-wait-ms", type=float, default=0.0)
     parser.add_argument("--isolation-mode", default="shared",
                         choices=["shared", "process", "none"])
+    parser.add_argument("--max-model-len", type=int, default=None,
+                        help="vLLM max sequence length. Set to e.g. 256 to allow multiple engines per GPU.")
     parser.add_argument("--warmup-gap", type=float, default=2.0)
     parser.add_argument("--pretrace-warmup-secs", type=float, default=20.0)
     args = parser.parse_args()
@@ -707,6 +722,7 @@ def main():
             isolation_mode=args.isolation_mode,
             warmup_gap=args.warmup_gap,
             pretrace_warmup_secs=args.pretrace_warmup_secs,
+            max_model_len=args.max_model_len,
         )
 
         exp.deploy()

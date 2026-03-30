@@ -45,14 +45,18 @@ class EdgeRuntimeClient:
         rpc_request = edge_runtime_pb2.InferRequest(
             req_id=request["req_id"],
             task=request["task"],
-            x=_encode_tensor(request["x"]),
         )
+        x_tensor = _encode_tensor(request.get("x"))
+        if x_tensor is not None:
+            rpc_request.x.CopyFrom(x_tensor)
         mask = _encode_tensor(request.get("mask"))
         if mask is not None:
             rpc_request.mask.CopyFrom(mask)
         question = request.get("question")
         if question is not None:
-            if isinstance(question, np.ndarray):
+            if isinstance(question, list):
+                question = question[0] if question else ""
+            elif isinstance(question, np.ndarray):
                 if question.size == 1:
                     question = question.item()
                 else:
@@ -64,6 +68,7 @@ class EdgeRuntimeClient:
             raise RuntimeError(response.status)
         return {
             "output": _decode_output(response),
+            "text_output": response.text_output or "",
             "start_time_ns": response.start_time_ns,
             "end_time_ns": response.end_time_ns,
             "proc_time_ns": response.proc_time_ns,
@@ -72,10 +77,11 @@ class EdgeRuntimeClient:
             "status": response.status,
         }
 
-    async def control(self, command: str, payload_json: str):
+    async def control(self, command: str, payload_json: str, timeout_s: float | None = 120.0):
         await self._ensure_ready()
         response = await self._stub.Control(
-            edge_runtime_pb2.ControlRequest(command=command, payload_json=payload_json)
+            edge_runtime_pb2.ControlRequest(command=command, payload_json=payload_json),
+            timeout=timeout_s,
         )
         return {
             "status": response.status,
