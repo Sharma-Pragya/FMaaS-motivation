@@ -14,6 +14,7 @@ from typing import Dict, List, Optional, Tuple
 from ..models import Deployment, TaskInfo, TaskSpec
 from ..state import DeploymentState
 from ..config import DEFAULT_CONFIG, SchedulerConfig
+from ..data_loader import BatchProfile, ProfileData
 from .base import BaseScheduler
 
 
@@ -29,10 +30,27 @@ class ClipperPlacementScheduler(BaseScheduler):
     from being co-located on the same model instance; to_plan_json
     strips it transparently so the output JSON shows the real backbone.
 
+    When a BatchProfile is provided, the scheduler accounts for same-task
+    batching to compute more accurate utilization estimates.
+
     Attributes:
         data: ProfileData instance with component/pipeline information.
         config: SchedulerConfig with scheduling parameters.
+        batch_profile: Optional BatchProfile for batching-aware scheduling.
     """
+
+    def __init__(
+        self,
+        profile_data: ProfileData,
+        config: Optional[SchedulerConfig] = None,
+        batch_profile: Optional[BatchProfile] = None,
+    ):
+        super().__init__(profile_data, config)
+        self.batch_profile = batch_profile
+        # Maps (server_name, backbone_key) -> saturation batch size
+        self.batch_size_map: Dict[Tuple[str, str], int] = {}
+        # Maps (server_name, backbone_key) -> selected (expected) batch size
+        self.expected_batch_size_map: Dict[Tuple[str, str], int] = {}
 
     def schedule(
         self,
@@ -195,8 +213,8 @@ class ClipperPlacementScheduler(BaseScheduler):
             if not server:
                 continue
 
-            latency = self.data.get_pipeline_latency(pid, server.type)
-            if latency is None:
+            latency_bs1 = self.data.get_pipeline_latency(pid, server.type)
+            if latency_bs1 is None:
                 logger.warning(f"No latency data for pipeline '{pid}' on device type '{server.type}'")
                 continue
 
@@ -209,19 +227,39 @@ class ClipperPlacementScheduler(BaseScheduler):
             if left_cap <= 1e-6:
                 continue
 
-            task_cap_needed = task_demand * latency / 1000.0
-            allocated_cap = min(left_cap, task_cap_needed)
-            allocated_demand = allocated_cap * 1000.0 / latency
+            # Batching-aware scheduling (single-task only for clipper)
+            selected_bs = 1
+            sat_bs = 1
+            latency = latency_bs1
+            if self.batch_profile is not None:
+                try:
+                    latency, selected_bs, sat_bs = self._compute_batched_latency(
+                        lookup_backbone, server.type, task_demand, latency_bs1,
+                    )
+                except KeyError:
+                    logger.debug(
+                        f"No batch profile for {lookup_backbone}/{server.type}, "
+                        f"falling back to bs=1"
+                    )
 
-            logger.debug(
-                f"Task '{task.name}' on {server_name}/{lookup_backbone}: "
-                f"latency={latency}ms, left_cap={left_cap:.4f}, "
-                f"allocated_cap={allocated_cap:.4f}, allocated_demand={allocated_demand:.2f} req/s, "
+            task_cap_needed = (task_demand / selected_bs) * latency / 1000.0
+            allocated_cap = min(left_cap, task_cap_needed)
+            allocated_demand = allocated_cap * selected_bs * 1000.0 / latency
+
+            print(
+                f"[Alloc] Task '{task.name}' on {server_name}/{lookup_backbone}: "
+                f"latency={latency:.2f}ms, batch_size={selected_bs}, sat_bs={sat_bs}, "
+                f"task_cap_needed={task_cap_needed:.6f}, left_cap={left_cap:.4f}, "
+                f"allocated_cap={allocated_cap:.6f}, allocated_demand={allocated_demand:.2f} req/s, "
                 f"remaining_demand={max(0, task_demand - allocated_demand):.2f}"
             )
 
             task_demand -= allocated_demand
             util_tracker[server_name] += allocated_cap
+
+            # Track batch sizes per deployment
+            self.batch_size_map[(server_name, backbone_key)] = sat_bs
+            self.expected_batch_size_map[(server_name, backbone_key)] = selected_bs
 
             pipeline = self.data.get_pipeline(pid)
             components = self.data.get_pipeline_components_mem(pipeline)
@@ -249,8 +287,57 @@ class ClipperPlacementScheduler(BaseScheduler):
 
         return temp_plan, max(0, task_demand)
 
+    def _compute_batched_latency(
+        self,
+        backbone: str,
+        device_type: str,
+        task_demand: float,
+        latency_bs1: float,
+    ) -> Tuple[float, int, int]:
+        """Compute effective latency and batch size for same-task batching.
 
-def build_final_json(deployments: List[Deployment], pipelines: Dict) -> Dict:
+        Same algorithm as FMaaSPlacementScheduler._compute_batched_latency.
+
+        Returns:
+            (batched_latency_ms, selected_batch_size, saturation_batch_size)
+        """
+        bp = self.batch_profile
+
+        # Step 1: saturation point
+        sat_bs, latency_b_max = bp.get_saturation_batch_size(backbone, device_type)
+
+        # Step 2: utilization proxy (per-sample cost at saturation)
+        util_dummy = task_demand * (latency_b_max / sat_bs) / 1000.0
+
+        # Step 3: select batch size (capped at saturation batch size)
+        target_bs = util_dummy * sat_bs
+        target_bs = max(1.0, min(target_bs, float(sat_bs)))
+        selected_bs = bp.snap_to_profile(backbone, device_type, target_bs)
+
+        # Step 4: estimate batched latency
+        backbone_ms_bs1 = bp.get_backbone_mean_ms(backbone, device_type, 1)
+        backbone_ms_selected = bp.get_backbone_mean_ms(backbone, device_type, selected_bs)
+        batched_latency = latency_bs1 - backbone_ms_bs1 + backbone_ms_selected
+
+        print(
+            f"[BatchInfo] {backbone}/{device_type}: "
+            f"sat_bs={sat_bs}, latency_b_max={latency_b_max:.2f}ms, "
+            f"util_dummy={util_dummy:.4f}, "
+            f"target_bs={target_bs:.1f}, selected_bs={selected_bs}, "
+            f"backbone_ms(bs=1)={backbone_ms_bs1:.2f}, "
+            f"backbone_ms(bs={selected_bs})={backbone_ms_selected:.2f}, "
+            f"latency_bs1={latency_bs1:.2f}, batched_latency={batched_latency:.2f}ms"
+        )
+
+        return batched_latency, selected_bs, sat_bs
+
+
+def build_final_json(
+    deployments: List[Deployment],
+    pipelines: Dict,
+    batch_size_map: Optional[Dict[Tuple[str, str], int]] = None,
+    expected_batch_size_map: Optional[Dict[Tuple[str, str], int]] = None,
+) -> Dict:
     """Build final JSON output from deployments.
 
     The __clipper__<task> suffix is stripped transparently by
@@ -259,4 +346,21 @@ def build_final_json(deployments: List[Deployment], pipelines: Dict) -> Dict:
     state = DeploymentState([])
     for d in deployments:
         state._deployments[(d.server_name, d.backbone)] = d
-    return state.to_plan_json(pipelines)
+    plan = state.to_plan_json(pipelines)
+
+    # Inject max_batch_size per deployment from scheduler's batch_size_map
+    if batch_size_map:
+        for site in plan.get("sites", []):
+            for dep in site.get("deployments", []):
+                # batch_size_map keys use __clipper__ suffix
+                bb = dep["backbone"]
+                tasks = list(dep.get("tasks", {}).keys())
+                for task_name in tasks:
+                    key = (dep["device_name"], f"{bb}__clipper__{task_name}")
+                    if key in batch_size_map:
+                        dep["max_batch_size"] = batch_size_map[key]
+                        if expected_batch_size_map and key in expected_batch_size_map:
+                            dep["expected_batch_size"] = expected_batch_size_map[key]
+                        break
+
+    return plan
