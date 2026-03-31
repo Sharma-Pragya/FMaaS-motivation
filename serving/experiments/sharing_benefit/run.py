@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""motivation2/run.py — Sharing benefit experiment (ecgclass + gestureclass).
+"""sharing_benefit/run.py — Sharing benefit experiment (ecgclass + gestureclass).
 
 Four conditions:
   single_ecgclass     — 1 device server, ecgclass only, FIFO
@@ -11,14 +11,14 @@ Each condition: deploy → run open-loop Poisson at fixed RPS → save latencies
 run.sh handles starting/stopping device servers; this script just runs the experiment.
 
 Usage (called by run.sh):
-    python experiments/motivation2/run.py \
+    python experiments/sharing_benefit/run.py \
         --condition sharing \
         --device-url localhost:8000 \
         --device-url-2 localhost:8001 \
         --backbone momentbase \
         --rps 20 \
         --duration 180 \
-        --exp-dir experiments/motivation2/results/sharing
+        --exp-dir experiments/sharing_benefit/results/sharing
 """
 from __future__ import annotations
 
@@ -245,7 +245,7 @@ def main() -> int:
     parser.add_argument("--rps",          type=float, default=float(os.environ.get("RPS", "20")))
     parser.add_argument("--duration",     type=float, default=float(os.environ.get("PHASE_DURATION", "180")))
     parser.add_argument("--warmup-secs",  type=float, default=10.0)
-    parser.add_argument("--exp-dir",      default=os.environ.get("EXP_DIR", "experiments/motivation2/results"))
+    parser.add_argument("--exp-dir",      default=os.environ.get("EXP_DIR", "experiments/sharing_benefit/results"))
     args = parser.parse_args()
 
     out_dir = (SERVING_DIR / args.exp_dir).resolve()

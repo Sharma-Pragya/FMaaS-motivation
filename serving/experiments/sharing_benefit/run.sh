@@ -16,7 +16,7 @@
 #   DEVICE_PORT       8000
 #   DEVICE_PORT_2     8001
 #   MAX_BATCH_SIZE    5
-#   RESULTS_BASE      experiments/motivation2/results
+#   RESULTS_BASE      experiments/sharing_benefit/results
 #   DECODER_DIR       /project/pi_shenoy_umass_edu/hshastri/FMTK/models/tsfm/finetuned
 
 set -euo pipefail
@@ -28,12 +28,12 @@ export PYTHONPATH="${PYTHONPATH_EXTRA}:${PYTHONPATH:-}"
 
 CUDA_DEVICE="${CUDA_DEVICE:-cuda:0}"
 BACKBONE="${BACKBONE:-momentbase}"
-RPS_SWEEP="${RPS_SWEEP:-10,20,30,40,60,80}"
+RPS_SWEEP="${RPS_SWEEP:-20,40,60}"
 PHASE_DURATION="${PHASE_DURATION:-180}"
 DEVICE_PORT="${DEVICE_PORT:-8000}"
 DEVICE_PORT_2="${DEVICE_PORT_2:-8001}"
 MAX_BATCH_SIZE="${MAX_BATCH_SIZE:-5}"
-RESULTS_BASE="${RESULTS_BASE:-experiments/motivation2/results}"
+RESULTS_BASE="${RESULTS_BASE:-experiments/sharing_benefit/results}"
 PYTHON="${PYTHON:-/home/hshastri_umass_edu/.conda/envs/fmtk/bin/python}"
 DEVICE_STARTUP_WAIT="${DEVICE_STARTUP_WAIT:-5}"
 
@@ -107,7 +107,7 @@ run_condition() {
     case "$condition" in
         single_ecgclass)
             DEVICE_PID=$(start_device "$DEVICE_PORT" "fifo" "$LOG_DIR/device_${condition}_rps${rps}.log" "$rps")
-            "$PYTHON" -u experiments/motivation2/run.py \
+            "$PYTHON" -u experiments/sharing_benefit/run.py \
                 --condition    single_ecgclass \
                 --device-url   "localhost:${DEVICE_PORT}" \
                 --backbone     "$BACKBONE" \
@@ -117,7 +117,7 @@ run_condition() {
             ;;
         single_gestureclass)
             DEVICE_PID=$(start_device "$DEVICE_PORT" "fifo" "$LOG_DIR/device_${condition}_rps${rps}.log" "$rps")
-            "$PYTHON" -u experiments/motivation2/run.py \
+            "$PYTHON" -u experiments/sharing_benefit/run.py \
                 --condition    single_gestureclass \
                 --device-url   "localhost:${DEVICE_PORT}" \
                 --backbone     "$BACKBONE" \
@@ -139,7 +139,7 @@ run_condition() {
             ;;
         sharing)
             DEVICE_PID=$(start_device "$DEVICE_PORT" "stfq" "$LOG_DIR/device_${condition}_rps${rps}.log" "$rps")
-            "$PYTHON" -u experiments/motivation2/run.py \
+            "$PYTHON" -u experiments/sharing_benefit/run.py \
                 --condition    sharing \
                 --device-url   "localhost:${DEVICE_PORT}" \
                 --backbone     "$BACKBONE" \

@@ -77,16 +77,16 @@ def _initialize_data():
     d = DATASET_DIR
     cfg = {"batch_size": DEFAULT_BATCH_SIZE, "shuffle": False}
     loaders = {
-        "ecgclass":     DataLoader(ECG5000Dataset({"dataset_path": f"{d}/ECG5000"}, {"task_type": "classification"}, "test"), **cfg),
-        # "heartrate":    DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression", "label": "hr"}, "test"), **cfg),
-        # "diasbp":       DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression", "label": "diasbp"}, "test"), **cfg),
-        # "sysbp":        DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data"}, {"task_type": "regression", "label": "sysbp"}, "test"), **cfg),
-        "gestureclass": DataLoader(UWaveGestureLibraryALLDataset({"dataset_path": f"{d}/UWaveGestureLibraryAll"}, {"task_type": "classification"}, "test"), **cfg),
-        "etth1fore":    DataLoader(ETTh1Dataset({"dataset_path": f"{d}/ETTh1"}, {"task_type": "forecasting"}, "test"), **cfg),
-        "weatherfore":  DataLoader(WeatherDataset({"dataset_path": f"{d}/Weather"}, {"task_type": "forecasting"}, "test"), **cfg),
-        "trafficfore":  DataLoader(TrafficDataset({"dataset_path": f"{d}/Traffic"}, {"task_type": "forecasting"}, "test"), **cfg),
-        "eclfore":      DataLoader(ECLDataset({"dataset_path": f"{d}/ElectricityLoad-data"}, {"task_type": "forecasting"}, "test"), **cfg),
-        "exchangefore": DataLoader(ExchangeDataset({"dataset_path": f"{d}/Exchange"}, {"task_type": "forecasting"}, "test"), **cfg),
+        "ecgclass":     DataLoader(ECG5000Dataset({"dataset_path": f"{d}/ECG5000","seq_len": 512}, {"task_type": "classification"}, "test"), **cfg),
+        # "heartrate":    DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data","seq_len": 512}, {"task_type": "regression", "label": "hr"}, "test"), **cfg),
+        # "diasbp":       DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data","seq_len": 512}, {"task_type": "regression", "label": "diasbp"}, "test"), **cfg),
+        # "sysbp":        DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data","seq_len": 512}, {"task_type": "regression", "label": "sysbp"}, "test"), **cfg),
+        "gestureclass": DataLoader(UWaveGestureLibraryALLDataset({"dataset_path": f"{d}/UWaveGestureLibraryAll", "seq_len": 512}, {"task_type": "classification"}, "test"), **cfg),
+        "etth1fore":    DataLoader(ETTh1Dataset({"dataset_path": f"{d}/ETTh1", "seq_len": 512}, {"task_type": "forecasting"}, "test"), **cfg),
+        "weatherfore":  DataLoader(WeatherDataset({"dataset_path": f"{d}/Weather","seq_len": 512}, {"task_type": "forecasting"}, "test"), **cfg),
+        "trafficfore":  DataLoader(TrafficDataset({"dataset_path": f"{d}/Traffic","seq_len": 512}, {"task_type": "forecasting"}, "test"), **cfg),
+        "eclfore":      DataLoader(ECLDataset({"dataset_path": f"{d}/ElectricityLoad-data","seq_len": 512}, {"task_type": "forecasting"}, "test"), **cfg),
+        "exchangefore": DataLoader(ExchangeDataset({"dataset_path": f"{d}/Exchange","seq_len": 512}, {"task_type": "forecasting"}, "test"), **cfg),
     }
     # VLM tasks use a separate dataset loader and collate function
     # Task name prefix "vlm_" maps to the sub-task name in TASK_REGISTRY
@@ -400,7 +400,7 @@ class TraceRunner:
                 continue
             inputs = {"task": task}
             if 'x' in batch:
-                inputs["x"] = {"x":  batch["x"] if isinstance(batch["x"], (list, str)) else batch["x"].numpy().astype(np.float32)}
+                inputs["x"] = batch["x"] if isinstance(batch["x"], (list, str)) else batch["x"].numpy().astype(np.float32)
             if "mask" in batch:
                 inputs["mask"] = batch["mask"].numpy().astype(np.float32)
             if "question" in batch:
@@ -426,7 +426,7 @@ class TraceRunner:
                 continue
             inp = {"task": task}
             if "x" in batch:
-                inp["x"] = {"x":  batch["x"] if isinstance(batch["x"], (list, str)) else batch["x"].numpy().astype(np.float32)}
+                inp["x"] = batch["x"] if isinstance(batch["x"], (list, str)) else batch["x"].numpy().astype(np.float32)
             if "mask" in batch:
                 inp["mask"] = batch["mask"].numpy().astype(np.float32)
             if "question" in batch:

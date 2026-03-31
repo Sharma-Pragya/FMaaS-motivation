@@ -134,7 +134,7 @@ class PyTorchRuntime(BaseRuntime):
                 b_mask = None
             else:
                 bx = torch.from_numpy(x)
-                mask = torch.from_numpy(mask)
+                b_mask = torch.from_numpy(mask) if mask is not None else None
 
             # --- Build adapter groups: list of (adapter_name, [indices]) ---
             # Consecutive items with the same adapter are merged into one group.

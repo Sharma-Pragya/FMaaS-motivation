@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""motivation2/plot.py — Plots for the sharing-benefit experiment.
+"""sharing_benefit/plot.py — Plots for the sharing-benefit experiment.
 
 Produces:
-  1. motivation2_latency_cdf.png      — CDF of per-request latency, one line per condition
-  2. motivation2_throughput_cdf.png   — CDF of instantaneous throughput (1000/latency_ms)
-  3. motivation2_summary_bars.png     — bar chart: p99 latency per condition per task
+  1. sharing_benefit_latency_cdf.png      — CDF of per-request latency, one line per condition
+  2. sharing_benefit_throughput_cdf.png   — CDF of instantaneous throughput (1000/latency_ms)
+  3. sharing_benefit_summary_bars.png     — bar chart: p99 latency per condition per task
 
 Usage:
-    python experiments/motivation2/plot.py [--exp-dir experiments/motivation2/results]
+    python experiments/sharing_benefit/plot.py [--exp-dir experiments/sharing_benefit/results]
 """
 from __future__ import annotations
 
@@ -525,13 +525,13 @@ def main() -> int:
         tres = load_task_results(rps_root)
         if s:
             all_series[rps] = s
-            plot_latency_cdf(s, out_dir / f"motivation2_latency_cdf_rps{rps}.pdf")
+            plot_latency_cdf(s, out_dir / f"sharing_benefit_latency_cdf_rps{rps}.pdf")
         if tput:
             all_throughput[rps] = tput
-            plot_throughput_cdf(tput, out_dir / f"motivation2_throughput_cdf_rps{rps}.pdf")
+            plot_throughput_cdf(tput, out_dir / f"sharing_benefit_throughput_cdf_rps{rps}.pdf")
         if tres:
             all_task_results[rps] = tres
-            plot_summary_bars(tres, out_dir / f"motivation2_summary_bars_rps{rps}.pdf")
+            plot_summary_bars(tres, out_dir / f"sharing_benefit_summary_bars_rps{rps}.pdf")
 
     if not all_series and not all_task_results:
         print("[Error] No result data found. Run run.sh first.")
@@ -539,8 +539,8 @@ def main() -> int:
 
     rps_with_data = [r for r in rps_list if r in all_series]
     if len(rps_with_data) > 1:
-        plot_sweep_cdf(all_series,     rps_with_data, out_dir / "motivation2_sweep_latency_cdf.pdf")
-        plot_sweep_cdf(all_throughput, rps_with_data, out_dir / "motivation2_sweep_throughput_cdf.pdf",
+        plot_sweep_cdf(all_series,     rps_with_data, out_dir / "sharing_benefit_sweep_latency_cdf.pdf")
+        plot_sweep_cdf(all_throughput, rps_with_data, out_dir / "sharing_benefit_sweep_throughput_cdf.pdf",
                        metric="throughput")
 
     return 0
