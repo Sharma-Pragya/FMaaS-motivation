@@ -57,13 +57,17 @@ def run_scheduler(scheduler_name: str, devices: dict, tasks_slo: dict, output_di
         deployments = scheduler.schedule(devices, tasks_slo, accuracy_mode=True)
         plan = m4_mod.build_final_json(deployments, pipelines)
     elif scheduler_name == 'fmaas_place':
-        scheduler = FMaaSPlacementScheduler(profile, config)
+        from planner.data_loader import BatchProfile
+        batch_profile = BatchProfile()
+        scheduler = FMaaSPlacementScheduler(profile, config, batch_profile=batch_profile)
         deployments = scheduler.schedule(devices, tasks_slo)
-        plan = fmaas_place_mod.build_final_json(deployments, pipelines)
+        plan = fmaas_place_mod.build_final_json(deployments, pipelines, scheduler.batch_size_map, scheduler.expected_batch_size_map)
     elif scheduler_name == 'clipper_place':
-        scheduler = ClipperPlacementScheduler(profile, config)
+        from planner.data_loader import BatchProfile
+        batch_profile = BatchProfile()
+        scheduler = ClipperPlacementScheduler(profile, config, batch_profile=batch_profile)
         deployments = scheduler.schedule(devices, tasks_slo)
-        plan = clipper_place_mod.build_final_json(deployments, pipelines)
+        plan = clipper_place_mod.build_final_json(deployments, pipelines, scheduler.batch_size_map, scheduler.expected_batch_size_map)
     else:
         raise ValueError(f"Unknown scheduler: {scheduler_name}. "
                          f"Use: fmaas, fmaas_share, fmaas_place, clipper_place, clipper-ht, clipper-ha, m4-ht, m4-ha")

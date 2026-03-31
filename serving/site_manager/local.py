@@ -47,6 +47,12 @@ class LocalSiteManager(BaseSiteManager):
         if output_dir:
             self.output_dir = output_dir
 
+        # Set global OUTPUT_DIR so deployment_handler can route device logs
+        # to the results directory (in MQTT mode this is set via store_plan).
+        from site_manager import storage
+        with storage._STATE_LOCK:
+            storage.OUTPUT_DIR = self.output_dir
+
         print("[LocalSiteManager] Deploying models...")
         for site in plan["sites"]:
             deployment_status = asyncio.run(deploy_models(site["deployments"]))

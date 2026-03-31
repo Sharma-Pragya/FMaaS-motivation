@@ -159,7 +159,8 @@ async def _deploy_one(spec: dict):
         server_cmd += f"--task-rates {rates_str} "
 
     cuda_suffix = spec.get("cuda", "").replace(":", "")
-    log_path = f"./device/logs/{ssh_host}_{cuda_suffix}_{spec['backbone']}_port{grpc_port}.log"
+    log_dir = output_dir if output_dir else "./device/logs"
+    log_path = f"{log_dir}/{ssh_host}_{cuda_suffix}_{spec['backbone']}_port{grpc_port}.log"
 
     # Extract GPU index from "cuda:N" for CUDA_VISIBLE_DEVICES so vLLM picks the right GPU
     cuda_visible = None
