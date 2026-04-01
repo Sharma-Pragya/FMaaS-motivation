@@ -166,6 +166,8 @@ start_device() {
 run_condition() {
     local condition="$1" rps="$2"
     local out_dir="${RESULTS_BASE}/rps_${rps}/${condition}"
+    local trace_file="${RESULTS_BASE}/rps_${rps}/trace.json"
+    local scheduler=""
 
     echo ""
     echo "================================================================"
@@ -175,8 +177,11 @@ run_condition() {
 
     stop_devices
 
+    mkdir -p "$out_dir"
+
     case "$condition" in
         single_ecgclass)
+            scheduler="stfq"
             DEVICE_PID=$(start_device "$DEVICE_PORT" "fifo" "$LOG_DIR/device_${condition}_rps${rps}.log" "$rps")
             $PYTHON -u experiments/sharing_benefit/run.py \
                 --condition    single_ecgclass \
@@ -184,9 +189,11 @@ run_condition() {
                 --backbone     "$BACKBONE" \
                 --rps          "$rps" \
                 --duration     "$PHASE_DURATION" \
-                --exp-dir      "$out_dir"
+                --exp-dir      "$out_dir" \
+                --trace-file   "$trace_file"
             ;;
         single_gestureclass)
+            scheduler="stfq"
             DEVICE_PID=$(start_device "$DEVICE_PORT" "fifo" "$LOG_DIR/device_${condition}_rps${rps}.log" "$rps")
             $PYTHON -u experiments/sharing_benefit/run.py \
                 --condition    single_gestureclass \
@@ -194,9 +201,11 @@ run_condition() {
                 --backbone     "$BACKBONE" \
                 --rps          "$rps" \
                 --duration     "$PHASE_DURATION" \
-                --exp-dir      "$out_dir"
+                --exp-dir      "$out_dir" \
+                --trace-file   "$trace_file"
             ;;
         no_sharing)
+            scheduler="stfq"
             DEVICE_PID=$(start_device   "$DEVICE_PORT"   "fifo" "$LOG_DIR/device_${condition}_1_rps${rps}.log" "$rps")
             DEVICE_PID_2=$(start_device "$DEVICE_PORT_2" "fifo" "$LOG_DIR/device_${condition}_2_rps${rps}.log" "$rps")
             $PYTHON -u experiments/sharing_benefit/run.py \
@@ -206,9 +215,11 @@ run_condition() {
                 --backbone     "$BACKBONE" \
                 --rps          "$rps" \
                 --duration     "$PHASE_DURATION" \
-                --exp-dir      "$out_dir"
+                --exp-dir      "$out_dir" \
+                --trace-file   "$trace_file"
             ;;
         sharing)
+            scheduler="stfq"
             DEVICE_PID=$(start_device "$DEVICE_PORT" "stfq" "$LOG_DIR/device_${condition}_rps${rps}.log" "$rps")
             $PYTHON -u experiments/sharing_benefit/run.py \
                 --condition    sharing \
@@ -216,9 +227,25 @@ run_condition() {
                 --backbone     "$BACKBONE" \
                 --rps          "$rps" \
                 --duration     "$PHASE_DURATION" \
-                --exp-dir      "$out_dir"
+                --exp-dir      "$out_dir" \
+                --trace-file   "$trace_file"
             ;;
     esac
+
+    cat > "${out_dir}/run_config.json" <<EOF
+{
+  "condition": "${condition}",
+  "backbone": "${BACKBONE}",
+  "cuda_device": "${CUDA_DEVICE}",
+  "scheduler_policy": "${scheduler}",
+  "max_batch_size": ${MAX_BATCH_SIZE},
+  "phase_duration_s": ${PHASE_DURATION},
+  "rps_per_task": ${rps},
+  "device_port": ${DEVICE_PORT},
+  "device_port_2": ${DEVICE_PORT_2},
+  "device_startup_wait_s": ${DEVICE_STARTUP_WAIT}
+}
+EOF
 
     stop_devices
 }

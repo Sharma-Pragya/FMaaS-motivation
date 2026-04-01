@@ -125,6 +125,20 @@ def generate_traces(tasks: List[str], rps: float, duration: float) -> Dict[str, 
     return send_times
 
 
+def save_trace(trace: Dict[str, List[float]], path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w") as f:
+        json.dump(trace, f)
+    print(f"[Trace] Saved {sum(len(v) for v in trace.values())} send times → {path}")
+
+
+def load_trace(path: Path) -> Dict[str, List[float]]:
+    with path.open() as f:
+        trace = json.load(f)
+    print(f"[Trace] Loaded {sum(len(v) for v in trace.values())} send times ← {path}")
+    return trace
+
+
 async def run_open_loop(
     task_urls: Dict[str, str],          # {task: device_url}
     data: Dict[str, Dict],
@@ -246,6 +260,10 @@ def main() -> int:
     parser.add_argument("--duration",     type=float, default=float(os.environ.get("PHASE_DURATION", "180")))
     parser.add_argument("--warmup-secs",  type=float, default=10.0)
     parser.add_argument("--exp-dir",      default=os.environ.get("EXP_DIR", "experiments/sharing_benefit/results"))
+    parser.add_argument("--trace-file",   default=None,
+                        help="Path to pre-generated trace JSON. If provided, replays "
+                             "identical send times across runs. If not provided, generates "
+                             "a fresh trace and saves it to <exp-dir>/../trace.json.")
     args = parser.parse_args()
 
     out_dir = (SERVING_DIR / args.exp_dir).resolve()
@@ -285,9 +303,26 @@ def main() -> int:
 
     asyncio.run(asyncio.sleep(1))
 
-    # Generate traces once — each task uses a fixed seed so the trace is
-    # identical across all conditions (single, no_sharing, sharing)
-    send_times = generate_traces(BOTH_TASKS, args.rps, args.duration)
+    # Load or generate trace — ensures identical send times across all conditions
+    if args.trace_file:
+        trace_path = Path(args.trace_file)
+        if not trace_path.is_absolute():
+            trace_path = (SERVING_DIR / trace_path).resolve()
+        if trace_path.exists():
+            send_times = load_trace(trace_path)
+        else:
+            print(f"[Trace] {trace_path} not found — generating and saving ...")
+            send_times = generate_traces(BOTH_TASKS, args.rps, args.duration)
+            save_trace(send_times, trace_path)
+    else:
+        # Auto-save trace alongside results so it can be reused
+        auto_path = (out_dir.parent / "trace.json").resolve()
+        if auto_path.exists():
+            send_times = load_trace(auto_path)
+        else:
+            print(f"[Trace] Generating trace (seeds per task) → {auto_path}")
+            send_times = generate_traces(BOTH_TASKS, args.rps, args.duration)
+            save_trace(send_times, auto_path)
 
     print(f"\n[Run] Starting open-loop send ({args.duration}s) ...")
     records = asyncio.run(run_open_loop(
