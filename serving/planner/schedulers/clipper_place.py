@@ -151,7 +151,30 @@ class ClipperPlacementScheduler(BaseScheduler):
         demand_left = task.peak_workload
 
         backbone_mem = self.data.get_component_mem(backbone)
-        for server in state.get_servers_by_least_capacity(backbone_mem, max_util=self.config.util_factor):
+        candidate_servers = state.get_servers_by_least_capacity(
+            backbone_mem, max_util=self.config.util_factor,
+        )
+
+        # First, check whether any single new server can satisfy the full task
+        # before falling back to multi-device distribution.
+        for server in candidate_servers:
+            saved_batch_size_map = dict(self.batch_size_map)
+            saved_expected_batch_size_map = dict(self.expected_batch_size_map)
+
+            solo_plan, solo_demand_left = self._distribute_demand(
+                state, task, [(server.name, task_backbone)],
+                remaining_demand=demand_left,
+                existing_plan=dict(temp_plan),
+                util_tracker=dict(util_tracker),
+                real_backbone=backbone,
+            )
+            if solo_demand_left <= self.config.demand_epsilon:
+                return solo_plan, solo_demand_left
+
+            self.batch_size_map = saved_batch_size_map
+            self.expected_batch_size_map = saved_expected_batch_size_map
+
+        for server in candidate_servers:
             temp_plan, demand_left = self._distribute_demand(
                 state, task, [(server.name, task_backbone)],
                 remaining_demand=demand_left,

@@ -158,61 +158,146 @@ class FMaaSPlacementScheduler(BaseScheduler):
             Tuple of (deployment plan dict, remaining demand).
         """
         backbone = task.backbone
-        util_tracker: Dict[str, float] = {}
-        temp_plan: Dict = {}
-        demand_left = task.peak_workload
-
         # demand_tracker: accumulates total demand per (server, backbone) across
         # all tasks placed so far (including from state and this scheduling round).
         # Seeded from already-committed deployments in state.
-        demand_tracker: Dict[Tuple[str, str], Dict[str, float]] = {}
+        base_temp_plan: Dict = {}
+        base_util_tracker: Dict[str, float] = {}
+        base_demand_tracker: Dict[Tuple[str, str], Dict[str, float]] = {}
         # deploy_util_tracker: tracks utilization contributed by each (server, backbone)
-        deploy_util_tracker: Dict[Tuple[str, str], float] = {}
+        base_deploy_util_tracker: Dict[Tuple[str, str], float] = {}
         for d in state.get_all_deployments():
             key = (d.server_name, d.backbone)
-            demand_tracker[key] = {
+            base_demand_tracker[key] = {
                 t_name: t_info.request_per_sec
                 for t_name, t_info in d.task_info.items()
             }
             # The util on the deployment includes all deployments on that server,
             # so we estimate this deployment's share from its task demands
             # (will be recomputed accurately when we touch it)
-            deploy_util_tracker[key] = d.util  # initial estimate
+            base_deploy_util_tracker[key] = d.util  # initial estimate
 
-        # Phase 1: share with existing deployments that already use this backbone.
         active_endpoints = [
             (d.server_name, backbone)
             for d in state.find_active_deployments(backbone, self.config.util_factor)
         ]
-        if active_endpoints:
-            temp_plan, demand_left = self._distribute_demand(
-                state, task, active_endpoints,
-                remaining_demand=demand_left,
-                existing_plan=temp_plan,
-                util_tracker=util_tracker,
-                demand_tracker=demand_tracker,
-                deploy_util_tracker=deploy_util_tracker,
-            )
-            if demand_left <= self.config.demand_epsilon:
-                return temp_plan, demand_left
-
-        # Phase 2: place on new servers with enough free capacity.
         backbone_mem = self.data.get_component_mem(backbone)
-        for server in state.get_servers_by_least_capacity(backbone_mem, max_util=self.config.util_factor):
-            if (server.name, backbone) in temp_plan:
-                continue  # already allocated in Phase 1
-            temp_plan, demand_left = self._distribute_demand(
-                state, task, [(server.name, backbone)],
-                remaining_demand=demand_left,
-                existing_plan=temp_plan,
+        new_endpoints = [
+            (server.name, backbone)
+            for server in state.get_servers_by_least_capacity(
+                backbone_mem, max_util=self.config.util_factor,
+            )
+            if (server.name, backbone) not in active_endpoints
+        ]
+
+        # Prefer the smallest candidate pool that can satisfy the full task:
+        # 1) one active endpoint, 2) active endpoints together, then 3) add one
+        # new endpoint at a time and retry those same two checks.
+        candidate_pool = list(active_endpoints)
+        candidate_demand_left = task.peak_workload
+        candidate_plan: Dict = {}
+
+        while True:
+            single_plan, single_demand_left = self._try_full_fit_on_single_endpoint(
+                state, task, candidate_pool,
+                existing_plan=base_temp_plan,
+                util_tracker=base_util_tracker,
+                demand_tracker=base_demand_tracker,
+                deploy_util_tracker=base_deploy_util_tracker,
+            )
+            if single_demand_left <= self.config.demand_epsilon:
+                return single_plan, single_demand_left
+
+            if candidate_pool:
+                (
+                    candidate_plan,
+                    candidate_demand_left,
+                    candidate_batch_size_map,
+                    candidate_expected_batch_size_map,
+                ) = self._run_isolated_distribution(
+                    state, task, candidate_pool,
+                    remaining_demand=task.peak_workload,
+                    existing_plan=base_temp_plan,
+                    util_tracker=base_util_tracker,
+                    demand_tracker=base_demand_tracker,
+                    deploy_util_tracker=base_deploy_util_tracker,
+                )
+                if candidate_demand_left <= self.config.demand_epsilon:
+                    self.batch_size_map = candidate_batch_size_map
+                    self.expected_batch_size_map = candidate_expected_batch_size_map
+                    return candidate_plan, candidate_demand_left
+
+            if not new_endpoints:
+                return candidate_plan, candidate_demand_left
+
+            candidate_pool.append(new_endpoints.pop(0))
+
+    def _try_full_fit_on_single_endpoint(
+        self,
+        state: DeploymentState,
+        task: TaskSpec,
+        endpoints: List[Tuple[str, str]],
+        existing_plan: Dict,
+        util_tracker: Dict[str, float],
+        demand_tracker: Dict[Tuple[str, str], Dict[str, float]],
+        deploy_util_tracker: Dict[Tuple[str, str], float],
+    ) -> Tuple[Dict, float]:
+        """Try each endpoint in isolation and return the first full-fit plan."""
+        for endpoint in endpoints:
+            solo_plan, solo_demand_left, batch_size_map, expected_batch_size_map = self._run_isolated_distribution(
+                state, task, [endpoint],
+                remaining_demand=task.peak_workload,
+                existing_plan=existing_plan,
                 util_tracker=util_tracker,
                 demand_tracker=demand_tracker,
                 deploy_util_tracker=deploy_util_tracker,
             )
-            if demand_left <= self.config.demand_epsilon:
-                return temp_plan, demand_left
+            if solo_demand_left <= self.config.demand_epsilon:
+                self.batch_size_map = batch_size_map
+                self.expected_batch_size_map = expected_batch_size_map
+                return solo_plan, solo_demand_left
 
-        return temp_plan, demand_left
+        return dict(existing_plan), task.peak_workload
+
+    def _run_isolated_distribution(
+        self,
+        state: DeploymentState,
+        task: TaskSpec,
+        endpoints: List[Tuple[str, str]],
+        remaining_demand: float,
+        existing_plan: Dict,
+        util_tracker: Dict[str, float],
+        demand_tracker: Dict[Tuple[str, str], Dict[str, float]],
+        deploy_util_tracker: Dict[Tuple[str, str], float],
+    ) -> Tuple[Dict, float, Dict[Tuple[str, str], int], Dict[Tuple[str, str], int]]:
+        """Run distribution on a trial copy so placement policy stays explicit."""
+        saved_batch_size_map = dict(self.batch_size_map)
+        saved_expected_batch_size_map = dict(self.expected_batch_size_map)
+
+        trial_plan, trial_demand_left = self._distribute_demand(
+            state, task, endpoints,
+            remaining_demand=remaining_demand,
+            existing_plan=dict(existing_plan),
+            util_tracker=dict(util_tracker),
+            demand_tracker={
+                key: dict(task_demands)
+                for key, task_demands in demand_tracker.items()
+            },
+            deploy_util_tracker=dict(deploy_util_tracker),
+        )
+
+        trial_batch_size_map = dict(self.batch_size_map)
+        trial_expected_batch_size_map = dict(self.expected_batch_size_map)
+
+        self.batch_size_map = saved_batch_size_map
+        self.expected_batch_size_map = saved_expected_batch_size_map
+
+        return (
+            trial_plan,
+            trial_demand_left,
+            trial_batch_size_map,
+            trial_expected_batch_size_map,
+        )
 
     def _distribute_demand(
         self,
