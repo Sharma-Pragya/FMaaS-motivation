@@ -174,8 +174,8 @@ class PyTorchRuntime(BaseRuntime):
                     else:
                         sub_x = bx[indices]
                         sub_feats = self.pipeline.model_instance.forward(sub_x, sub_mask)
-                    if is_cuda:
-                        torch.cuda.synchronize(device)
+                    # if is_cuda:
+                    #     torch.cuda.synchronize(device)
                     proc_time_ns += time.time_ns() - bb_start
 
                     if is_cuda:
@@ -186,49 +186,65 @@ class PyTorchRuntime(BaseRuntime):
                     for out_pos, orig_idx in enumerate(indices):
                         feats_by_idx[orig_idx] = sub_feats[out_pos : out_pos + 1]
 
-            # --- Decoder pass (same as before, no adapter switching needed) ---
-            outputs        = []
-            swap_times     = []
-            decoder_times  = []
-            active_decoder = None
-            current_task   = None
+            # --- Decoder pass ---
+            # Group samples by task so same-task items can share one decoder
+            # forward while still preserving the original request order.
+            outputs       = [None] * len(task_names)
+            swap_times    = [0] * len(task_names)
+            decoder_times = [0] * len(task_names)
 
+            task_groups: dict[str, list[int]] = {}
             for index, task_name in enumerate(task_names):
+                task_groups.setdefault(task_name, []).append(index)
+
+            for task_name, indices in task_groups.items():
                 swap_start = time.time_ns()
-                if current_task != task_name:
-                    current_task   = task_name
-                    decoder_name   = self.decoders.get(task_name)
-                    active_decoder = self.pipeline.decoders[decoder_name] if decoder_name else None
-                swap_times.append(time.time_ns() - swap_start)
+                decoder_name = self.decoders.get(task_name)
+                active_decoder = self.pipeline.decoders[decoder_name] if decoder_name else None
+                swap_elapsed = time.time_ns() - swap_start
+                for index in indices:
+                    swap_times[index] = swap_elapsed
 
                 dec_start = time.time_ns()
-                feat_i = feats_by_idx[index]
+                feat_batch = [feats_by_idx[index] for index in indices]
+
                 if active_decoder is not None:
+                    feat_input = torch.cat(feat_batch, dim=0)
                     with torch.no_grad():
-                        logit_i = active_decoder.forward(feat_i)
+                        logits = active_decoder.forward(feat_input)
                     if is_cuda:
-                        torch.cuda.synchronize(device)
+                        # torch.cuda.synchronize(device)
                         dec_bytes = torch.cuda.memory_allocated(device)
                         if dec_bytes > peak_bytes:
                             peak_bytes = dec_bytes
                     if isinstance(active_decoder.criterion, nn.CrossEntropyLoss):
-                        logit_i = torch.argmax(logit_i, dim=1)
+                        logits = torch.argmax(logits, dim=1)
                     if (
                         hasattr(active_decoder, "requires_model")
                         and active_decoder.requires_model
                         and hasattr(self.pipeline.model_instance.model, "normalizer")
                     ):
-                        logit_i = self.pipeline.model_instance.model.normalizer(x=logit_i, mode="denorm")
-                    result_i = logit_i.detach().cpu().numpy()
-                elif isinstance(feat_i, (list, str)):
-                    # VLM output: list of text strings — take the first element
-                    text = feat_i[0] if isinstance(feat_i, list) else feat_i
-                    result_i = np.array([text], dtype=object)
-                else:
-                    result_i = feat_i.detach().cpu().float().numpy()
+                        logits = self.pipeline.model_instance.model.normalizer(x=logits, mode="denorm")
+                    result_batch = logits.detach().cpu().numpy()
 
-                decoder_times.append(time.time_ns() - dec_start)
-                outputs.append(result_i.reshape(-1))
+                    if result_batch.ndim == 0:
+                        result_batch = result_batch.reshape(1)
+                    batched_results = [np.asarray(result_batch[i:i + 1]) for i in range(len(indices))]
+                else:
+                    batched_results = []
+                    for feat_i in feat_batch:
+                        if isinstance(feat_i, (list, str)):
+                            # VLM output: list of text strings — take the first element
+                            text = feat_i[0] if isinstance(feat_i, list) else feat_i
+                            batched_results.append(np.array([text], dtype=object))
+                        else:
+                            batched_results.append(feat_i.detach().cpu().float().numpy())
+
+                dec_elapsed = time.time_ns() - dec_start
+                per_item_dec_elapsed = dec_elapsed // len(indices)
+                for index, result_i in zip(indices, batched_results):
+                    decoder_times[index] = per_item_dec_elapsed
+                    outputs[index] = result_i.reshape(-1)
             end_ns = time.time_ns()
 
             return BatchRunResult(
