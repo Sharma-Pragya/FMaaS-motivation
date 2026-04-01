@@ -9,23 +9,70 @@
 #   sharing             — 1 server (port A), both tasks, STFQ
 #
 # Environment variables (all optional):
-#   CUDA_DEVICE       cuda:0
-#   BACKBONE          momentbase
-#   RPS               20
-#   PHASE_DURATION    180
-#   DEVICE_PORT       8000
-#   DEVICE_PORT_2     8001
-#   MAX_BATCH_SIZE    5
-#   RESULTS_BASE      experiments/sharing_benefit/results
-#   DECODER_DIR       /project/pi_shenoy_umass_edu/hshastri/FMTK/models/tsfm/finetuned
+#   CONDA_ENV          fmtk (conda environment name)
+#   FMTK_DIR           ../../../FMTK (relative path or absolute)
+#   FMAAS_DIR          ../.. (relative path or absolute)
+#   DECODER_DIR        ${FMTK_DIR}/models/tsfm/finetuned
+#   CUDA_DEVICE        cuda:0
+#   BACKBONE           momentbase
+#   RPS_SWEEP          20,40,60
+#   PHASE_DURATION     180
+#   DEVICE_PORT        8000
+#   DEVICE_PORT_2      8001
+#   MAX_BATCH_SIZE     5
+#   RESULTS_BASE       experiments/sharing_benefit/results
+#   DEVICE_STARTUP_WAIT 5
 
 set -euo pipefail
+
+# ---------------------------------------------------------------------------
+# Path setup
+# ---------------------------------------------------------------------------
 SERVING_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$SERVING_DIR"
 
-PYTHONPATH_EXTRA="/project/pi_shenoy_umass_edu/hshastri/FMTK/src:/project/pi_shenoy_umass_edu/hshastri/FMaaS-motivation"
-export PYTHONPATH="${PYTHONPATH_EXTRA}:${PYTHONPATH:-}"
+# Conda environment for Python
+CONDA_ENV="${CONDA_ENV:-fmtk}"
 
+# Project directories (can be relative or absolute)
+FMTK_DIR="${FMTK_DIR:-../../../FMTK}"
+FMAAS_DIR="${FMAAS_DIR:-../..}"
+
+# Convert to absolute paths if relative
+if [[ ! "$FMTK_DIR" = /* ]]; then
+    FMTK_DIR="$(cd "$SERVING_DIR" && cd "$FMTK_DIR" && pwd)"
+fi
+if [[ ! "$FMAAS_DIR" = /* ]]; then
+    FMAAS_DIR="$(cd "$SERVING_DIR" && cd "$FMAAS_DIR" && pwd)"
+fi
+
+# Validate paths exist
+if [[ ! -d "$FMTK_DIR" ]]; then
+    echo "ERROR: FMTK_DIR not found at: $FMTK_DIR"
+    echo "Set FMTK_DIR environment variable to correct path"
+    exit 1
+fi
+if [[ ! -d "$FMAAS_DIR" ]]; then
+    echo "ERROR: FMAAS_DIR not found at: $FMAAS_DIR"
+    echo "Set FMAAS_DIR environment variable to correct path"
+    exit 1
+fi
+
+# Set up PYTHONPATH
+export PYTHONPATH="${FMTK_DIR}/src:${FMAAS_DIR}:${PYTHONPATH:-}"
+
+# Python executable from conda environment
+# Try conda run first, fall back to explicit PYTHON variable
+if command -v conda &> /dev/null; then
+    PYTHON="${PYTHON:-conda run -n ${CONDA_ENV} python}"
+else
+    # If conda not in PATH, try to find Python from environment
+    PYTHON="${PYTHON:-python}"
+fi
+
+# ---------------------------------------------------------------------------
+# Experiment configuration
+# ---------------------------------------------------------------------------
 CUDA_DEVICE="${CUDA_DEVICE:-cuda:0}"
 BACKBONE="${BACKBONE:-momentbase}"
 RPS_SWEEP="${RPS_SWEEP:-20,40,60}"
@@ -34,7 +81,7 @@ DEVICE_PORT="${DEVICE_PORT:-8000}"
 DEVICE_PORT_2="${DEVICE_PORT_2:-8001}"
 MAX_BATCH_SIZE="${MAX_BATCH_SIZE:-5}"
 RESULTS_BASE="${RESULTS_BASE:-experiments/sharing_benefit/results}"
-PYTHON="${PYTHON:-/home/hshastri_umass_edu/.conda/envs/fmtk/bin/python}"
+DECODER_DIR="${DECODER_DIR:-${FMTK_DIR}/models/tsfm/finetuned}"
 DEVICE_STARTUP_WAIT="${DEVICE_STARTUP_WAIT:-5}"
 
 LOG_DIR="${RESULTS_BASE}/logs"
@@ -42,10 +89,13 @@ mkdir -p "$LOG_DIR"
 
 echo "================================================================"
 echo "  Motivation Experiment #2 — Sharing Benefit"
-echo "  Backbone      : $BACKBONE"
-echo "  RPS sweep     : $RPS_SWEEP"
-echo "  Duration/run  : ${PHASE_DURATION}s"
-echo "  Results       : $RESULTS_BASE"
+echo "  Conda env      : $CONDA_ENV"
+echo "  FMTK_DIR       : $FMTK_DIR"
+echo "  FMAAS_DIR      : $FMAAS_DIR"
+echo "  Backbone       : $BACKBONE"
+echo "  RPS sweep      : $RPS_SWEEP"
+echo "  Duration/run   : ${PHASE_DURATION}s"
+echo "  Results        : $RESULTS_BASE"
 echo "================================================================"
 
 # ---------------------------------------------------------------------------
@@ -77,7 +127,7 @@ start_device() {
     pkill -f "device/main.py.*--port ${port}" 2>/dev/null || true
     sleep 1
     echo "[run.sh] Starting device server port=$port scheduler=$scheduler ..."
-    "$PYTHON" -u "$SERVING_DIR/device/main.py" \
+    $PYTHON -u "$SERVING_DIR/device/main.py" \
         --port              "$port"          \
         --runtime-type      pytorch          \
         --cuda              "$CUDA_DEVICE"   \
@@ -107,7 +157,7 @@ run_condition() {
     case "$condition" in
         single_ecgclass)
             DEVICE_PID=$(start_device "$DEVICE_PORT" "fifo" "$LOG_DIR/device_${condition}_rps${rps}.log" "$rps")
-            "$PYTHON" -u experiments/sharing_benefit/run.py \
+            $PYTHON -u experiments/sharing_benefit/run.py \
                 --condition    single_ecgclass \
                 --device-url   "localhost:${DEVICE_PORT}" \
                 --backbone     "$BACKBONE" \
@@ -117,7 +167,7 @@ run_condition() {
             ;;
         single_gestureclass)
             DEVICE_PID=$(start_device "$DEVICE_PORT" "fifo" "$LOG_DIR/device_${condition}_rps${rps}.log" "$rps")
-            "$PYTHON" -u experiments/sharing_benefit/run.py \
+            $PYTHON -u experiments/sharing_benefit/run.py \
                 --condition    single_gestureclass \
                 --device-url   "localhost:${DEVICE_PORT}" \
                 --backbone     "$BACKBONE" \
@@ -128,7 +178,7 @@ run_condition() {
         no_sharing)
             DEVICE_PID=$(start_device   "$DEVICE_PORT"   "fifo" "$LOG_DIR/device_${condition}_1_rps${rps}.log" "$rps")
             DEVICE_PID_2=$(start_device "$DEVICE_PORT_2" "fifo" "$LOG_DIR/device_${condition}_2_rps${rps}.log" "$rps")
-            "$PYTHON" -u experiments/sharing_benefit/run.py \
+            $PYTHON -u experiments/sharing_benefit/run.py \
                 --condition    no_sharing \
                 --device-url   "localhost:${DEVICE_PORT}" \
                 --device-url-2 "localhost:${DEVICE_PORT_2}" \
@@ -139,7 +189,7 @@ run_condition() {
             ;;
         sharing)
             DEVICE_PID=$(start_device "$DEVICE_PORT" "stfq" "$LOG_DIR/device_${condition}_rps${rps}.log" "$rps")
-            "$PYTHON" -u experiments/sharing_benefit/run.py \
+            $PYTHON -u experiments/sharing_benefit/run.py \
                 --condition    sharing \
                 --device-url   "localhost:${DEVICE_PORT}" \
                 --backbone     "$BACKBONE" \
