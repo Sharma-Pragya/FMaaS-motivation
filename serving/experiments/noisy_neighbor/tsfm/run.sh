@@ -14,11 +14,57 @@
 #   PHASE_DURATIONS=30                      # single value → same duration for all phases
 
 set -euo pipefail
+
+# ---------------------------------------------------------------------------
+# Path setup
+# ---------------------------------------------------------------------------
 SERVING_DIR="$(cd "$(dirname "$0")/../../.." && pwd)"
 cd "$SERVING_DIR"
 
-PYTHONPATH_EXTRA="/project/pi_shenoy_umass_edu/hshastri/FMTK/src:/project/pi_shenoy_umass_edu/hshastri/FMaaS-motivation"
-export PYTHONPATH="${PYTHONPATH_EXTRA}:${PYTHONPATH:-}"
+# Project directories (can be relative or absolute)
+# Default: FMTK is sibling directory of FMaaS-motivation, FMAAS_DIR is parent of serving
+FMTK_DIR="${FMTK_DIR:-../../FMTK}"
+FMAAS_DIR="${FMAAS_DIR:-..}"
+
+# Convert to absolute paths if relative
+if [[ ! "$FMTK_DIR" = /* ]]; then
+    # Try relative to SERVING_DIR first
+    if [[ -d "$SERVING_DIR/$FMTK_DIR" ]]; then
+        FMTK_DIR="$SERVING_DIR/$FMTK_DIR"
+    # Try from workspace root (one level up from FMaaS-motivation)
+    elif [[ -d "$(dirname "$SERVING_DIR")/../FMTK" ]]; then
+        FMTK_DIR="$(cd "$(dirname "$SERVING_DIR")/../FMTK" && pwd)"
+    fi
+fi
+
+if [[ ! "$FMAAS_DIR" = /* ]]; then
+    # Try relative to SERVING_DIR first
+    if [[ -d "$SERVING_DIR/$FMAAS_DIR" ]]; then
+        FMAAS_DIR="$SERVING_DIR/$FMAAS_DIR"
+    # Try parent directory
+    elif [[ -d "$(dirname "$SERVING_DIR")" ]]; then
+        FMAAS_DIR="$(dirname "$SERVING_DIR")"
+    fi
+fi
+
+# Validate paths exist
+if [[ ! -d "$FMTK_DIR" ]]; then
+    echo "ERROR: FMTK_DIR not found at: $FMTK_DIR"
+    echo "Please set FMTK_DIR environment variable:"
+    echo "  export FMTK_DIR=/path/to/FMTK"
+    echo "  bash experiments/noisy_neighbor/tsfm/run.sh"
+    exit 1
+fi
+if [[ ! -d "$FMAAS_DIR" ]]; then
+    echo "ERROR: FMAAS_DIR not found at: $FMAAS_DIR"
+    echo "Please set FMAAS_DIR environment variable:"
+    echo "  export FMAAS_DIR=/path/to/FMaaS-motivation"
+    echo "  bash experiments/noisy_neighbor/tsfm/run.sh"
+    exit 1
+fi
+
+# Set up PYTHONPATH
+export PYTHONPATH="${FMTK_DIR}/src:${FMAAS_DIR}:${PYTHONPATH:-}"
 
 DEVICE_PORT="${DEVICE_PORT:-8000}"
 CUDA_DEVICE="${CUDA_DEVICE:-cuda:0}"
@@ -45,7 +91,16 @@ RUNS=(
 
 RESULTS_BASE="${RESULTS_BASE:-experiments/noisy_neighbor/tsfm/results}"
 DEVICE_STARTUP_WAIT="${DEVICE_STARTUP_WAIT:-5}"
-PYTHON="${PYTHON:-/home/hshastri_umass_edu/.conda/envs/fmtk/bin/python}"
+
+# Python executable from conda environment
+# Try conda run first, fall back to explicit PYTHON variable
+if command -v conda &> /dev/null; then
+    CONDA_ENV="${CONDA_ENV:-fmtk}"
+    PYTHON="${PYTHON:-conda run -n ${CONDA_ENV} python}"
+else
+    # If conda not in PATH, try to find Python from environment
+    PYTHON="${PYTHON:-python}"
+fi
 
 # ---------------------------------------------------------------------------
 # Resolve phase count and per-phase duration list
