@@ -11,8 +11,7 @@
 # Environment variables (all optional):
 #   CONDA_ENV          fmtk (conda environment name)
 #   FMTK_DIR           ../../../FMTK (relative path or absolute)
-#   FMAAS_DIR          ../.. (relative path or absolute)
-#   DECODER_DIR        ${FMTK_DIR}/models/tsfm/finetuned
+#   FMAAS_DIR          ../.. (relative path or absolute)#   DATASET_DIR        ${FMTK_DIR}/dataset#   DECODER_DIR        ${FMTK_DIR}/models/tsfm/finetuned
 #   CUDA_DEVICE        cuda:0
 #   BACKBONE           momentbase
 #   RPS_SWEEP          20,40,60
@@ -79,6 +78,9 @@ fi
 # Set up PYTHONPATH
 export PYTHONPATH="${FMTK_DIR}/src:${FMAAS_DIR}:${PYTHONPATH:-}"
 
+# Export dataset directory for FMTK to find datasets
+export DATASET_DIR
+
 # Python executable from conda environment
 # Try conda run first, fall back to explicit PYTHON variable
 if command -v conda &> /dev/null; then
@@ -100,6 +102,7 @@ DEVICE_PORT_2="${DEVICE_PORT_2:-8001}"
 MAX_BATCH_SIZE="${MAX_BATCH_SIZE:-5}"
 RESULTS_BASE="${RESULTS_BASE:-experiments/sharing_benefit/results}"
 DECODER_DIR="${DECODER_DIR:-${FMTK_DIR}/models/tsfm/finetuned}"
+DATASET_DIR="${DATASET_DIR:-${FMTK_DIR}/dataset}"
 DEVICE_STARTUP_WAIT="${DEVICE_STARTUP_WAIT:-5}"
 
 LOG_DIR="${RESULTS_BASE}/logs"
@@ -110,6 +113,7 @@ echo "  Motivation Experiment #2 — Sharing Benefit"
 echo "  Conda env      : $CONDA_ENV"
 echo "  FMTK_DIR       : $FMTK_DIR"
 echo "  FMAAS_DIR      : $FMAAS_DIR"
+echo "  DATASET_DIR    : $DATASET_DIR"
 echo "  Backbone       : $BACKBONE"
 echo "  RPS sweep      : $RPS_SWEEP"
 echo "  Duration/run   : ${PHASE_DURATION}s"
