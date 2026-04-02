@@ -19,7 +19,7 @@ SERVING_DIR = Path(__file__).resolve().parents[3]
 if str(SERVING_DIR) not in sys.path:
     sys.path.insert(0, str(SERVING_DIR))
 
-from serving.device.runtime import PyTorchRuntime
+from device.runtime import PyTorchRuntime
 from site_manager.config import DATASET_DIR
 
 BACKBONE     = "momentbase"
