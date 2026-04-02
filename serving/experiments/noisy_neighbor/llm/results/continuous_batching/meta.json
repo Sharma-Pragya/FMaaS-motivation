@@ -1,0 +1,18 @@
+{
+  "backbone": "qwen2.5-0.5b",
+  "policy_label": "continuous_batching",
+  "victim_task": "llm_sst2",
+  "victim_rps": 10.0,
+  "aggressor_task": "llm_ag_news",
+  "runtime_type": "vllm",
+  "phase_boundaries_s": [
+    5.0,
+    15.0,
+    20.0
+  ],
+  "aggressor_rps_phases": [
+    10.0,
+    70.0,
+    15.0
+  ]
+}

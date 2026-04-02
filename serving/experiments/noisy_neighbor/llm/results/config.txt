@@ -1,0 +1,14 @@
+Experiment config - Mon Mar 30 04:23:47 UTC 2026
+Runtime: vllm
+Backbone: qwen2.5-0.5b
+Victim: llm_sst2 @ 10 rps (constant)
+Aggressor: llm_ag_news
+Policy label: continuous_batching
+gpu_memory_utilization: 0.42
+max_model_len: 256
+Number of phases: 3
+  Phase 1 (5s): aggressor @ 10 rps
+  Phase 2 (10s): aggressor @ 70 rps
+  Phase 3 (5s): aggressor @ 15 rps
+Total duration: 20s
+Results base: experiments/noisy_neighbor/llm/results
