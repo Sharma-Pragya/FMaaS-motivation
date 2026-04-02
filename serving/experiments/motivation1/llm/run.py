@@ -66,7 +66,7 @@ def build_data(max_samples: int = 50) -> Dict[str, List[str]]:
     from fmtk.datasetloaders.hellaswag import HellaSwagDataset
 
     ds_cfg  = {"max_samples": max_samples}
-    collate = lambda batch: {"x": [i["x"] for i in batch], "y": [i["y"] for i in batch]}
+    collate = lambda batch: {"question": [i["question"] for i in batch], "y": [i["y"] for i in batch]}
     datasets = {
         "ag_news":       AGNewsDataset(ds_cfg, {"task_type": "text_classification"}, "test"),
         "sst2":          SST2Dataset(ds_cfg, {"task_type": "sentiment"}, "test"),
@@ -82,7 +82,7 @@ def build_data(max_samples: int = 50) -> Dict[str, List[str]]:
     result = {}
     for task, ds in datasets.items():
         loader = DataLoader(ds, batch_size=1, shuffle=False, collate_fn=collate)
-        result[task] = [batch["x"][0] for batch in loader]
+        result[task] = [batch["question"][0] for batch in loader]
     return result
 
 
