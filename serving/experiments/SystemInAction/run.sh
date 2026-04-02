@@ -19,9 +19,9 @@ set -euo pipefail
 SCHEDULERS="${SCHEDULERS:-fmaas_place clipper_place}"
 
 # ── Shared configuration ─────────────────────────────────────────────
-REQ_RATE="${REQ_RATE:-150}"
+REQ_RATE="${REQ_RATE:-95.0}"
 TRACE="${TRACE:-poisson_per_task}"
-DURATION="${DURATION:-60}"
+DURATION="${DURATION:-20}"
 SEED="${SEED:-42}"
 EXP_DIR="${EXP_DIR:-experiments/SystemInAction/results}"
 EXP_TYPE="${EXP_TYPE:-SystemInAction}"
@@ -29,6 +29,7 @@ MAX_BATCH_SIZE="${MAX_BATCH_SIZE:-5}"
 MAX_BATCH_WAIT_MS="${MAX_BATCH_WAIT_MS:-0}"
 ISOLATION_MODE="${ISOLATION_MODE:-shared}"
 WARMUP_GAP="${WARMUP_GAP:-2.0}"
+MAX_MODEL_LEN="${MAX_MODEL_LEN:-256}"
 
 # ── Paths ────────────────────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -82,6 +83,7 @@ run_scheduler() {
         --max-batch-wait-ms "$MAX_BATCH_WAIT_MS" \
         --isolation-mode    "$ISOLATION_MODE" \
         --warmup-gap        "$WARMUP_GAP" \
+        --max-model-len     "$MAX_MODEL_LEN" \
         2>&1 | tee "$LOG" &
     RUNNER_PID=$!
 

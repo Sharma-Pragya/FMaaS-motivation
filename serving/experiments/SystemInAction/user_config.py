@@ -3,31 +3,31 @@ devices = {
   'device1': {
     'type': 'NVIDIA A16',
     'mem': 16000,  # in MB
-    'ip': '10.100.20.50',
+    'ip': '10.100.20.51',
     'site_manager':'site2',
     'cuda': 'cuda:0',
   },
   'device2': {
     'type': 'NVIDIA A16',
     'mem': 16000,  # in MB
-    'ip': '10.100.20.50',
+    'ip': '10.100.20.52',
     'site_manager':'site2',
-    'cuda': 'cuda:1',
-  },
-  'device3': {
-    'type': 'NVIDIA A16',
-    'mem': 16000,  # in MB
-    'ip': '10.100.20.50',
-    'site_manager':'site2',
-    'cuda': 'cuda:2',
-  },
-  'device4': {
-    'type': 'NVIDIA A16',
-    'mem': 16000,  # in MB
-    'ip': '10.100.20.51',
-    'site_manager':'site1',
     'cuda': 'cuda:0',
   },
+  # 'device3': {
+  #   'type': 'NVIDIA A16',
+  #   'mem': 16000,  # in MB
+  #   'ip': '10.100.20.50',
+  #   'site_manager':'site2',
+  #   'cuda': 'cuda:2',
+  # },
+  # 'device4': {
+  #   'type': 'NVIDIA A16',
+  #   'mem': 16000,  # in MB
+  #   'ip': '10.100.20.51',
+  #   'site_manager':'site1',
+  #   'cuda': 'cuda:0',
+  # },
   # 'device4': {
   #   'type': 'A16',
   #   'mem': 16000,  # in MB
@@ -67,7 +67,8 @@ tasks={
     'peak_workload':50,
     'latency':3.86*factor, #(3.86,86.34)
     'metric':'accuracy',
-    'value':0.7        
+    'value':0.7,
+    'backbone': 'momentbase'  
     },
     'gestureclass':
     {
@@ -75,37 +76,49 @@ tasks={
     'peak_workload':50,
     'latency':3.88*factor, #(3.88,86.53)
     'metric':'accuracy',
-    'value':0.6        
+    'value':0.6,
+    'backbone': 'momentbase'          
     },
-    'etth1fore':{
-    'type':'forecasting',
-    'peak_workload':50,
-    'latency':5.58*factor, #(5.58,239.15)
-    'metric':'mae',
-    },
-    'weatherfore':{
-    'type':'forecasting',
-    'peak_workload':50,
-    'latency':5.58*factor, #(5.58,239.15)
-    'metric':'mae',
-    },
-    'exchangefore':{
-    'type':'forecasting',
-    'peak_workload':50,
-    'latency':5.58*factor, #(5.58,239.15)
-    'metric':'mae',
-    },
-    'eclfore':{
-    'type':'forecasting',
-    'peak_workload':50,
-    'latency':5.58*factor, #(5.58,239.15)
-    'metric':'mae',
-    },
-    'trafficfore':{
-    'type':'forecasting',
-    'peak_workload':50,
-    'latency':5.58*factor, #(5.58,239.15)
-    'metric':'mae',
-    },
+    # 'etth1fore':{
+    # 'type':'forecasting',
+    # 'peak_workload':50,
+    # 'latency':5.58*factor, #(5.58,239.15)
+    # 'metric':'mae',
+    # 'value': 5.0,
+    # 'backbone': 'momentbase'  
+    # },
+    # 'weatherfore':{
+    # 'type':'forecasting',
+    # 'peak_workload':50,
+    # 'latency':5.58*factor, #(5.58,239.15)
+    # 'metric':'mae',
+    # 'value': 5.0,
+    # 'backbone': 'momentbase'  
+    # },
+    # 'exchangefore':{
+    # 'type':'forecasting',
+    # 'peak_workload':50,
+    # 'latency':5.58*factor, #(5.58,239.15)
+    # 'metric':'mae',
+    # 'value': 5.0,
+    # 'backbone': 'momentbase'  
+    # },
+    # 'eclfore':{
+    # 'type':'forecasting',
+    # 'peak_workload':50,
+    # 'latency':5.58*factor, #(5.58,239.15)
+    # 'metric':'mae',
+    # 'value': 5.0,
+    # 'backbone': 'momentbase'  
+
+    # },
+    # 'trafficfore':{
+    # 'type':'forecasting',
+    # 'peak_workload':50,
+    # 'latency':5.58*factor, #(5.58,239.15)
+    # 'metric':'mae',
+    # 'value': 5.0,
+    # 'backbone': 'momentbase'  
+    # },
 
 }

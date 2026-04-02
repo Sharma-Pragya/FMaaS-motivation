@@ -38,12 +38,12 @@ parser.add_argument("--data", default=None,
                     help="Path to result directory containing CSV and JSONs")
 parser.add_argument("--compare", default="experiments/SystemInAction/results",
                     help="Path to results root dir; generates latency comparison across methods")
-parser.add_argument("--run", default="150",
-                    help="Run subdirectory name used with --compare (default: 150)")
+parser.add_argument("--run", default=None,
+                    help="Run subdirectory name used with --compare (auto-detected if not set)")
 args = parser.parse_args()
 
 BASE     = os.path.dirname(__file__)
-DATA_DIR = args.data or os.path.join(BASE, "results", "fmaas_share", "150")
+DATA_DIR = args.data or os.path.join(BASE, "results", "fmaas_share")
 CSV_PATH    = os.path.join(DATA_DIR, "request_latency_results.csv")
 PLAN_PATH   = os.path.join(DATA_DIR, "deployment_plan.json")
 DEPLOY_PATH = os.path.join(DATA_DIR, "model_deployment_results.json")
@@ -54,6 +54,8 @@ os.makedirs(PLOTS_DIR, exist_ok=True)
 
 OUT_LATENCY    = os.path.join(PLOTS_DIR, "plot_latency.png")
 OUT_THROUGHPUT = os.path.join(PLOTS_DIR, "plot_throughput.png")
+OUT_LATENCY_CDF    = os.path.join(PLOTS_DIR, "plot_latency_cdf.png")
+OUT_THROUGHPUT_CDF = os.path.join(PLOTS_DIR, "plot_throughput_cdf.png")
 OUT_DEPLOY     = os.path.join(PLOTS_DIR, "plot_deployment.png")
 OUT_WORKLOAD   = os.path.join(PLOTS_DIR, "plot_workload_trace.png")
 
@@ -201,12 +203,75 @@ def _bin_latency(times: np.ndarray, lats: np.ndarray, max_time: float):
     return centers, means
 
 
+def _empirical_cdf(values: np.ndarray):
+    """Compute empirical CDF of values. Returns (sorted_values, cdf_probabilities)."""
+    if len(values) == 0:
+        return np.array([], dtype=float), np.array([], dtype=float)
+    sorted_values = np.sort(values)
+    cdf = np.arange(1, len(sorted_values) + 1, dtype=float) / len(sorted_values)
+    return sorted_values, cdf
+
+
+def _completion_counts(rows, bin_s=1.0):
+    """Bin completion times into per-second windows. Returns per-bin counts."""
+    times = np.array([r["completion_time"] for r in rows], dtype=float)
+    if len(times) == 0:
+        return np.array([], dtype=float)
+    bins = np.arange(times.min(), times.max() + bin_s, bin_s)
+    counts, _ = np.histogram(times, bins=bins)
+    return counts.astype(float)
+
+
+def _plot_latency_cdf(ax: plt.Axes, rows):
+    """Plot latency CDF on axis."""
+    values = np.array([r["end_to_end_latency(ms)"] for r in rows], dtype=float)
+    xs, ys = _empirical_cdf(values)
+    if len(xs):
+        ax.plot(xs, ys, color="black", linewidth=1.0)
+    ax.set_xlabel("Latency (ms)")
+    ax.set_ylabel("CDF")
+    ax.set_ylim(0, 1.05)
+    ax.grid(axis="both", zorder=0)
+    ax.set_axisbelow(True)
+
+
+def _plot_throughput_cdf(ax: plt.Axes, rows):
+    """Plot throughput CDF (per-second binned. ) on axis."""
+    counts = _completion_counts(rows, bin_s=1.0)
+    xs, ys = _empirical_cdf(counts)
+    if len(xs):
+        ax.plot(xs, ys, color="black", linewidth=1.0)
+        ax.set_xlim(0, xs[-1])
+    ax.set_xlabel("Throughput (req/s)")
+    ax.set_ylabel("CDF")
+    ax.set_ylim(0, 1.05)
+    ax.grid(axis="both", zorder=0)
+    ax.set_axisbelow(True)
+
+
 apply_paper_style()
 
 # ── Comparison plots ───────────────────────────────────────────────────────────
 if args.compare:
     COMPARE_DIR = args.compare
-    RUN = args.run
+
+    # Auto-detect run folder: find the first subdir that has a CSV in any method dir
+    if args.run is not None:
+        RUN = args.run
+    else:
+        RUN = None
+        for m in sorted(os.listdir(COMPARE_DIR)):
+            m_path = os.path.join(COMPARE_DIR, m)
+            if not os.path.isdir(m_path):
+                continue
+            for sub in sorted(os.listdir(m_path)):
+                if os.path.isfile(os.path.join(m_path, sub, "request_latency_results.csv")):
+                    RUN = sub
+                    break
+            if RUN:
+                break
+        if RUN is None:
+            RUN = "1"  # fallback
 
     # Discover methods: subdirs of COMPARE_DIR that contain <RUN>/request_latency_results.csv
     methods = sorted([
@@ -273,8 +338,9 @@ if args.compare:
             t_max_m = float(times.max())
             t_max_lat = max(t_max_lat, t_max_m)
             xs, ys = _bin_latency(times, lats, t_max_m)
+            mask = np.isfinite(ys)
             color = METHOD_COLORS[m_idx % len(METHOD_COLORS)]
-            ax_lat.plot(xs, ys, color=color, linewidth=1.0, label=METHOD_DISPLAY.get(m, m))
+            ax_lat.plot(xs[mask], ys[mask], color=color, linewidth=1.0, label=METHOD_DISPLAY.get(m, m))
             all_ys_lat.extend([v for v in ys if np.isfinite(v)])
 
         ax_lat.set_xlabel("Time (s)")
@@ -323,6 +389,66 @@ if args.compare:
         save_figure(fig_thr, out_thr)
         plt.close(fig_thr)
 
+        # ── Comparison Figure C: Latency CDF ──────────────────────────────────
+        fig_cdf_lat, ax_cdf_lat = plt.subplots(1, 1, figsize=(3.3, 1.6))
+
+        all_cdf_lats = []
+        for m_idx, m in enumerate(methods):
+            rows_m, _ = method_data[m]
+            lats = np.array([r["end_to_end_latency(ms)"] for r in rows_m])
+            xs, ys = _empirical_cdf(lats)
+            if len(xs):
+                color = METHOD_COLORS[m_idx % len(METHOD_COLORS)]
+                ax_cdf_lat.plot(xs, ys, color=color, linewidth=1.0, label=METHOD_DISPLAY.get(m, m))
+                all_cdf_lats.extend(xs.tolist())
+
+        ax_cdf_lat.set_xlabel("Latency (ms)")
+        ax_cdf_lat.set_ylabel("CDF")
+        xmax = max(all_cdf_lats) if all_cdf_lats else 1.0
+        ax_cdf_lat.set_xlim(0, xmax)
+        ax_cdf_lat.set_ylim(0, 1.05)
+        ax_cdf_lat.grid(axis="both", zorder=0)
+        ax_cdf_lat.set_axisbelow(True)
+        handles_cdf_lat, labels_cdf_lat = ax_cdf_lat.get_legend_handles_labels()
+        fig_cdf_lat.legend(handles_cdf_lat, labels_cdf_lat, loc="upper center",
+                           bbox_to_anchor=(0.5, 1.02), ncol=2, frameon=False,
+                           handlelength=1.2, handletextpad=0.3, columnspacing=0.8)
+        fig_cdf_lat.tight_layout(rect=(0, 0, 1, 0.97))
+
+        out_cdf_lat = os.path.join(cmp_plots_dir, f"plot_latency_cdf_comparison_{RUN}.png")
+        save_figure(fig_cdf_lat, out_cdf_lat)
+        plt.close(fig_cdf_lat)
+
+        # ── Comparison Figure D: Throughput CDF ───────────────────────────────
+        fig_cdf_thr, ax_cdf_thr = plt.subplots(1, 1, figsize=(3.3, 1.6))
+
+        all_cdf_thrs = []
+        for m_idx, m in enumerate(methods):
+            rows_m, _ = method_data[m]
+            counts = _completion_counts(rows_m, bin_s=1.0)
+            xs, ys = _empirical_cdf(counts)
+            if len(xs):
+                color = METHOD_COLORS[m_idx % len(METHOD_COLORS)]
+                ax_cdf_thr.plot(xs, ys, color=color, linewidth=1.0, label=METHOD_DISPLAY.get(m, m))
+                all_cdf_thrs.extend(xs.tolist())
+
+        ax_cdf_thr.set_xlabel("Throughput (req/s)")
+        ax_cdf_thr.set_ylabel("CDF")
+        if all_cdf_thrs:
+            ax_cdf_thr.set_xlim(0, max(all_cdf_thrs))
+        ax_cdf_thr.set_ylim(0, 1.05)
+        ax_cdf_thr.grid(axis="both", zorder=0)
+        ax_cdf_thr.set_axisbelow(True)
+        handles_cdf_thr, labels_cdf_thr = ax_cdf_thr.get_legend_handles_labels()
+        fig_cdf_thr.legend(handles_cdf_thr, labels_cdf_thr, loc="upper center",
+                           bbox_to_anchor=(0.5, 1.02), ncol=2, frameon=False,
+                           handlelength=1.2, handletextpad=0.3, columnspacing=0.8)
+        fig_cdf_thr.tight_layout(rect=(0, 0, 1, 0.97))
+
+        out_cdf_thr = os.path.join(cmp_plots_dir, f"plot_throughput_cdf_comparison_{RUN}.png")
+        save_figure(fig_cdf_thr, out_cdf_thr)
+        plt.close(fig_cdf_thr)
+
 
 def _plot_single_method(data_dir):
     csv_path    = os.path.join(data_dir, "request_latency_results.csv")
@@ -333,6 +459,8 @@ def _plot_single_method(data_dir):
 
     out_latency    = os.path.join(plots_dir, "plot_latency.png")
     out_throughput = os.path.join(plots_dir, "plot_throughput.png")
+    out_latency_cdf = os.path.join(plots_dir, "plot_latency_cdf.png")
+    out_throughput_cdf = os.path.join(plots_dir, "plot_throughput_cdf.png")
     out_deploy     = os.path.join(plots_dir, "plot_deployment.png")
     out_workload   = os.path.join(plots_dir, "plot_workload_trace.png")
 
@@ -437,6 +565,17 @@ def _plot_single_method(data_dir):
 
     t_max = max(r["completion_time"] for r in rows)
 
+    # ── CDF Plots: Latency and Throughput ──────────────────────────────────────
+    fig_cdf_lat, ax_cdf_lat = plt.subplots(1, 1, figsize=(3.3, 1.6))
+    _plot_latency_cdf(ax_cdf_lat, rows)
+    save_figure(fig_cdf_lat, out_latency_cdf)
+    plt.close(fig_cdf_lat)
+
+    fig_cdf_thr, ax_cdf_thr = plt.subplots(1, 1, figsize=(3.3, 1.6))
+    _plot_throughput_cdf(ax_cdf_thr, rows)
+    save_figure(fig_cdf_thr, out_throughput_cdf)
+    plt.close(fig_cdf_thr)
+
     # ── FIGURE 1: Mean Latency per GPU (one panel per device, in a row) ──
     panel_w = 1.65   # inches per panel
     fig1, axes1 = plt.subplots(1, n_devices, figsize=(panel_w * n_devices, 1.6),
@@ -452,7 +591,8 @@ def _plot_single_method(data_dir):
             xs, ys = per_second_avg_latency(dev_rows, task, max_time=t_max)
             if not len(xs):
                 continue
-            ax.plot(xs, ys, color=task_color[task], linewidth=1.0, label=tabbrev.get(task, task))
+            mask = np.isfinite(ys)
+            ax.plot(xs[mask], ys[mask], color=task_color[task], linewidth=1.0, label=tabbrev.get(task, task))
             all_ys.extend([v for v in ys if np.isfinite(v)])
         ymax = max(all_ys) if all_ys else 1.0
         _set_clean_ticks(ax, t_max, ymax, n_y=4)
@@ -538,7 +678,13 @@ def _plot_single_method(data_dir):
         "#dce8d0", "#f5e6cc",
     ]
     all_tasks_deploy = sorted(set(
-        dec["task"] for dev in devices_ordered for dec in device_info[dev]["decoders"]
+        task
+        for dev in devices_ordered
+        for task in (
+            [dec["task"] for dec in device_info[dev]["decoders"]]
+            if device_info[dev]["decoders"]
+            else list(device_info[dev]["tasks"].keys())
+        )
     ))
     task_pastel = {t: TASK_PASTELS[i % len(TASK_PASTELS)] for i, t in enumerate(all_tasks_deploy)}
 
@@ -635,12 +781,17 @@ def _plot_single_method(data_dir):
                      fontsize=6.0, fontweight="bold", color="black")
 
             # Task boxes side by side above backbone
+            # VLM pipelines have no decoders — fall back to tasks dict
+            task_names = (
+                [dec["task"] for dec in decoders]
+                if decoders
+                else list(info["tasks"].keys())
+            )
             task_y   = bb_y + BB_H + PAD
-            n_dec    = len(decoders)
+            n_dec    = len(task_names)
             t_gap    = 0.003
             t_w      = (sub_w - t_gap * (n_dec - 1)) / n_dec if n_dec > 0 else sub_w
-            for ti, dec in enumerate(decoders):
-                task_name = dec["task"]
+            for ti, task_name in enumerate(task_names):
                 tx   = sub_x + ti * (t_w + t_gap)
                 fill = task_pastel.get(task_name, "#eeeeee")
                 ax3.add_patch(FancyBboxPatch(
@@ -696,7 +847,7 @@ def _plot_single_method(data_dir):
 if args.compare:
     # Already discovered methods in the comparison block above
     for m in methods:
-        run_dir = os.path.join(args.compare, m, args.run)
+        run_dir = os.path.join(args.compare, m, RUN)
         print(f"Plotting {m}...")
         _plot_single_method(run_dir)
 else:
