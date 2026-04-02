@@ -1,0 +1,5 @@
+task,n_requests,throughput_rps,avg_latency_ms
+diasbp,244,24.4,40.992523961486754
+sysbp,244,24.4,40.999112116386655
+gestureclass,245,24.5,40.866613374756916
+ecgclass,245,24.5,40.88739167176643

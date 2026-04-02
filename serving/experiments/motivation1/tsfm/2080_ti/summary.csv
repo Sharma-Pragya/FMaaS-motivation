@@ -1,0 +1,13 @@
+backbone,n_tasks,strategy,model_load_mem_mb,peak_gpu_mem_mb,avg_gpu_mem_mb,throughput_rps,avg_latency_ms,avg_batch_size,mixed_batch_fraction,batch_count
+momentbase,1,task_sharing,434.753,434.753,443.254,78.7,12.715,1.0,0.0,787
+momentbase,1,deploy_sharing,442.878,442.878,443.254,80.8,12.376,1.0,0.0,808
+momentbase,2,task_sharing,877.632,877.632,888.01,99.0,20.209,1.0,0.0,990
+momentbase,2,deploy_sharing,451.383,451.383,451.947,147.6,13.554,2.0,1.0,738
+momentbase,4,task_sharing,1754.759,1754.759,1775.794,97.8,40.936,1.0,0.0,978
+momentbase,4,deploy_sharing,467.886,467.886,468.825,224.0,17.902,4.0,1.0,560
+momentbase,6,task_sharing,2675.136,2675.136,2698.746,71.7,84.058,1.0,0.0,717
+momentbase,6,deploy_sharing,520.513,520.513,521.953,234.6,25.602,6.0,1.0,391
+momentbase,8,task_sharing,3632.137,3632.137,3658.496,69.0,116.4,1.0,0.0,690
+momentbase,8,deploy_sharing,608.765,608.765,610.455,294.4,27.222,8.0,1.0,368
+momentbase,10,task_sharing,4588.638,4588.638,4619.148,70.0,143.459,1.0,0.0,700
+momentbase,10,deploy_sharing,696.517,696.517,698.582,345.0,29.045,10.0,1.0,345
