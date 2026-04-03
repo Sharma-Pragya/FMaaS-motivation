@@ -219,12 +219,12 @@ class PyTorchRuntime(BaseRuntime):
                             peak_bytes = dec_bytes
                     if isinstance(active_decoder.criterion, nn.CrossEntropyLoss):
                         logits = torch.argmax(logits, dim=1)
-                    if (
-                        hasattr(active_decoder, "requires_model")
-                        and active_decoder.requires_model
-                        and hasattr(self.pipeline.model_instance.model, "normalizer")
-                    ):
-                        logits = self.pipeline.model_instance.model.normalizer(x=logits, mode="denorm")
+                    # if (
+                    #     hasattr(active_decoder, "requires_model")
+                    #     and active_decoder.requires_model
+                    #     and hasattr(self.pipeline.model_instance.model, "normalizer")
+                    # ):
+                    #     logits = self.pipeline.model_instance.model.normalizer(x=logits, mode="denorm")
                     result_batch = logits.detach().cpu().numpy()
 
                     if result_batch.ndim == 0:

@@ -78,9 +78,9 @@ def _initialize_data():
     cfg = {"batch_size": DEFAULT_BATCH_SIZE, "shuffle": False}
     loaders = {
         "ecgclass":     DataLoader(ECG5000Dataset({"dataset_path": f"{d}/ECG5000","seq_len": 512}, {"task_type": "classification"}, "test"), **cfg),
-        # "heartrate":    DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data","seq_len": 512}, {"task_type": "regression", "label": "hr"}, "test"), **cfg),
-        # "diasbp":       DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data","seq_len": 512}, {"task_type": "regression", "label": "diasbp"}, "test"), **cfg),
-        # "sysbp":        DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data","seq_len": 512}, {"task_type": "regression", "label": "sysbp"}, "test"), **cfg),
+        "heartrate":    DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data","seq_len": 512,"num_channels":1}, {"task_type": "regression", "label": "hr"}, "test"), **cfg),
+        "diasbp":       DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data","seq_len": 512,"num_channels":1}, {"task_type": "regression", "label": "diasbp"}, "test"), **cfg),
+        "sysbp":        DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data","seq_len": 512,"num_channels":1}, {"task_type": "regression", "label": "sysbp"}, "test"), **cfg),
         "gestureclass": DataLoader(UWaveGestureLibraryALLDataset({"dataset_path": f"{d}/UWaveGestureLibraryAll", "seq_len": 512}, {"task_type": "classification"}, "test"), **cfg),
         "etth1fore":    DataLoader(ETTh1Dataset({"dataset_path": f"{d}/ETTh1", "seq_len": 512}, {"task_type": "forecasting"}, "test"), **cfg),
         "weatherfore":  DataLoader(WeatherDataset({"dataset_path": f"{d}/Weather","seq_len": 512}, {"task_type": "forecasting"}, "test"), **cfg),
@@ -88,13 +88,20 @@ def _initialize_data():
         "eclfore":      DataLoader(ECLDataset({"dataset_path": f"{d}/ElectricityLoad-data","seq_len": 512}, {"task_type": "forecasting"}, "test"), **cfg),
         "exchangefore": DataLoader(ExchangeDataset({"dataset_path": f"{d}/Exchange","seq_len": 512}, {"task_type": "forecasting"}, "test"), **cfg),
     }
-    # VLM tasks use a separate dataset loader and collate function
-    # Task name prefix "vlm_" maps to the sub-task name in TASK_REGISTRY
-    _VLM_TASK_MAP = {
-        "vlm_ocr":     "ocr",
-        "vlm_traffic": "traffic",
-        "vlm_vqa":     "vqa",
-    }
+    #shape of different datasets:
+    print("Dataset shapes:")
+    for task, loader in loaders.items():
+        batch = next(iter(loader))
+        print(f"  {task}: " + ", ".join(f"{k}={v.shape if hasattr(v, 'shape') else type(v)}" for k, v in batch.items()))
+        
+    # # VLM tasks use a separate dataset loader and collate function
+    # # Task name prefix "vlm_" maps to the sub-task name in TASK_REGISTRY
+    # _VLM_TASK_MAP = {
+    #     "vlm_ocr":     "ocr",
+    #     "vlm_traffic": "traffic",
+    #     "vlm_vqa":     "vqa",
+    # }
+    _VLM_TASK_MAP={}
     for task_key, sub_task in _VLM_TASK_MAP.items():
         try:
             dataset_cfg, task_cfg = get_vlm_dataset_config(sub_task)
@@ -103,11 +110,12 @@ def _initialize_data():
         except Exception as e:
             print(f"[TraceRunner] WARNING: could not load VLM dataset for '{task_key}': {e}")
 
-    _LLM_TASK_MAP = {
-        "llm_sst2": ("sst2", "SST2Dataset"),
-        "llm_ag_news": ("ag_news", "AGNewsDataset"),
-        "llm_conll2003": ("conll2003", "CoNLL2003Dataset"),
-    }
+    # _LLM_TASK_MAP = {
+    #     "llm_sst2": ("sst2", "SST2Dataset"),
+    #     "llm_ag_news": ("ag_news", "AGNewsDataset"),
+    #     "llm_conll2003": ("conll2003", "CoNLL2003Dataset"),
+    # }
+    _LLM_TASK_MAP={}
     for task_key, (module_name, cls_name) in _LLM_TASK_MAP.items():
         try:
             mod = __import__("fmtk.datasetloaders." + module_name, fromlist=[cls_name])

@@ -30,8 +30,6 @@ print(experiment.get('$1', '$2'))
 REQ_RATE="$(read_cfg req_rate 10)"
 TRACE="$(read_cfg trace poisson_per_task)"
 DURATION="$(read_cfg duration 20)"
-SEED="$(read_cfg seed 42)"
-MAX_BATCH_SIZE="$(read_cfg max_batch_size 5)"
 MAX_BATCH_WAIT_MS="$(read_cfg max_batch_wait_ms 0)"
 ISOLATION_MODE="$(read_cfg isolation_mode shared)"
 WARMUP_GAP="$(read_cfg warmup_gap 2.0)"
@@ -106,10 +104,8 @@ run_scheduler() {
         --req-rate          "$REQ_RATE" \
         --duration          "$DURATION" \
         --trace             "$TRACE" \
-        --seed              "$SEED" \
         --exp-dir           "$EXP_DIR" \
         --output-dir        "$OUT_DIR" \
-        --max-batch-size    "$MAX_BATCH_SIZE" \
         --max-batch-wait-ms "$MAX_BATCH_WAIT_MS" \
         --isolation-mode    "$ISOLATION_MODE" \
         --warmup-gap        "$WARMUP_GAP" \

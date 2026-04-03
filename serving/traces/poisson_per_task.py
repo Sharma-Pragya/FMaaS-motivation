@@ -35,6 +35,7 @@ def generate_requests(
     task_names: List[str],
     seed: int = 42,
     req_id_offset: int = 0,
+    tasks_dict: Dict = None,
 ) -> tuple:
     """Generate independent Poisson traces for each task.
 
@@ -42,14 +43,18 @@ def generate_requests(
     If req_rate is a list: req_rate[i] maps to task_names[i].
 
     Each task uses a fixed task-specific RNG seed so its trace is
-    reproducible and independent of other tasks.
+    reproducible and independent of other tasks. If tasks_dict is provided
+    and a task entry contains a 'seed' key, that seed is used directly
+    instead of the derived seed.
 
     Args:
         req_rate:      Total req/s (float) or per-task req/s (list).
         duration:      Experiment duration in seconds.
         task_names:    List of task name strings.
-        seed:          Base RNG seed.
+        seed:          Base RNG seed (used when no per-task seed is set).
         req_id_offset: Starting request ID.
+        tasks_dict:    Optional task config dict; if a task has a 'seed' key
+                       it overrides the derived seed for that task.
 
     Returns:
         (requests, mean_rps_per_task, peak_rps_per_task)
@@ -69,7 +74,12 @@ def generate_requests(
     for task_name, rate in per_task_rate.items():
         if rate <= 0:
             continue
-        rng = np.random.default_rng(_seed_for_task(task_name, seed))
+        task_seed = (
+            tasks_dict[task_name]['seed']
+            if tasks_dict and task_name in tasks_dict and 'seed' in tasks_dict[task_name]
+            else _seed_for_task(task_name, seed)
+        )
+        rng = np.random.default_rng(task_seed)
         t = 0.0
         while t < duration:
             events.append((t, task_name))
