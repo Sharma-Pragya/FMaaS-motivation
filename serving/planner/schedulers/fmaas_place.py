@@ -378,6 +378,9 @@ class FMaaSPlacementScheduler(BaseScheduler):
                     latency, selected_bs, sat_bs = self._compute_batched_latency(
                         backbone, server.type, aggregate_demand, latency_bs1,
                     )
+                    # #for dummy pursose set selected batch size to 32
+                    # selected_bs = 32    
+                    # latency = self.batch_profile.get_backbone_mean_ms(backbone, server.type, selected_bs)
                 except KeyError:
                     logger.debug(
                         f"No batch profile for {backbone}/{server.type}, "

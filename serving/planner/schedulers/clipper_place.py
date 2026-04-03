@@ -259,6 +259,10 @@ class ClipperPlacementScheduler(BaseScheduler):
                     latency, selected_bs, sat_bs = self._compute_batched_latency(
                         lookup_backbone, server.type, task_demand, latency_bs1,
                     )
+                    # #for dummy pursose set selected batch size to 32
+                    # selected_bs = 32    
+                    # latency = self.batch_profile.get_backbone_mean_ms(lookup_backbone, server.type, selected_bs)
+
                 except KeyError:
                     logger.debug(
                         f"No batch profile for {lookup_backbone}/{server.type}, "
