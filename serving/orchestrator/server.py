@@ -223,7 +223,8 @@ class LocalExperiment:
 
     def __init__(self, exp_type, scheduler, req_rate, duration, trace_type, seed, exp_dir,
                  max_batch_size=5, max_batch_wait_ms=0.0, isolation_mode="shared",
-                 warmup_gap=2.0, pretrace_warmup_secs=20.0, max_model_len=None):
+                 warmup_gap=2.0, pretrace_warmup_secs=20.0, max_model_len=None,
+                 output_dir=None):
         self.exp_type = exp_type
         self.scheduler = scheduler
         self.req_rate = req_rate
@@ -237,7 +238,10 @@ class LocalExperiment:
         self._warmup_gap = warmup_gap
         self._pretrace_warmup_secs = pretrace_warmup_secs
 
-        self.output_dir = os.path.abspath(os.path.join(exp_dir, scheduler, str(req_rate)))
+        if output_dir:
+            self.output_dir = os.path.abspath(output_dir)
+        else:
+            self.output_dir = os.path.abspath(os.path.join(exp_dir, scheduler, str(req_rate)))
         os.makedirs(self.output_dir, exist_ok=True)
 
         self.devices, self.tasks = load_config(exp_type)
@@ -701,6 +705,8 @@ def main():
                         help="vLLM max sequence length. Set to e.g. 256 to allow multiple engines per GPU.")
     parser.add_argument("--warmup-gap", type=float, default=2.0)
     parser.add_argument("--pretrace-warmup-secs", type=float, default=20.0)
+    parser.add_argument("--output-dir", type=str, default=None,
+                        help="Explicit output directory. Overrides exp-dir/scheduler/req-rate path.")
     args = parser.parse_args()
 
     if args.mode == "local":
@@ -723,6 +729,7 @@ def main():
             warmup_gap=args.warmup_gap,
             pretrace_warmup_secs=args.pretrace_warmup_secs,
             max_model_len=args.max_model_len,
+            output_dir=args.output_dir,
         )
 
         exp.deploy()

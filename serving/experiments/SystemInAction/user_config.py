@@ -1,3 +1,14 @@
+experiment = {
+    'req_rate': 95.0,          # float → same rate for all tasks; list → per-task (sorted by name)
+    'trace': 'poisson_per_task',
+    'duration': 20,
+    'seed': 42,
+    'max_batch_size': 5,
+    'max_batch_wait_ms': 0,
+    'isolation_mode': 'shared',
+    'warmup_gap': 2.0,
+    'max_model_len': 256,
+}
 
 devices = {
   'device1': {

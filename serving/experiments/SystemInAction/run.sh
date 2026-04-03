@@ -2,38 +2,45 @@
 # ─────────────────────────────────────────────────────────────────────
 #  FMaaS System-in-Action Experiment  (local mode — no MQTT)
 #
-#  Setup: 3 GPUs, 1 initial task (ecgclass @ REQ_RATE req/s)
-#  No runtime events — shows the system deploying and serving a
-#  trace end-to-end in a single process.
+#  All experiment configuration lives in user_config.py.
+#  This script reads from it, passes values to the orchestrator,
+#  and saves a copy of the config in the results folder.
 #
 #  Usage:
 #    cd serving
 #    bash experiments/SystemInAction/run.sh
 #
-#    # Override scheduler or rate:
-#    SCHEDULERS="fmaas_share" REQ_RATE=10 bash experiments/SystemInAction/run.sh
+#    # Override scheduler:
+#    SCHEDULERS="fmaas_share" bash experiments/SystemInAction/run.sh
 # ─────────────────────────────────────────────────────────────────────
 set -euo pipefail
-
-# ── Schedulers to run ────────────────────────────────────────────────
-SCHEDULERS="${SCHEDULERS:-fmaas_place clipper_place}"
-
-# ── Shared configuration ─────────────────────────────────────────────
-REQ_RATE="${REQ_RATE:-95.0}"
-TRACE="${TRACE:-poisson_per_task}"
-DURATION="${DURATION:-20}"
-SEED="${SEED:-42}"
-EXP_DIR="${EXP_DIR:-experiments/SystemInAction/results}"
-EXP_TYPE="${EXP_TYPE:-SystemInAction}"
-MAX_BATCH_SIZE="${MAX_BATCH_SIZE:-5}"
-MAX_BATCH_WAIT_MS="${MAX_BATCH_WAIT_MS:-0}"
-ISOLATION_MODE="${ISOLATION_MODE:-shared}"
-WARMUP_GAP="${WARMUP_GAP:-2.0}"
-MAX_MODEL_LEN="${MAX_MODEL_LEN:-256}"
 
 # ── Paths ────────────────────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SERVING_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+# ── Read experiment config from user_config.py ──────────────────────
+read_cfg() {
+    python3 -c "
+from experiments.SystemInAction.user_config import experiment
+print(experiment.get('$1', '$2'))
+"
+}
+
+REQ_RATE="$(read_cfg req_rate 10)"
+TRACE="$(read_cfg trace poisson_per_task)"
+DURATION="$(read_cfg duration 20)"
+SEED="$(read_cfg seed 42)"
+MAX_BATCH_SIZE="$(read_cfg max_batch_size 5)"
+MAX_BATCH_WAIT_MS="$(read_cfg max_batch_wait_ms 0)"
+ISOLATION_MODE="$(read_cfg isolation_mode shared)"
+WARMUP_GAP="$(read_cfg warmup_gap 2.0)"
+MAX_MODEL_LEN="$(read_cfg max_model_len 256)"
+
+# ── Overridable from env ─────────────────────────────────────────────
+SCHEDULERS="${SCHEDULERS:-fmaas_place clipper_place}"
+EXP_DIR="${EXP_DIR:-experiments/SystemInAction/results}"
+EXP_TYPE="${EXP_TYPE:-SystemInAction}"
 
 # ── Colors ───────────────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[0;33m'; CYAN='\033[0;36m'; NC='\033[0m'
@@ -42,10 +49,29 @@ warn()    { echo -e "${YELLOW}[WARN]${NC}   $*"; }
 error()   { echo -e "${RED}[ERROR]${NC}  $*"; }
 section() { echo -e "${CYAN}[RUN]${NC}    $*"; }
 
+# ── Save user_config snapshot to results folder ─────────────────────
+save_config() {
+    local dest="$1/user_config.json"
+    python3 -c "
+import json, importlib
+mod = importlib.import_module('experiments.SystemInAction.user_config')
+cfg = {
+    'devices': mod.devices,
+    'tasks': {k: {kk: vv for kk, vv in v.items()} for k, v in mod.tasks.items()},
+    'experiment': mod.experiment,
+    'scheduler': '$2',
+}
+with open('$dest', 'w') as f:
+    json.dump(cfg, f, indent=2, default=str)
+print('[INFO]   Config saved to $dest')
+"
+}
+
 # ── Per-scheduler run function ────────────────────────────────────────
 run_scheduler() {
     local SCHEDULER="$1"
-    local LOG="$SERVING_DIR/$EXP_DIR/$SCHEDULER/$REQ_RATE/orchestrator.log"
+    local OUT_DIR="$SERVING_DIR/$EXP_DIR/$SCHEDULER"
+    local LOG="$OUT_DIR/orchestrator.log"
     local RUNNER_PID=""
 
     cleanup_scheduler() {
@@ -61,15 +87,18 @@ run_scheduler() {
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     section "SCHEDULER: $SCHEDULER"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    info "Setup:    3 GPUs, ecgclass @ ${REQ_RATE} req/s, ${DURATION}s trace"
+    info "Setup:    ecgclass + gestureclass @ ${REQ_RATE} req/s, ${DURATION}s trace"
     info "Mode:     local (single process, no MQTT)"
     info "Timeline:"
-    info "  t=0s    Deploy + run ecgclass @ ${REQ_RATE} req/s for ${DURATION}s"
+    info "  t=0s    Deploy + run for ${DURATION}s"
     echo ""
+
+    # ── Save config ──────────────────────────────────────────────────
+    mkdir -p "$OUT_DIR"
+    save_config "$OUT_DIR" "$SCHEDULER"
 
     # ── Run experiment (single process) ──────────────────────────────
     info "Starting orchestrator (local mode)..."
-    mkdir -p "$SERVING_DIR/$EXP_DIR/$SCHEDULER/$REQ_RATE"
     python -u -m orchestrator.server \
         --mode              local \
         --exp-type          "$EXP_TYPE" \
@@ -79,6 +108,7 @@ run_scheduler() {
         --trace             "$TRACE" \
         --seed              "$SEED" \
         --exp-dir           "$EXP_DIR" \
+        --output-dir        "$OUT_DIR" \
         --max-batch-size    "$MAX_BATCH_SIZE" \
         --max-batch-wait-ms "$MAX_BATCH_WAIT_MS" \
         --isolation-mode    "$ISOLATION_MODE" \
@@ -99,13 +129,12 @@ run_scheduler() {
     fi
 
     # ── Results summary ───────────────────────────────────────────────
-    local result_dir="$EXP_DIR/$SCHEDULER/$REQ_RATE"
-    if [[ -f "$result_dir/request_latency_results.csv" ]]; then
+    if [[ -f "$OUT_DIR/request_latency_results.csv" ]]; then
         local nrows
-        nrows=$(wc -l < "$result_dir/request_latency_results.csv")
-        info "Results: $((nrows - 1)) requests → $result_dir"
+        nrows=$(wc -l < "$OUT_DIR/request_latency_results.csv")
+        info "Results: $((nrows - 1)) requests → $OUT_DIR"
     else
-        warn "Results CSV not found in $result_dir"
+        warn "Results CSV not found in $OUT_DIR"
     fi
 
     info "[$SCHEDULER] done."
@@ -131,5 +160,5 @@ done
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 info "All schedulers complete."
-info "Results in: $EXP_DIR/<scheduler>/$REQ_RATE/"
+info "Results in: $EXP_DIR/<scheduler>/"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
