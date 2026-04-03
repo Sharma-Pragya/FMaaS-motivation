@@ -71,7 +71,7 @@ pipelines = {}
 latency = {}
 metric = {}
 
-for name in ["TSFM.csv", "VLM.csv"]:
+for name in ["TSFM-new.csv"]:
      c, p, l, m = parse_csv_to_dict(name)
      components.update(c)
      pipelines.update(p)
