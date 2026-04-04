@@ -15,8 +15,66 @@ set -euo pipefail
 SERVING_DIR="$(cd "$(dirname "$0")/../../.." && pwd)"
 cd "$SERVING_DIR"
 
-PYTHONPATH_EXTRA="/project/pi_shenoy_umass_edu/hshastri/FMTK/src:/project/pi_shenoy_umass_edu/hshastri/FMaaS-motivation"
-export PYTHONPATH="${PYTHONPATH_EXTRA}:${PYTHONPATH:-}"
+# Conda environment for Python
+CONDA_ENV="${CONDA_ENV:-fmtk}"
+
+# Project directories (can be relative or absolute)
+# Default: FMTK is sibling directory of FMaaS-motivation, FMAAS_DIR is parent of serving
+FMTK_DIR="${FMTK_DIR:-../../FMTK}"
+FMAAS_DIR="${FMAAS_DIR:-..}"
+# 
+# Convert to absolute paths if relative
+if [[ ! "$FMTK_DIR" = /* ]]; then
+    # Try relative to SERVING_DIR first
+    if [[ -d "$SERVING_DIR/$FMTK_DIR" ]]; then
+        FMTK_DIR="$SERVING_DIR/$FMTK_DIR"
+    # Try from workspace root (FMTK is sibling of FMaaS-motivation)
+    elif [[ -d "$(dirname "$(dirname "$SERVING_DIR")")/../FMTK" ]]; then
+        FMTK_DIR="$(cd "$(dirname "$(dirname "$SERVING_DIR")")/../FMTK" && pwd)"
+    fi
+fi
+
+if [[ ! "$FMAAS_DIR" = /* ]]; then
+    # Try relative to SERVING_DIR first
+    if [[ -d "$SERVING_DIR/$FMAAS_DIR" ]]; then
+        FMAAS_DIR="$SERVING_DIR/$FMAAS_DIR"
+    # Try parent directory
+    elif [[ -d "$(dirname "$SERVING_DIR")" ]]; then
+        FMAAS_DIR="$(dirname "$SERVING_DIR")"
+    fi
+fi
+
+# Validate paths exist
+if [[ ! -d "$FMTK_DIR" ]]; then
+    echo "ERROR: FMTK_DIR not found at: $FMTK_DIR"
+    echo "Please set FMTK_DIR environment variable:"
+    echo "  export FMTK_DIR=/path/to/FMTK"
+    echo "  bash experiments/motivation1/llm/run.sh"
+    exit 1
+fi
+if [[ ! -d "$FMAAS_DIR" ]]; then
+    echo "ERROR: FMAAS_DIR not found at: $FMAAS_DIR"
+    echo "Please set FMAAS_DIR environment variable:"
+    echo "  export FMAAS_DIR=/path/to/FMaaS-motivation"
+    echo "  bash experiments/motivation1/llm/run.sh"
+    exit 1
+fi
+
+# Set up PYTHONPATH
+export PYTHONPATH="${FMTK_DIR}/src:${FMAAS_DIR}:${PYTHONPATH:-}"
+
+# Export dataset directory for FMTK to find datasets
+export DATASET_DIR
+
+# # Python executable from conda environment
+# # Try conda run first, fall back to explicit PYTHON variable
+# if command -v conda &> /dev/null; then
+#     PYTHON="${PYTHON:-conda run -n ${CONDA_ENV} python}"
+# else
+#     # If conda not in PATH, try to find Python from environment
+#     PYTHON="${PYTHON:-python}"
+# fi
+PYTHON="${PYTHON:-python}"
 
 DEVICE_PORT="${DEVICE_PORT:-8000}"
 CUDA_DEVICE="${CUDA_DEVICE:-cuda:0}"
@@ -29,7 +87,6 @@ PHASE_DURATIONS="${PHASE_DURATIONS:-5,10,5}"
 RESULTS_BASE="${RESULTS_BASE:-experiments/noisy_neighbor/llm/results}"
 RUN_NAME="${RUN_NAME:-continuous_batching}"
 DEVICE_STARTUP_WAIT="${DEVICE_STARTUP_WAIT:-8}"
-PYTHON="${PYTHON:-/home/hshastri_umass_edu/.conda/envs/fmtk_vllm/bin/python}"
 GPU_MEMORY_UTILIZATION="${GPU_MEMORY_UTILIZATION:-0.42}"
 MAX_MODEL_LEN="${MAX_MODEL_LEN:-256}"
 MAX_SAMPLES="${MAX_SAMPLES:-256}"

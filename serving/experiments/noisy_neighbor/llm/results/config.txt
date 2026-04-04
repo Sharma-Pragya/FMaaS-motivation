@@ -1,4 +1,4 @@
-Experiment config - Mon Mar 30 04:23:47 UTC 2026
+Experiment config - Thu Apr  2 17:58:23 UTC 2026
 Runtime: vllm
 Backbone: qwen2.5-0.5b
 Victim: llm_sst2 @ 10 rps (constant)
