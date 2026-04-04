@@ -21,10 +21,10 @@ class PreparedBatch:
 class DeviceBatcher:
     """Owns per-task queues and a single shared-model execution loop.
 
-    The async scheduler loop assembles batches and hands them to a persistent
-    worker thread via threading.Event signals.  The worker runs inference and
-    immediately signals back so _next_batch can run concurrently with GPU work,
-    eliminating asyncio.to_thread dispatch latency (~10 ms) between batches.
+    The async scheduler loop waits for the worker to become free, then forms
+    the next batch and hands it to a persistent worker thread via
+    threading.Event signals. This keeps batch selection aligned with the
+    freshest queue contents at dispatch time.
     """
 
     def __init__(
@@ -82,7 +82,11 @@ class DeviceBatcher:
         print("[DeviceBatcher] Persistent worker thread started")
 
         while True:
-            # Assemble next batch (runs while worker executes previous batch)
+            # Wait for the worker to be free before selecting the next batch.
+            # This allows late arrivals to join the batch about to dispatch.
+            await self._work_done.wait()
+            self._work_done.clear()
+
             prepared = await self._next_batch()
             if prepared is None:
                 print("[DeviceBatcher] Scheduler loop stopping")
@@ -91,10 +95,6 @@ class DeviceBatcher:
                 self._work_ready.set()
                 self._worker_thread.join(timeout=10)
                 return
-
-            # Wait for worker to be free, then hand off immediately
-            await self._work_done.wait()
-            self._work_done.clear()
 
             self._next_prepared = prepared
             self._work_ready.set()  # unblocks worker thread
@@ -130,7 +130,8 @@ class DeviceBatcher:
             loop.call_soon_threadsafe(self._work_done.set)
 
     async def _next_batch(self):
-        # Wait until at least one request is queued
+        # Wait until at least one request is queued after the worker becomes
+        # free, then accumulate for at most max_batch_wait before dispatch.
         async with self._condition:
             while self._queues.pending_count() == 0 and not self._stopped:
                 await self._condition.wait()
