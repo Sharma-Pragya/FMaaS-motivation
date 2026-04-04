@@ -1,0 +1,15 @@
+{
+  "strategy": "deploy_sharing",
+  "backbone": "qwen2.5-0.5b",
+  "n_tasks": 6,
+  "runtime": "in_process_vllm",
+  "benchmark_mode": "closed_loop",
+  "tasks": [
+    "ag_news",
+    "sst2",
+    "conll2003",
+    "squad",
+    "cnn_dailymail",
+    "flores"
+  ]
+}

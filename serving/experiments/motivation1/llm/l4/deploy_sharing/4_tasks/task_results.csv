@@ -1,0 +1,5 @@
+task,device_url,n_requests,throughput_rps,avg_latency_ms,error
+ag_news,local://instance-0,241,24.1,41.58645843569174,
+squad,local://instance-0,241,24.1,41.54470748426509,
+conll2003,local://instance-0,241,24.1,41.54774262202726,
+sst2,local://instance-0,241,24.1,41.59061146969617,

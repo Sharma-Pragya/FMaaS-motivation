@@ -1,0 +1,10 @@
+{
+  "strategy": "task_sharing",
+  "backbone": "qwen2.5-0.5b",
+  "n_tasks": 1,
+  "runtime": "in_process_vllm",
+  "benchmark_mode": "closed_loop",
+  "tasks": [
+    "ag_news"
+  ]
+}

@@ -225,7 +225,7 @@ def _run_strategy(strategy: str, active_tasks: List[str], duration: float,
     # zero room for KV cache. Use 0.90 so each process grabs KV blocks
     # from whatever real GPU memory remains after siblings.
     # deploy_sharing: 1 engine gets the full GPU.
-    gpu_util = 0.85/n_tasks if strategy == "task_sharing" else 0.85
+    gpu_util = 0.9/n_tasks if strategy == "task_sharing" else 0.9
     model_config = {
         "max_model_len":          256,
         "gpu_memory_utilization": gpu_util,

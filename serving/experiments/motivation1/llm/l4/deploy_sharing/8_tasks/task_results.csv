@@ -1,0 +1,9 @@
+task,device_url,n_requests,throughput_rps,avg_latency_ms,error
+conll2003,local://instance-0,199,19.9,50.27753384269062,
+ag_news,local://instance-0,199,19.9,50.33736732137862,
+gsm8k,local://instance-0,199,19.9,50.27187888945767,
+squad,local://instance-0,199,19.9,50.28475109656252,
+humaneval,local://instance-0,199,19.9,50.263213152861475,
+sst2,local://instance-0,199,19.9,50.28592761437498,
+cnn_dailymail,local://instance-0,199,19.9,50.28464686331437,
+flores,local://instance-0,199,19.9,50.28200748577789,

@@ -112,6 +112,7 @@ def _process_worker(
     device: str,
     model_config: dict,
     result_queue,
+    deploy_queue,
 ) -> None:
     import asyncio, time, traceback
     label = f"local://process-{task}"
@@ -120,7 +121,10 @@ def _process_worker(
         runtime = VLLMRuntime()
         runtime.load(backbone=backbone, decoders=[], device=device, model_config=model_config)
         mem_stats = _memory_record(runtime)
+        # Report deployment info immediately after load, before inference starts.
+        deploy_queue.put({"task": task, "memory": mem_stats, "error": None})
     except Exception as e:
+        deploy_queue.put({"task": task, "memory": {}, "error": f"load_failed: {type(e).__name__}: {e}"})
         result_queue.put({
             "task": task, "label": label,
             "n_requests": 0, "throughput_rps": 0.0, "avg_latency_ms": 0.0,
@@ -227,6 +231,7 @@ class LLMInferenceServer:
     def _start_task_sharing(self) -> None:
         ctx          = mp.get_context("spawn")
         result_queue = ctx.Queue()
+        deploy_queue = ctx.Queue()
         duration     = self.model_config.get("duration", 60)
 
         procs = []
@@ -235,15 +240,30 @@ class LLMInferenceServer:
                 target=_process_worker,
                 args=(task, self.model_config.get("prompts", {}).get(task, []),
                       duration, self.backbone, self.device, self.model_config,
-                      result_queue),
+                      result_queue, deploy_queue),
                 daemon=True,
             )
             p.start()
             procs.append(p)
 
-        print(f"[task_sharing] {len(self.tasks)} processes launched — waiting for results")
+        print(f"[task_sharing] {len(self.tasks)} processes launched — waiting for model load")
 
-        # Collect results — use whatever arrived within duration+60s; partial ok
+        # Pass 1: collect deployment info right after each process loads its model.
+        # Use a generous timeout; if a process is killed before loading we still
+        # proceed with whatever deployed successfully.
+        deploy_info: dict = {}
+        for _ in self.tasks:
+            try:
+                d = deploy_queue.get(timeout=120)
+                deploy_info[d["task"]] = d["memory"] if not d.get("error") else {}
+                status = "ok" if not d.get("error") else f"FAILED ({d['error']})"
+                print(f"[task_sharing] load report: task={d['task']} {status}")
+            except queue.Empty:
+                break
+
+        print(f"[task_sharing] {len(deploy_info)}/{len(self.tasks)} models loaded — waiting for inference results")
+
+        # Pass 2: collect inference results — use whatever arrived within duration+60s.
         results = []
         for _ in self.tasks:
             try:
@@ -256,7 +276,15 @@ class LLMInferenceServer:
             if p.is_alive(): p.terminate()
 
         self._process_results = results
-        self._clients = {r["task"]: ProcessClient(r["memory"]) for r in results}
+
+        # Build clients from deployment info (captured at load time, independent of
+        # whether inference succeeded).  Fall back to a peer's stats for tasks that
+        # loaded but whose inference process was later killed.
+        fallback_memory = next((m for m in deploy_info.values() if m), {})
+        self._clients = {
+            task: ProcessClient(deploy_info.get(task, fallback_memory))
+            for task in self.tasks
+        }
 
     # ------------------------------------------------------------------
     # Access

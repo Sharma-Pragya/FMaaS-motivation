@@ -1,0 +1,2 @@
+task,device_url,n_requests,throughput_rps,avg_latency_ms,error
+sst2,local://process-sst2,218,21.8,46.06719192014922,

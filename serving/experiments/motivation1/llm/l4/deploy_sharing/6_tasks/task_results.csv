@@ -1,0 +1,7 @@
+task,device_url,n_requests,throughput_rps,avg_latency_ms,error
+ag_news,local://instance-0,220,22.0,45.62544064088301,
+conll2003,local://instance-0,220,22.0,45.57476260445335,
+flores,local://instance-0,220,22.0,45.575735785744406,
+squad,local://instance-0,220,22.0,45.57831937616522,
+sst2,local://instance-0,220,22.0,45.63110416585749,
+cnn_dailymail,local://instance-0,220,22.0,45.579781315543435,

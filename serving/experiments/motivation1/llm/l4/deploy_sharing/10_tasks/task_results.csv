@@ -1,0 +1,11 @@
+task,device_url,n_requests,throughput_rps,avg_latency_ms,error
+ag_news,local://instance-0,185,18.5,54.06347996479756,
+hellaswag,local://instance-0,186,18.6,54.00068272826492,
+cnn_dailymail,local://instance-0,186,18.6,54.018435939665764,
+flores,local://instance-0,186,18.6,54.019287068356746,
+humaneval,local://instance-0,186,18.6,54.01612353581254,
+squad,local://instance-0,186,18.6,54.02803421020508,
+gsm8k,local://instance-0,186,18.6,54.022319855228545,
+fever,local://instance-0,186,18.6,54.00326431438487,
+sst2,local://instance-0,186,18.6,54.05452174525107,
+conll2003,local://instance-0,186,18.6,54.024983477848835,

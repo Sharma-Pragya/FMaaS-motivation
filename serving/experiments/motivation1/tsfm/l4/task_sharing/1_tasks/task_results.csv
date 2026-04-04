@@ -1,0 +1,2 @@
+task,n_requests,throughput_rps,avg_latency_ms
+ecgclass,751,75.1,13.321952407475452

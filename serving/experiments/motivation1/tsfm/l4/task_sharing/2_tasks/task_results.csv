@@ -1,0 +1,3 @@
+task,n_requests,throughput_rps,avg_latency_ms
+gestureclass,431,43.1,23.24541588866327
+ecgclass,431,43.1,23.249085406013915

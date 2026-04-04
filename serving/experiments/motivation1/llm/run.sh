@@ -100,10 +100,10 @@ fi
 # ---------------------------------------------------------------------------
 CUDA_DEVICE=${CUDA_DEVICE:-"cuda:0"}
 BACKBONE=${BACKBONE:-"qwen2.5-0.5b"}
-PHASE_DURATION=${PHASE_DURATION:-60}
+PHASE_DURATION=${PHASE_DURATION:-10}
 EXP_DIR=${EXP_DIR:-"experiments/motivation1/llm/results"}
-N_TASKS=${N_TASKS:-"2"}
-STRATEGIES=${STRATEGIES:-"task_sharing,deploy_sharing"}
+N_TASKS=${N_TASKS:-"1,4"}
+STRATEGIES=${STRATEGIES:-"task_sharing"}
 BENCHMARK_MODE=${BENCHMARK_MODE:-"closed_loop"}
 CONCURRENCY=${CONCURRENCY:-1}
 TARGET_RPS=${TARGET_RPS:-2.0}
