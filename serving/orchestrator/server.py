@@ -679,6 +679,23 @@ async def cleanup():
 # Main — mode selection
 # ============================================================================
 
+def _parse_req_rate(raw):
+    if raw is None:
+        return None
+    if isinstance(raw, (int, float)):
+        return float(raw)
+    s = str(raw).strip()
+    if not s:
+        return None
+    # Accept JSON-like list or comma-separated list for per-task rates.
+    if s.startswith("[") and s.endswith("]"):
+        s = s[1:-1]
+    if "," in s:
+        parts = [p.strip() for p in s.split(",") if p.strip()]
+        return [float(p) for p in parts]
+    return float(s)
+
+
 def main():
     parser = argparse.ArgumentParser(description="FMaaS Orchestrator")
     parser.add_argument("--mode", choices=["local", "mqtt"], default="local",
@@ -692,7 +709,7 @@ def main():
     # Local mode args
     parser.add_argument("--exp-type", default="SystemInAction")
     parser.add_argument("--scheduler", default="fmaas_share")
-    parser.add_argument("--req-rate", type=float, default=10)
+    parser.add_argument("--req-rate", default="10")
     parser.add_argument("--duration", type=int, default=480)
     parser.add_argument("--trace", default="deterministic")
     parser.add_argument("--seed", type=int, default=42)
@@ -715,10 +732,11 @@ def main():
 ║               FMaaS Orchestrator (Local mode)                 ║
 ╚═══════════════════════════════════════════════════════════════╝
 """)
+        req_rate = _parse_req_rate(args.req_rate)
         exp = LocalExperiment(
             exp_type=args.exp_type,
             scheduler=args.scheduler,
-            req_rate=args.req_rate,
+            req_rate=req_rate,
             duration=args.duration,
             trace_type=args.trace,
             seed=args.seed,
