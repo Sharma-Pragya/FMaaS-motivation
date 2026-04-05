@@ -7,6 +7,8 @@ from fmtk.components.decoders.regression.mlp import MLPDecoder as RegressionMLP
 from fmtk.components.decoders.classification.mlp import MLPDecoder as ClassificationMLP
 from fmtk.components.decoders.classification.linear import LinearDecoder as ClassificationLinear
 from fmtk.components.decoders.forecasting.mlp import MLPDecoder as ForecastingMLP
+from fmtk.components.decoders.regression.monocular_depth import MonocularDepthDecoder
+from fmtk.components.decoders.segmentation.LinearSemanticSegmenter import LinearSemanticSegmenter
 from fmtk.logger import Logger
 from device.config import DEVICE, DECODERS, ADAPTERS
 from fmtk.components.backbones.moment import MomentModel
@@ -38,9 +40,13 @@ def _build_pipeline(backbone: str, device, logger: Logger | None, model_config: 
         cfg = {"in_channels": 1, "base_filters": 32, "kernel_size": 3, "stride": 2,
                "groups": 1, "n_block": 18, "n_classes": 512}
         return Pipeline(PapageiModel(device, "papagei_s_svri", model_config=cfg), logger=logger)
-    elif backbone in ("dinosmall", "dinobase", "dinolarge", "dinogiant"):
-        size = backbone.replace("dino", "")  # small, base, large, giant
-        return Pipeline(DinoV2Model(device, size, model_config=model_config or {}), logger=logger)
+    elif backbone in ("dinosmall", "dinobase", "dinolarge", "dinogiant",
+                       "dinosmall-patch", "dinobase-patch", "dinolarge-patch", "dinogiant-patch"):
+        size = backbone.replace("dino", "").replace("-patch", "")  # small, base, large, giant
+        cfg = model_config or {}
+        if backbone.endswith("-patch"):
+            cfg.setdefault("return_all_tokens", True)
+        return Pipeline(DinoV2Model(device, size, model_config=cfg), logger=logger)
     elif backbone in ("swintiny", "swinsmall", "swinbase", "swinlarge"):
         size = backbone.replace("swin", "")  # tiny, small, base, large
         return Pipeline(SwinModel(device, size, model_config=model_config or {}), logger=logger)
@@ -90,6 +96,14 @@ def _build_decoder(backbone: str, task: str, dtype: str, device):
     elif dtype == "forecasting":
         cfg = DECODERS[f"mlp_{backbone}_forecasting"]["decoder_config"]["cfg"]
         return ForecastingMLP(device=device, cfg=cfg)
+    elif dtype == "monocular_depth":
+        bb = backbone.replace("-patch", "")
+        cfg = DECODERS[f"monodepth_{bb}"]["decoder_config"]["cfg"]
+        return MonocularDepthDecoder(device=device, cfg=cfg)
+    elif dtype == "linear_seg":
+        bb = backbone.replace("-patch", "")
+        cfg = DECODERS[f"linseg_{bb}_{task}"]["decoder_config"]["cfg"]
+        return LinearSemanticSegmenter(device=device, cfg=cfg)
     else:
         raise ValueError(f"Unknown decoder type: {dtype}")
 
