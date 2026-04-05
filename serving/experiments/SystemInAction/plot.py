@@ -13,7 +13,7 @@ Comparison mode (--compare):
 Usage:
     cd serving
     python experiments/SystemInAction/plot.py
-    python experiments/SystemInAction/plot.py --data experiments/SystemInAction/results/fmaas_share/150
+    python experiments/SystemInAction/plot.py --data experiments/SystemInAction/results/fmaas_place/150
     python experiments/SystemInAction/plot.py --compare experiments/SystemInAction/results
     python experiments/SystemInAction/plot.py --compare experiments/SystemInAction/results --run 150
 """
@@ -36,14 +36,14 @@ from collections import defaultdict
 parser = argparse.ArgumentParser()
 parser.add_argument("--data", default=None,
                     help="Path to result directory containing CSV and JSONs")
-parser.add_argument("--compare", default="experiments/SystemInAction/results",
+parser.add_argument("--compare", default=None,
                     help="Path to results root dir; generates latency comparison across methods")
 parser.add_argument("--run", default=None,
                     help="Run subdirectory name used with --compare (auto-detected if not set)")
 args = parser.parse_args()
 
 BASE     = os.path.dirname(__file__)
-DATA_DIR = args.data or os.path.join(BASE, "results", "fmaas_share")
+DATA_DIR = args.data or os.path.join(BASE, "results", "fmaas_place")
 CSV_PATH    = os.path.join(DATA_DIR, "request_latency_results.csv")
 PLAN_PATH   = os.path.join(DATA_DIR, "deployment_plan.json")
 DEPLOY_PATH = os.path.join(DATA_DIR, "model_deployment_results.json")
@@ -56,6 +56,7 @@ OUT_LATENCY    = os.path.join(PLOTS_DIR, "plot_latency.png")
 OUT_THROUGHPUT = os.path.join(PLOTS_DIR, "plot_throughput.png")
 OUT_LATENCY_CDF    = os.path.join(PLOTS_DIR, "plot_latency_cdf.png")
 OUT_THROUGHPUT_CDF = os.path.join(PLOTS_DIR, "plot_throughput_cdf.png")
+OUT_BATCH_SIZE     = os.path.join(PLOTS_DIR, "plot_batch_size.png")
 OUT_DEPLOY     = os.path.join(PLOTS_DIR, "plot_deployment.png")
 OUT_WORKLOAD   = os.path.join(PLOTS_DIR, "plot_workload_trace.png")
 
@@ -249,21 +250,66 @@ def _plot_throughput_cdf(ax: plt.Axes, rows):
     ax.set_axisbelow(True)
 
 
+def _observed_batch_stats(device_rows):
+    """Estimate observed batch sizes from runtime timestamps.
+
+    Requests that share the same device-side start time on the same deployment
+    are treated as one attended batch.
+    """
+    grouped = defaultdict(int)
+    for row in device_rows:
+        batch_key = row.get("device_start_key")
+        if batch_key is None:
+            batch_key = f"{row['device_start_time']:.9f}"
+        grouped[batch_key] += 1
+
+    batch_sizes = np.array(sorted(grouped.values()), dtype=float)
+    if len(batch_sizes) == 0:
+        return {
+            "count": 0,
+            "mean": 0.0,
+            "p95": 0.0,
+            "max": 0.0,
+            "sizes": batch_sizes,
+        }
+
+    return {
+        "count": int(len(batch_sizes)),
+        "mean": float(batch_sizes.mean()),
+        "p95": float(np.percentile(batch_sizes, 95)),
+        "max": float(batch_sizes.max()),
+        "sizes": batch_sizes,
+    }
+
+
 apply_paper_style()
 
 # ── Comparison plots ───────────────────────────────────────────────────────────
-if args.compare:
-    COMPARE_DIR = args.compare
+def _plot_comparison(compare_dir, run_name):
+    """Generate comparison plots across methods found under compare_dir."""
+    COMPARE_DIR = compare_dir
+    RUN = run_name
 
-    # Auto-detect run folder: find the first subdir that has a CSV in any method dir
-    if args.run is not None:
-        RUN = args.run
+    def _method_has_direct_run(method_dir: str) -> bool:
+        return os.path.isfile(os.path.join(method_dir, "request_latency_results.csv"))
+
+    def _method_has_nested_run(method_dir: str, run: str) -> bool:
+        return os.path.isfile(os.path.join(method_dir, run, "request_latency_results.csv"))
+
+    # Auto-detect run folder. Support both:
+    #   1) flat layout:   <compare>/<method>/request_latency_results.csv
+    #   2) nested layout: <compare>/<method>/<run>/request_latency_results.csv
+    if run_name is not None:
+        RUN = run_name
     else:
         RUN = None
         for m in sorted(os.listdir(COMPARE_DIR)):
             m_path = os.path.join(COMPARE_DIR, m)
             if not os.path.isdir(m_path):
                 continue
+            if _method_has_direct_run(m_path):
+                RUN = ""
+                break
             for sub in sorted(os.listdir(m_path)):
                 if os.path.isfile(os.path.join(m_path, sub, "request_latency_results.csv")):
                     RUN = sub
@@ -271,15 +317,22 @@ if args.compare:
             if RUN:
                 break
         if RUN is None:
-            RUN = "1"  # fallback
+            RUN = ""  # fallback to flat-layout check
 
-    # Discover methods: subdirs of COMPARE_DIR that contain <RUN>/request_latency_results.csv
+    # Discover methods for whichever layout we detected
     methods = sorted([
         m for m in os.listdir(COMPARE_DIR)
-        if os.path.isfile(os.path.join(COMPARE_DIR, m, RUN, "request_latency_results.csv"))
+        if os.path.isdir(os.path.join(COMPARE_DIR, m)) and (
+            _method_has_direct_run(os.path.join(COMPARE_DIR, m))
+            if RUN == ""
+            else _method_has_nested_run(os.path.join(COMPARE_DIR, m), RUN)
+        )
     ])
     if not methods:
-        print(f"No method dirs with run '{RUN}' found under {COMPARE_DIR}")
+        if RUN == "":
+            print(f"No method dirs with direct request_latency_results.csv found under {COMPARE_DIR}")
+        else:
+            print(f"No method dirs with run '{RUN}' found under {COMPARE_DIR}")
     else:
         METHOD_COLORS = [
             "#4C72B0", "#C44E52", "#55A868", "#DD8452",
@@ -292,7 +345,11 @@ if args.compare:
 
         def _load_method(results_root, method, run):
             """Load rows and device→GPU-label map for one method/run."""
-            run_dir   = os.path.join(results_root, method, run)
+            run_dir = (
+                os.path.join(results_root, method)
+                if run == ""
+                else os.path.join(results_root, method, run)
+            )
             csv_path  = os.path.join(run_dir, "request_latency_results.csv")
             plan_path = os.path.join(run_dir, "deployment_plan.json")
             rows = []
@@ -461,8 +518,10 @@ def _plot_single_method(data_dir):
     out_throughput = os.path.join(plots_dir, "plot_throughput.png")
     out_latency_cdf = os.path.join(plots_dir, "plot_latency_cdf.png")
     out_throughput_cdf = os.path.join(plots_dir, "plot_throughput_cdf.png")
+    out_batch_size = os.path.join(plots_dir, "plot_batch_size.png")
     out_deploy     = os.path.join(plots_dir, "plot_deployment.png")
     out_workload   = os.path.join(plots_dir, "plot_workload_trace.png")
+    out_queuing    = os.path.join(plots_dir, "plot_queuing_delay.png")
 
     # ── Load CSV ──────────────────────────────────────────────────────────
     rows = []
@@ -470,10 +529,18 @@ def _plot_single_method(data_dir):
         for r in csv.DictReader(f):
             r["req_time"]               = float(r["req_time"])
             r["site_manager_send_time"] = float(r["site_manager_send_time"])
+            r["device_start_key"]       = r["device_start_time"]
             r["device_start_time"]      = float(r["device_start_time"])
             r["device_end_time"]        = float(r["device_end_time"])
             r["client_receive_time"]    = float(r["client_receive_time"])
             r["end_to_end_latency(ms)"] = float(r["end_to_end_latency(ms)"])
+            r["proc_time(ms)"]    = float(r.get("proc_time(ms)", 0))
+            r["swap_time(ms)"]    = float(r.get("swap_time(ms)", 0))
+            r["decoder_time(ms)"] = float(r.get("decoder_time(ms)", 0))
+            r["queuing_delay(ms)"] = (r["end_to_end_latency(ms)"]
+                                      - r["proc_time(ms)"]
+                                      - r["swap_time(ms)"]
+                                      - r["decoder_time(ms)"])
             rows.append(r)
 
     t0 = min(r["site_manager_send_time"] for r in rows)
@@ -503,6 +570,8 @@ def _plot_single_method(data_dir):
                 "device_name": device_name,
                 "device_type": d.get("device_type", ""),
                 "util":        d.get("util", 0),
+                "expected_batch_size": d.get("expected_batch_size", 1),
+                "max_batch_size": d.get("max_batch_size", 1),
             }
 
     def _sort_key(dev_key):
@@ -657,7 +726,88 @@ def _plot_single_method(data_dir):
     save_figure(fig2, out_throughput)
     plt.close(fig2)
 
-    # ── FIGURE 3: Deployment Diagram (paper style) ───────────────────────
+    # ── FIGURE 3: Expected vs Observed Batch Size per Deployment ─────────
+    fig_bs, ax_bs = plt.subplots(
+        1, 1, figsize=(max(3.3, 1.1 * n_devices), 1.9)
+    )
+
+    x = np.arange(n_devices, dtype=float)
+    bar_w = 0.34
+    expected_vals = []
+    observed_means = []
+    observed_p95 = []
+    observed_max = []
+    xticklabels = []
+
+    for dev in devices_ordered:
+        stats = _observed_batch_stats(rows_by_device[dev])
+        expected_vals.append(float(device_info[dev].get("expected_batch_size", 1)))
+        observed_means.append(stats["mean"])
+        observed_p95.append(stats["p95"])
+        observed_max.append(stats["max"])
+        dname = device_info[dev]["device_name"]
+        bb = BACKBONE_ABBREV.get(device_info[dev]["backbone"], device_info[dev]["backbone"])
+        xticklabels.append(f"{dname}\n{bb}")
+
+    expected_vals = np.array(expected_vals, dtype=float)
+    observed_means = np.array(observed_means, dtype=float)
+    observed_p95 = np.array(observed_p95, dtype=float)
+    observed_max = np.array(observed_max, dtype=float)
+
+    bars_exp = ax_bs.bar(
+        x - bar_w / 2, expected_vals, width=bar_w,
+        color="#c44e52", edgecolor="black", linewidth=0.5,
+        label="Expected"
+    )
+    bars_obs = ax_bs.bar(
+        x + bar_w / 2, observed_means, width=bar_w,
+        color="#4c72b0", edgecolor="black", linewidth=0.5,
+        label="Observed Mean"
+    )
+    # Annotate batch size values above each bar
+    for bar in bars_exp:
+        h = bar.get_height()
+        ax_bs.text(bar.get_x() + bar.get_width() / 2, h, f"{h:.1f}",
+                   ha="center", va="bottom", fontsize=5.5)
+    for bar in bars_obs:
+        h = bar.get_height()
+        ax_bs.text(bar.get_x() + bar.get_width() / 2, h, f"{h:.1f}",
+                   ha="center", va="bottom", fontsize=5.5)
+    ax_bs.scatter(
+        x + bar_w / 2, observed_p95, s=16, color="black",
+        marker="D", linewidths=0.4, label="Observed p95", zorder=3
+    )
+
+    for xi, ymax_i in zip(x, observed_max):
+        ax_bs.vlines(
+            xi + bar_w / 2, 0, ymax_i, colors="#4c72b0",
+            linewidth=0.9, alpha=0.75, zorder=2
+        )
+
+    ymax = max(
+        np.max(expected_vals) if len(expected_vals) else 0.0,
+        np.max(observed_max) if len(observed_max) else 0.0,
+        1.0,
+    )
+    _, ylim_nice = _set_clean_ticks(ax_bs, max(float(n_devices), 1.0), ymax, n_y=4)
+    ax_bs.set_xlim(-0.6, n_devices - 0.4)
+    ax_bs.set_xticks(x)
+    ax_bs.set_xticklabels(xticklabels)
+    ax_bs.set_ylabel("Batch Size")
+    ax_bs.grid(axis="y", zorder=0)
+    ax_bs.set_axisbelow(True)
+
+    handles_bs, labels_bs = ax_bs.get_legend_handles_labels()
+    fig_bs.legend(
+        handles_bs, labels_bs, loc="upper center",
+        bbox_to_anchor=(0.5, 1.04), ncol=3, frameon=False,
+        handlelength=1.2, handletextpad=0.35, columnspacing=0.8
+    )
+    fig_bs.tight_layout(rect=(0, 0, 1, 0.93))
+    save_figure(fig_bs, out_batch_size)
+    plt.close(fig_bs)
+
+    # ── FIGURE 4: Deployment Diagram (paper style) ───────────────────────
     # Group deployments by physical GPU (cuda label).
     # One column per GPU; within each GPU column, deployments are sub-columns
     # side by side. Each sub-column: task boxes on top, backbone bar below.
@@ -810,7 +960,7 @@ def _plot_single_method(data_dir):
     save_figure(fig3, out_deploy)
     plt.close(fig3)
 
-    # ── FIGURE 4: Trace Workload ──────────────────────────────────────────
+    # ── FIGURE 5: Trace Workload ──────────────────────────────────────────
     fig4, ax4 = plt.subplots(1, 1, figsize=(3.3, 1.6))
 
     all_workload_ys = []
@@ -842,15 +992,79 @@ def _plot_single_method(data_dir):
     save_figure(fig4, out_workload)
     plt.close(fig4)
 
+    # ── FIGURE 6: Queuing Delay per GPU ──────────────────────────────────
+    def per_second_avg_queuing(device_rows, task=None, max_time=None):
+        subset = [r for r in device_rows if (r["task"] == task if task else True)]
+        if not subset:
+            return [], []
+        times = np.array([r["send_time"] for r in subset])
+        qdels = np.array([r["queuing_delay(ms)"] for r in subset])
+        end   = max_time if max_time is not None else float(times.max())
+        return _bin_latency(times, qdels, end)
 
-# ── Generate per-method plots ──────────────────────────────────────────────────
-if args.compare:
-    # Already discovered methods in the comparison block above
-    for m in methods:
-        run_dir = os.path.join(args.compare, m, RUN)
-        print(f"Plotting {m}...")
-        _plot_single_method(run_dir)
-else:
+    fig_q, axes_q = plt.subplots(1, n_devices, figsize=(panel_w * n_devices, 1.6),
+                                  sharey=False, sharex=True, squeeze=False)
+    fig_q.subplots_adjust(wspace=0.12)
+
+    for col_idx, dev in enumerate(devices_ordered):
+        ax   = axes_q[0][col_idx]
+        dev_rows     = rows_by_device[dev]
+        tasks_on_dev = sorted(set(r["task"] for r in dev_rows))
+        all_ys = []
+        for task in tasks_on_dev:
+            xs, ys = per_second_avg_queuing(dev_rows, task, max_time=t_max)
+            if not len(xs):
+                continue
+            mask = np.isfinite(ys)
+            ax.plot(xs[mask], ys[mask], color=task_color[task], linewidth=1.0, label=tabbrev.get(task, task))
+            all_ys.extend([v for v in ys if np.isfinite(v)])
+        ymax = max(all_ys) if all_ys else 1.0
+        _set_clean_ticks(ax, t_max, ymax, n_y=4)
+        ax.grid(axis="both", zorder=0)
+        ax.set_axisbelow(True)
+        dname = device_info[dev]["device_name"]
+        bb    = BACKBONE_ABBREV.get(device_info[dev]["backbone"], device_info[dev]["backbone"])
+        ax.set_title(f"{dname} ({bb})", pad=2)
+        ax.set_xlabel("Time (s)")
+        if col_idx == 0:
+            ax.set_ylabel("Queuing Delay (ms)")
+        else:
+            ax.tick_params(axis="y", left=False)
+
+    handles_q, labels_q = axes_q[0][0].get_legend_handles_labels()
+    fig_q.legend(handles_q, labels_q, loc="upper center",
+                 bbox_to_anchor=(0.5, 1.02), ncol=2, frameon=False,
+                 handlelength=1.2, handletextpad=0.3, columnspacing=0.8)
+    fig_q.tight_layout(rect=(0, 0, 1, 0.97))
+    save_figure(fig_q, out_queuing)
+    plt.close(fig_q)
+
+
+# ── Generate all plots ────────────────────────────────────────────────────────
+# Auto-detect: DATA_DIR is a method dir (e.g. results/fmaas_place/).
+# Its parent (e.g. results/) contains sibling methods (clipper_place, fmaas_place).
+data_abs = os.path.abspath(DATA_DIR)
+compare_dir = args.compare or os.path.dirname(data_abs)
+
+# Find all method dirs (siblings with a CSV)
+method_dirs = sorted([
+    d for d in os.listdir(compare_dir)
+    if os.path.isdir(os.path.join(compare_dir, d))
+    and os.path.isfile(os.path.join(compare_dir, d, "request_latency_results.csv"))
+])
+
+# Comparison plots across methods
+if len(method_dirs) > 1:
+    _plot_comparison(compare_dir, "")
+
+# Single-method plots for each method
+for m_dir in method_dirs:
+    m_path = os.path.join(compare_dir, m_dir)
+    print(f"Plotting {m_dir}...")
+    _plot_single_method(m_path)
+
+if not method_dirs:
+    # Fallback: just plot DATA_DIR
     _plot_single_method(DATA_DIR)
 
 print("Done.")

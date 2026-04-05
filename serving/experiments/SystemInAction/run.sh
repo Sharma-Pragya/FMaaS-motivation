@@ -23,7 +23,11 @@ SERVING_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 read_cfg() {
     python3 -c "
 from experiments.SystemInAction.user_config import experiment
-print(experiment.get('$1', '$2'))
+value = experiment.get('$1', '$2')
+if isinstance(value, list):
+    print(','.join(str(v) for v in value))
+else:
+    print(value)
 "
 }
 
@@ -34,9 +38,10 @@ MAX_BATCH_WAIT_MS="$(read_cfg max_batch_wait_ms 0)"
 ISOLATION_MODE="$(read_cfg isolation_mode shared)"
 WARMUP_GAP="$(read_cfg warmup_gap 2.0)"
 MAX_MODEL_LEN="$(read_cfg max_model_len 256)"
+BATCH_MODE="$(read_cfg batch_mode util_dummy)"
 
 # ── Overridable from env ─────────────────────────────────────────────
-SCHEDULERS="${SCHEDULERS:-fmaas_place clipper_place}"
+SCHEDULERS="${SCHEDULERS:-clipper_place}"
 EXP_DIR="${EXP_DIR:-experiments/SystemInAction/results}"
 EXP_TYPE="${EXP_TYPE:-SystemInAction}"
 
@@ -85,7 +90,7 @@ run_scheduler() {
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     section "SCHEDULER: $SCHEDULER"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    info "Setup:    ecgclass + gestureclass @ ${REQ_RATE} req/s, ${DURATION}s trace"
+    info "Setup:    SystemInAction tasks @ ${REQ_RATE} req/s, ${DURATION}s trace"
     info "Mode:     local (single process, no MQTT)"
     info "Timeline:"
     info "  t=0s    Deploy + run for ${DURATION}s"
@@ -110,6 +115,7 @@ run_scheduler() {
         --isolation-mode    "$ISOLATION_MODE" \
         --warmup-gap        "$WARMUP_GAP" \
         --max-model-len     "$MAX_MODEL_LEN" \
+        --batch-mode        "$BATCH_MODE" \
         2>&1 | tee "$LOG" &
     RUNNER_PID=$!
 
@@ -143,6 +149,7 @@ echo "  FMaaS System-in-Action Experiment  (local mode)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 info "Schedulers: $SCHEDULERS"
 info "Duration:   ${DURATION}s  |  Rate: ${REQ_RATE} req/s  |  Trace: $TRACE"
+info "Batch mode: $BATCH_MODE"
 info "Exp dir:    $EXP_DIR"
 
 for SCHEDULER in $SCHEDULERS; do
