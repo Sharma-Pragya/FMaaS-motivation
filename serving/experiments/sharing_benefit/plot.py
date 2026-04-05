@@ -492,7 +492,7 @@ def main() -> int:
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--exp-dir",         default=os.environ.get("EXP_DIR", "experiments/sharing_benefit/results"))
-    parser.add_argument("--rps-sweep",       default="20,40,60",
+    parser.add_argument("--rps-sweep",       default="20,40,60,80,100,120",
                         help="Comma-separated RPS values to plot (must match run.sh sweep)")
     parser.add_argument("--warmup-secs",     type=float, default=10.0)
     parser.add_argument("--warmup-requests", type=int,   default=180,

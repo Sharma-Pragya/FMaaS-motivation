@@ -85,7 +85,7 @@ export DATASET_DIR
 # Python executable from conda environment
 # Try conda run first, fall back to explicit PYTHON variable
 if command -v conda &> /dev/null; then
-    PYTHON="${PYTHON:-conda run -n ${CONDA_ENV} python}"
+    PYTHON="${PYTHON:-conda run --no-capture-output -n ${CONDA_ENV} python}"
 else
     # If conda not in PATH, try to find Python from environment
     PYTHON="${PYTHON:-python}"
@@ -96,14 +96,15 @@ fi
 # ---------------------------------------------------------------------------
 CUDA_DEVICE="${CUDA_DEVICE:-cuda:0}"
 BACKBONE="${BACKBONE:-momentbase}"
-RPS_SWEEP="${RPS_SWEEP:-20,40,60}"
-PHASE_DURATION="${PHASE_DURATION:-180}"
+RPS_SWEEP="${RPS_SWEEP:-120}"
+PHASE_DURATION="${PHASE_DURATION:-20}"
 DEVICE_PORT="${DEVICE_PORT:-8000}"
 DEVICE_PORT_2="${DEVICE_PORT_2:-8001}"
-MAX_BATCH_SIZE="${MAX_BATCH_SIZE:-5}"
+MAX_BATCH_SIZE="${MAX_BATCH_SIZE:-100}"
 RESULTS_BASE="${RESULTS_BASE:-experiments/sharing_benefit/results}"
 DECODER_DIR="${DECODER_DIR:-${FMTK_DIR}/models/tsfm/finetuned}"
 DEVICE_STARTUP_WAIT="${DEVICE_STARTUP_WAIT:-5}"
+MAX_BATCH_WAIT_MS="${MAX_BATCH_WAIT_MS:-0}"
 
 LOG_DIR="${RESULTS_BASE}/logs"
 mkdir -p "$LOG_DIR"
@@ -154,7 +155,7 @@ start_device() {
         --cuda              "$CUDA_DEVICE"   \
         --scheduler-policy  "$scheduler"     \
         --max-batch-size    "$MAX_BATCH_SIZE" \
-        --max-batch-wait-ms 0                \
+        --max-batch-wait-ms "$MAX_BATCH_WAIT_MS"                 \
         --task-rates        "$task_rates"    \
         > "$log" 2>&1 &
     local pid=$!
@@ -239,6 +240,7 @@ run_condition() {
   "cuda_device": "${CUDA_DEVICE}",
   "scheduler_policy": "${scheduler}",
   "max_batch_size": ${MAX_BATCH_SIZE},
+  "max_batch_wait_ms": ${MAX_BATCH_WAIT_MS},
   "phase_duration_s": ${PHASE_DURATION},
   "rps_per_task": ${rps},
   "device_port": ${DEVICE_PORT},

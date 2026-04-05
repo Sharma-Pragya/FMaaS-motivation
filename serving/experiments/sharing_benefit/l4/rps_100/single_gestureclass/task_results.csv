@@ -1,0 +1,2 @@
+task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms
+gestureclass,single_gestureclass,993,99.3,18.813,18.896,25.691,26.812
