@@ -63,12 +63,12 @@ class DeviceBatcher:
             self._queues.push(request)
             if isinstance(self._policy, STFQPolicy):
                 self._policy.assign_start_time(request)
-            pending_after = pending_before + 1
-            if pending_after == 1 or pending_after % 50 == 0:
-                print(
-                    f"[DeviceBatcher] Enqueued req={request.req_id} task={request.task} "
-                    f"total_pending={pending_after} per_task={self._queues.snapshot_depths()}"
-                )
+            # pending_after = pending_before + 1
+            # if pending_after == 1 or pending_after % 50 == 0:
+            #     print(
+            #         f"[DeviceBatcher] Enqueued req={request.req_id} task={request.task} "
+            #         f"total_pending={pending_after} per_task={self._queues.snapshot_depths()}"
+            #     )
             self._condition.notify_all()
 
     async def run_forever(self):
@@ -158,12 +158,12 @@ class DeviceBatcher:
         return self._prepare_batch(requests)
 
     def _prepare_batch(self, requests: list[RequestEnvelope]) -> PreparedBatch:
-        batch_ids = [request.req_id for request in requests]
+        # batch_ids = [request.req_id for request in requests]
         task_names = [request.task for request in requests]
-        print(
-            f"[DeviceBatcher] Prepared batch_size={len(requests)} "
-            f"req_ids={batch_ids} tasks={task_names}"
-        )
+        # print(
+        #     f"[DeviceBatcher] Prepared batch_size={len(requests)} "
+        #     f"req_ids={batch_ids} tasks={task_names}"
+        # )
         xs = [request.x for request in requests]
         x = None if xs[0] is None else np.concatenate(xs, axis=0)
         masks = [request.mask for request in requests if request.mask is not None]
@@ -179,17 +179,18 @@ class DeviceBatcher:
         )
 
     def _execute_prepared(self, prepared: PreparedBatch):
-        batch_ids = [request.req_id for request in prepared.requests]
-        print(
-            f"[DeviceBatcher] Executing batch_size={len(prepared.requests)} "
-            f"req_ids={batch_ids} tasks={prepared.task_names}"
-        )
+        # batch_ids = [request.req_id for request in prepared.requests]
+        # print(
+        #     f"[DeviceBatcher] Executing batch_size={len(prepared.requests)} "
+        #     f"req_ids={batch_ids} tasks={prepared.task_names}"
+        # )
         result = self._runtime.run_batch(prepared.x, prepared.task_names, prepared.mask, prepared.questions)
         duration_s = (result.end_time_ns - result.start_time_ns) / 1e9
         if isinstance(self._policy, SABAPolicy):
             self._policy.update_batch_duration(duration_s)
         if isinstance(self._policy, STFQPolicy):
             self._policy.update_after_execution(prepared.task_names, duration_s, self._queues._queues)
+        pairs = []
         for index, request in enumerate(prepared.requests):
             payload = {
                 "output": result.outputs[index],
@@ -199,11 +200,18 @@ class DeviceBatcher:
                 "swap_time_ns": result.swap_time_ns[index],
                 "decoder_time_ns": result.decoder_time_ns[index],
             }
-            request.future.get_loop().call_soon_threadsafe(self._set_result_if_pending, request.future, payload)
-        print(
-            f"[DeviceBatcher] Finished batch_size={len(prepared.requests)} "
-            f"start={result.start_time_ns} end={result.end_time_ns}"
-        )
+            pairs.append((request.future, payload))
+        prepared.requests[0].future.get_loop().call_soon_threadsafe(self._resolve_batch, pairs)
+        # print(
+        #     f"[DeviceBatcher] Finished batch_size={len(prepared.requests)} "
+        #     f"start={result.start_time_ns} end={result.end_time_ns}"
+        # )
+
+    @staticmethod
+    def _resolve_batch(pairs):
+        for future, payload in pairs:
+            if not future.done():
+                future.set_result(payload)
 
     @staticmethod
     def _set_result_if_pending(future, payload):

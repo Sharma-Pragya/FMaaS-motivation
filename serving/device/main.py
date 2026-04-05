@@ -3,6 +3,13 @@ import asyncio
 import base64
 import os
 
+try:
+    import uvloop
+    asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+    print("[Device] Using uvloop event loop")
+except ImportError:
+    print("[Device] uvloop not available, using default asyncio event loop")
+
 
 _pre_parser = argparse.ArgumentParser(add_help=False)
 _pre_parser.add_argument("--cuda", type=str, default=None)

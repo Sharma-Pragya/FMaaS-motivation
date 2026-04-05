@@ -139,7 +139,7 @@ class EdgeRuntimeApplication:
         print("[Device] Runtime application stopped")
 
     async def infer(self, request: edge_runtime_pb2.InferRequest):
-        print(f"[Device] Received infer req_id={request.req_id} task={request.task}")
+        # print(f"[Device] Received infer req_id={request.req_id} task={request.task}")
         if self.runtime_type == "vllm":
             prompt = request.question if request.HasField("question") else ""
             return await self.runtime.infer(request.req_id, prompt)

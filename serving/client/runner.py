@@ -493,52 +493,62 @@ class TraceRunner:
                         break   # truly done
                     continue
 
-                req = self._trace[dispatched_idx]
-
-                # Sleep until this request is due
-                target = start_epoch + req["req_time"]
+                # Sleep until the next request is due
+                next_req = self._trace[dispatched_idx]
+                target = start_epoch + next_req["req_time"]
                 now = time.time()
                 if target > now:
                     await asyncio.sleep(target - now)
+
+                # Snapshot time once, then collect ALL requests that are due
                 dispatch_now = time.time()
-                self._dispatch_lag_ms.append(max(0.0, (dispatch_now - target) * 1000.0))
 
-                dispatched_idx += 1
-
-                # Refresh routing cache only when plan changes (add_task / add_workload)
+                # Refresh routing cache once per dispatch round
                 self._refresh_route_cache_if_needed()
-                task_routes, route_table = self._plan_cache[1], self._plan_cache[2]
+                route_table = self._plan_cache[2]
 
-                # Route this request lazily against the live plan
-                entry = route_table.get(req["task"])
-                if entry is None:
-                    print(f"[TraceRunner] Skipping req {req['req_id']}: no route for '{req['task']}'")
-                    continue
-                routes, probs = entry
-                idx = int(_rng.choice(len(routes), p=probs))
-                site_mgr, device_url, backbone, _ = routes[idx]
+                # Gather all due requests before firing any (open-loop batch dispatch)
+                to_fire = []
+                while dispatched_idx < len(self._trace):
+                    req = self._trace[dispatched_idx]
+                    req_target = start_epoch + req["req_time"]
+                    if dispatch_now < req_target:
+                        break
 
-                req_metadata[req["req_id"]] = {
-                    **req,
-                    "backbone": backbone,
-                    "site_manager": site_mgr,
-                }
+                    dispatched_idx += 1
+                    self._dispatch_lag_ms.append(max(0.0, (dispatch_now - req_target) * 1000.0))
 
-                # Look up pre-built numpy arrays (built once in warmup, reused every request)
-                cached = self._input_cache.get(req["task"])
-                if cached is None:
-                    print(f"[TraceRunner] WARNING: no dataloader for '{req['task']}', skipping.")
-                    continue
-                inputs, outputs = cached
+                    entry = route_table.get(req["task"])
+                    if entry is None:
+                        print(f"[TraceRunner] Skipping req {req['req_id']}: no route for '{req['task']}'")
+                        continue
+                    routes, probs = entry
+                    idx = int(_rng.choice(len(routes), p=probs))
+                    site_mgr, device_url, backbone, _ = routes[idx]
 
-                while len(inflight) >= max_inflight:
-                    await asyncio.wait(inflight, return_when=asyncio.FIRST_COMPLETED)
+                    req_metadata[req["req_id"]] = {
+                        **req,
+                        "backbone": backbone,
+                        "site_manager": site_mgr,
+                    }
 
-                t = asyncio.create_task(
-                    _send_request(req["req_id"], device_url, inputs, outputs, client_key=req["task"])
-                )
-                t.add_done_callback(_collect_done)
-                inflight.add(t)
+                    cached = self._input_cache.get(req["task"])
+                    if cached is None:
+                        print(f"[TraceRunner] WARNING: no dataloader for '{req['task']}', skipping.")
+                        continue
+                    inputs, outputs = cached
+                    to_fire.append((req["req_id"], device_url, inputs, outputs, req["task"]))
+
+                # Fire all due requests at once (no event-loop yields between them)
+                for req_id, device_url, inputs, outputs, task_key in to_fire:
+                    while len(inflight) >= max_inflight:
+                        await asyncio.wait(inflight, return_when=asyncio.FIRST_COMPLETED)
+
+                    t = asyncio.create_task(
+                        _send_request(req_id, device_url, inputs, outputs, client_key=task_key)
+                    )
+                    t.add_done_callback(_collect_done)
+                    inflight.add(t)
         finally:
             if gc_was_enabled:
                 gc.enable()
