@@ -5,7 +5,7 @@ import os
 from orchestrator.config import DEPLOYMENT_PLAN_PATH
 
 
-def run_scheduler(scheduler_name: str, devices: dict, tasks_slo: dict, output_dir: str = None):
+def run_scheduler(scheduler_name: str, devices: dict, tasks_slo: dict, output_dir: str = None, batch_mode: str = "util_dummy"):
     """Run the requested scheduler and save the deployment plan.
 
     Args:
@@ -59,13 +59,13 @@ def run_scheduler(scheduler_name: str, devices: dict, tasks_slo: dict, output_di
     elif scheduler_name == 'fmaas_place':
         from planner.data_loader import BatchProfile
         batch_profile = BatchProfile()
-        scheduler = FMaaSPlacementScheduler(profile, config, batch_profile=batch_profile)
+        scheduler = FMaaSPlacementScheduler(profile, config, batch_profile=batch_profile, batch_mode=batch_mode)
         deployments = scheduler.schedule(devices, tasks_slo)
         plan = fmaas_place_mod.build_final_json(deployments, pipelines, scheduler.batch_size_map, scheduler.expected_batch_size_map)
     elif scheduler_name == 'clipper_place':
         from planner.data_loader import BatchProfile
         batch_profile = BatchProfile()
-        scheduler = ClipperPlacementScheduler(profile, config, batch_profile=batch_profile)
+        scheduler = ClipperPlacementScheduler(profile, config, batch_profile=batch_profile, batch_mode=batch_mode)
         deployments = scheduler.schedule(devices, tasks_slo)
         plan = clipper_place_mod.build_final_json(deployments, pipelines, scheduler.batch_size_map, scheduler.expected_batch_size_map)
     else:

@@ -44,9 +44,11 @@ class ClipperPlacementScheduler(BaseScheduler):
         profile_data: ProfileData,
         config: Optional[SchedulerConfig] = None,
         batch_profile: Optional[BatchProfile] = None,
+        batch_mode: str = "util_dummy",
     ):
         super().__init__(profile_data, config)
         self.batch_profile = batch_profile
+        self.batch_mode = batch_mode
         # Maps (server_name, backbone_key) -> saturation batch size
         self.batch_size_map: Dict[Tuple[str, str], int] = {}
         # Maps (server_name, backbone_key) -> selected (expected) batch size
@@ -256,13 +258,14 @@ class ClipperPlacementScheduler(BaseScheduler):
             latency = latency_bs1
             if self.batch_profile is not None:
                 try:
-                    latency, selected_bs, sat_bs = self._compute_batched_latency(
-                        lookup_backbone, server.type, task_demand, latency_bs1,
-                    )
-                    # #for dummy pursose set selected batch size to 32
-                    # selected_bs = 32    
-                    # latency = self.batch_profile.get_backbone_mean_ms(lookup_backbone, server.type, selected_bs)
-
+                    if self.batch_mode == "fixedpoint":
+                        latency, selected_bs, sat_bs = self._compute_batched_latency_fixedpoint(
+                            lookup_backbone, server.type, task_demand, latency_bs1,
+                        )
+                    else:
+                        latency, selected_bs, sat_bs = self._compute_batched_latency(
+                            lookup_backbone, server.type, task_demand, latency_bs1,
+                        )
                 except KeyError:
                     logger.debug(
                         f"No batch profile for {lookup_backbone}/{server.type}, "
@@ -357,6 +360,63 @@ class ClipperPlacementScheduler(BaseScheduler):
         )
 
         return batched_latency, selected_bs, sat_bs
+
+    def _compute_batched_latency_fixedpoint(
+        self,
+        backbone: str,
+        device_type: str,
+        task_demand: float,
+        latency_bs1: float,
+        max_iters: int = 10,
+    ) -> Tuple[float, int, int]:
+        """Compute expected batch size via fixed-point iteration (single task).
+
+        arrivals = task_demand * batched_latency / 1000
+
+        where batched_latency = (latency_bs1 - backbone_ms(1)) + backbone_ms(bs).
+
+        Iterates until bs converges.
+
+        Returns:
+            (batched_latency_ms, selected_batch_size, saturation_batch_size)
+        """
+        import math
+        bp = self.batch_profile
+
+        sat_bs, _ = bp.get_saturation_batch_size(backbone, device_type)
+        backbone_ms_bs1 = bp.get_backbone_mean_ms(backbone, device_type, 1)
+        decoder_overhead = latency_bs1 - backbone_ms_bs1
+
+        bs = 1
+        for i in range(max_iters):
+            backbone_ms_bs = bp.get_backbone_mean_ms(backbone, device_type, bs)
+            batched_latency = decoder_overhead + backbone_ms_bs
+
+            arrivals = task_demand * (batched_latency / 1000.0)
+            new_bs_raw = max(1, math.ceil(arrivals))
+            new_bs = bp.snap_ceil_to_profile(backbone, device_type, min(new_bs_raw, sat_bs))
+
+            print(
+                f"[FixedPoint] {backbone}/{device_type} iter={i+1}: "
+                f"bs={bs}, backbone_ms={backbone_ms_bs:.2f}, "
+                f"batched_latency={batched_latency:.2f}ms, "
+                f"arrivals={arrivals:.3f}, ceil={new_bs_raw}, snapped={new_bs}"
+            )
+
+            if new_bs == bs:
+                break
+            bs = new_bs
+
+        backbone_ms_final = bp.get_backbone_mean_ms(backbone, device_type, bs)
+        batched_latency = decoder_overhead + backbone_ms_final
+
+        print(
+            f"[FixedPoint] {backbone}/{device_type}: CONVERGED "
+            f"expected_bs={bs}, batched_latency={batched_latency:.2f}ms, "
+            f"sat_bs={sat_bs}, task_demand={task_demand:.2f} req/s"
+        )
+
+        return batched_latency, bs, sat_bs
 
 
 def build_final_json(

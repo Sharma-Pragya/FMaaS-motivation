@@ -224,7 +224,7 @@ class LocalExperiment:
     def __init__(self, exp_type, scheduler, req_rate, duration, trace_type, seed, exp_dir,
                  max_batch_size=5, max_batch_wait_ms=0.0, isolation_mode="shared",
                  warmup_gap=2.0, pretrace_warmup_secs=20.0, max_model_len=None,
-                 output_dir=None):
+                 output_dir=None, batch_mode="util_dummy"):
         self.exp_type = exp_type
         self.scheduler = scheduler
         self.req_rate = req_rate
@@ -237,6 +237,7 @@ class LocalExperiment:
         self.max_model_len = max_model_len
         self._warmup_gap = warmup_gap
         self._pretrace_warmup_secs = pretrace_warmup_secs
+        self.batch_mode = batch_mode
 
         if output_dir:
             self.output_dir = os.path.abspath(output_dir)
@@ -264,7 +265,8 @@ class LocalExperiment:
                 self.tasks[task_name]['peak_workload'] = avg_workload[task_name]
 
         plan = self._orchestrator.run_deployment_plan(
-            self.devices, self.tasks, scheduler_name=self.scheduler, output_dir=self.output_dir)
+            self.devices, self.tasks, scheduler_name=self.scheduler, output_dir=self.output_dir,
+            batch_mode=self.batch_mode)
 
         # Count deployments per (ip, cuda) to split GPU memory fairly across vLLM engines
         from collections import Counter
@@ -724,6 +726,9 @@ def main():
     parser.add_argument("--pretrace-warmup-secs", type=float, default=20.0)
     parser.add_argument("--output-dir", type=str, default=None,
                         help="Explicit output directory. Overrides exp-dir/scheduler/req-rate path.")
+    parser.add_argument("--batch-mode", default="util_dummy",
+                        choices=["util_dummy", "fixedpoint"],
+                        help="Batch size estimation: util_dummy (original) or fixedpoint (arrival-rate based).")
     args = parser.parse_args()
 
     if args.mode == "local":
@@ -748,8 +753,10 @@ def main():
             pretrace_warmup_secs=args.pretrace_warmup_secs,
             max_model_len=args.max_model_len,
             output_dir=args.output_dir,
+            batch_mode=args.batch_mode,
         )
 
+        print(f"[Config] batch_mode={args.batch_mode}")
         exp.deploy()
         exp.run()
 

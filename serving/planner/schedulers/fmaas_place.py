@@ -44,9 +44,11 @@ class FMaaSPlacementScheduler(BaseScheduler):
         profile_data: ProfileData,
         config: Optional[SchedulerConfig] = None,
         batch_profile: Optional[BatchProfile] = None,
+        batch_mode: str = "util_dummy",
     ):
         super().__init__(profile_data, config)
         self.batch_profile = batch_profile
+        self.batch_mode = batch_mode  # "util_dummy" or "fixedpoint"
         # Maps (server_name, backbone) -> saturation batch size (for device max_batch_size)
         self.batch_size_map: Dict[Tuple[str, str], int] = {}
         # Maps (server_name, backbone) -> selected batch size (expected utilization)
@@ -375,12 +377,25 @@ class FMaaSPlacementScheduler(BaseScheduler):
             latency = latency_bs1
             if self.batch_profile is not None:
                 try:
-                    latency, selected_bs, sat_bs = self._compute_batched_latency(
-                        backbone, server.type, aggregate_demand, latency_bs1,
-                    )
-                    # #for dummy pursose set selected batch size to 32
-                    # selected_bs = 32    
-                    # latency = self.batch_profile.get_backbone_mean_ms(backbone, server.type, selected_bs)
+                    if self.batch_mode == "fixedpoint":
+                        # Build per-task demand+latency map for all tasks on this deployment
+                        task_demands = {}
+                        for t_name, t_demand in existing_demands.items():
+                            t_pid = self.data.find_pipeline_id(t_name, backbone)
+                            t_lat = self.data.get_pipeline_latency(t_pid, server.type) if t_pid else None
+                            if t_lat is not None:
+                                task_demands[t_name] = (t_demand, t_lat)
+                        # Add current task
+                        task_demands[task.name] = (task_demand, latency_bs1)
+
+                        latency, selected_bs, sat_bs = self._compute_batched_latency_fixedpoint(
+                            backbone, server.type, aggregate_demand, latency_bs1,
+                            task_demands=task_demands,
+                        )
+                    else:
+                        latency, selected_bs, sat_bs = self._compute_batched_latency(
+                            backbone, server.type, aggregate_demand, latency_bs1,
+                        )
                 except KeyError:
                     logger.debug(
                         f"No batch profile for {backbone}/{server.type}, "
@@ -530,6 +545,92 @@ class FMaaSPlacementScheduler(BaseScheduler):
         )
 
         return batched_latency, selected_bs, sat_bs
+
+    def _compute_batched_latency_fixedpoint(
+        self,
+        backbone: str,
+        device_type: str,
+        aggregate_demand: float,
+        latency_bs1: float,
+        task_demands: Optional[Dict[str, float]] = None,
+        max_iters: int = 10,
+    ) -> Tuple[float, int, int]:
+        """Compute expected batch size via fixed-point iteration.
+
+        Models how many requests arrive while the GPU processes one batch:
+            arrivals = sum( demand_i * batched_latency_i ) / 1000
+
+        where batched_latency_i = (pipeline_latency_bs1_i - backbone_ms(1)) + backbone_ms(bs)
+        for each task on the deployment.
+
+        Iteration:
+            1. Start with bs = 1.
+            2. Compute per-task batched_latency_i at current bs.
+            3. arrivals = sum( demand_i * batched_latency_i ) / 1000.
+            4. new_bs = snap_ceil(ceil(arrivals)).
+            5. If new_bs == bs, converged. Else repeat.
+
+        Args:
+            backbone: Backbone name.
+            device_type: GPU device type string.
+            aggregate_demand: Total demand in req/s across all tasks on this deployment.
+            latency_bs1: Pipeline avg_latency_ms at batch_size=1 for the current task.
+            task_demands: {task_name: (demand_rps, pipeline_latency_bs1)} for all tasks
+                          on this deployment (existing + current). If None, falls back
+                          to single-task approximation using latency_bs1.
+            max_iters: Maximum iterations (typically converges in 2-3).
+
+        Returns:
+            (batched_latency_ms, selected_batch_size, saturation_batch_size)
+        """
+        import math
+        bp = self.batch_profile
+
+        sat_bs, _ = bp.get_saturation_batch_size(backbone, device_type)
+        backbone_ms_bs1 = bp.get_backbone_mean_ms(backbone, device_type, 1)
+
+        bs = 1
+        for i in range(max_iters):
+            backbone_ms_bs = bp.get_backbone_mean_ms(backbone, device_type, bs)
+
+            # arrivals = sum( demand_i * batched_latency_i ) / 1000
+            if task_demands:
+                arrivals = 0.0
+                detail_parts = []
+                for t_name, (t_demand, t_lat_bs1) in task_demands.items():
+                    t_batched_lat = (t_lat_bs1 - backbone_ms_bs1) + backbone_ms_bs
+                    arrivals += t_demand * t_batched_lat / 1000.0
+                    detail_parts.append(f"{t_name}({t_demand:.1f}rps*{t_batched_lat:.2f}ms)")
+            else:
+                batched_lat = (latency_bs1 - backbone_ms_bs1) + backbone_ms_bs
+                arrivals = aggregate_demand * batched_lat / 1000.0
+                detail_parts = [f"single_task({aggregate_demand:.1f}rps*{batched_lat:.2f}ms)"]
+
+            new_bs_raw = max(1, math.ceil(arrivals))
+            new_bs = bp.snap_ceil_to_profile(backbone, device_type, min(new_bs_raw, sat_bs))
+
+            print(
+                f"[FixedPoint] {backbone}/{device_type} iter={i+1}: "
+                f"bs={bs}, backbone_ms={backbone_ms_bs:.2f}, "
+                f"arrivals={arrivals:.3f}, ceil={new_bs_raw}, snapped={new_bs}, "
+                f"details=[{', '.join(detail_parts)}]"
+            )
+
+            if new_bs == bs:
+                break
+            bs = new_bs
+
+        # Return the per-request batched latency for the CURRENT task (for util calc)
+        backbone_ms_final = bp.get_backbone_mean_ms(backbone, device_type, bs)
+        batched_latency = (latency_bs1 - backbone_ms_bs1) + backbone_ms_final
+
+        print(
+            f"[FixedPoint] {backbone}/{device_type}: CONVERGED "
+            f"expected_bs={bs}, batched_latency={batched_latency:.2f}ms (current task), "
+            f"sat_bs={sat_bs}, aggregate_demand={aggregate_demand:.2f} req/s"
+        )
+
+        return batched_latency, bs, sat_bs
 
 
 def build_final_json(

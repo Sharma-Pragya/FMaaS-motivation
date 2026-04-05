@@ -122,6 +122,16 @@ class BatchProfile:
                 break
         return best
 
+    def snap_ceil_to_profile(self, backbone: str, device: str, target_bs: float) -> int:
+        """Snap a continuous batch size to the nearest available profiled size (ceil)."""
+        sizes = self.get_available_batch_sizes(backbone, device)
+        if not sizes:
+            return 1
+        for s in sizes:
+            if s >= target_bs:
+                return s
+        return sizes[-1]
+
 
 class ProfileData:
     """Encapsulates all profiler data with clean access methods.

@@ -51,7 +51,7 @@ class Orchestrator:
     # Planning                                                             #
     # ------------------------------------------------------------------ #
 
-    def run_deployment_plan(self, devices, tasks_slo, scheduler_name='fmaas', output_dir=None):
+    def run_deployment_plan(self, devices, tasks_slo, scheduler_name='fmaas', output_dir=None, batch_mode="util_dummy"):
         """Run the scheduler and save deployment_plan.json.
 
         Stores scheduler, profile, and pipelines for later use in handle_add_task.
@@ -59,7 +59,7 @@ class Orchestrator:
         """
         from orchestrator.planner import run_scheduler
         scheduler, profile, pipelines, plan = run_scheduler(
-            scheduler_name, devices, tasks_slo, output_dir
+            scheduler_name, devices, tasks_slo, output_dir, batch_mode=batch_mode
         )
         self._scheduler = scheduler
         self._profile_data = profile
