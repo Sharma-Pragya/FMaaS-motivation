@@ -88,12 +88,12 @@ fi
 # Experiment configuration
 # ---------------------------------------------------------------------------
 CUDA_DEVICE="${CUDA_DEVICE:-cuda:0}"
-BACKBONE="${BACKBONE:-dinobase-patch}"
-RPS_SWEEP="${RPS_SWEEP:-40}"
+BACKBONE="${BACKBONE:-dinosmall-patch}"
+RPS_SWEEP="${RPS_SWEEP:-120}"
 PHASE_DURATION="${PHASE_DURATION:-20}"
 DEVICE_PORT="${DEVICE_PORT:-8000}"
 DEVICE_PORT_2="${DEVICE_PORT_2:-8001}"
-MAX_BATCH_SIZE="${MAX_BATCH_SIZE:-5}"
+MAX_BATCH_SIZE="${MAX_BATCH_SIZE:-100}"
 RESULTS_BASE="${RESULTS_BASE:-experiments/sharing_benefit/vision/results}"
 DECODER_DIR="${DECODER_DIR:-${FMTK_DIR}/models/vision/finetuned}"
 DEVICE_STARTUP_WAIT="${DEVICE_STARTUP_WAIT:-5}"

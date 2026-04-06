@@ -45,7 +45,7 @@ NYUDEPTH_PATH = "../../FMTK/dataset/nyu-depth-v2"
 PASCALVOC_PATH = "../../FMTK/dataset/PASCAL-VOC"
 
 TASK_TYPES: Dict[str, str] = {
-    "nyudepth": "monocular_depth",
+    "nyudepth": "monocular",
     "vocseg":   "linear_seg",
 }
 
