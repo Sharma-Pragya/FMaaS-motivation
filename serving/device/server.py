@@ -51,6 +51,8 @@ class RuntimeServerConfig:
     task_rates: dict = None          # {task: rps} — used by WFQ/TokenBucket
     gpu_memory_utilization: float = 0.9  # vLLM GPU memory fraction (0.0–1.0)
     max_model_len: int = None            # vLLM max sequence length (None = vLLM default)
+    tpc_mode: str = "none"               # "none" | "libsmctrl" | "green"
+    tpc_partition: list = None           # list of TPC IDs to pin this server to
 
 
 class EdgeRuntimeApplication:
@@ -66,7 +68,8 @@ class EdgeRuntimeApplication:
             self.runtime = VLLMRuntime()
             self.batcher = None
         else:
-            self.runtime = PyTorchRuntime()
+            cuda_stream = self._setup_tpc(config)
+            self.runtime = PyTorchRuntime(cuda_stream=cuda_stream)
             if config.isolation_mode == "none":
                 # No batcher — requests go directly to runtime.run_batch()
                 self.batcher = None
@@ -108,6 +111,71 @@ class EdgeRuntimeApplication:
                     policy=policy,
                 )
         self._batch_task: asyncio.Task | None = None
+        self._green_partition = None  # held for cleanup
+
+    @staticmethod
+    def _setup_tpc(config: RuntimeServerConfig):
+        """Create and TPC-pin a CUDA stream if configured. Returns stream or None."""
+        if config.tpc_mode == "none" or not config.tpc_partition:
+            return None
+
+        import ctypes
+        import torch
+        from pathlib import Path
+
+        cuda_device = os.environ.get("CUDA_DEVICE", "cuda:0")
+        device_id = int(cuda_device.split(":")[-1]) if ":" in cuda_device else 0
+        sm_count = torch.cuda.get_device_properties(cuda_device).multi_processor_count
+
+        if config.tpc_mode == "libsmctrl":
+            TPC_LIB_DIR = Path(os.environ.get(
+                "TPC_LIB_DIR",
+                "../../TPC_controller/tpc_controller"
+            ))
+            so_path = TPC_LIB_DIR / "libsmctrl" / "libsmctrl.so"
+            if not so_path.exists():
+                raise FileNotFoundError(f"libsmctrl.so not found at {so_path}")
+            lib = ctypes.CDLL(str(so_path))
+            lib.libsmctrl_set_stream_mask.argtypes = [ctypes.c_void_p, ctypes.c_uint64]
+            lib.libsmctrl_set_stream_mask.restype = None
+            lib.libsmctrl_get_tpc_info_cuda.argtypes = [
+                ctypes.POINTER(ctypes.c_uint32), ctypes.c_int
+            ]
+            lib.libsmctrl_get_tpc_info_cuda.restype = ctypes.c_int
+
+            num_tpcs = ctypes.c_uint32()
+            ret = lib.libsmctrl_get_tpc_info_cuda(ctypes.byref(num_tpcs), device_id)
+            total_tpcs = num_tpcs.value if ret == 0 else sm_count // 2
+
+            stream = torch.cuda.Stream(device=cuda_device)
+            enable_bits = 0
+            for tid in config.tpc_partition:
+                enable_bits |= (1 << tid)
+            disable_mask = (~enable_bits) & 0xFFFFFFFFFFFFFFFF
+            lib.libsmctrl_set_stream_mask(
+                ctypes.c_void_p(stream.cuda_stream),
+                ctypes.c_uint64(disable_mask),
+            )
+            print(f"[TPC] libsmctrl: pinned stream to TPCs {config.tpc_partition} "
+                  f"(total={total_tpcs})")
+            return stream
+
+        elif config.tpc_mode == "green":
+            import sys
+            tpc_iso_dir = str(Path(__file__).resolve().parents[1] / "experiments" / "tpc_isolation")
+            if tpc_iso_dir not in sys.path:
+                sys.path.insert(0, tpc_iso_dir)
+            from run import GreenContextPartition
+
+            partition = GreenContextPartition(device_id=device_id)
+            streams = partition.create_partitions(num_partitions=2)
+            # Use partition index: partition 0 for low TPC IDs, 1 for high
+            idx = 0 if config.tpc_partition[0] == 0 else 1
+            print(f"[TPC] green context: using partition {idx} for TPCs {config.tpc_partition}")
+            # Store partition ref so it doesn't get GC'd
+            return streams[idx]
+
+        return None
 
     async def start(self, bootstrap_json: str | None = None):
         if bootstrap_json:

@@ -1,6 +1,7 @@
 import threading
 import time
 from abc import ABC, abstractmethod
+from contextlib import nullcontext
 from dataclasses import dataclass
 
 import numpy as np
@@ -68,7 +69,7 @@ class PyTorchRuntime(BaseRuntime):
     Call self.logger.summary() for per-section averages, or .save() to persist.
     """
 
-    def __init__(self, loader: ModelLoader | None = None):
+    def __init__(self, loader: ModelLoader | None = None, cuda_stream=None):
         self._lock   = threading.RLock()
         self._loader = loader if loader is not None else ModelLoader()
         self.logger  = Logger(self._loader.device, "runtime")
@@ -76,6 +77,7 @@ class PyTorchRuntime(BaseRuntime):
         self.pipeline = None
         self.decoders = None
         self.adapters = None
+        self._cuda_stream = cuda_stream  # optional TPC-pinned stream
 
     def _sync(self):
         self.pipeline = self._loader.pipeline
@@ -152,7 +154,8 @@ class PyTorchRuntime(BaseRuntime):
             proc_time_ns = 0
             peak_bytes   = 0
 
-            with torch.no_grad():
+            stream_ctx = torch.cuda.stream(self._cuda_stream) if self._cuda_stream else nullcontext()
+            with stream_ctx, torch.no_grad():
                 for adapter_name, indices in groups:
                     # Set / unload adapter on the backbone
                     if adapter_name is not None:
@@ -210,7 +213,7 @@ class PyTorchRuntime(BaseRuntime):
 
                 if active_decoder is not None:
                     feat_input = torch.cat(feat_batch, dim=0)
-                    with torch.no_grad():
+                    with stream_ctx, torch.no_grad():
                         logits = active_decoder.forward(feat_input)
                     if is_cuda:
                         # torch.cuda.synchronize(device)

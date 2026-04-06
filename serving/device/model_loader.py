@@ -96,7 +96,7 @@ def _build_decoder(backbone: str, task: str, dtype: str, device):
     elif dtype == "forecasting":
         cfg = DECODERS[f"mlp_{backbone}_forecasting"]["decoder_config"]["cfg"]
         return ForecastingMLP(device=device, cfg=cfg)
-    elif dtype == "monocular_depth":
+    elif dtype == "monocular":
         bb = backbone.replace("-patch", "")
         cfg = DECODERS[f"monodepth_{bb}"]["decoder_config"]["cfg"]
         return MonocularDepthDecoder(device=device, cfg=cfg)
