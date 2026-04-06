@@ -41,8 +41,8 @@ from torch.utils.data import DataLoader
 
 from site_manager.grpc_client import EdgeRuntimeClient
 
-NYUDEPTH_PATH = "/work/pi_shenoy_umass_edu/kgudipaty/datasets/nyu-depth-v2"
-PASCALVOC_PATH = "/work/pi_shenoy_umass_edu/kgudipaty/datasets/PASCAL-VOC"
+NYUDEPTH_PATH = "../../FMTK/dataset/nyu-depth-v2"
+PASCALVOC_PATH = "../../FMTK/dataset/PASCAL-VOC"
 
 TASK_TYPES: Dict[str, str] = {
     "nyudepth": "monocular_depth",

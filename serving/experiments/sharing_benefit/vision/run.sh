@@ -89,7 +89,7 @@ fi
 # ---------------------------------------------------------------------------
 CUDA_DEVICE="${CUDA_DEVICE:-cuda:0}"
 BACKBONE="${BACKBONE:-dinobase-patch}"
-RPS_SWEEP="${RPS_SWEEP:-5,10,15,20}"
+RPS_SWEEP="${RPS_SWEEP:-40}"
 PHASE_DURATION="${PHASE_DURATION:-20}"
 DEVICE_PORT="${DEVICE_PORT:-8000}"
 DEVICE_PORT_2="${DEVICE_PORT_2:-8001}"
