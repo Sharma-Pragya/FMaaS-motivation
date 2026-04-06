@@ -1,0 +1,2 @@
+task,tpc_count,concurrency,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_total_response_time_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_queue_wait_plus_rpc_ms,avg_non_server_exec_overhead_ms
+ecgclass,1,1,557,10.1273,98.978,98.926,100.016,100.454,98.978,86.886,86.097,0.001,11.599,12.092

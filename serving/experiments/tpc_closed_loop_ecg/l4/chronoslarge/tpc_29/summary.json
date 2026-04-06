@@ -1,0 +1,12 @@
+{
+  "task": "ecgclass",
+  "tpc_count": 29,
+  "concurrency": 1,
+  "duration_s": 60.0,
+  "warmup_s": 5.0,
+  "total_completed_requests": 1949,
+  "completed_after_warmup": 1765,
+  "mean_response_time_ms": 31.169,
+  "mean_service_time_ms": 18.53,
+  "mean_proc_time_ms": 17.448
+}
