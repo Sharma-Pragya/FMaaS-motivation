@@ -71,7 +71,7 @@ else
 fi
 
 CUDA_DEVICE="${CUDA_DEVICE:-cuda:0}"
-BACKBONE="${BACKBONE:-dinolarge-patch}"
+BACKBONE="${BACKBONE:-dinobase-patch}"
 TASK="${TASK:-nyudepth}"
 PHASE_DURATION="${PHASE_DURATION:-60}"
 WARMUP_SECS="${WARMUP_SECS:-10}"
