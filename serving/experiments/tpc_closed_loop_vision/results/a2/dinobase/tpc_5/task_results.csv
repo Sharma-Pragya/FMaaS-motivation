@@ -1,1 +1,2 @@
 task,tpc_count,concurrency,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_total_response_time_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_non_server_exec_overhead_ms
+nyudepth,5,1,1245,24.9,40.178,39.942,41.952,43.461,40.178,21.684,20.051,0.002,1.102,3.918,18.494

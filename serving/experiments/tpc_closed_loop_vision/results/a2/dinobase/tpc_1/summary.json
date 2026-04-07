@@ -4,10 +4,10 @@
   "concurrency": 1,
   "duration_s": 60.0,
   "warmup_s": 10.0,
-  "total_completed_requests": 0,
-  "completed_after_warmup": 0,
-  "mean_response_time_ms": null,
-  "mean_service_time_ms": null,
-  "mean_proc_time_ms": null,
-  "mean_decoder_time_ms": null
+  "total_completed_requests": 510,
+  "completed_after_warmup": 428,
+  "mean_response_time_ms": 117.052,
+  "mean_service_time_ms": 105.107,
+  "mean_proc_time_ms": 104.208,
+  "mean_decoder_time_ms": 0.603
 }
