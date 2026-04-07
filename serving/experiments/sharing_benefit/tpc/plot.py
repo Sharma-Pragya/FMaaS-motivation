@@ -59,8 +59,14 @@ SERIES_LINESTYLE = {
     "sharing":        "-",
 }
 
-CONDITION_ORDER = ["single_ecgclass", "single_gestureclass", "no_sharing_tpc", "no_sharing", "sharing"]
+SINGLE_CONDITIONS_BY_TASK_SET = {
+    "tsfm":   ["single_ecgclass", "single_gestureclass"],
+    "vision": ["single_nyudepth", "single_vocseg"],
+}
 
+# Set at startup in main() based on --task-set; default to tsfm for backward compat
+SINGLE_CONDITIONS: List[str] = SINGLE_CONDITIONS_BY_TASK_SET["tsfm"]
+CONDITION_ORDER:   List[str] = SINGLE_CONDITIONS + ["no_sharing_tpc", "no_sharing", "sharing"]
 
 def apply_paper_style() -> None:
     plt.rcParams.update({
@@ -142,8 +148,8 @@ def load_series_latencies(
     warmup_secs: float = 10.0,
     warmup_requests: int = 180,
 ) -> Dict[str, List[float]]:
-    """Returns {series: [latency_ms]} where single_ecgclass + single_gestureclass
-    are pooled into one 'single' series."""
+    """Returns {series: [latency_ms]} where single-task conditions are pooled
+    into one 'single' series (which conditions depends on SINGLE_CONDITIONS)."""
     raw: Dict[str, List[float]] = {}
     for cond in CONDITION_ORDER:
         lats = _read_condition_latencies(result_root, cond, warmup_secs, warmup_requests)
@@ -154,7 +160,7 @@ def load_series_latencies(
 
     # Pool single-task conditions
     single_lats = []
-    for cond in ("single_ecgclass", "single_gestureclass"):
+    for cond in SINGLE_CONDITIONS:
         single_lats.extend(raw.get(cond, []))
     if single_lats:
         series["single"] = single_lats
@@ -209,10 +215,9 @@ def load_series_throughput(
     series: Dict[str, List[float]] = {}
 
     # Pool single task conditions
-    single_completions = (
-        _completion_times(result_root, "single_ecgclass") +
-        _completion_times(result_root, "single_gestureclass")
-    )
+    single_completions = []
+    for cond in SINGLE_CONDITIONS:
+        single_completions += _completion_times(result_root, cond)
     if single_completions:
         counts = _bin_throughput(single_completions)
         series["single"] = [c / 2.0 for c in counts]  # per-task average
@@ -259,7 +264,7 @@ def load_batch_sizes(
             raw[cond] = _observed_batch_stats(rows)["mean"]
 
     series: Dict[str, float] = {}
-    single_vals = [raw[c] for c in ("single_ecgclass", "single_gestureclass") if c in raw]
+    single_vals = [raw[c] for c in SINGLE_CONDITIONS if c in raw]
     if single_vals:
         series["single"] = float(np.mean(single_vals))
     for cond in ("no_sharing_tpc", "no_sharing", "sharing"):
@@ -297,8 +302,8 @@ def _plot_cdf_on_ax(ax: plt.Axes, series: Dict[str, List[float]], metric: str = 
         all_vals.extend(sorted_arr.tolist())
 
     x_max = _nice_upper(float(np.max(all_vals)) if all_vals else 1.0)
-    if metric == "latency":
-        x_max = 100.0
+    # if metric == "latency":
+    #     x_max = 150
     ax.set_ylim(0, 1.05)
     for n_ticks in (3, 4, 5, 6):
         step = x_max / (n_ticks - 1)
@@ -430,7 +435,7 @@ def plot_summary_bars(task_results: Dict[str, List[Dict]], out_path: Path) -> No
 
     # Pool single tasks
     single_p99s = []
-    for cond in ("single_ecgclass", "single_gestureclass"):
+    for cond in SINGLE_CONDITIONS:
         rows = task_results.get(cond, [])
         single_p99s.extend(float(r["p99_latency_ms"]) for r in rows if "p99_latency_ms" in r)
     if single_p99s:
@@ -476,7 +481,7 @@ def plot_mean_service_time_bars(task_results: Dict[str, List[Dict]], out_path: P
     mean_service_time: Dict[str, float] = {}
 
     single_means = []
-    for cond in ("single_ecgclass", "single_gestureclass"):
+    for cond in SINGLE_CONDITIONS:
         rows = task_results.get(cond, [])
         single_means.extend(float(r["avg_server_exec_ms"]) for r in rows if "avg_server_exec_ms" in r)
     if single_means:
@@ -600,14 +605,21 @@ def plot_sweep_cdf(
 
 def main() -> int:
     import argparse
+    global SINGLE_CONDITIONS, CONDITION_ORDER
+
     parser = argparse.ArgumentParser()
-    parser.add_argument("--exp-dir",         default=os.environ.get("EXP_DIR", "experiments/sharing_benefit/tpc/results"))
-    parser.add_argument("--rps-sweep",       default="20",
+    parser.add_argument("--task-set",        default=os.environ.get("TASK_SET", "tsfm"),
+                        choices=["tsfm", "vision"])
+    parser.add_argument("--exp-dir",         default=os.environ.get("EXP_DIR", "experiments/sharing_benefit/tpc/results_momentbase"))
+    parser.add_argument("--rps-sweep",       default="5,10,15,20,25",
                         help="Comma-separated RPS values to plot (must match run.sh sweep)")
     parser.add_argument("--warmup-secs",     type=float, default=10.0)
     parser.add_argument("--warmup-requests", type=int,   default=180,
                         help="Fallback warmup drop when no elapsed_sec column")
     args = parser.parse_args()
+
+    SINGLE_CONDITIONS = SINGLE_CONDITIONS_BY_TASK_SET[args.task_set]
+    CONDITION_ORDER   = SINGLE_CONDITIONS + ["no_sharing_tpc", "no_sharing", "sharing"]
 
     result_root = (SERVING_DIR / args.exp_dir).resolve()
     if not result_root.exists():

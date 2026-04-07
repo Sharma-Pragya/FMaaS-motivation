@@ -1,16 +1,18 @@
 #!/bin/bash
 # Sharing Benefit + TPC Isolation experiment
-# Runs five conditions: single_ecgclass, single_gestureclass, no_sharing_tpc, no_sharing, sharing
+# Runs five conditions per task set.
 #
-# no_sharing_tpc runs directly (no device servers needed — uses PyTorchRuntime + TPC pinning)
-# no_sharing and sharing use gRPC device servers (same as tsfm/run.sh)
+# Task sets:
+#   tsfm   — single_ecgclass, single_gestureclass, no_sharing_tpc, no_sharing, sharing
+#   vision — single_nyudepth, single_vocseg,       no_sharing_tpc, no_sharing, sharing
 #
 # Environment variables (all optional):
 #   CONDA_ENV          fmtk
 #   FMTK_DIR           ../../../FMTK
 #   FMAAS_DIR          ../..
 #   CUDA_DEVICE        cuda:0
-#   BACKBONE           momentbase
+#   TASK_SET           tsfm  (or vision)
+#   BACKBONE           momentbase  (tsfm) / dinobase-patch  (vision)
 #   RPS_SWEEP          20,40,60
 #   PHASE_DURATION     180
 #   DEVICE_PORT        8000
@@ -18,6 +20,8 @@
 #   MAX_BATCH_SIZE     5
 #   TPC_MODE           libsmctrl (or green)
 #   RESULTS_BASE       experiments/sharing_benefit/tpc/results
+#   NYUDEPTH_PATH      ../../FMTK/dataset/nyu-depth-v2   (vision only)
+#   PASCALVOC_PATH     ../../FMTK/dataset/PASCAL-VOC      (vision only)
 
 set -euo pipefail
 
@@ -72,17 +76,31 @@ fi
 # Experiment configuration
 # ---------------------------------------------------------------------------
 CUDA_DEVICE="${CUDA_DEVICE:-cuda:0}"
-BACKBONE="${BACKBONE:-momentbase}"
-RPS_SWEEP="${RPS_SWEEP:-80}"
+TASK_SET="${TASK_SET:-tsfm}"
+RPS_SWEEP="${RPS_SWEEP:-25}"
 PHASE_DURATION="${PHASE_DURATION:-300}"
 DEVICE_PORT="${DEVICE_PORT:-8000}"
 DEVICE_PORT_2="${DEVICE_PORT_2:-8001}"
 MAX_BATCH_SIZE="${MAX_BATCH_SIZE:-100}"
-RESULTS_BASE="${RESULTS_BASE:-experiments/sharing_benefit/tpc/results}"
-DECODER_DIR="${DECODER_DIR:-${FMTK_DIR}/models/tsfm/finetuned}"
+RESULTS_BASE="${RESULTS_BASE:-experiments/sharing_benefit/tpc/results_momentbase}"
 DEVICE_STARTUP_WAIT="${DEVICE_STARTUP_WAIT:-5}"
 MAX_BATCH_WAIT_MS="${MAX_BATCH_WAIT_MS:-0}"
 TPC_MODE="${TPC_MODE:-libsmctrl}"
+
+# Task-set-specific defaults
+if [[ "$TASK_SET" == "vision" ]]; then
+    BACKBONE="${BACKBONE:-dinobase-patch}"
+    DECODER_DIR="${DECODER_DIR:-${FMTK_DIR}/models/vision/finetuned}"
+    TASK_RATES_TEMPLATE="nyudepth:{rps},vocseg:{rps}"
+    CONDITIONS=("single_nyudepth" "single_vocseg" "no_sharing_tpc" "no_sharing" "sharing")
+    export NYUDEPTH_PATH="${NYUDEPTH_PATH:-../../FMTK/dataset/nyu-depth-v2}"
+    export PASCALVOC_PATH="${PASCALVOC_PATH:-../../FMTK/dataset/PASCAL-VOC}"
+else
+    BACKBONE="${BACKBONE:-momentlarge}"
+    DECODER_DIR="${DECODER_DIR:-${FMTK_DIR}/models/tsfm/finetuned}"
+    TASK_RATES_TEMPLATE="ecgclass:{rps},gestureclass:{rps}"
+    CONDITIONS=("single_ecgclass" "single_gestureclass" "no_sharing_tpc" "no_sharing" "sharing")
+fi
 
 LOG_DIR="${RESULTS_BASE}/logs"
 mkdir -p "$LOG_DIR"
@@ -91,7 +109,8 @@ echo "================================================================"
 echo "  Sharing Benefit + TPC Isolation"
 echo "  Conda env      : $CONDA_ENV"
 echo "  FMTK_DIR       : $FMTK_DIR"
-echo "  FMAAS_DIR       : $FMAAS_DIR"
+echo "  FMAAS_DIR      : $FMAAS_DIR"
+echo "  Task set       : $TASK_SET"
 echo "  Backbone       : $BACKBONE"
 echo "  RPS sweep      : $RPS_SWEEP"
 echo "  Duration/run   : ${PHASE_DURATION}s"
@@ -125,7 +144,7 @@ trap 'stop_devices' EXIT
 start_device() {
     local port="$1" scheduler="$2" log="$3" rps="$4"
     local tpc_mode="${5:-none}" tpc_partition="${6:-}"
-    local task_rates="ecgclass:${rps},gestureclass:${rps}"
+    local task_rates="${TASK_RATES_TEMPLATE//\{rps\}/${rps}}"
     pkill -f "device/main.py.*--port ${port}" 2>/dev/null || true
     sleep 1
     local tpc_args=""
@@ -163,28 +182,26 @@ run_condition() {
     stop_devices
     mkdir -p "$out_dir"
 
+    # Helper to invoke run.py with common args + task-set
+    run_py() {
+        $PYTHON -u experiments/sharing_benefit/tpc/run.py \
+            --task-set     "$TASK_SET" \
+            --backbone     "$BACKBONE" \
+            --rps          "$rps" \
+            --duration     "$PHASE_DURATION" \
+            --exp-dir      "$out_dir" \
+            --trace-file   "$trace_file" \
+            "$@"
+    }
+
     case "$condition" in
-        single_ecgclass)
+        single_ecgclass|single_nyudepth)
             DEVICE_PID=$(start_device "$DEVICE_PORT" "fifo" "$LOG_DIR/device_${condition}_rps${rps}.log" "$rps")
-            $PYTHON -u experiments/sharing_benefit/tpc/run.py \
-                --condition    single_ecgclass \
-                --device-url   "localhost:${DEVICE_PORT}" \
-                --backbone     "$BACKBONE" \
-                --rps          "$rps" \
-                --duration     "$PHASE_DURATION" \
-                --exp-dir      "$out_dir" \
-                --trace-file   "$trace_file"
+            run_py --condition "$condition" --device-url "localhost:${DEVICE_PORT}"
             ;;
-        single_gestureclass)
+        single_gestureclass|single_vocseg)
             DEVICE_PID=$(start_device "$DEVICE_PORT" "fifo" "$LOG_DIR/device_${condition}_rps${rps}.log" "$rps")
-            $PYTHON -u experiments/sharing_benefit/tpc/run.py \
-                --condition    single_gestureclass \
-                --device-url   "localhost:${DEVICE_PORT}" \
-                --backbone     "$BACKBONE" \
-                --rps          "$rps" \
-                --duration     "$PHASE_DURATION" \
-                --exp-dir      "$out_dir" \
-                --trace-file   "$trace_file"
+            run_py --condition "$condition" --device-url "localhost:${DEVICE_PORT}"
             ;;
         no_sharing_tpc)
             # Query total TPCs, split in half for two servers
@@ -201,45 +218,27 @@ print(sm // 2)  # TPCs ~ SMs/2
 
             DEVICE_PID=$(start_device   "$DEVICE_PORT"   "fifo" "$LOG_DIR/device_${condition}_1_rps${rps}.log" "$rps" "$TPC_MODE" "$PART1")
             DEVICE_PID_2=$(start_device "$DEVICE_PORT_2" "fifo" "$LOG_DIR/device_${condition}_2_rps${rps}.log" "$rps" "$TPC_MODE" "$PART2")
-            $PYTHON -u experiments/sharing_benefit/tpc/run.py \
-                --condition    no_sharing_tpc \
+            run_py --condition no_sharing_tpc \
                 --device-url   "localhost:${DEVICE_PORT}" \
-                --device-url-2 "localhost:${DEVICE_PORT_2}" \
-                --backbone     "$BACKBONE" \
-                --rps          "$rps" \
-                --duration     "$PHASE_DURATION" \
-                --exp-dir      "$out_dir" \
-                --trace-file   "$trace_file"
+                --device-url-2 "localhost:${DEVICE_PORT_2}"
             ;;
         no_sharing)
             DEVICE_PID=$(start_device   "$DEVICE_PORT"   "fifo" "$LOG_DIR/device_${condition}_1_rps${rps}.log" "$rps")
             DEVICE_PID_2=$(start_device "$DEVICE_PORT_2" "fifo" "$LOG_DIR/device_${condition}_2_rps${rps}.log" "$rps")
-            $PYTHON -u experiments/sharing_benefit/tpc/run.py \
-                --condition    no_sharing \
+            run_py --condition no_sharing \
                 --device-url   "localhost:${DEVICE_PORT}" \
-                --device-url-2 "localhost:${DEVICE_PORT_2}" \
-                --backbone     "$BACKBONE" \
-                --rps          "$rps" \
-                --duration     "$PHASE_DURATION" \
-                --exp-dir      "$out_dir" \
-                --trace-file   "$trace_file"
+                --device-url-2 "localhost:${DEVICE_PORT_2}"
             ;;
         sharing)
             DEVICE_PID=$(start_device "$DEVICE_PORT" "stfq" "$LOG_DIR/device_${condition}_rps${rps}.log" "$rps")
-            $PYTHON -u experiments/sharing_benefit/tpc/run.py \
-                --condition    sharing \
-                --device-url   "localhost:${DEVICE_PORT}" \
-                --backbone     "$BACKBONE" \
-                --rps          "$rps" \
-                --duration     "$PHASE_DURATION" \
-                --exp-dir      "$out_dir" \
-                --trace-file   "$trace_file"
+            run_py --condition sharing --device-url "localhost:${DEVICE_PORT}"
             ;;
     esac
 
     cat > "${out_dir}/run_config.json" <<EOF
 {
   "condition": "${condition}",
+  "task_set": "${TASK_SET}",
   "backbone": "${BACKBONE}",
   "cuda_device": "${CUDA_DEVICE}",
   "max_batch_size": ${MAX_BATCH_SIZE},
@@ -256,14 +255,14 @@ EOF
     stop_devices
 }
 
-# Sweep RPS values, run all three conditions per RPS
+# Sweep RPS values, run all five conditions per RPS
 IFS=',' read -ra RPS_LIST <<< "$RPS_SWEEP"
 for rps in "${RPS_LIST[@]}"; do
     echo ""
     echo "################################################################"
-    echo "  RPS = $rps"
+    echo "  RPS = $rps  (task_set=$TASK_SET)"
     echo "################################################################"
-    for condition in single_ecgclass single_gestureclass no_sharing_tpc no_sharing sharing; do
+    for condition in "${CONDITIONS[@]}"; do
         run_condition "$condition" "$rps" \
             || echo "[run.sh] WARNING: $condition rps=$rps failed — continuing"
     done

@@ -1,22 +1,24 @@
 #!/usr/bin/env python3
 """sharing_benefit/tpc/run.py — Sharing benefit with TPC isolation for no_sharing.
 
-Five conditions:
-  single_ecgclass     — 1 device server, ecgclass only, FIFO
-  single_gestureclass — 1 device server, gestureclass only, FIFO
-  no_sharing_tpc      — 2 device servers with --tpc-partition (TPC-pinned), FIFO
-  no_sharing          — 2 device servers (port A + B), one backbone each, FIFO
-  sharing             — 1 device server, both tasks, STFQ
+Supports two task sets:
+  tsfm   — ecgclass + gestureclass (time-series foundation models)
+  vision — nyudepth + vocseg       (vision foundation models)
 
-All conditions go through gRPC device servers. TPC isolation is handled
-inside the device server via --tpc-mode and --tpc-partition flags.
+Five conditions (same for both task sets):
+  single_{task1}    — 1 device server, task1 only, FIFO
+  single_{task2}    — 1 device server, task2 only, FIFO
+  no_sharing_tpc    — 2 device servers with --tpc-partition (TPC-pinned), FIFO
+  no_sharing        — 2 device servers (port A + B), one backbone each, FIFO
+  sharing           — 1 device server, both tasks, STFQ
 
 Usage (called by run.sh):
     python experiments/sharing_benefit/tpc/run.py \
-        --condition no_sharing_tpc \
-        --device-url localhost:8000 \
+        --task-set     vision \
+        --condition    no_sharing_tpc \
+        --device-url   localhost:8000 \
         --device-url-2 localhost:8001 \
-        --backbone momentbase \
+        --backbone     dinobase-patch \
         --rps 20 \
         --duration 180 \
         --exp-dir experiments/sharing_benefit/tpc/results/no_sharing_tpc
@@ -31,7 +33,7 @@ import os
 import sys
 import time
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 SERVING_DIR = Path(__file__).resolve().parents[3]
 if str(SERVING_DIR) not in sys.path:
@@ -43,37 +45,96 @@ from torch.utils.data import DataLoader
 from serving.site_manager.grpc_client import EdgeRuntimeClient
 from serving.site_manager.config import DATASET_DIR as _DATASET_DIR
 
-TASK_TYPES: Dict[str, str] = {
-    "ecgclass":     "classification",
-    "gestureclass": "classification",
+# ---------------------------------------------------------------------------
+# Task-set configuration
+# ---------------------------------------------------------------------------
+
+TASK_SETS: Dict[str, Dict] = {
+    "tsfm": {
+        "tasks": ["ecgclass", "gestureclass"],
+        "types": {
+            "ecgclass":     "classification",
+            "gestureclass": "classification",
+        },
+        "decoder_paths": {
+            "ecgclass":     "{task}_{backbone}_mlp",
+            "gestureclass": "{task}_{backbone}_mlp",
+        },
+        "seeds":             {"ecgclass": 42, "gestureclass": 43},
+        "single_conditions": ["single_ecgclass", "single_gestureclass"],
+    },
+    "vision": {
+        "tasks": ["nyudepth", "vocseg"],
+        "types": {
+            "nyudepth": "monocular",
+            "vocseg":   "linear_seg",
+        },
+        "decoder_paths": {
+            "nyudepth": "nyudepth_{backbone}_monocular",
+            "vocseg":   None,
+        },
+        "seeds":             {"nyudepth": 42, "vocseg": 43},
+        "single_conditions": ["single_nyudepth", "single_vocseg"],
+    },
 }
-BOTH_TASKS = ["ecgclass", "gestureclass"]
-TASK_SEEDS = {"ecgclass": 42, "gestureclass": 43}
+
+ALL_CONDITIONS = [
+    "single_ecgclass", "single_gestureclass",
+    "single_nyudepth", "single_vocseg",
+    "no_sharing_tpc", "no_sharing", "sharing",
+]
+
+# Dataset paths for vision (can be overridden via env vars)
+NYUDEPTH_PATH = os.environ.get("NYUDEPTH_PATH", "../../FMTK/dataset/nyu-depth-v2")
+PASCALVOC_PATH = os.environ.get("PASCALVOC_PATH", "../../FMTK/dataset/PASCAL-VOC")
 
 
 # ---------------------------------------------------------------------------
 # Dataset loading
 # ---------------------------------------------------------------------------
 
-def build_data(tasks: List[str]) -> Dict[str, Dict]:
-    from fmtk.datasetloaders.ecg5000 import ECG5000Dataset
-    from fmtk.datasetloaders.uwavegesture import UWaveGestureLibraryALLDataset
-
-    d = _DATASET_DIR
+def build_data(task_set: str, tasks: List[str]) -> Dict[str, Dict]:
     cfg = {"batch_size": 1, "shuffle": False}
-    loaders = {
-        "ecgclass": lambda: DataLoader(
-            ECG5000Dataset({"dataset_path": f"{d}/ECG5000"}, {"task_type": "classification"}, "test"),
-            **cfg,
-        ),
-        "gestureclass": lambda: DataLoader(
-            UWaveGestureLibraryALLDataset(
-                {"dataset_path": f"{d}/UWaveGestureLibraryAll", "seq_len": 512},
-                {"task_type": "classification"}, "test",
+
+    if task_set == "tsfm":
+        from fmtk.datasetloaders.ecg5000 import ECG5000Dataset
+        from fmtk.datasetloaders.uwavegesture import UWaveGestureLibraryALLDataset
+        d = _DATASET_DIR
+        loaders = {
+            "ecgclass": lambda: DataLoader(
+                ECG5000Dataset({"dataset_path": f"{d}/ECG5000"}, {"task_type": "classification"}, "test"),
+                **cfg,
             ),
-            **cfg,
-        ),
-    }
+            "gestureclass": lambda: DataLoader(
+                UWaveGestureLibraryALLDataset(
+                    {"dataset_path": f"{d}/UWaveGestureLibraryAll", "seq_len": 512},
+                    {"task_type": "classification"}, "test",
+                ),
+                **cfg,
+            ),
+        }
+    else:  # vision
+        from fmtk.datasetloaders.nyudepthv2 import NYUDepthV2Dataset
+        from fmtk.datasetloaders.voc12 import VOC12Dataset
+        loaders = {
+            "nyudepth": lambda: DataLoader(
+                NYUDepthV2Dataset(
+                    {"dataset_path": NYUDEPTH_PATH},
+                    {"task_type": "regression"},
+                    "test",
+                ),
+                **cfg,
+            ),
+            "vocseg": lambda: DataLoader(
+                VOC12Dataset(
+                    {"dataset_path": PASCALVOC_PATH, "target_size": 224},
+                    {"task_type": "segmentation"},
+                    "test",
+                ),
+                **cfg,
+            ),
+        }
+
     data = {}
     for task in tasks:
         loader = loaders[task]()
@@ -90,10 +151,11 @@ def build_data(tasks: List[str]) -> Dict[str, Dict]:
 # Trace generation
 # ---------------------------------------------------------------------------
 
-def generate_traces(tasks: List[str], rps: float, duration: float) -> Dict[str, List[float]]:
+def generate_traces(tasks: List[str], seeds: Dict[str, int],
+                    rps: float, duration: float) -> Dict[str, List[float]]:
     send_times: Dict[str, List[float]] = {}
     for task in tasks:
-        rng = np.random.default_rng(TASK_SEEDS.get(task, 42))
+        rng = np.random.default_rng(seeds.get(task, 42))
         times, t = [], 0.0
         while t < duration:
             times.append(t)
@@ -120,8 +182,14 @@ def load_trace(path: Path) -> Dict[str, List[float]]:
 # Deploy
 # ---------------------------------------------------------------------------
 
-async def deploy(device_url: str, backbone: str, tasks: List[str]) -> None:
-    decoders = [{"task": t, "type": TASK_TYPES[t], "path": f"{t}_{backbone}_mlp"} for t in tasks]
+async def deploy(device_url: str, backbone: str, tasks: List[str],
+                 task_types: Dict[str, str], decoder_paths: Dict[str, Optional[str]]) -> None:
+    bb_short = backbone.replace("-patch", "")
+    decoders = []
+    for t in tasks:
+        tmpl = decoder_paths[t]
+        path = tmpl.format(task=t, backbone=bb_short) if tmpl else None
+        decoders.append({"task": t, "type": task_types[t], "path": path})
     client = EdgeRuntimeClient(device_url)
     try:
         await client.wait_ready()
@@ -137,7 +205,17 @@ async def deploy(device_url: str, backbone: str, tasks: List[str]) -> None:
 # Open-loop Poisson sender (gRPC)
 # ---------------------------------------------------------------------------
 
-Record = Tuple[float, float, float, int]  # (send_time_relative_s, latency_ms, server_exec_ms, server_start_ns)
+Record = Tuple[float, float, float, float, float, float, float, int]
+# (
+#   send_time_relative_s,
+#   client_latency_ms,
+#   server_exec_ms,
+#   server_proc_ms,
+#   server_swap_ms,
+#   server_decoder_ms,
+#   queue_wait_plus_rpc_ms,
+#   server_start_ns,
+# )
 
 
 async def run_open_loop(
@@ -164,9 +242,24 @@ async def run_open_loop(
                 "x":      d["x"],
                 "mask":   d.get("mask"),
             }), timeout=req_timeout)
-            lat_ms = (time.time() - t_send_abs) * 1000
+            t_done_abs = time.time()
+            client_lat_ms = (t_done_abs - t_send_abs) * 1000
+            server_start_s = resp["start_time_ns"] / 1e9
             server_exec_ms = (resp["end_time_ns"] - resp["start_time_ns"]) / 1e6
-            records[task].append((t_send_abs - t_start, lat_ms, server_exec_ms, resp["start_time_ns"]))
+            server_proc_ms = resp.get("proc_time_ns", 0) / 1e6
+            server_swap_ms = resp.get("swap_time_ns", 0) / 1e6
+            server_decoder_ms = resp.get("decoder_time_ns", 0) / 1e6
+            queue_wait_plus_rpc_ms = max(0.0, (server_start_s - t_send_abs) * 1000)
+            records[task].append((
+                t_send_abs - t_start,
+                client_lat_ms,
+                server_exec_ms,
+                server_proc_ms,
+                server_swap_ms,
+                server_decoder_ms,
+                queue_wait_plus_rpc_ms,
+                resp["start_time_ns"],
+            ))
         except Exception:
             pass
 
@@ -207,20 +300,36 @@ def save_results(records: Dict[str, List[Record]], out_dir: Path, condition: str
 
     with (out_dir / "latencies.csv").open("w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["task", "condition", "elapsed_sec", "latency_ms", "server_exec_ms", "server_start_ns"])
+        w.writerow([
+            "task", "condition", "elapsed_sec", "latency_ms",
+            "server_exec_ms", "server_proc_ms", "server_swap_ms",
+            "server_decoder_ms", "queue_wait_plus_rpc_ms",
+            "non_server_exec_overhead_ms", "server_start_ns",
+        ])
         for task, recs in records.items():
-            for rel_t, lat, server_exec_ms, server_start_ns in recs:
-                w.writerow([task, condition, round(rel_t, 4), round(lat, 4), round(server_exec_ms, 4), server_start_ns])
+            for rel_t, lat, exec_ms, proc_ms, swap_ms, dec_ms, queue_ms, start_ns in recs:
+                w.writerow([
+                    task, condition,
+                    round(rel_t, 4), round(lat, 4),
+                    round(exec_ms, 4), round(proc_ms, 4), round(swap_ms, 4),
+                    round(dec_ms, 4), round(queue_ms, 4),
+                    round(max(0.0, lat - exec_ms), 4),
+                    start_ns,
+                ])
 
     with (out_dir / "task_results.csv").open("w", newline="") as f:
-        fields = ["task", "condition", "n_requests", "throughput_rps",
-                  "avg_latency_ms", "p50_latency_ms", "p95_latency_ms", "p99_latency_ms",
-                  "avg_server_exec_ms"]
+        fields = [
+            "task", "condition", "n_requests", "throughput_rps",
+            "avg_latency_ms", "p50_latency_ms", "p95_latency_ms", "p99_latency_ms",
+            "avg_server_exec_ms", "avg_server_proc_ms", "avg_server_swap_ms",
+            "avg_server_decoder_ms", "avg_queue_wait_plus_rpc_ms",
+            "avg_non_server_exec_overhead_ms",
+        ]
         w = csv.DictWriter(f, fieldnames=fields)
         w.writeheader()
         for task, recs in records.items():
             trimmed = [rec for rec in recs if rec[0] > warmup_secs]
-            lats = [lat for _, lat, _, _ in trimmed]
+            lats = [rec[1] for rec in trimmed]
             n = len(lats)
             if n == 0:
                 continue
@@ -233,7 +342,13 @@ def save_results(records: Dict[str, List[Record]], out_dir: Path, condition: str
                 "p50_latency_ms": round(float(np.percentile(lats, 50)), 3),
                 "p95_latency_ms": round(float(np.percentile(lats, 95)), 3),
                 "p99_latency_ms": round(float(np.percentile(lats, 99)), 3),
-                "avg_server_exec_ms": round(float(np.mean([server_exec_ms for _, _, server_exec_ms, _ in trimmed])), 3),
+                "avg_server_exec_ms":    round(float(np.mean([rec[2] for rec in trimmed])), 3),
+                "avg_server_proc_ms":    round(float(np.mean([rec[3] for rec in trimmed])), 3),
+                "avg_server_swap_ms":    round(float(np.mean([rec[4] for rec in trimmed])), 3),
+                "avg_server_decoder_ms": round(float(np.mean([rec[5] for rec in trimmed])), 3),
+                "avg_queue_wait_plus_rpc_ms": round(float(np.mean([rec[6] for rec in trimmed])), 3),
+                "avg_non_server_exec_overhead_ms": round(
+                    float(np.mean([max(0.0, rec[1] - rec[2]) for rec in trimmed])), 3),
             })
 
     for task, recs in records.items():
@@ -246,9 +361,10 @@ def save_results(records: Dict[str, List[Record]], out_dir: Path, condition: str
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--condition", required=True,
-                        choices=["single_ecgclass", "single_gestureclass",
-                                 "no_sharing_tpc", "no_sharing", "sharing"])
+    parser.add_argument("--task-set", default=os.environ.get("TASK_SET", "tsfm"),
+                        choices=["tsfm", "vision"],
+                        help="Which task set to use: tsfm (ecgclass+gestureclass) or vision (nyudepth+vocseg)")
+    parser.add_argument("--condition", required=True, choices=ALL_CONDITIONS)
     parser.add_argument("--device-url",   default="localhost:8000")
     parser.add_argument("--device-url-2", default="localhost:8001")
     parser.add_argument("--backbone",     default=os.environ.get("BACKBONE", "momentbase"))
@@ -259,10 +375,18 @@ def main() -> int:
     parser.add_argument("--trace-file",   default=None)
     args = parser.parse_args()
 
+    cfg = TASK_SETS[args.task_set]
+    both_tasks      = cfg["tasks"]
+    task_types      = cfg["types"]
+    decoder_paths   = cfg["decoder_paths"]
+    task_seeds      = cfg["seeds"]
+    single_conds    = cfg["single_conditions"]
+
     out_dir = (SERVING_DIR / args.exp_dir).resolve()
 
     print("=" * 65)
     print(f"  Sharing Benefit + TPC — condition={args.condition}")
+    print(f"  Task set  : {args.task_set}  ({both_tasks})")
     print(f"  Backbone  : {args.backbone}")
     print(f"  RPS/task  : {args.rps}")
     print(f"  Duration  : {args.duration}s  (warmup={args.warmup_secs}s)")
@@ -278,7 +402,7 @@ def main() -> int:
             send_times = load_trace(trace_path)
         else:
             print(f"[Trace] {trace_path} not found — generating and saving ...")
-            send_times = generate_traces(BOTH_TASKS, args.rps, args.duration)
+            send_times = generate_traces(both_tasks, task_seeds, args.rps, args.duration)
             save_trace(send_times, trace_path)
     else:
         auto_path = (out_dir.parent / "trace.json").resolve()
@@ -286,32 +410,32 @@ def main() -> int:
             send_times = load_trace(auto_path)
         else:
             print(f"[Trace] Generating trace (seeds per task) -> {auto_path}")
-            send_times = generate_traces(BOTH_TASKS, args.rps, args.duration)
+            send_times = generate_traces(both_tasks, task_seeds, args.rps, args.duration)
             save_trace(send_times, auto_path)
 
     # Determine tasks and URL mapping per condition
-    if args.condition == "single_ecgclass":
-        tasks = ["ecgclass"]
-        task_urls = {"ecgclass": args.device_url}
-    elif args.condition == "single_gestureclass":
-        tasks = ["gestureclass"]
-        task_urls = {"gestureclass": args.device_url}
+    if args.condition == single_conds[0]:
+        tasks = [both_tasks[0]]
+        task_urls = {both_tasks[0]: args.device_url}
+    elif args.condition == single_conds[1]:
+        tasks = [both_tasks[1]]
+        task_urls = {both_tasks[1]: args.device_url}
     elif args.condition in ("no_sharing_tpc", "no_sharing"):
-        tasks = BOTH_TASKS
-        task_urls = {"ecgclass": args.device_url, "gestureclass": args.device_url_2}
+        tasks = both_tasks
+        task_urls = {both_tasks[0]: args.device_url, both_tasks[1]: args.device_url_2}
     else:  # sharing
-        tasks = BOTH_TASKS
-        task_urls = {"ecgclass": args.device_url, "gestureclass": args.device_url}
+        tasks = both_tasks
+        task_urls = {t: args.device_url for t in both_tasks}
 
     print(f"[INFO] Loading data for: {tasks}")
-    data = build_data(tasks)
+    data = build_data(args.task_set, tasks)
 
     # Deploy
     if args.condition in ("no_sharing_tpc", "no_sharing"):
-        asyncio.run(deploy(args.device_url,   args.backbone, ["ecgclass"]))
-        asyncio.run(deploy(args.device_url_2, args.backbone, ["gestureclass"]))
+        asyncio.run(deploy(args.device_url,   args.backbone, [both_tasks[0]], task_types, decoder_paths))
+        asyncio.run(deploy(args.device_url_2, args.backbone, [both_tasks[1]], task_types, decoder_paths))
     else:
-        asyncio.run(deploy(args.device_url, args.backbone, tasks))
+        asyncio.run(deploy(args.device_url, args.backbone, tasks, task_types, decoder_paths))
 
     asyncio.run(asyncio.sleep(1))
 
