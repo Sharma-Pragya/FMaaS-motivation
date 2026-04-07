@@ -11,6 +11,7 @@ RESULTS_DIR = Path(__file__).parent / "results"
 def extract_tpc_metrics():
     """
     Extract TPC count and mean_service_time_ms from all summary.json files.
+    Handles any model directory structure (dinolarge, momentlarge, etc.)
     Returns a dict: {device: {tpc_count: mean_service_time_ms}}
     """
     metrics = {}
@@ -26,6 +27,7 @@ def extract_tpc_metrics():
         for root, dirs, files in os.walk(device_dir):
             if "summary.json" in files:
                 path_parts = Path(root).parts
+                # Find tpc_<digits> in the path
                 tpc_dirs = [p for p in path_parts if re.match(r"^tpc_\d+$", p)]
                 if tpc_dirs:
                     tpc_count = int(tpc_dirs[0].split("_")[1])
@@ -35,6 +37,7 @@ def extract_tpc_metrics():
                         data = json.load(f)
                         mean_service_time = data.get("mean_service_time_ms")
                         if mean_service_time is not None:
+                            # Store first value for each tpc_count (handles multiple model subdirs)
                             if tpc_count not in metrics[device_name]:
                                 metrics[device_name][tpc_count] = mean_service_time
     
