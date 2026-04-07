@@ -422,37 +422,37 @@ DECODERS={
     # ── Monocular depth decoders (NYU Depth V2) ──────────────────────────
     'monodepth_dinosmall':{
         'decoder_type': 'monocular_depth',
-        'decoder_config':{'device': DEVICE, 'cfg':{'input_dim':384, 'height':16, 'width':16, 'pixel_height':224, 'pixel_width':224}}
+        'decoder_config':{'device': DEVICE, 'cfg':{'input_dim':384, 'height':16, 'width':16, 'pixel_height':224, 'pixel_width':224, 'mode':'PATCH'}}
     },
     'monodepth_dinobase':{
         'decoder_type': 'monocular_depth',
-        'decoder_config':{'device': DEVICE, 'cfg':{'input_dim':768, 'height':16, 'width':16, 'pixel_height':224, 'pixel_width':224}}
+        'decoder_config':{'device': DEVICE, 'cfg':{'input_dim':768, 'height':16, 'width':16, 'pixel_height':224, 'pixel_width':224, 'mode':'PATCH'}}
     },
     'monodepth_dinolarge':{
         'decoder_type': 'monocular_depth',
-        'decoder_config':{'device': DEVICE, 'cfg':{'input_dim':1024, 'height':16, 'width':16, 'pixel_height':224, 'pixel_width':224}}
+        'decoder_config':{'device': DEVICE, 'cfg':{'input_dim':1024, 'height':16, 'width':16, 'pixel_height':224, 'pixel_width':224, 'mode':'PATCH'}}
     },
     'monodepth_dinogiant':{
         'decoder_type': 'monocular_depth',
-        'decoder_config':{'device': DEVICE, 'cfg':{'input_dim':1536, 'height':16, 'width':16, 'pixel_height':224, 'pixel_width':224}}
+        'decoder_config':{'device': DEVICE, 'cfg':{'input_dim':1536, 'height':16, 'width':16, 'pixel_height':224, 'pixel_width':224, 'mode':'PATCH'}}
     },
 
     # ── Linear semantic segmentation decoders (VOC12) ─────────────────────
     'linseg_dinosmall_vocseg':{
         'decoder_type': 'linear_seg',
-        'decoder_config':{'device': DEVICE, 'cfg':{'input_dim':384, 'output_dim':21, 'height':16, 'width':16, 'pixel_height':224, 'pixel_width':224, 'ignore_index':255}}
+        'decoder_config':{'device': DEVICE, 'cfg':{'input_dim':384, 'output_dim':21, 'height':16, 'width':16, 'pixel_height':224, 'pixel_width':224, 'ignore_index':255, 'mode':'PATCH'}}
     },
     'linseg_dinobase_vocseg':{
         'decoder_type': 'linear_seg',
-        'decoder_config':{'device': DEVICE, 'cfg':{'input_dim':768, 'output_dim':21, 'height':16, 'width':16, 'pixel_height':224, 'pixel_width':224, 'ignore_index':255}}
+        'decoder_config':{'device': DEVICE, 'cfg':{'input_dim':768, 'output_dim':21, 'height':16, 'width':16, 'pixel_height':224, 'pixel_width':224, 'ignore_index':255, 'mode':'PATCH'}}
     },
     'linseg_dinolarge_vocseg':{
         'decoder_type': 'linear_seg',
-        'decoder_config':{'device': DEVICE, 'cfg':{'input_dim':1024, 'output_dim':21, 'height':16, 'width':16, 'pixel_height':224, 'pixel_width':224, 'ignore_index':255}}
+        'decoder_config':{'device': DEVICE, 'cfg':{'input_dim':1024, 'output_dim':21, 'height':16, 'width':16, 'pixel_height':224, 'pixel_width':224, 'ignore_index':255, 'mode':'PATCH'}}
     },
     'linseg_dinogiant_vocseg':{
         'decoder_type': 'linear_seg',
-        'decoder_config':{'device': DEVICE, 'cfg':{'input_dim':1536, 'output_dim':21, 'height':16, 'width':16, 'pixel_height':224, 'pixel_width':224, 'ignore_index':255}}
+        'decoder_config':{'device': DEVICE, 'cfg':{'input_dim':1536, 'output_dim':21, 'height':16, 'width':16, 'pixel_height':224, 'pixel_width':224, 'ignore_index':255, 'mode':'PATCH'}}
     },
 }
 
