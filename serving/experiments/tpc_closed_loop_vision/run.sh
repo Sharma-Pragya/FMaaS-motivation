@@ -1,13 +1,31 @@
 #!/bin/bash
-# Closed-loop ecgclass TPC sweep.
+# Closed-loop vision TPC sweep (nyudepth or vocseg).
 #
 # Sweeps TPC counts:
 #   total_num_tpcs
 #   total_num_tpcs / 2
 #   total_num_tpcs / 4
+#   total_num_tpcs / 8
 #
-# Runs a single clmean_service_time_msosed-loop client against a single ecgclass server for each
-# TPC budget and records latency/response-time breakdowns.
+# Runs a single closed-loop client against a single vision device server for
+# each TPC budget and records latency/response-time breakdowns.
+#
+# Environment variables (all optional):
+#   CONDA_ENV          fmtk
+#   FMTK_DIR           ../../FMTK  (relative or absolute)
+#   FMAAS_DIR          ..          (relative or absolute)
+#   CUDA_DEVICE        cuda:0
+#   BACKBONE           dinobase-patch
+#   TASK               nyudepth    (nyudepth | vocseg)
+#   PHASE_DURATION     60
+#   WARMUP_SECS        10
+#   CONCURRENCY        1
+#   DEVICE_PORT        8000
+#   MAX_BATCH_SIZE     100
+#   MAX_BATCH_WAIT_MS  0
+#   DEVICE_STARTUP_WAIT 5
+#   RESULTS_BASE       experiments/tpc_closed_loop_vision/results
+#   TPC_MODE           libsmctrl
 
 set -euo pipefail
 
@@ -53,15 +71,16 @@ else
 fi
 
 CUDA_DEVICE="${CUDA_DEVICE:-cuda:0}"
-BACKBONE="${BACKBONE:-momentlarge}"
+BACKBONE="${BACKBONE:-dinolarge-patch}"
+TASK="${TASK:-nyudepth}"
 PHASE_DURATION="${PHASE_DURATION:-60}"
-WARMUP_SECS="${WARMUP_SECS:-5}"
+WARMUP_SECS="${WARMUP_SECS:-10}"
 CONCURRENCY="${CONCURRENCY:-1}"
 DEVICE_PORT="${DEVICE_PORT:-8000}"
 MAX_BATCH_SIZE="${MAX_BATCH_SIZE:-100}"
 MAX_BATCH_WAIT_MS="${MAX_BATCH_WAIT_MS:-0}"
 DEVICE_STARTUP_WAIT="${DEVICE_STARTUP_WAIT:-5}"
-RESULTS_BASE="${RESULTS_BASE:-experiments/tpc_closed_loop_ecg/results}"
+RESULTS_BASE="${RESULTS_BASE:-experiments/tpc_closed_loop_vision/results}"
 TPC_MODE="${TPC_MODE:-libsmctrl}"
 
 LOG_DIR="${RESULTS_BASE}/logs"
@@ -84,13 +103,13 @@ trap 'stop_device' EXIT
 TOTAL_TPCS=$($PYTHON -c "import torch; sm=torch.cuda.get_device_properties('${CUDA_DEVICE}').multi_processor_count; print(max(1, sm // 2))")
 HALF_TPCS=$(( TOTAL_TPCS / 2 ))
 QUARTER_TPCS=$(( TOTAL_TPCS / 4 ))
-EITHER_TPCS=$(( TOTAL_TPCS / 8 ))
-if [[ "$HALF_TPCS" -lt 1 ]]; then HALF_TPCS=1; fi
+EIGHTH_TPCS=$(( TOTAL_TPCS / 8 ))
+if [[ "$HALF_TPCS" -lt 1 ]];    then HALF_TPCS=1;    fi
 if [[ "$QUARTER_TPCS" -lt 1 ]]; then QUARTER_TPCS=1; fi
-if [[ "$EITHER_TPCS" -lt 1 ]]; then EITHER_TPCS=1; fi
+if [[ "$EIGHTH_TPCS" -lt 1 ]];  then EIGHTH_TPCS=1;  fi
 
 TPC_COUNTS=()
-for count in "1" "$TOTAL_TPCS" "$HALF_TPCS" "$QUARTER_TPCS" "$EITHER_TPCS"; do
+for count in "1" "$TOTAL_TPCS" "$HALF_TPCS" "$QUARTER_TPCS" "$EIGHTH_TPCS"; do
     skip=0
     for seen in "${TPC_COUNTS[@]:-}"; do
         if [[ "$seen" == "$count" ]]; then
@@ -104,10 +123,11 @@ for count in "1" "$TOTAL_TPCS" "$HALF_TPCS" "$QUARTER_TPCS" "$EITHER_TPCS"; do
 done
 
 echo "================================================================"
-echo "  Closed-Loop ECG TPC Sweep"
+echo "  Closed-Loop Vision TPC Sweep"
 echo "  Conda env      : $CONDA_ENV"
 echo "  FMTK_DIR       : $FMTK_DIR"
 echo "  FMAAS_DIR      : $FMAAS_DIR"
+echo "  Task           : $TASK"
 echo "  Backbone       : $BACKBONE"
 echo "  CUDA device    : $CUDA_DEVICE"
 echo "  Duration/run   : ${PHASE_DURATION}s"
@@ -150,7 +170,7 @@ run_case() {
 
     echo ""
     echo "================================================================"
-    echo "  tpc_count=$tpc_count  concurrency=$CONCURRENCY"
+    echo "  tpc_count=$tpc_count  concurrency=$CONCURRENCY  task=$TASK"
     echo "  Results: $out_dir"
     echo "================================================================"
 
@@ -158,9 +178,10 @@ run_case() {
     mkdir -p "$out_dir"
     start_device "$tpc_count" "$log_file"
 
-    $PYTHON -u experiments/tpc_closed_loop_ecg/run.py \
+    $PYTHON -u experiments/tpc_closed_loop_vision/run.py \
         --device-url "localhost:${DEVICE_PORT}" \
         --backbone "$BACKBONE" \
+        --task "$TASK" \
         --concurrency "$CONCURRENCY" \
         --duration "$PHASE_DURATION" \
         --warmup-secs "$WARMUP_SECS" \
@@ -169,7 +190,7 @@ run_case() {
 
     cat > "${out_dir}/run_config.json" <<EOF
 {
-  "task": "ecgclass",
+  "task": "${TASK}",
   "backbone": "${BACKBONE}",
   "cuda_device": "${CUDA_DEVICE}",
   "tpc_mode": "${TPC_MODE}",

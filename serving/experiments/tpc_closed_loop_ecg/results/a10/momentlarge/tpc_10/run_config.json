@@ -1,0 +1,14 @@
+{
+  "task": "ecgclass",
+  "backbone": "momentlarge",
+  "cuda_device": "cuda:0",
+  "tpc_mode": "libsmctrl",
+  "tpc_count": 10,
+  "concurrency": 1,
+  "phase_duration_s": 60,
+  "warmup_s": 5,
+  "device_port": 8000,
+  "max_batch_size": 100,
+  "max_batch_wait_ms": 0,
+  "device_startup_wait_s": 5
+}

@@ -1,0 +1,13 @@
+{
+  "task": "nyudepth",
+  "tpc_count": 5,
+  "concurrency": 1,
+  "duration_s": 60.0,
+  "warmup_s": 10.0,
+  "total_completed_requests": 458,
+  "completed_after_warmup": 383,
+  "mean_response_time_ms": 130.815,
+  "mean_service_time_ms": 115.189,
+  "mean_proc_time_ms": 113.965,
+  "mean_decoder_time_ms": 0.795
+}
