@@ -73,8 +73,8 @@ fi
 # ---------------------------------------------------------------------------
 CUDA_DEVICE="${CUDA_DEVICE:-cuda:0}"
 BACKBONE="${BACKBONE:-momentbase}"
-RPS_SWEEP="${RPS_SWEEP:-20,40,60,80}"
-PHASE_DURATION="${PHASE_DURATION:-20}"
+RPS_SWEEP="${RPS_SWEEP:-80}"
+PHASE_DURATION="${PHASE_DURATION:-300}"
 DEVICE_PORT="${DEVICE_PORT:-8000}"
 DEVICE_PORT_2="${DEVICE_PORT_2:-8001}"
 MAX_BATCH_SIZE="${MAX_BATCH_SIZE:-100}"

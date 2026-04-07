@@ -5,10 +5,12 @@ Produces per-RPS:
   1. tpc_sharing_latency_cdf_rps{N}.pdf      — CDF of per-request latency
   2. tpc_sharing_throughput_cdf_rps{N}.pdf   — CDF of per-second throughput
   3. tpc_sharing_summary_bars_rps{N}.pdf     — bar chart: p99 latency per condition
+  4. tpc_sharing_mean_service_time_rps{N}.pdf — bar chart: mean server-only service time per condition
+  5. tpc_sharing_mean_batch_size_rps{N}.pdf  — bar chart: mean observed batch size per condition
 
 And if multiple RPS levels:
-  4. tpc_sharing_sweep_latency_cdf.pdf       — multi-panel latency CDF
-  5. tpc_sharing_sweep_throughput_cdf.pdf    — multi-panel throughput CDF
+  6. tpc_sharing_sweep_latency_cdf.pdf       — multi-panel latency CDF
+  7. tpc_sharing_sweep_throughput_cdf.pdf    — multi-panel throughput CDF
 
 Usage:
     python experiments/sharing_benefit/tpc/plot.py [--exp-dir experiments/sharing_benefit/tpc/results]
@@ -223,6 +225,49 @@ def load_series_throughput(
     return series
 
 
+def _observed_batch_stats(rows: List[Dict]) -> Dict[str, float]:
+    grouped: Dict[str, int] = defaultdict(int)
+    for row in rows:
+        key = row.get("server_start_ns", "")
+        if key:
+            grouped[key] += 1
+    batch_sizes = np.array(list(grouped.values()), dtype=float) if grouped else np.array([], dtype=float)
+    if len(batch_sizes) == 0:
+        return {"mean": 0.0, "p95": 0.0, "max": 0.0}
+    return {
+        "mean": float(batch_sizes.mean()),
+        "p95": float(np.percentile(batch_sizes, 95)),
+        "max": float(batch_sizes.max()),
+    }
+
+
+def load_batch_sizes(
+    result_root: Path,
+    warmup_secs: float = 10.0,
+) -> Dict[str, float]:
+    raw: Dict[str, float] = {}
+    for cond in CONDITION_ORDER:
+        lat_file = result_root / cond / "latencies.csv"
+        if not lat_file.exists():
+            continue
+        with lat_file.open() as f:
+            reader = csv.DictReader(f)
+            if "server_start_ns" not in (reader.fieldnames or []):
+                continue
+            rows = [r for r in reader if float(r.get("elapsed_sec", 0)) > warmup_secs]
+        if rows:
+            raw[cond] = _observed_batch_stats(rows)["mean"]
+
+    series: Dict[str, float] = {}
+    single_vals = [raw[c] for c in ("single_ecgclass", "single_gestureclass") if c in raw]
+    if single_vals:
+        series["single"] = float(np.mean(single_vals))
+    for cond in ("no_sharing_tpc", "no_sharing", "sharing"):
+        if cond in raw:
+            series[cond] = raw[cond]
+    return series
+
+
 # ---------------------------------------------------------------------------
 # Plot helpers
 # ---------------------------------------------------------------------------
@@ -252,6 +297,8 @@ def _plot_cdf_on_ax(ax: plt.Axes, series: Dict[str, List[float]], metric: str = 
         all_vals.extend(sorted_arr.tolist())
 
     x_max = _nice_upper(float(np.max(all_vals)) if all_vals else 1.0)
+    if metric == "latency":
+        x_max = 100.0
     ax.set_ylim(0, 1.05)
     for n_ticks in (3, 4, 5, 6):
         step = x_max / (n_ticks - 1)
@@ -297,14 +344,19 @@ def _plot_throughput_cdf_on_ax(ax: plt.Axes, series: Dict[str, List[float]]) -> 
     ax.set_axisbelow(True)
 
 
-def _legend_handles() -> List:
+def _present_series(series: Dict[str, object]) -> List[str]:
+    return [s for s in SERIES_ORDER if s in series and series[s]]
+
+
+def _legend_handles(series_keys: List[str] | None = None) -> List:
+    keys = series_keys if series_keys is not None else SERIES_ORDER
     return [
         plt.Line2D([0], [0],
                    color=SERIES_COLORS[s],
                    linestyle=SERIES_LINESTYLE[s],
                    linewidth=1.0,
                    label=SERIES_LABELS[s])
-        for s in SERIES_ORDER
+        for s in keys
     ]
 
 
@@ -317,7 +369,7 @@ def plot_latency_cdf(series: Dict[str, List[float]], out_path: Path) -> None:
     _plot_cdf_on_ax(ax, series, metric="latency")
     ax.set_xlabel("Latency (ms)")
     ax.set_ylabel("CDF")
-    ax.legend(handles=_legend_handles(), frameon=False, loc="lower right",
+    ax.legend(handles=_legend_handles(_present_series(series)), frameon=False, loc="lower right",
               ncol=1, handlelength=1.5, handletextpad=0.3)
     fig.tight_layout()
     save_figure(fig, out_path)
@@ -362,7 +414,7 @@ def plot_throughput_cdf(throughput: Dict[str, List[float]], out_path: Path) -> N
     ax.set_axisbelow(True)
     ax.set_xlabel("Throughput (req/s)")
     ax.set_ylabel("CDF")
-    ax.legend(handles=_legend_handles(), frameon=False, loc="lower right",
+    ax.legend(handles=_legend_handles(_present_series(throughput)), frameon=False, loc="lower right",
               ncol=1, handlelength=1.5, handletextpad=0.3)
     fig.tight_layout()
     save_figure(fig, out_path)
@@ -417,7 +469,86 @@ def plot_summary_bars(task_results: Dict[str, List[Dict]], out_path: Path) -> No
 
 
 # ---------------------------------------------------------------------------
-# Plot 4: Sweep CDF — multi-panel
+# Plot 4: Mean service time bars
+# ---------------------------------------------------------------------------
+
+def plot_mean_service_time_bars(task_results: Dict[str, List[Dict]], out_path: Path) -> None:
+    mean_service_time: Dict[str, float] = {}
+
+    single_means = []
+    for cond in ("single_ecgclass", "single_gestureclass"):
+        rows = task_results.get(cond, [])
+        single_means.extend(float(r["avg_server_exec_ms"]) for r in rows if "avg_server_exec_ms" in r)
+    if single_means:
+        mean_service_time["single"] = float(np.mean(single_means))
+
+    for cond in ("no_sharing_tpc", "no_sharing", "sharing"):
+        rows = task_results.get(cond, [])
+        vals = [float(r["avg_server_exec_ms"]) for r in rows if "avg_server_exec_ms" in r]
+        if vals:
+            mean_service_time[cond] = float(np.mean(vals))
+
+    series = [s for s in SERIES_ORDER if s in mean_service_time]
+    if not series:
+        print("[Warn] No server-only service time data, skipping mean service time chart")
+        return
+
+    fig, ax = plt.subplots(figsize=(2.5, 1.3))
+    x = np.arange(len(series))
+    bars = ax.bar(x, [mean_service_time[s] for s in series],
+                  width=0.5,
+                  color=[SERIES_COLORS[s] for s in series],
+                  edgecolor="black", linewidth=0.4, zorder=2)
+    for bar, s in zip(bars, series):
+        v = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width() / 2, v * 1.02,
+                f"{v:.1f}", ha="center", va="bottom", fontsize=4.5)
+    ax.set_xticks(x)
+    ax.set_xticklabels([SERIES_LABELS[s] for s in series], rotation=15, ha="right")
+    ax.set_ylabel("Mean Server Exec Time (ms)")
+    ax.set_ylim(0, ax.get_ylim()[1] * 1.2)
+    ax.grid(axis="y", zorder=0)
+    ax.set_axisbelow(True)
+    ax.legend(handles=_legend_handles(series), frameon=False, loc="upper right",
+              ncol=1, handlelength=1.5, handletextpad=0.3)
+    fig.tight_layout()
+    save_figure(fig, out_path)
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
+# Plot 5: Mean batch size bars
+# ---------------------------------------------------------------------------
+
+def plot_mean_batch_size_bars(batch_sizes: Dict[str, float], out_path: Path) -> None:
+    series = [s for s in SERIES_ORDER if s in batch_sizes]
+    if not series:
+        print("[Warn] No batch size data, skipping mean batch size chart")
+        return
+
+    fig, ax = plt.subplots(figsize=(2.5, 1.3))
+    x = np.arange(len(series))
+    bars = ax.bar(x, [batch_sizes[s] for s in series],
+                  width=0.5,
+                  color=[SERIES_COLORS[s] for s in series],
+                  edgecolor="black", linewidth=0.4, zorder=2)
+    for bar, s in zip(bars, series):
+        v = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width() / 2, v * 1.02,
+                f"{v:.2f}", ha="center", va="bottom", fontsize=4.5)
+    ax.set_xticks(x)
+    ax.set_xticklabels([SERIES_LABELS[s] for s in series], rotation=15, ha="right")
+    ax.set_ylabel("Mean Batch Size")
+    ax.set_ylim(0, ax.get_ylim()[1] * 1.2)
+    ax.grid(axis="y", zorder=0)
+    ax.set_axisbelow(True)
+    fig.tight_layout()
+    save_figure(fig, out_path)
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
+# Plot 6: Sweep CDF — multi-panel
 # ---------------------------------------------------------------------------
 
 def plot_sweep_cdf(
@@ -446,11 +577,13 @@ def plot_sweep_cdf(
 
     axes[0].set_ylabel("CDF")
 
+    legend_series = [s for s in SERIES_ORDER if any(all_series.get(rps, {}).get(s) for rps in rps_list)]
+
     fig.legend(
-        handles=_legend_handles(),
+        handles=_legend_handles(legend_series),
         loc="upper center",
         bbox_to_anchor=(0.5, 1.10),
-        ncol=len(SERIES_ORDER),
+        ncol=max(1, len(legend_series)),
         frameon=False,
         handlelength=1.5,
         columnspacing=0.8,
@@ -491,6 +624,7 @@ def main() -> int:
     all_series:     Dict[int, Dict[str, List[float]]] = {}
     all_throughput: Dict[int, Dict[str, List[float]]] = {}
     all_task_results: Dict[int, Dict] = {}
+    all_batch_sizes: Dict[int, Dict[str, float]] = {}
 
     for rps in rps_list:
         rps_root = result_root / f"rps_{rps}"
@@ -500,6 +634,7 @@ def main() -> int:
         s    = load_series_latencies(rps_root, args.warmup_secs, args.warmup_requests)
         tput = load_series_throughput(rps_root, args.warmup_secs)
         tres = load_task_results(rps_root)
+        bs   = load_batch_sizes(rps_root, args.warmup_secs)
         if s:
             all_series[rps] = s
             plot_latency_cdf(s, out_dir / f"tpc_sharing_latency_cdf_rps{rps}.pdf")
@@ -509,6 +644,10 @@ def main() -> int:
         if tres:
             all_task_results[rps] = tres
             plot_summary_bars(tres, out_dir / f"tpc_sharing_summary_bars_rps{rps}.pdf")
+            plot_mean_service_time_bars(tres, out_dir / f"tpc_sharing_mean_service_time_rps{rps}.pdf")
+        if bs:
+            all_batch_sizes[rps] = bs
+            plot_mean_batch_size_bars(bs, out_dir / f"tpc_sharing_mean_batch_size_rps{rps}.pdf")
 
     if not all_series and not all_task_results:
         print("[Error] No result data found. Run run.sh first.")

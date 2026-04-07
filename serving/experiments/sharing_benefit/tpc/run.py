@@ -137,7 +137,7 @@ async def deploy(device_url: str, backbone: str, tasks: List[str]) -> None:
 # Open-loop Poisson sender (gRPC)
 # ---------------------------------------------------------------------------
 
-Record = Tuple[float, float]  # (send_time_relative_s, latency_ms)
+Record = Tuple[float, float, float, int]  # (send_time_relative_s, latency_ms, server_exec_ms, server_start_ns)
 
 
 async def run_open_loop(
@@ -158,14 +158,15 @@ async def run_open_loop(
     async def _fire(task: str, req_id: int, t_send_abs: float, t_start: float) -> None:
         d = data[task]
         try:
-            await asyncio.wait_for(clients[task_urls[task]].infer({
+            resp = await asyncio.wait_for(clients[task_urls[task]].infer({
                 "req_id": req_id,
                 "task":   task,
                 "x":      d["x"],
                 "mask":   d.get("mask"),
             }), timeout=req_timeout)
             lat_ms = (time.time() - t_send_abs) * 1000
-            records[task].append((t_send_abs - t_start, lat_ms))
+            server_exec_ms = (resp["end_time_ns"] - resp["start_time_ns"]) / 1e6
+            records[task].append((t_send_abs - t_start, lat_ms, server_exec_ms, resp["start_time_ns"]))
         except Exception:
             pass
 
@@ -206,18 +207,20 @@ def save_results(records: Dict[str, List[Record]], out_dir: Path, condition: str
 
     with (out_dir / "latencies.csv").open("w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["task", "condition", "elapsed_sec", "latency_ms"])
+        w.writerow(["task", "condition", "elapsed_sec", "latency_ms", "server_exec_ms", "server_start_ns"])
         for task, recs in records.items():
-            for rel_t, lat in recs:
-                w.writerow([task, condition, round(rel_t, 4), round(lat, 4)])
+            for rel_t, lat, server_exec_ms, server_start_ns in recs:
+                w.writerow([task, condition, round(rel_t, 4), round(lat, 4), round(server_exec_ms, 4), server_start_ns])
 
     with (out_dir / "task_results.csv").open("w", newline="") as f:
         fields = ["task", "condition", "n_requests", "throughput_rps",
-                  "avg_latency_ms", "p50_latency_ms", "p95_latency_ms", "p99_latency_ms"]
+                  "avg_latency_ms", "p50_latency_ms", "p95_latency_ms", "p99_latency_ms",
+                  "avg_server_exec_ms"]
         w = csv.DictWriter(f, fieldnames=fields)
         w.writeheader()
         for task, recs in records.items():
-            lats = [lat for rel_t, lat in recs if rel_t > warmup_secs]
+            trimmed = [rec for rec in recs if rec[0] > warmup_secs]
+            lats = [lat for _, lat, _, _ in trimmed]
             n = len(lats)
             if n == 0:
                 continue
@@ -230,6 +233,7 @@ def save_results(records: Dict[str, List[Record]], out_dir: Path, condition: str
                 "p50_latency_ms": round(float(np.percentile(lats, 50)), 3),
                 "p95_latency_ms": round(float(np.percentile(lats, 95)), 3),
                 "p99_latency_ms": round(float(np.percentile(lats, 99)), 3),
+                "avg_server_exec_ms": round(float(np.mean([server_exec_ms for _, _, server_exec_ms, _ in trimmed])), 3),
             })
 
     for task, recs in records.items():

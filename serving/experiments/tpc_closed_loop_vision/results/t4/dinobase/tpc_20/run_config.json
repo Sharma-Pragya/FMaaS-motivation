@@ -1,0 +1,14 @@
+{
+  "task": "nyudepth",
+  "backbone": "dinobase-patch",
+  "cuda_device": "cuda:0",
+  "tpc_mode": "libsmctrl",
+  "tpc_count": 20,
+  "concurrency": 1,
+  "phase_duration_s": 60,
+  "warmup_s": 10,
+  "device_port": 8000,
+  "max_batch_size": 100,
+  "max_batch_wait_ms": 0,
+  "device_startup_wait_s": 5
+}
