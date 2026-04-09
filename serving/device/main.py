@@ -13,9 +13,13 @@ except ImportError:
 
 _pre_parser = argparse.ArgumentParser(add_help=False)
 _pre_parser.add_argument("--cuda", type=str, default=None)
+_pre_parser.add_argument("--mps-thread-pct", type=int, default=None)
 _pre_args, _ = _pre_parser.parse_known_args()
 if _pre_args.cuda:
     os.environ["CUDA_DEVICE"] = _pre_args.cuda
+if _pre_args.mps_thread_pct is not None:
+    os.environ["CUDA_MPS_ACTIVE_THREAD_PERCENTAGE"] = str(_pre_args.mps_thread_pct)
+    print(f"[Device] MPS thread percentage set to {_pre_args.mps_thread_pct}%")
 
 from device.server import RuntimeServerConfig, serve
 
@@ -47,6 +51,7 @@ def main():
     parser.add_argument("--max-model-len", type=int, default=None, help="vLLM max sequence length. Set to a small value (e.g. 256) to reduce KV cache size and allow multiple engines on one GPU.")
     parser.add_argument("--tpc-mode", choices=["none", "libsmctrl", "green"], default="none", help="TPC isolation: none, libsmctrl (driver<=528), or green (CUDA 12.4+).")
     parser.add_argument("--tpc-partition", type=int, nargs="+", default=None, help="TPC IDs to pin this server to (e.g. --tpc-partition 0 1 2 3).")
+    parser.add_argument("--mps-thread-pct", type=int, default=None, help="CUDA MPS active thread percentage (0-100). Requires MPS daemon running. Set via pre-parser so it takes effect before CUDA init.")
     args = parser.parse_args()
     # Parse task rates: "ecgclass:10,gestureclass:100" -> {"ecgclass": 10.0, ...}
     task_rates: dict[str, float] = {}
