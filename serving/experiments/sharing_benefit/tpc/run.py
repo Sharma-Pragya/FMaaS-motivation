@@ -2,26 +2,27 @@
 """sharing_benefit/tpc/run.py — Sharing benefit with TPC isolation for no_sharing.
 
 Supports two task sets:
-  tsfm   — ecgclass + gestureclass (time-series foundation models)
-  vision — nyudepth + vocseg       (vision foundation models)
+  tsfm   — time-series foundation model tasks:
+              ecgclass, heartrate, diasbp, sysbp, gestureclass,
+              etth1fore, weatherfore, trafficfore, eclfore, exchangefore
+  vision — nyudepth + vocseg (vision foundation models)
 
-Five conditions (same for both task sets):
-  single_{task1}    — 1 device server, task1 only, FIFO
-  single_{task2}    — 1 device server, task2 only, FIFO
-  no_sharing_tpc    — 2 device servers with --tpc-partition (TPC-pinned), FIFO
-  no_sharing        — 2 device servers (port A + B), one backbone each, FIFO
-  sharing           — 1 device server, both tasks, STFQ
+Condition types:
+  single_{task}  — 1 device server, that task only, FIFO
+  no_sharing_tpc — N device servers with --tpc-partition (TPC-pinned), FIFO
+  no_sharing     — N device servers (one per task), FIFO
+  sharing        — 1 device server, all tasks, STFQ
 
 Usage (called by run.sh):
     python experiments/sharing_benefit/tpc/run.py \
-        --task-set     vision \
-        --condition    no_sharing_tpc \
-        --device-url   localhost:8000 \
-        --device-url-2 localhost:8001 \
-        --backbone     dinobase-patch \
-        --rps 20 \
-        --duration 180 \
-        --exp-dir experiments/sharing_benefit/tpc/results/no_sharing_tpc
+        --task-set    tsfm \
+        --tasks       ecgclass,gestureclass,heartrate,diasbp \
+        --condition   no_sharing_tpc \
+        --device-urls localhost:8000,localhost:8001,localhost:8002,localhost:8003 \
+        --backbone    momentlarge \
+        --rps 25 \
+        --duration 300 \
+        --exp-dir experiments/sharing_benefit/tpc/results/ntasks_4/rps_25/no_sharing_tpc
 """
 from __future__ import annotations
 
@@ -49,19 +50,51 @@ from serving.site_manager.config import DATASET_DIR as _DATASET_DIR
 # Task-set configuration
 # ---------------------------------------------------------------------------
 
+# Seeds for trace generation — one per task across all task sets
+_TSFM_SEEDS = {
+    "ecgclass":     42,
+    "heartrate":    43,
+    "diasbp":       44,
+    "sysbp":        45,
+    "gestureclass": 46,
+    "etth1fore":    47,
+    "weatherfore":  48,
+    "trafficfore":  49,
+    "eclfore":      50,
+    "exchangefore": 51,
+}
+
+# All supported tsfm tasks in canonical order
+ALL_TSFM_TASKS = list(_TSFM_SEEDS.keys())
+
 TASK_SETS: Dict[str, Dict] = {
     "tsfm": {
-        "tasks": ["ecgclass", "gestureclass"],
+        "tasks": ["ecgclass", "gestureclass"],  # default 2-task subset
         "types": {
             "ecgclass":     "classification",
+            "heartrate":    "regression",
+            "diasbp":       "regression",
+            "sysbp":        "regression",
             "gestureclass": "classification",
+            "etth1fore":    "forecasting",
+            "weatherfore":  "forecasting",
+            "trafficfore":  "forecasting",
+            "eclfore":      "forecasting",
+            "exchangefore": "forecasting",
         },
         "decoder_paths": {
             "ecgclass":     "{task}_{backbone}_mlp",
+            "heartrate":    "{task}_{backbone}_mlp",
+            "diasbp":       "{task}_{backbone}_mlp",
+            "sysbp":        "{task}_{backbone}_mlp",
             "gestureclass": "{task}_{backbone}_mlp",
+            "etth1fore":    "{task}_{backbone}_mlp",
+            "weatherfore":  "{task}_{backbone}_mlp",
+            "trafficfore":  "{task}_{backbone}_mlp",
+            "eclfore":      "{task}_{backbone}_mlp",
+            "exchangefore": "{task}_{backbone}_mlp",
         },
-        "seeds":             {"ecgclass": 42, "gestureclass": 43},
-        "single_conditions": ["single_ecgclass", "single_gestureclass"],
+        "seeds": _TSFM_SEEDS,
     },
     "vision": {
         "tasks": ["nyudepth", "vocseg"],
@@ -73,16 +106,9 @@ TASK_SETS: Dict[str, Dict] = {
             "nyudepth": "nyudepth_{backbone}_monocular",
             "vocseg":   None,
         },
-        "seeds":             {"nyudepth": 42, "vocseg": 43},
-        "single_conditions": ["single_nyudepth", "single_vocseg"],
+        "seeds": {"nyudepth": 42, "vocseg": 43},
     },
 }
-
-ALL_CONDITIONS = [
-    "single_ecgclass", "single_gestureclass",
-    "single_nyudepth", "single_vocseg",
-    "no_sharing_tpc", "no_sharing", "sharing",
-]
 
 # Dataset paths for vision (can be overridden via env vars)
 NYUDEPTH_PATH = os.environ.get("NYUDEPTH_PATH", "../../FMTK/dataset/nyu-depth-v2")
@@ -99,10 +125,32 @@ def build_data(task_set: str, tasks: List[str]) -> Dict[str, Dict]:
     if task_set == "tsfm":
         from fmtk.datasetloaders.ecg5000 import ECG5000Dataset
         from fmtk.datasetloaders.uwavegesture import UWaveGestureLibraryALLDataset
+        from fmtk.datasetloaders.ppg import PPGDataset
+        from fmtk.datasetloaders.etth1 import ETTh1Dataset
+        from fmtk.datasetloaders.weather import WeatherDataset
+        from fmtk.datasetloaders.traffic import TrafficDataset
+        from fmtk.datasetloaders.ecl import ECLDataset
+        from fmtk.datasetloaders.exchange import ExchangeDataset
         d = _DATASET_DIR
         loaders = {
             "ecgclass": lambda: DataLoader(
-                ECG5000Dataset({"dataset_path": f"{d}/ECG5000"}, {"task_type": "classification"}, "test"),
+                ECG5000Dataset({"dataset_path": f"{d}/ECG5000", "seq_len": 512},
+                               {"task_type": "classification"}, "test"),
+                **cfg,
+            ),
+            "heartrate": lambda: DataLoader(
+                PPGDataset({"dataset_path": f"{d}/PPG-data", "seq_len": 512, "num_channels": 1},
+                           {"task_type": "regression", "label": "hr"}, "test"),
+                **cfg,
+            ),
+            "diasbp": lambda: DataLoader(
+                PPGDataset({"dataset_path": f"{d}/PPG-data", "seq_len": 512, "num_channels": 1},
+                           {"task_type": "regression", "label": "diasbp"}, "test"),
+                **cfg,
+            ),
+            "sysbp": lambda: DataLoader(
+                PPGDataset({"dataset_path": f"{d}/PPG-data", "seq_len": 512, "num_channels": 1},
+                           {"task_type": "regression", "label": "sysbp"}, "test"),
                 **cfg,
             ),
             "gestureclass": lambda: DataLoader(
@@ -110,6 +158,31 @@ def build_data(task_set: str, tasks: List[str]) -> Dict[str, Dict]:
                     {"dataset_path": f"{d}/UWaveGestureLibraryAll", "seq_len": 512},
                     {"task_type": "classification"}, "test",
                 ),
+                **cfg,
+            ),
+            "etth1fore": lambda: DataLoader(
+                ETTh1Dataset({"dataset_path": f"{d}/ETTh1", "seq_len": 512},
+                             {"task_type": "forecasting"}, "test"),
+                **cfg,
+            ),
+            "weatherfore": lambda: DataLoader(
+                WeatherDataset({"dataset_path": f"{d}/Weather", "seq_len": 512},
+                               {"task_type": "forecasting"}, "test"),
+                **cfg,
+            ),
+            "trafficfore": lambda: DataLoader(
+                TrafficDataset({"dataset_path": f"{d}/Traffic", "seq_len": 512},
+                               {"task_type": "forecasting"}, "test"),
+                **cfg,
+            ),
+            "eclfore": lambda: DataLoader(
+                ECLDataset({"dataset_path": f"{d}/ElectricityLoad-data", "seq_len": 512},
+                           {"task_type": "forecasting"}, "test"),
+                **cfg,
+            ),
+            "exchangefore": lambda: DataLoader(
+                ExchangeDataset({"dataset_path": f"{d}/Exchange", "seq_len": 512},
+                                {"task_type": "forecasting"}, "test"),
                 **cfg,
             ),
         }
@@ -154,8 +227,9 @@ def build_data(task_set: str, tasks: List[str]) -> Dict[str, Dict]:
 def generate_traces(tasks: List[str], seeds: Dict[str, int],
                     rps: float, duration: float) -> Dict[str, List[float]]:
     send_times: Dict[str, List[float]] = {}
-    for task in tasks:
-        rng = np.random.default_rng(seeds.get(task, 42))
+    for i, task in enumerate(tasks):
+        seed = seeds.get(task, 42 + i)
+        rng = np.random.default_rng(seed)
         times, t = [], 0.0
         while t < duration:
             times.append(t)
@@ -363,10 +437,19 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--task-set", default=os.environ.get("TASK_SET", "tsfm"),
                         choices=["tsfm", "vision"],
-                        help="Which task set to use: tsfm (ecgclass+gestureclass) or vision (nyudepth+vocseg)")
-    parser.add_argument("--condition", required=True, choices=ALL_CONDITIONS)
-    parser.add_argument("--device-url",   default="localhost:8000")
-    parser.add_argument("--device-url-2", default="localhost:8001")
+                        help="Which task set to use")
+    parser.add_argument("--tasks", default=None,
+                        help="Comma-separated list of tasks to run (overrides task-set default). "
+                             "tsfm options: " + ", ".join(ALL_TSFM_TASKS))
+    parser.add_argument("--condition", required=True,
+                        help="Condition name: single_{task}, no_sharing_tpc, no_sharing, or sharing")
+    parser.add_argument("--device-urls", default=None,
+                        help="Comma-separated device URLs, one per task for no_sharing* conditions "
+                             "(e.g. localhost:8000,localhost:8001,localhost:8002)")
+    parser.add_argument("--device-url",   default="localhost:8000",
+                        help="Primary device URL (used when --device-urls is not set)")
+    parser.add_argument("--device-url-2", default="localhost:8001",
+                        help="Secondary device URL (legacy two-task fallback)")
     parser.add_argument("--backbone",     default=os.environ.get("BACKBONE", "momentbase"))
     parser.add_argument("--rps",          type=float, default=float(os.environ.get("RPS", "20")))
     parser.add_argument("--duration",     type=float, default=float(os.environ.get("PHASE_DURATION", "180")))
@@ -376,66 +459,97 @@ def main() -> int:
     args = parser.parse_args()
 
     cfg = TASK_SETS[args.task_set]
-    both_tasks      = cfg["tasks"]
-    task_types      = cfg["types"]
-    decoder_paths   = cfg["decoder_paths"]
-    task_seeds      = cfg["seeds"]
-    single_conds    = cfg["single_conditions"]
+    task_types    = cfg["types"]
+    decoder_paths = cfg["decoder_paths"]
+    task_seeds    = cfg["seeds"]
+
+    # Resolve the active task list
+    if args.tasks:
+        all_tasks = [t.strip() for t in args.tasks.split(",")]
+    else:
+        all_tasks = cfg["tasks"]
+
+    # Resolve device URLs
+    if args.device_urls:
+        device_urls = [u.strip() for u in args.device_urls.split(",")]
+    else:
+        device_urls = [args.device_url, args.device_url_2]
 
     out_dir = (SERVING_DIR / args.exp_dir).resolve()
 
     print("=" * 65)
     print(f"  Sharing Benefit + TPC — condition={args.condition}")
-    print(f"  Task set  : {args.task_set}  ({both_tasks})")
+    print(f"  Task set  : {args.task_set}  ({all_tasks})")
     print(f"  Backbone  : {args.backbone}")
     print(f"  RPS/task  : {args.rps}")
     print(f"  Duration  : {args.duration}s  (warmup={args.warmup_secs}s)")
     print(f"  Results   : {out_dir}")
     print("=" * 65)
 
-    # Load or generate trace
+    # Load or generate trace (covers all active tasks)
     if args.trace_file:
         trace_path = Path(args.trace_file)
         if not trace_path.is_absolute():
             trace_path = (SERVING_DIR / trace_path).resolve()
         if trace_path.exists():
             send_times = load_trace(trace_path)
+            # Add missing tasks if trace was generated for fewer tasks
+            missing = [t for t in all_tasks if t not in send_times]
+            if missing:
+                print(f"[Trace] Generating missing tasks: {missing}")
+                extra = generate_traces(missing, task_seeds, args.rps, args.duration)
+                send_times.update(extra)
+                save_trace(send_times, trace_path)
         else:
             print(f"[Trace] {trace_path} not found — generating and saving ...")
-            send_times = generate_traces(both_tasks, task_seeds, args.rps, args.duration)
+            send_times = generate_traces(all_tasks, task_seeds, args.rps, args.duration)
             save_trace(send_times, trace_path)
     else:
         auto_path = (out_dir.parent / "trace.json").resolve()
         if auto_path.exists():
             send_times = load_trace(auto_path)
+            missing = [t for t in all_tasks if t not in send_times]
+            if missing:
+                print(f"[Trace] Generating missing tasks: {missing}")
+                extra = generate_traces(missing, task_seeds, args.rps, args.duration)
+                send_times.update(extra)
+                save_trace(send_times, auto_path)
         else:
-            print(f"[Trace] Generating trace (seeds per task) -> {auto_path}")
-            send_times = generate_traces(both_tasks, task_seeds, args.rps, args.duration)
+            print(f"[Trace] Generating trace -> {auto_path}")
+            send_times = generate_traces(all_tasks, task_seeds, args.rps, args.duration)
             save_trace(send_times, auto_path)
 
-    # Determine tasks and URL mapping per condition
-    if args.condition == single_conds[0]:
-        tasks = [both_tasks[0]]
-        task_urls = {both_tasks[0]: args.device_url}
-    elif args.condition == single_conds[1]:
-        tasks = [both_tasks[1]]
-        task_urls = {both_tasks[1]: args.device_url}
-    elif args.condition in ("no_sharing_tpc", "no_sharing"):
-        tasks = both_tasks
-        task_urls = {both_tasks[0]: args.device_url, both_tasks[1]: args.device_url_2}
-    else:  # sharing
-        tasks = both_tasks
-        task_urls = {t: args.device_url for t in both_tasks}
+    # Determine active tasks and URL mapping per condition
+    if args.condition.startswith("single_"):
+        single_task = args.condition[len("single_"):]
+        if single_task not in all_tasks:
+            print(f"ERROR: task '{single_task}' not in active task list {all_tasks}", file=sys.stderr)
+            return 1
+        tasks = [single_task]
+        task_urls = {single_task: device_urls[0]}
+    elif args.condition in ("no_sharing_tpc", "no_sharing", "no_sharing_mps"):
+        tasks = all_tasks
+        if len(device_urls) < len(all_tasks):
+            print(f"ERROR: need {len(all_tasks)} device URLs for {args.condition}, got {len(device_urls)}",
+                  file=sys.stderr)
+            return 1
+        task_urls = {t: device_urls[i] for i, t in enumerate(all_tasks)}
+    elif args.condition == "sharing":
+        tasks = all_tasks
+        task_urls = {t: device_urls[0] for t in all_tasks}
+    else:
+        print(f"ERROR: unknown condition '{args.condition}'", file=sys.stderr)
+        return 1
 
     print(f"[INFO] Loading data for: {tasks}")
     data = build_data(args.task_set, tasks)
 
     # Deploy
-    if args.condition in ("no_sharing_tpc", "no_sharing"):
-        asyncio.run(deploy(args.device_url,   args.backbone, [both_tasks[0]], task_types, decoder_paths))
-        asyncio.run(deploy(args.device_url_2, args.backbone, [both_tasks[1]], task_types, decoder_paths))
+    if args.condition in ("no_sharing_tpc", "no_sharing", "no_sharing_mps"):
+        for t, url in task_urls.items():
+            asyncio.run(deploy(url, args.backbone, [t], task_types, decoder_paths))
     else:
-        asyncio.run(deploy(args.device_url, args.backbone, tasks, task_types, decoder_paths))
+        asyncio.run(deploy(device_urls[0], args.backbone, tasks, task_types, decoder_paths))
 
     asyncio.run(asyncio.sleep(1))
 

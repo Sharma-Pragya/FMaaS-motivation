@@ -1,0 +1,11 @@
+{
+  "condition": "tpc1_ecgclass",
+  "task": "ecgclass",
+  "n_tpcs": 1,
+  "tpc_partition": "0",
+  "backbone": "momentlarge",
+  "cuda_device": "cuda:0",
+  "rps_per_task": 5,
+  "phase_duration_s": 300,
+  "tpc_mode": "libsmctrl"
+}
