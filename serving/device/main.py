@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import base64
+import ctypes
 import os
 
 try:
@@ -20,6 +21,12 @@ if _pre_args.cuda:
 if _pre_args.mps_thread_pct is not None:
     os.environ["CUDA_MPS_ACTIVE_THREAD_PERCENTAGE"] = str(_pre_args.mps_thread_pct)
     print(f"[Device] MPS thread percentage set to {_pre_args.mps_thread_pct}%")
+    import torch
+    dev_id = torch.cuda.current_device()
+    props = torch.cuda.get_device_properties(dev_id)
+
+    print(f"GPU: {props.name}")
+    print(f"SM count from torch device properties: {props.multi_processor_count}")
 
 from device.server import RuntimeServerConfig, serve
 
