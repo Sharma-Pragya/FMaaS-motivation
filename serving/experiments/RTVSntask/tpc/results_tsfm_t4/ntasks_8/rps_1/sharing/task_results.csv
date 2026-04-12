@@ -1,0 +1,9 @@
+task,slot,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_non_server_exec_overhead_ms
+ecgclass,slot_0:ecgclass,sharing,589,0.9983,40.736,33.854,71.149,79.92,25.735,24.859,0.002,0.528,14.573,15.001
+gestureclass,slot_1:gestureclass,sharing,617,1.0458,41.51,33.725,73.77,81.004,25.745,24.844,0.002,0.576,15.347,15.764
+heartrate,slot_2:heartrate,sharing,587,0.9949,40.661,33.867,69.531,81.294,25.82,24.937,0.002,0.483,14.432,14.84
+diasbp,slot_3:diasbp,sharing,575,0.9746,40.88,33.752,73.226,81.104,25.735,24.906,0.002,0.484,14.737,15.146
+sysbp,slot_4:sysbp,sharing,579,0.9814,40.938,33.794,73.268,81.599,25.818,24.952,0.002,0.484,14.708,15.12
+etth1fore,slot_5:etth1fore,sharing,595,1.0085,40.501,33.539,73.788,80.99,25.692,24.907,0.002,0.429,14.37,14.809
+weatherfore,slot_6:weatherfore,sharing,615,1.0424,40.601,33.771,72.204,78.28,25.745,24.965,0.002,0.415,14.41,14.856
+trafficfore,slot_7:trafficfore,sharing,574,0.9729,40.696,33.783,71.073,79.128,25.763,24.951,0.002,0.438,14.49,14.933

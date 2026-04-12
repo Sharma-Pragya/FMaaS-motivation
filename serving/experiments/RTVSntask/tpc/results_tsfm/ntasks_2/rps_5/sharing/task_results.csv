@@ -1,0 +1,3 @@
+task,slot,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_non_server_exec_overhead_ms
+ecgclass,slot_0:ecgclass,sharing,2906,4.9254,65.412,56.384,109.411,150.237,50.693,49.363,0.002,0.748,13.718,14.718
+gestureclass,slot_1:gestureclass,sharing,2980,5.0508,65.354,56.255,108.434,143.162,50.55,49.233,0.002,0.741,13.806,14.804

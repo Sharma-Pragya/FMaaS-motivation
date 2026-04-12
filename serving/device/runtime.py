@@ -77,7 +77,14 @@ class PyTorchRuntime(BaseRuntime):
         self.pipeline = None
         self.decoders = None
         self.adapters = None
-        self._cuda_stream = cuda_stream  # optional TPC-pinned stream
+        # Always use a dedicated (non-default) CUDA stream to avoid implicit
+        # synchronisation overhead of the default stream under concurrent load.
+        if cuda_stream is None:
+            import torch
+            device = self._loader.device
+            if str(device).startswith("cuda"):
+                cuda_stream = torch.cuda.Stream(device=device)
+        self._cuda_stream = cuda_stream
 
     def _sync(self):
         self.pipeline = self._loader.pipeline
@@ -177,8 +184,8 @@ class PyTorchRuntime(BaseRuntime):
                     else:
                         sub_x = bx[indices]
                         sub_feats = self.pipeline.model_instance.forward(sub_x, sub_mask)
-                    # if is_cuda:
-                    #     torch.cuda.synchronize(device)
+                    if is_cuda:
+                        torch.cuda.synchronize(device)
                     proc_time_ns += time.time_ns() - bb_start
 
                     if is_cuda:
@@ -216,7 +223,7 @@ class PyTorchRuntime(BaseRuntime):
                     with stream_ctx, torch.no_grad():
                         logits = active_decoder.forward(feat_input)
                     if is_cuda:
-                        # torch.cuda.synchronize(device)
+                        torch.cuda.synchronize(device)
                         dec_bytes = torch.cuda.memory_allocated(device)
                         if dec_bytes > peak_bytes:
                             peak_bytes = dec_bytes

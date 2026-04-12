@@ -88,7 +88,7 @@ RPS_SWEEP="${RPS_SWEEP:-1,5}"
 NUM_TASKS_SWEEP="${NUM_TASKS_SWEEP:-1,2,3,4,5}"   
 PHASE_DURATION="${PHASE_DURATION:-600}"
 DEVICE_PORT="${DEVICE_PORT:-8000}"
-MAX_BATCH_SIZE="${MAX_BATCH_SIZE:-100}"
+MAX_BATCH_SIZE="${MAX_BATCH_SIZE:-32}"
 RESULTS_BASE="${RESULTS_BASE:-experiments/RTVSntask/tpc/results_tsfm}"
 DEVICE_STARTUP_WAIT="${DEVICE_STARTUP_WAIT:-5}"
 MAX_BATCH_WAIT_MS="${MAX_BATCH_WAIT_MS:-0}"
@@ -279,21 +279,19 @@ start_device() {
 run_condition() {
     local condition="$1" rps="$2" ntasks="$3" tasks_csv="$4"
 
-    # Single-task conditions are stored once in a shared directory so they are
-    # never re-run across ntasks sweeps.  A symlink in the ntasks_N tree points
-    # back to that shared directory so plot.py finds results transparently.
     local out_dir trace_file run_tasks_csv
     local ntasks_dir="${abs_results}/ntasks_${ntasks}/rps_${rps}"
-    # All conditions share the same trace so arrival times are identical across
-    # single, no_sharing, no_sharing_tpc, no_sharing_mps, and sharing.
-    trace_file="${abs_results}/singles/rps_${rps}/trace.json"
+    out_dir="${ntasks_dir}/${condition}"
     if [[ "$condition" == single_* ]]; then
         local single_task="${condition#single_}"
-        out_dir="${abs_results}/singles/rps_${rps}/${condition}"
         run_tasks_csv="$single_task"
+        # Single runs at aggregate rate (rps*ntasks); store its trace under
+        # singles/rps_<agg_rps>/ keyed by actual rate so it can be reused.
+        local agg_rps_trace=$((rps * ntasks))
+        trace_file="${abs_results}/singles/rps_${agg_rps_trace}/trace.json"
     else
-        out_dir="${ntasks_dir}/${condition}"
         run_tasks_csv="$tasks_csv"
+        trace_file="${ntasks_dir}/trace.json"
     fi
 
     # Parse tasks into an array
@@ -306,13 +304,9 @@ run_condition() {
     echo "  Results  : $out_dir"
     echo "================================================================"
 
-    # Skip if results already exist; for singles, also ensure symlink is in place
+    # Skip if results already exist
     if [[ -f "${out_dir}/latencies.csv" ]]; then
         echo "[run.sh] Skipping $condition — results already exist"
-        if [[ "$condition" == single_* ]]; then
-            mkdir -p "$ntasks_dir"
-            ln -sfn "$out_dir" "${ntasks_dir}/${condition}" 2>/dev/null || true
-        fi
         return 0
     fi
 
@@ -337,13 +331,15 @@ run_condition() {
     case "$condition" in
         single_*)
             local task="${condition#single_}"
-            local task_rates="${task}:${rps}"
+            # Aggregate load: single task receives rps * ntasks to match total arrival rate
+            local agg_rps=$((rps * ntasks))
+            local task_rates="${task}:${agg_rps}"
             local port="$DEVICE_PORT"
             local pid
             pid=$(start_device "$port" "fifo" "$LOG_DIR/device_${condition}_rps${rps}_n${ntasks}.log" \
-                  "$rps" "$task_rates")
+                  "$agg_rps" "$task_rates")
             DEVICE_PIDS+=("$pid")
-            run_py --condition "$condition" --device-urls "localhost:${port}"
+            run_py --condition "$condition" --rps "$agg_rps" --device-urls "localhost:${port}"
             ;;
 
         no_sharing_tpc)
@@ -447,18 +443,12 @@ print(sm // 2)  # TPCs ~ SMs/2
   "max_batch_wait_ms": ${MAX_BATCH_WAIT_MS},
   "phase_duration_s": ${PHASE_DURATION},
   "rps_per_task": ${rps},
+  "rps_single_aggregate": $([[ "$condition" == single_* ]] && echo $((rps * ntasks)) || echo "null"),
   "tpc_mode": "${TPC_MODE}",
   "device_port_base": ${DEVICE_PORT},
   "device_startup_wait_s": ${DEVICE_STARTUP_WAIT}
 }
 EOF
-
-    # For single conditions: symlink from the ntasks dir so plot.py finds results
-    if [[ "$condition" == single_* ]]; then
-        mkdir -p "$ntasks_dir"
-        ln -sfn "$out_dir" "${ntasks_dir}/${condition}" 2>/dev/null || true
-        echo "[run.sh] Linked: ${ntasks_dir}/${condition} -> $out_dir"
-    fi
 
     stop_devices
 }
@@ -625,6 +615,8 @@ else
         # done
         # unset _seen_tasks
         # conditions+=("no_sharing" "no_sharing_tpc" "no_sharing_mps" "sharing")
+        # conditions+=("no_sharing_tpc" "sharing")
+        conditions+=("single_${ALL_TSFM_TASKS[0]}")
         conditions+=("no_sharing_tpc" "sharing")
         for rps in "${RPS_LIST[@]}"; do
             echo ""

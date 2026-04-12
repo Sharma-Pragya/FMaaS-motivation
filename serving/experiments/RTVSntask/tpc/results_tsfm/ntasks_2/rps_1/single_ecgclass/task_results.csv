@@ -1,0 +1,2 @@
+task,slot,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_non_server_exec_overhead_ms
+ecgclass,slot_0:ecgclass,single_ecgclass,1172,1.9864,69.025,56.524,96.922,135.54,61.823,60.425,0.002,0.928,6.19,7.202

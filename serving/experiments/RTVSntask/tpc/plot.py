@@ -26,6 +26,9 @@ NEW — ntasks sweep (when multiple ntasks values):
   tpc_ntasks_mean_latency.pdf
     x-axis: number of tasks, y-axis: mean response time
     one line per condition; one subplot per RPS if multiple RPS values
+  tpc_ntasks_mean_service_time.pdf
+    x-axis: number of tasks, y-axis: mean service time (avg_server_exec_ms)
+    one line per condition; one subplot per RPS if multiple RPS values
 
 Usage:
     python experiments/RTVSntask/tpc/plot.py \\
@@ -448,6 +451,72 @@ def load_mean_latency_for_dir(rps_root: Path) -> Dict[str, float]:
             for row in csv.DictReader(f):
                 if "avg_latency_ms" in row:
                     vals.append(float(row["avg_latency_ms"]))
+        if vals:
+            result[cond] = float(np.mean(vals))
+
+    return result
+
+
+def load_p50_latency_for_dir(rps_root: Path) -> Dict[str, float]:
+    """Read task_results.csv files in rps_root and return {series: mean_p50_latency_ms}.
+    Pools all single_* conditions into 'single'; other series are direct."""
+    result: Dict[str, float] = {}
+
+    single_conds = detect_single_conditions(rps_root) or SINGLE_CONDITIONS
+    single_lats: List[float] = []
+    for cond in single_conds:
+        path = _resolve_cond_file(rps_root, cond, "task_results.csv")
+        if not path.exists():
+            continue
+        with path.open() as f:
+            for row in csv.DictReader(f):
+                if "p50_latency_ms" in row:
+                    single_lats.append(float(row["p50_latency_ms"]))
+    if single_lats:
+        result["single"] = float(np.mean(single_lats))
+
+    for cond in ("no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing"):
+        path = rps_root / cond / "task_results.csv"
+        if not path.exists():
+            continue
+        vals: List[float] = []
+        with path.open() as f:
+            for row in csv.DictReader(f):
+                if "p50_latency_ms" in row:
+                    vals.append(float(row["p50_latency_ms"]))
+        if vals:
+            result[cond] = float(np.mean(vals))
+
+    return result
+
+
+def load_mean_service_time_for_dir(rps_root: Path) -> Dict[str, float]:
+    """Read task_results.csv files in rps_root and return {series: mean_avg_server_exec_ms}.
+    Pools all single_* conditions into 'single'; other series are direct."""
+    result: Dict[str, float] = {}
+
+    single_conds = detect_single_conditions(rps_root) or SINGLE_CONDITIONS
+    single_vals: List[float] = []
+    for cond in single_conds:
+        path = _resolve_cond_file(rps_root, cond, "task_results.csv")
+        if not path.exists():
+            continue
+        with path.open() as f:
+            for row in csv.DictReader(f):
+                if "avg_server_exec_ms" in row:
+                    single_vals.append(float(row["avg_server_exec_ms"]))
+    if single_vals:
+        result["single"] = float(np.mean(single_vals))
+
+    for cond in ("no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing"):
+        path = rps_root / cond / "task_results.csv"
+        if not path.exists():
+            continue
+        vals: List[float] = []
+        with path.open() as f:
+            for row in csv.DictReader(f):
+                if "avg_server_exec_ms" in row:
+                    vals.append(float(row["avg_server_exec_ms"]))
         if vals:
             result[cond] = float(np.mean(vals))
 
@@ -881,6 +950,160 @@ def plot_ntasks_mean_latency(
         ax.set_axisbelow(True)
         if ax is axes[0]:
             ax.set_ylabel("Mean Response Time (ms)")
+
+    fig.legend(
+        handles=_legend_handles(present),
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.12),
+        ncol=max(1, len(present)),
+        frameon=False,
+        handlelength=1.5,
+        columnspacing=0.8,
+        handletextpad=0.3,
+    )
+    fig.tight_layout(rect=(0, 0, 1, 1.0))
+    save_figure(fig, out_path)
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
+# Plot 7b: ntasks sweep — p50 (median) response time vs number of tasks
+#   data: {rps: {ntasks: {series: p50_latency_ms}}}
+#   Same layout as plot_ntasks_mean_latency, but less sensitive to tail noise.
+# ---------------------------------------------------------------------------
+
+def plot_ntasks_p50_latency(
+    data: Dict[int, Dict[int, Dict[str, float]]],
+    rps_list: List[int],
+    ntasks_list: List[int],
+    out_path: Path,
+) -> None:
+    rps_with_data = [r for r in rps_list if any(data.get(r, {}).values())]
+    if not rps_with_data:
+        print("[Warn] No ntasks sweep data, skipping ntasks p50 latency plot")
+        return
+
+    n_panels = len(rps_with_data)
+    fig_w = max(2.8 * n_panels, 3.3)
+    fig, axes = plt.subplots(1, n_panels, figsize=(fig_w, 2.0),
+                             sharey=False, squeeze=False)
+    axes = axes[0]
+
+    present: List[str] = []
+    for s in SERIES_ORDER:
+        if any(
+            s in data.get(rps, {}).get(n, {})
+            for rps in rps_with_data
+            for n in ntasks_list
+        ):
+            present.append(s)
+
+    for ax, rps in zip(axes, rps_with_data):
+        rps_data = data.get(rps, {})
+        for s in present:
+            xs, ys = [], []
+            for n in ntasks_list:
+                v = rps_data.get(n, {}).get(s)
+                if v is not None:
+                    xs.append(n)
+                    ys.append(v)
+            if xs:
+                ax.plot(
+                    xs, ys,
+                    color=SERIES_COLORS[s],
+                    linestyle=SERIES_LINESTYLE[s],
+                    marker=SERIES_MARKER[s],
+                    markersize=3.5,
+                    linewidth=1.2,
+                    label=SERIES_LABELS[s],
+                )
+
+        ax.set_title(f"RPS = {rps}", pad=3)
+        ax.set_xlabel("Number of Tasks")
+        ax.set_xticks(ntasks_list)
+        ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{int(v)}"))
+        ax.grid(axis="both", zorder=0)
+        ax.set_ylim(0, 200)
+        ax.set_axisbelow(True)
+        if ax is axes[0]:
+            ax.set_ylabel("P50 Response Time (ms)")
+
+    fig.legend(
+        handles=_legend_handles(present),
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.12),
+        ncol=max(1, len(present)),
+        frameon=False,
+        handlelength=1.5,
+        columnspacing=0.8,
+        handletextpad=0.3,
+    )
+    fig.tight_layout(rect=(0, 0, 1, 1.0))
+    save_figure(fig, out_path)
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
+# Plot 8: ntasks sweep — mean service time vs number of tasks
+#   data: {rps: {ntasks: {series: mean_service_time_ms}}}
+#   One subplot per RPS value; one line per condition.
+# ---------------------------------------------------------------------------
+
+def plot_ntasks_mean_service_time(
+    data: Dict[int, Dict[int, Dict[str, float]]],
+    rps_list: List[int],
+    ntasks_list: List[int],
+    out_path: Path,
+) -> None:
+    rps_with_data = [r for r in rps_list if any(data.get(r, {}).values())]
+    if not rps_with_data:
+        print("[Warn] No ntasks sweep data, skipping ntasks mean service time plot")
+        return
+
+    n_panels = len(rps_with_data)
+    fig_w = max(2.8 * n_panels, 3.3)
+    fig, axes = plt.subplots(1, n_panels, figsize=(fig_w, 2.0),
+                             sharey=False, squeeze=False)
+    axes = axes[0]
+
+    present: List[str] = []
+    for s in SERIES_ORDER:
+        if any(
+            s in data.get(rps, {}).get(n, {})
+            for rps in rps_with_data
+            for n in ntasks_list
+        ):
+            present.append(s)
+
+    for ax, rps in zip(axes, rps_with_data):
+        rps_data = data.get(rps, {})
+        for s in present:
+            xs, ys = [], []
+            for n in ntasks_list:
+                v = rps_data.get(n, {}).get(s)
+                if v is not None:
+                    xs.append(n)
+                    ys.append(v)
+            if xs:
+                ax.plot(
+                    xs, ys,
+                    color=SERIES_COLORS[s],
+                    linestyle=SERIES_LINESTYLE[s],
+                    marker=SERIES_MARKER[s],
+                    markersize=3.5,
+                    linewidth=1.2,
+                    label=SERIES_LABELS[s],
+                )
+
+        ax.set_title(f"RPS = {rps}", pad=3)
+        ax.set_xlabel("Number of Tasks")
+        ax.set_xticks(ntasks_list)
+        ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{int(v)}"))
+        ax.grid(axis="both", zorder=0)
+        ax.set_ylim(0,200)
+        ax.set_axisbelow(True)
+        if ax is axes[0]:
+            ax.set_ylabel("Mean Service Time (ms)")
 
     fig.legend(
         handles=_legend_handles(present),
@@ -1490,7 +1713,7 @@ def main() -> int:
     parser.add_argument("--num-tasks-sweep", default=None,
                         help="Comma-separated ntasks values (auto-detected if omitted; "
                              "ignored for old rps_* directory structure)")
-    parser.add_argument("--warmup-secs",     type=float, default=10.0)
+    parser.add_argument("--warmup-secs",     type=float, default=10)
     parser.add_argument("--warmup-requests", type=int,   default=180,
                         help="Fallback warmup drop when no elapsed_sec column")
     args = parser.parse_args()
@@ -1541,6 +1764,10 @@ def main() -> int:
         all_throughput_by_rps: Dict[int, Dict[str, List[float]]] = {}
         # ntasks sweep data: {rps: {ntasks: {series: mean_lat}}}
         ntasks_sweep_data: Dict[int, Dict[int, Dict[str, float]]] = {}
+        # ntasks sweep data for service time: {rps: {ntasks: {series: mean_svc_ms}}}
+        ntasks_svc_data: Dict[int, Dict[int, Dict[str, float]]] = {}
+        # ntasks sweep data for p50 latency: {rps: {ntasks: {series: p50_lat_ms}}}
+        ntasks_p50_data: Dict[int, Dict[int, Dict[str, float]]] = {}
         # p99 data per ntasks: {ntasks: {rps: {series: p99_ms}}}
         p99_by_ntasks: Dict[int, Dict[int, Dict[str, float]]] = {}
 
@@ -1571,6 +1798,14 @@ def main() -> int:
                 if mean_lats:
                     ntasks_sweep_data.setdefault(rps, {})[n] = mean_lats
 
+                mean_svcs = load_mean_service_time_for_dir(rps_root)
+                if mean_svcs:
+                    ntasks_svc_data.setdefault(rps, {})[n] = mean_svcs
+
+                p50_lats = load_p50_latency_for_dir(rps_root)
+                if p50_lats:
+                    ntasks_p50_data.setdefault(rps, {})[n] = p50_lats
+
                 # p99 data
                 p99 = load_p99_for_dir(rps_root)
                 if p99:
@@ -1585,11 +1820,19 @@ def main() -> int:
                            out_dir / "tpc_sharing_sweep_throughput_cdf.pdf",
                            metric="throughput")
 
-        # NEW: ntasks sweep plot
+        # NEW: ntasks sweep plots
         if len(ntasks_list) > 0:
             plot_ntasks_mean_latency(
                 ntasks_sweep_data, rps_list, ntasks_list,
                 out_dir / "tpc_ntasks_mean_latency.pdf",
+            )
+            plot_ntasks_mean_service_time(
+                ntasks_svc_data, rps_list, ntasks_list,
+                out_dir / "tpc_ntasks_mean_service_time.pdf",
+            )
+            plot_ntasks_p50_latency(
+                ntasks_p50_data, rps_list, ntasks_list,
+                out_dir / "tpc_ntasks_p50_latency.pdf",
             )
 
         # P99 vs RPS grouped bar chart — one plot per ntasks value

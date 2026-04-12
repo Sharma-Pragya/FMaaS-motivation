@@ -303,6 +303,54 @@ Record = Tuple[float, float, float, float, float, float, float, int]
 # )
 
 
+async def run_warmup_burst(
+    task_urls: Dict[str, str],
+    data: Dict[str, Dict],
+    slot_task: Dict[str, str],
+    duration_s: float = 15.0,
+) -> None:
+    """Send closed-loop requests for duration_s seconds to heat up GPU clocks/caches.
+
+    Each slot gets its own concurrent closed-loop sender — next request fires
+    immediately after the previous one completes, keeping every TPC partition
+    maximally busy.
+    """
+    unique_urls = list(set(task_urls.values()))
+    clients: Dict[str, EdgeRuntimeClient] = {}
+    for url in unique_urls:
+        c = EdgeRuntimeClient(url)
+        await c.wait_ready()
+        clients[url] = c
+
+    print(f"[Warmup] Closed-loop burst for {duration_s}s to heat up GPU ...")
+    t_end = time.time() + duration_s
+    total_reqs = 0
+
+    async def _slot_loop(slot: str, url: str) -> None:
+        nonlocal total_reqs
+        task = slot_task[slot]
+        d = data[task]
+        req_id = 0
+        while time.time() < t_end:
+            try:
+                await asyncio.wait_for(clients[url].infer({
+                    "req_id": req_id,
+                    "task":   task,
+                    "x":      d["x"],
+                    "mask":   d.get("mask"),
+                }), timeout=10.0)
+                total_reqs += 1
+            except Exception:
+                pass
+            req_id += 1
+
+    await asyncio.gather(*[_slot_loop(slot, url) for slot, url in task_urls.items()])
+
+    for c in clients.values():
+        await c.close()
+    print(f"[Warmup] Done ({total_reqs} requests sent).")
+
+
 async def run_open_loop(
     task_urls: Dict[str, str],
     data: Dict[str, Dict],
@@ -506,7 +554,9 @@ def main() -> int:
     parser.add_argument("--backbone",     default=os.environ.get("BACKBONE", "momentbase"))
     parser.add_argument("--rps",          type=float, default=float(os.environ.get("RPS", "20")))
     parser.add_argument("--duration",     type=float, default=float(os.environ.get("PHASE_DURATION", "180")))
-    parser.add_argument("--warmup-secs",  type=float, default=10.0)
+    parser.add_argument("--warmup-secs",       type=float, default=10.0)
+    parser.add_argument("--warmup-burst-secs", type=float, default=15.0,
+                        help="Closed-loop warmup duration before open-loop trace (0 to disable)")
     parser.add_argument("--exp-dir",      default=os.environ.get("EXP_DIR", "experiments/sharing_benefit/tpc/results"))
     parser.add_argument("--trace-file",   default=None)
     args = parser.parse_args()
@@ -535,7 +585,7 @@ def main() -> int:
     print(f"  Task set  : {args.task_set}  ({all_tasks})")
     print(f"  Backbone  : {args.backbone}")
     print(f"  RPS/task  : {args.rps}")
-    print(f"  Duration  : {args.duration}s  (warmup={args.warmup_secs}s)")
+    print(f"  Duration  : {args.duration}s")
     print(f"  Results   : {out_dir}")
     print("=" * 65)
 
@@ -626,6 +676,14 @@ def main() -> int:
         asyncio.run(deploy(device_urls[0], args.backbone, list(dict.fromkeys(tasks)), task_types, decoder_paths))
 
     asyncio.run(asyncio.sleep(1))
+
+    if args.warmup_burst_secs > 0:
+        asyncio.run(run_warmup_burst(
+            task_urls=task_urls,
+            data=data,
+            slot_task=slot_task_map,
+            duration_s=args.warmup_burst_secs,
+        ))
 
     print(f"\n[Run] Starting open-loop send ({args.duration}s) ...")
     records = asyncio.run(run_open_loop(
