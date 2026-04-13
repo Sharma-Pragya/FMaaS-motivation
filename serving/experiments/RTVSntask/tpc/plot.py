@@ -62,6 +62,7 @@ import numpy as np
 # ---------------------------------------------------------------------------
 
 SERIES_ORDER  = ["single", "no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing"]
+DEFAULT_INCLUDED_SERIES = [ "no_sharing_tpc", "sharing"]
 SERIES_COLORS = {
     "single":         "#A9C7B5",   # sage green
     "no_sharing_tpc": "#6B9AC4",   # muted blue
@@ -99,6 +100,22 @@ SINGLE_CONDITIONS_BY_TASK_SET = {
 # Set in main() — used only by legacy per-dir loaders
 SINGLE_CONDITIONS: List[str] = SINGLE_CONDITIONS_BY_TASK_SET["tsfm"]
 CONDITION_ORDER:   List[str] = SINGLE_CONDITIONS + ["no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing"]
+ACTIVE_SERIES_ORDER: List[str] = DEFAULT_INCLUDED_SERIES.copy()
+
+SERIES_ALIASES = {
+    "single": "single",
+    "st": "single",
+    "no_sharing_tpc": "no_sharing_tpc",
+    "ns_tpc": "no_sharing_tpc",
+    "tpc": "no_sharing_tpc",
+    "no_sharing_mps": "no_sharing_mps",
+    "ns_mps": "no_sharing_mps",
+    "mps": "no_sharing_mps",
+    "no_sharing": "no_sharing",
+    "ns": "no_sharing",
+    "sharing": "sharing",
+    "fmvisor": "sharing",
+}
 
 
 def apply_paper_style() -> None:
@@ -142,6 +159,23 @@ def save_figure(fig: plt.Figure, out_path: Path) -> None:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_path, dpi=300, bbox_inches="tight")
     print(f"[Plot] Saved: {out_path}")
+
+
+def _normalize_series_list(series_names: List[str]) -> List[str]:
+    normalized: List[str] = []
+    for name in series_names:
+        key = SERIES_ALIASES.get(name.strip().lower())
+        if key is None:
+            raise ValueError(
+                f"Unknown condition '{name}'. Valid names: {', '.join(SERIES_ORDER)}"
+            )
+        if key not in normalized:
+            normalized.append(key)
+    return normalized
+
+
+def _active_series(series: Dict[str, object]) -> List[str]:
+    return [s for s in ACTIVE_SERIES_ORDER if s in series and series[s]]
 
 
 # ---------------------------------------------------------------------------
@@ -607,7 +641,7 @@ def _plot_cdf_on_ax(
     x_upper: Optional[float] = None,
 ) -> None:
     all_vals: List[float] = []
-    for s in SERIES_ORDER:
+    for s in ACTIVE_SERIES_ORDER:
         lats = series.get(s)
         if not lats:
             continue
@@ -637,7 +671,7 @@ def _plot_throughput_cdf_on_ax(
     x_upper: Optional[float] = None,
 ) -> None:
     all_vals: List[float] = []
-    for s in SERIES_ORDER:
+    for s in ACTIVE_SERIES_ORDER:
         vals = series.get(s)
         if not vals:
             continue
@@ -657,11 +691,11 @@ def _plot_throughput_cdf_on_ax(
 
 
 def _present_series(series: Dict[str, object]) -> List[str]:
-    return [s for s in SERIES_ORDER if s in series and series[s]]
+    return _active_series(series)
 
 
 def _legend_handles(series_keys: Optional[List[str]] = None) -> List:
-    keys = series_keys if series_keys is not None else SERIES_ORDER
+    keys = series_keys if series_keys is not None else ACTIVE_SERIES_ORDER
     return [
         plt.Line2D([0], [0],
                    color=SERIES_COLORS[s],
@@ -673,7 +707,7 @@ def _legend_handles(series_keys: Optional[List[str]] = None) -> List:
 
 
 def _bar_legend_handles(series_keys: Optional[List[str]] = None) -> List:
-    keys = series_keys if series_keys is not None else SERIES_ORDER
+    keys = series_keys if series_keys is not None else ACTIVE_SERIES_ORDER
     return [
         Patch(
             facecolor=SERIES_COLORS[s],
@@ -736,7 +770,7 @@ def plot_summary_bars(task_results: Dict[str, List[Dict]], out_path: Path) -> No
         vals = [float(r["p99_latency_ms"]) for r in rows if "p99_latency_ms" in r]
         if vals:
             p99[cond] = float(np.mean(vals))
-    series = [s for s in SERIES_ORDER if s in p99]
+    series = _active_series(p99)
     if not series:
         print("[Warn] No task_results data, skipping bar chart")
         return
@@ -779,7 +813,7 @@ def plot_mean_service_time_bars(task_results: Dict[str, List[Dict]], out_path: P
         vals = [float(r["avg_server_exec_ms"]) for r in rows if "avg_server_exec_ms" in r]
         if vals:
             mean_service_time[cond] = float(np.mean(vals))
-    series = [s for s in SERIES_ORDER if s in mean_service_time]
+    series = _active_series(mean_service_time)
     if not series:
         print("[Warn] No server-only service time data, skipping mean service time chart")
         return
@@ -809,7 +843,7 @@ def plot_mean_service_time_bars(task_results: Dict[str, List[Dict]], out_path: P
 # ---------------------------------------------------------------------------
 
 def plot_mean_batch_size_bars(batch_sizes: Dict[str, float], out_path: Path) -> None:
-    series = [s for s in SERIES_ORDER if s in batch_sizes]
+    series = _active_series(batch_sizes)
     if not series:
         print("[Warn] No batch size data, skipping mean batch size chart")
         return
@@ -871,7 +905,7 @@ def plot_sweep_cdf(
         if ax is not axes[0]:
             ax.tick_params(axis="y", left=False)
     axes[0].set_ylabel("CDF")
-    legend_series = [s for s in SERIES_ORDER if any(all_series.get(rps, {}).get(s) for rps in rps_list)]
+    legend_series = [s for s in ACTIVE_SERIES_ORDER if any(all_series.get(rps, {}).get(s) for rps in rps_list)]
     fig.legend(
         handles=_legend_handles(legend_series),
         loc="upper center",
@@ -893,33 +927,41 @@ def plot_sweep_cdf(
 #   One subplot per RPS value; one line per condition.
 # ---------------------------------------------------------------------------
 
-def plot_ntasks_mean_latency(
+def _plot_ntasks_line_sweep(
     data: Dict[int, Dict[int, Dict[str, float]]],
     rps_list: List[int],
     ntasks_list: List[int],
     out_path: Path,
+    ylabel: str,
+    warn_label: str,
+    y_max: float = 300.0,
+    fig_w: Optional[float] = None,
+    fig_h: float = 1.55,
 ) -> None:
-    # Filter to RPS values that actually have data
     rps_with_data = [r for r in rps_list if any(data.get(r, {}).values())]
     if not rps_with_data:
-        print("[Warn] No ntasks sweep data, skipping ntasks mean latency plot")
+        print(f"[Warn] No data, skipping {warn_label} plot")
+        return
+
+    present = [
+        s for s in ACTIVE_SERIES_ORDER
+        if any(s in data.get(rps, {}).get(n, {}) for rps in rps_with_data for n in ntasks_list)
+    ]
+    if not present:
+        print(f"[Warn] No selected conditions present, skipping {warn_label} plot")
         return
 
     n_panels = len(rps_with_data)
-    fig_w = max(2.8 * n_panels, 3.3)
-    fig, axes = plt.subplots(1, n_panels, figsize=(fig_w, 2.0),
-                             sharey=False, squeeze=False)
-    axes = axes[0]  # flatten to 1-D
-
-    # Collect all series that appear across all panels
-    present: List[str] = []
-    for s in SERIES_ORDER:
-        if any(
-            s in data.get(rps, {}).get(n, {})
-            for rps in rps_with_data
-            for n in ntasks_list
-        ):
-            present.append(s)
+    panel_w = 1.55
+    actual_fig_w = fig_w if fig_w is not None else min(max(3.25, panel_w * n_panels + 0.1), 3.45)
+    fig, axes = plt.subplots(
+        1, n_panels,
+        figsize=(actual_fig_w, fig_h),
+        sharey=True,
+        squeeze=False,
+    )
+    axes = axes[0]
+    fig.subplots_adjust(wspace=0.12)
 
     for ax, rps in zip(axes, rps_with_data):
         rps_data = data.get(rps, {})
@@ -936,34 +978,51 @@ def plot_ntasks_mean_latency(
                     color=SERIES_COLORS[s],
                     linestyle=SERIES_LINESTYLE[s],
                     marker=SERIES_MARKER[s],
-                    markersize=3.5,
-                    linewidth=1.2,
-                    label=SERIES_LABELS[s],
+                    markersize=2.8,
+                    markeredgewidth=0.5,
+                    linewidth=1.1,
                 )
 
-        ax.set_title(f"RPS = {rps}", pad=3)
-        ax.set_xlabel("Number of Tasks")
+        ax.set_title(f"{rps} req/s", pad=2)
+        ax.set_xlabel("Tasks")
         ax.set_xticks(ntasks_list)
         ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{int(v)}"))
         ax.grid(axis="both", zorder=0)
-        ax.set_ylim(0,200)
         ax.set_axisbelow(True)
+        ax.set_ylim(0, y_max)
         if ax is axes[0]:
-            ax.set_ylabel("Mean Response Time (ms)")
+            ax.set_ylabel(ylabel)
+        else:
+            ax.tick_params(axis="y", left=False)
 
     fig.legend(
         handles=_legend_handles(present),
         loc="upper center",
-        bbox_to_anchor=(0.5, 1.12),
-        ncol=max(1, len(present)),
+        bbox_to_anchor=(0.5, 1.10),
+        ncol=min(len(present), 4),
         frameon=False,
-        handlelength=1.5,
-        columnspacing=0.8,
-        handletextpad=0.3,
+        handlelength=1.2,
+        columnspacing=0.7,
+        handletextpad=0.25,
+        labelspacing=0.2,
     )
-    fig.tight_layout(rect=(0, 0, 1, 1.0))
+    fig.tight_layout(rect=(0, 0, 1, 0.96))
     save_figure(fig, out_path)
     plt.close(fig)
+
+def plot_ntasks_mean_latency(
+    data: Dict[int, Dict[int, Dict[str, float]]],
+    rps_list: List[int],
+    ntasks_list: List[int],
+    out_path: Path,
+) -> None:
+    _plot_ntasks_line_sweep(
+        data, rps_list, ntasks_list, out_path,
+        ylabel="Response Time (ms)",
+        warn_label="ntasks mean latency",
+        fig_w=3.7,
+        fig_h=1.25,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -978,69 +1037,11 @@ def plot_ntasks_p50_latency(
     ntasks_list: List[int],
     out_path: Path,
 ) -> None:
-    rps_with_data = [r for r in rps_list if any(data.get(r, {}).values())]
-    if not rps_with_data:
-        print("[Warn] No ntasks sweep data, skipping ntasks p50 latency plot")
-        return
-
-    n_panels = len(rps_with_data)
-    fig_w = max(2.8 * n_panels, 3.3)
-    fig, axes = plt.subplots(1, n_panels, figsize=(fig_w, 2.0),
-                             sharey=False, squeeze=False)
-    axes = axes[0]
-
-    present: List[str] = []
-    for s in SERIES_ORDER:
-        if any(
-            s in data.get(rps, {}).get(n, {})
-            for rps in rps_with_data
-            for n in ntasks_list
-        ):
-            present.append(s)
-
-    for ax, rps in zip(axes, rps_with_data):
-        rps_data = data.get(rps, {})
-        for s in present:
-            xs, ys = [], []
-            for n in ntasks_list:
-                v = rps_data.get(n, {}).get(s)
-                if v is not None:
-                    xs.append(n)
-                    ys.append(v)
-            if xs:
-                ax.plot(
-                    xs, ys,
-                    color=SERIES_COLORS[s],
-                    linestyle=SERIES_LINESTYLE[s],
-                    marker=SERIES_MARKER[s],
-                    markersize=3.5,
-                    linewidth=1.2,
-                    label=SERIES_LABELS[s],
-                )
-
-        ax.set_title(f"RPS = {rps}", pad=3)
-        ax.set_xlabel("Number of Tasks")
-        ax.set_xticks(ntasks_list)
-        ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{int(v)}"))
-        ax.grid(axis="both", zorder=0)
-        ax.set_ylim(0, 200)
-        ax.set_axisbelow(True)
-        if ax is axes[0]:
-            ax.set_ylabel("P50 Response Time (ms)")
-
-    fig.legend(
-        handles=_legend_handles(present),
-        loc="upper center",
-        bbox_to_anchor=(0.5, 1.12),
-        ncol=max(1, len(present)),
-        frameon=False,
-        handlelength=1.5,
-        columnspacing=0.8,
-        handletextpad=0.3,
+    _plot_ntasks_line_sweep(
+        data, rps_list, ntasks_list, out_path,
+        ylabel="Median Latency (ms)",
+        warn_label="ntasks p50 latency",
     )
-    fig.tight_layout(rect=(0, 0, 1, 1.0))
-    save_figure(fig, out_path)
-    plt.close(fig)
 
 
 # ---------------------------------------------------------------------------
@@ -1055,69 +1056,11 @@ def plot_ntasks_mean_service_time(
     ntasks_list: List[int],
     out_path: Path,
 ) -> None:
-    rps_with_data = [r for r in rps_list if any(data.get(r, {}).values())]
-    if not rps_with_data:
-        print("[Warn] No ntasks sweep data, skipping ntasks mean service time plot")
-        return
-
-    n_panels = len(rps_with_data)
-    fig_w = max(2.8 * n_panels, 3.3)
-    fig, axes = plt.subplots(1, n_panels, figsize=(fig_w, 2.0),
-                             sharey=False, squeeze=False)
-    axes = axes[0]
-
-    present: List[str] = []
-    for s in SERIES_ORDER:
-        if any(
-            s in data.get(rps, {}).get(n, {})
-            for rps in rps_with_data
-            for n in ntasks_list
-        ):
-            present.append(s)
-
-    for ax, rps in zip(axes, rps_with_data):
-        rps_data = data.get(rps, {})
-        for s in present:
-            xs, ys = [], []
-            for n in ntasks_list:
-                v = rps_data.get(n, {}).get(s)
-                if v is not None:
-                    xs.append(n)
-                    ys.append(v)
-            if xs:
-                ax.plot(
-                    xs, ys,
-                    color=SERIES_COLORS[s],
-                    linestyle=SERIES_LINESTYLE[s],
-                    marker=SERIES_MARKER[s],
-                    markersize=3.5,
-                    linewidth=1.2,
-                    label=SERIES_LABELS[s],
-                )
-
-        ax.set_title(f"RPS = {rps}", pad=3)
-        ax.set_xlabel("Number of Tasks")
-        ax.set_xticks(ntasks_list)
-        ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{int(v)}"))
-        ax.grid(axis="both", zorder=0)
-        ax.set_ylim(0,200)
-        ax.set_axisbelow(True)
-        if ax is axes[0]:
-            ax.set_ylabel("Mean Service Time (ms)")
-
-    fig.legend(
-        handles=_legend_handles(present),
-        loc="upper center",
-        bbox_to_anchor=(0.5, 1.12),
-        ncol=max(1, len(present)),
-        frameon=False,
-        handlelength=1.5,
-        columnspacing=0.8,
-        handletextpad=0.3,
+    _plot_ntasks_line_sweep(
+        data, rps_list, ntasks_list, out_path,
+        ylabel="Mean Service Time (ms)",
+        warn_label="ntasks mean service time",
     )
-    fig.tight_layout(rect=(0, 0, 1, 1.0))
-    save_figure(fig, out_path)
-    plt.close(fig)
 
 
 # ---------------------------------------------------------------------------
@@ -1136,7 +1079,7 @@ def plot_p99_vs_rps(
         print("[Warn] No P99 data, skipping P99 vs RPS plot")
         return
 
-    present = [s for s in SERIES_ORDER
+    present = [s for s in ACTIVE_SERIES_ORDER
                 if any(s in p99_data.get(r, {}) for r in rps_with_data)]
     if not present:
         return
@@ -1341,7 +1284,7 @@ def plot_per_task_latency(
 ) -> None:
     """Bar chart: x=slot/task, y=mean response time (ms).
     One subplot per condition (series) that has data."""
-    conditions = [s for s in SERIES_ORDER if s in per_task and per_task[s]]
+    conditions = _active_series(per_task)
     if not conditions:
         print("[Warn] No per-task latency data, skipping per-task plot")
         return
@@ -1392,7 +1335,7 @@ def plot_per_task_service_time(
 ) -> None:
     """Bar chart: x=slot/task, y=mean server execution time (ms).
     One subplot per condition — same layout as plot_per_task_latency."""
-    conditions = [s for s in SERIES_ORDER if s in per_task and per_task[s]]
+    conditions = _active_series(per_task)
     if not conditions:
         print("[Warn] No per-task service time data, skipping per-task service time plot")
         return
@@ -1701,13 +1644,13 @@ def plot_tpc_count_sweep(
 
 def main() -> int:
     import argparse
-    global SINGLE_CONDITIONS, CONDITION_ORDER
+    global SINGLE_CONDITIONS, CONDITION_ORDER, ACTIVE_SERIES_ORDER
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--task-set",        default=os.environ.get("TASK_SET", "vision"),
+    parser.add_argument("--task-set",        default=os.environ.get("TASK_SET", "tsfm"),
                         choices=["tsfm", "vision"])
     parser.add_argument("--exp-dir",         default=os.environ.get("EXP_DIR",
-                        "experiments/RTVSntask/tpc/results_tsfm"))
+                        "experiments/RTVSntask/tpc/results_tsfm_a2"))
     parser.add_argument("--rps-sweep",       default=None,
                         help="Comma-separated RPS values (auto-detected if omitted)")
     parser.add_argument("--num-tasks-sweep", default=None,
@@ -1716,10 +1659,17 @@ def main() -> int:
     parser.add_argument("--warmup-secs",     type=float, default=10)
     parser.add_argument("--warmup-requests", type=int,   default=180,
                         help="Fallback warmup drop when no elapsed_sec column")
+    parser.add_argument(
+        "--conditions",
+        default=",".join(DEFAULT_INCLUDED_SERIES),
+        help=("Comma-separated plotted conditions. "
+              f"Default: {','.join(DEFAULT_INCLUDED_SERIES)}"),
+    )
     args = parser.parse_args()
 
     SINGLE_CONDITIONS = SINGLE_CONDITIONS_BY_TASK_SET[args.task_set]
     CONDITION_ORDER   = SINGLE_CONDITIONS + ["no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing"]
+    ACTIVE_SERIES_ORDER = _normalize_series_list(args.conditions.split(","))
 
     result_root = (SERVING_DIR / args.exp_dir).resolve()
     if not result_root.exists():
@@ -1730,6 +1680,7 @@ def main() -> int:
 
     out_dir = result_root / "plots"
     out_dir.mkdir(parents=True, exist_ok=True)
+    print(f"[Plot] Conditions: {ACTIVE_SERIES_ORDER}")
 
     # -----------------------------------------------------------------------
     # Detect directory structure

@@ -1,9 +1,9 @@
 task,slot,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_non_server_exec_overhead_ms
-ecgclass,slot_0:ecgclass,no_sharing_tpc,589,0.9983,57.151,36.202,182.884,316.064,48.536,45.125,0.002,2.039,8.164,8.615
-gestureclass,slot_1:gestureclass,no_sharing_tpc,617,1.0458,67.462,35.788,250.775,462.904,56.508,53.059,0.002,2.062,10.5,10.954
-heartrate,slot_2:heartrate,no_sharing_tpc,587,0.9949,53.016,34.745,178.58,295.463,45.005,43.619,0.002,1.023,7.562,8.011
-diasbp,slot_3:diasbp,no_sharing_tpc,575,0.9746,50.804,34.2,148.99,339.92,42.478,41.039,0.003,1.077,7.879,8.326
-sysbp,slot_4:sysbp,no_sharing_tpc,579,0.9814,58.463,34.355,223.893,335.596,49.328,47.584,0.002,1.177,8.686,9.135
-etth1fore,slot_5:etth1fore,no_sharing_tpc,595,1.0085,52.111,34.096,175.332,285.4,45.032,43.738,0.002,0.931,6.601,7.079
-weatherfore,slot_6:weatherfore,no_sharing_tpc,615,1.0424,56.136,34.449,195.182,377.356,47.379,46.142,0.002,0.874,8.275,8.757
-trafficfore,slot_7:trafficfore,no_sharing_tpc,574,0.9729,53.989,34.415,189.346,288.868,45.907,44.649,0.002,0.9,7.598,8.082
+ecgclass,slot_0:ecgclass,no_sharing_tpc,589,0.9983,199.208,161.766,448.125,697.666,174.005,168.706,0.003,4.609,24.539,25.202
+gestureclass,slot_1:gestureclass,no_sharing_tpc,617,1.0458,208.844,162.069,493.579,836.789,177.674,172.416,0.003,4.548,30.54,31.169
+heartrate,slot_2:heartrate,no_sharing_tpc,587,0.9949,189.461,158.218,413.864,575.806,163.963,160.921,0.003,2.529,24.879,25.498
+diasbp,slot_3:diasbp,no_sharing_tpc,575,0.9746,188.24,159.895,390.475,556.456,166.402,163.233,0.003,2.629,21.196,21.838
+sysbp,slot_4:sysbp,no_sharing_tpc,579,0.9814,201.342,166.399,447.565,628.018,171.786,168.531,0.003,2.668,28.912,29.556
+etth1fore,slot_5:etth1fore,no_sharing_tpc,595,1.0085,194.15,160.65,434.035,547.65,167.142,163.691,0.003,2.924,26.289,27.008
+weatherfore,slot_6:weatherfore,no_sharing_tpc,615,1.0424,195.945,158.429,436.23,719.147,167.902,164.522,0.004,2.851,27.354,28.042
+trafficfore,slot_7:trafficfore,no_sharing_tpc,574,0.9729,189.673,162.143,415.129,508.999,163.07,159.845,0.003,2.731,25.939,26.603
