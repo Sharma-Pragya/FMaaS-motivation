@@ -86,7 +86,7 @@ CUDA_DEVICE="${CUDA_DEVICE:-cuda:0}"
 TASK_SET="${TASK_SET:-tsfm}"  # vision or tsfm
 RPS_SWEEP="${RPS_SWEEP:-1,5,10}"
 NUM_TASKS_SWEEP="${NUM_TASKS_SWEEP:-2}"   
-PHASE_DURATION="${PHASE_DURATION:-300}"
+PHASE_DURATION="${PHASE_DURATION:-600}"
 DEVICE_PORT="${DEVICE_PORT:-8000}"
 MAX_BATCH_SIZE="${MAX_BATCH_SIZE:-100}"
 RESULTS_BASE="${RESULTS_BASE:-experiments/sharing_benefit/tpc/results_tsfm}"
@@ -187,22 +187,34 @@ trap 'stop_devices' EXIT
 
 # Ensure NVIDIA MPS daemon is running (idempotent).
 ensure_mps_running() {
-    if [[ -S /tmp/nvidia-mps/control ]]; then
-        echo "[run.sh] MPS daemon already running" >&2
-    else
-        echo "[run.sh] Starting NVIDIA MPS daemon..." >&2
-        nvidia-cuda-mps-control -d
-        # Wait for the control socket to appear (up to 10s)
-        local i=0
-        while [[ ! -S /tmp/nvidia-mps/control ]] && [[ $i -lt 20 ]]; do
-            sleep 0.5; i=$((i+1))
-        done
-        if [[ ! -S /tmp/nvidia-mps/control ]]; then
-            echo "[run.sh] ERROR: MPS control socket did not appear after 10s" >&2
-            exit 1
-        fi
-        echo "[run.sh] MPS daemon started (socket ready)" >&2
+    echo "[run.sh] Starting NVIDIA MPS daemon..." >&2
+    nvidia-cuda-mps-control -d
+    # Wait for the control socket to appear (up to 10s)
+    local i=0
+    while [[ ! -S /tmp/nvidia-mps/control ]] && [[ $i -lt 20 ]]; do
+        sleep 0.5; i=$((i+1))
+    done
+    if [[ ! -S /tmp/nvidia-mps/control ]]; then
+        echo "[run.sh] ERROR: MPS control socket did not appear after 10s" >&2
+        exit 1
     fi
+    echo "[run.sh] MPS daemon started (socket ready)" >&2
+
+    local ready=0
+    i=0
+    while [[ $i -lt 20 ]]; do
+        if echo "get_server_list" | nvidia-cuda-mps-control >/dev/null 2>&1; then
+            ready=1
+            break
+        fi
+        sleep 0.5
+        i=$((i + 1))
+    done
+    if [[ $ready -ne 1 ]]; then
+        echo "[run.sh] ERROR: MPS control daemon did not become responsive after startup" >&2
+        exit 1
+    fi
+    echo "[run.sh] MPS control daemon is responsive" >&2
 }
 
 # start_device PORT SCHEDULER LOG RPS TASK_RATES [TPC_MODE [TPC_PARTITION [MPS_PCT]]]
@@ -353,9 +365,9 @@ print(sm // 2)  # TPCs ~ SMs/2
                 local task="${TASKS[$i]}"
                 local port=$((DEVICE_PORT + i))
                 local alloc=$base_per
-                if [[ $i -lt $remainder ]]; then
-                    alloc=$((base_per + 1))
-                fi
+                # if [[ $i -lt $remainder ]]; then
+                #     alloc=$((base_per + 1))
+                # fi
                 local start_tpc=$cur_tpc
                 local end_tpc=$((cur_tpc + alloc - 1))
                 cur_tpc=$((cur_tpc + alloc))
@@ -565,8 +577,8 @@ if [[ "$TASK_SET" == "vision" ]]; then
         for t in "${tasks_arr[@]}"; do
             conditions+=("single_${t}")
         done
-        conditions+=("no_sharing" "no_sharing_tpc" "no_sharing_mps" "sharing")
-
+        # conditions+=("no_sharing" "no_sharing_tpc" "no_sharing_mps" "sharing")
+        conditions+=("no_sharing_tpc" "sharing")
         for rps in "${RPS_LIST[@]}"; do
             echo ""
             echo "################################################################"
@@ -588,22 +600,32 @@ else
     IFS=',' read -ra NTASKS_LIST <<< "$NUM_TASKS_SWEEP"
     for ntasks in "${NTASKS_LIST[@]:-}"; do
         [[ -z "$ntasks" ]] && continue
-        # Validate
-        if [[ $ntasks -lt 1 || $ntasks -gt ${#ALL_TSFM_TASKS[@]} ]]; then
-            echo "[run.sh] ERROR: NUM_TASKS=$ntasks out of range (1..${#ALL_TSFM_TASKS[@]})"
+        # Validate (only lower bound — ntasks can exceed pool size, tasks cycle)
+        if [[ $ntasks -lt 1 ]]; then
+            echo "[run.sh] ERROR: NUM_TASKS=$ntasks must be >= 1"
             exit 1
         fi
 
-        # Build task list (first ntasks from canonical order)
-        tasks_arr=("${ALL_TSFM_TASKS[@]:0:$ntasks}")
+        # Build task list: cycle through ALL_TSFM_TASKS using modulo
+        pool_size=${#ALL_TSFM_TASKS[@]}
+        tasks_arr=()
+        for ((i=0; i<ntasks; i++)); do
+            tasks_arr+=("${ALL_TSFM_TASKS[$((i % pool_size))]}")
+        done
         tasks_csv=$(IFS=','; echo "${tasks_arr[*]}")
 
-        # Build conditions: one single per task, then the three multi-task conditions
+        # Build single conditions for unique tasks only (no point re-running the same task)
         conditions=()
+        declare -A _seen_tasks=()
         for t in "${tasks_arr[@]}"; do
-            conditions+=("single_${t}")
+            if [[ -z "${_seen_tasks[$t]+x}" ]]; then
+                conditions+=("single_${t}")
+                _seen_tasks[$t]=1
+            fi
         done
-        conditions+=("no_sharing" "no_sharing_tpc" "no_sharing_mps" "sharing")
+        unset _seen_tasks
+        # conditions+=("no_sharing" "no_sharing_tpc" "no_sharing_mps" "sharing")
+        conditions+=("no_sharing_tpc" "sharing")
         for rps in "${RPS_LIST[@]}"; do
             echo ""
             echo "################################################################"

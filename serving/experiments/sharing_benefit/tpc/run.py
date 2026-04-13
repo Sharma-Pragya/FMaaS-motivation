@@ -298,19 +298,41 @@ async def run_open_loop(
     send_times: Dict[str, List[float]],
     req_timeout: float = 60.0,
 ) -> Dict[str, List[Record]]:
-    unique_urls = list(set(task_urls.values()))
+    # task_urls is keyed by slot key (e.g. "slot_0", "slot_1") when tasks repeat,
+    # or by task name when all tasks are unique. The slot_task map carries the
+    # actual task name for each slot.
+    # For backwards compat: if keys are plain task names, wrap them transparently.
+    slot_task: Dict[str, str] = {}   # slot_key -> task name
+    slot_url:  Dict[str, str] = {}   # slot_key -> device url
+    slot_times: Dict[str, List[float]] = {}  # slot_key -> send times
+
+    for slot, url in task_urls.items():
+        # slot is either "slot_N:task" (new) or plain task name (legacy)
+        if slot.startswith("slot_") and ":" in slot:
+            idx_str, task = slot.split(":", 1)
+            slot_key = idx_str
+        else:
+            task = slot
+            slot_key = slot
+        slot_task[slot_key] = task
+        slot_url[slot_key]  = url
+        # Reuse the task's trace for this slot (same arrival process)
+        slot_times[slot_key] = send_times[task]
+
+    unique_urls = list(set(slot_url.values()))
     clients: Dict[str, EdgeRuntimeClient] = {}
     for url in unique_urls:
         c = EdgeRuntimeClient(url)
         await c.wait_ready()
         clients[url] = c
 
-    records: Dict[str, List[Record]] = {t: [] for t in task_urls}
+    records: Dict[str, List[Record]] = {sk: [] for sk in slot_task}
 
-    async def _fire(task: str, req_id: int, t_send_abs: float, t_start: float) -> None:
+    async def _fire(slot_key: str, req_id: int, t_send_abs: float, t_start: float) -> None:
+        task = slot_task[slot_key]
         d = data[task]
         try:
-            resp = await asyncio.wait_for(clients[task_urls[task]].infer({
+            resp = await asyncio.wait_for(clients[slot_url[slot_key]].infer({
                 "req_id": req_id,
                 "task":   task,
                 "x":      d["x"],
@@ -324,7 +346,7 @@ async def run_open_loop(
             server_swap_ms = resp.get("swap_time_ns", 0) / 1e6
             server_decoder_ms = resp.get("decoder_time_ns", 0) / 1e6
             queue_wait_plus_rpc_ms = max(0.0, (server_start_s - t_send_abs) * 1000)
-            records[task].append((
+            records[slot_key].append((
                 t_send_abs - t_start,
                 client_lat_ms,
                 server_exec_ms,
@@ -339,29 +361,35 @@ async def run_open_loop(
 
     t_start = time.time()
 
-    async def _sender(task: str, req_id_offset: int) -> None:
+    async def _sender(slot_key: str, req_id_offset: int) -> None:
         in_flight = []
-        for req_id, rel_t in enumerate(send_times[task]):
+        for req_id, rel_t in enumerate(slot_times[slot_key]):
             target = t_start + rel_t
             wait = target - time.time()
             if wait > 0:
                 await asyncio.sleep(wait)
             t_send = time.time()
             in_flight.append(asyncio.create_task(
-                _fire(task, req_id_offset + req_id, t_send, t_start)
+                _fire(slot_key, req_id_offset + req_id, t_send, t_start)
             ))
         if in_flight:
             await asyncio.gather(*in_flight, return_exceptions=True)
 
     senders = [
-        _sender(task, i * 1_000_000)
-        for i, task in enumerate(task_urls)
+        _sender(sk, i * 1_000_000)
+        for i, sk in enumerate(slot_task)
     ]
     await asyncio.gather(*senders, return_exceptions=True)
 
     for c in clients.values():
         await c.close()
-    return records
+
+    # Merge records back to task-level (combine all slots for the same task)
+    merged: Dict[str, List[Record]] = {}
+    for sk, recs in records.items():
+        task = slot_task[sk]
+        merged.setdefault(task, []).extend(recs)
+    return merged
 
 
 # ---------------------------------------------------------------------------
@@ -519,7 +547,15 @@ def main() -> int:
             send_times = generate_traces(all_tasks, task_seeds, args.rps, args.duration)
             save_trace(send_times, auto_path)
 
-    # Determine active tasks and URL mapping per condition
+    # Determine active tasks and URL mapping per condition.
+    # When tasks repeat (ntasks > pool size), use "slot_N:task" keys so each
+    # slot gets its own send stream and records independently.
+    def _slot_key(i: int, task: str, tasks: list) -> str:
+        """Return plain task name if unique, else slot_N:task for deduplication."""
+        if tasks.count(task) == 1:
+            return task
+        return f"slot_{i}:{task}"
+
     if args.condition.startswith("single_"):
         single_task = args.condition[len("single_"):]
         if single_task not in all_tasks:
@@ -533,10 +569,10 @@ def main() -> int:
             print(f"ERROR: need {len(all_tasks)} device URLs for {args.condition}, got {len(device_urls)}",
                   file=sys.stderr)
             return 1
-        task_urls = {t: device_urls[i] for i, t in enumerate(all_tasks)}
+        task_urls = {_slot_key(i, t, all_tasks): device_urls[i] for i, t in enumerate(all_tasks)}
     elif args.condition == "sharing":
         tasks = all_tasks
-        task_urls = {t: device_urls[0] for t in all_tasks}
+        task_urls = {_slot_key(i, t, all_tasks): device_urls[0] for i, t in enumerate(all_tasks)}
     else:
         print(f"ERROR: unknown condition '{args.condition}'", file=sys.stderr)
         return 1
@@ -544,12 +580,16 @@ def main() -> int:
     print(f"[INFO] Loading data for: {tasks}")
     data = build_data(args.task_set, tasks)
 
-    # Deploy
+    # Deploy — extract actual task name from slot key (slot_N:task or plain task)
+    def _task_from_slot(slot: str) -> str:
+        return slot.split(":", 1)[1] if ":" in slot else slot
+
     if args.condition in ("no_sharing_tpc", "no_sharing", "no_sharing_mps"):
-        for t, url in task_urls.items():
-            asyncio.run(deploy(url, args.backbone, [t], task_types, decoder_paths))
+        for slot, url in task_urls.items():
+            task_name = _task_from_slot(slot)
+            asyncio.run(deploy(url, args.backbone, [task_name], task_types, decoder_paths))
     else:
-        asyncio.run(deploy(device_urls[0], args.backbone, tasks, task_types, decoder_paths))
+        asyncio.run(deploy(device_urls[0], args.backbone, list(dict.fromkeys(tasks)), task_types, decoder_paths))
 
     asyncio.run(asyncio.sleep(1))
 

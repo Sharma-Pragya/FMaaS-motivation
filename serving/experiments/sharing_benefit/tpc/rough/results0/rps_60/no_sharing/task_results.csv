@@ -1,3 +1,0 @@
-task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms
-ecgclass,no_sharing,595,59.5,25.681,24.304,42.833,50.579
-gestureclass,no_sharing,595,59.5,26.393,25.204,44.381,51.192

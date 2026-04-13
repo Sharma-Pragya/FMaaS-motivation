@@ -49,6 +49,7 @@ if str(SERVING_DIR) not in sys.path:
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.patches import Patch
 import matplotlib.ticker as ticker
 import numpy as np
 
@@ -66,10 +67,10 @@ SERIES_COLORS = {
     "sharing":        "#E06C75",   # pink-red
 }
 SERIES_LABELS = {
-    "single":         "Single Task",
-    "no_sharing_tpc": "No Sharing (TPC)",
-    "no_sharing_mps": "No Sharing (MPS)",
-    "no_sharing":     "No Sharing (N Servers)",
+    "single":         "ST",
+    "no_sharing":    "NS",
+    "no_sharing_tpc": "NS (TPC)",
+    "no_sharing_mps": "NS (MPS)",
     "sharing":        "FMVisor",
 }
 SERIES_LINESTYLE = {
@@ -459,23 +460,83 @@ def load_mean_latency_for_dir(rps_root: Path) -> Dict[str, float]:
 
 def _nice_upper(val: float) -> float:
     if val <= 0:
-        return 10.0
-    return float(np.ceil(val / 10.0) * 10)
+        return 1.0
+    exp = 10 ** np.floor(np.log10(val))
+    for mult in (1.0, 2.0, 2.5, 5.0, 10.0):
+        candidate = mult * exp
+        if candidate >= val:
+            return float(candidate)
+    return float(10.0 * exp)
+
+
+def _endpoint_formatter(decimals: int = 0) -> ticker.FuncFormatter:
+    def _fmt(v: float, _: object) -> str:
+        if np.isclose(v, round(v)):
+            return f"{int(round(v))}"
+        return f"{v:.{decimals}f}".rstrip("0").rstrip(".")
+    return ticker.FuncFormatter(_fmt)
+
+
+def _set_linear_axis_with_endpoint(
+    ax: plt.Axes,
+    axis: str,
+    lower: float,
+    upper: float,
+    target_ticks: int = 5,
+    decimals: int = 0,
+) -> None:
+    """Set linear axis limits and ticks so the final tick lands exactly on upper."""
+    if upper <= lower:
+        upper = lower + 1.0
+
+    ticks = np.linspace(lower, upper, num=target_ticks)
+
+    if axis == "x":
+        ax.set_xlim(lower, upper)
+        ax.set_xticks(ticks)
+        ax.xaxis.set_major_formatter(_endpoint_formatter(decimals))
+    else:
+        ax.set_ylim(lower, upper)
+        ax.set_yticks(ticks)
+        ax.yaxis.set_major_formatter(_endpoint_formatter(decimals))
 
 
 def _set_nice_ylim(ax: plt.Axes, headroom: float = 1.25) -> None:
     """Set y upper limit to a round number, with tick landing exactly on it."""
     current_max = ax.get_ylim()[1]
     top = _nice_upper(current_max * headroom)
-    ax.set_ylim(0, top)
-    # Place ticks at even intervals ending exactly on top
-    step = _nice_upper(top / 5)
-    if step <= 0:
-        step = 10.0
-    ax.yaxis.set_major_locator(ticker.MultipleLocator(step))
+    _set_linear_axis_with_endpoint(ax, axis="y", lower=0.0, upper=top, target_ticks=5, decimals=0)
 
 
-def _plot_cdf_on_ax(ax: plt.Axes, series: Dict[str, List[float]], metric: str = "latency") -> None:
+def _set_log_y_axis_with_endpoint(ax: plt.Axes, values: List[float], headroom: float = 1.25) -> None:
+    """Set log-scale y-axis with a labeled top tick at a power of ten."""
+    positive_vals = [v for v in values if v > 0]
+    if not positive_vals:
+        return
+
+    ymin = 10 ** np.floor(np.log10(min(positive_vals)))
+    ymax = max(positive_vals) * headroom
+    top = 10 ** np.ceil(np.log10(ymax))
+
+    ticks = []
+    tick = ymin
+    while tick <= top * 1.0000001:
+        ticks.append(float(tick))
+        tick *= 10.0
+
+    ax.set_yscale("log")
+    ax.set_ylim(ymin, top)
+    ax.set_yticks(ticks)
+    ax.yaxis.set_major_formatter(ticker.LogFormatterMathtext(base=10, labelOnlyBase=False))
+    ax.yaxis.set_minor_locator(ticker.NullLocator())
+
+
+def _plot_cdf_on_ax(
+    ax: plt.Axes,
+    series: Dict[str, List[float]],
+    metric: str = "latency",
+    x_upper: Optional[float] = None,
+) -> None:
     all_vals: List[float] = []
     for s in SERIES_ORDER:
         lats = series.get(s)
@@ -492,29 +553,20 @@ def _plot_cdf_on_ax(ax: plt.Axes, series: Dict[str, List[float]], metric: str = 
                 linewidth=1.0,
                 label=SERIES_LABELS[s])
         all_vals.extend(sorted_arr.tolist())
-    x_max = _nice_upper(float(np.max(all_vals)) if all_vals else 1.0)
-    ax.set_ylim(0, 1.05)
-    for n_ticks in (3, 4, 5, 6):
-        step = x_max / (n_ticks - 1)
-        if step == int(step):
-            break
-
-    ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{int(v)}"))
-    if metric == "latency":
-        ax.set_xlim(0,100)
-        xticks = np.linspace(0, 100, n_ticks)
-        ax.set_xticks(xticks)
-    else:
-        ax.set_xlim(0, x_max)
-        xticks = np.linspace(0, x_max, n_ticks)
-        ax.set_xticks(xticks)
-    ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{v:.1f}"))
-    ax.yaxis.set_major_locator(ticker.MultipleLocator(0.25))
+    x_max = 100.0 if metric == "latency" else (
+        x_upper if x_upper is not None else _nice_upper(float(np.max(all_vals)) if all_vals else 1.0)
+    )
+    _set_linear_axis_with_endpoint(ax, axis="x", lower=0.0, upper=x_max, target_ticks=5, decimals=0)
+    _set_linear_axis_with_endpoint(ax, axis="y", lower=0.0, upper=1.0, target_ticks=5, decimals=2)
     ax.grid(axis="both", zorder=0)
     ax.set_axisbelow(True)
 
 
-def _plot_throughput_cdf_on_ax(ax: plt.Axes, series: Dict[str, List[float]]) -> None:
+def _plot_throughput_cdf_on_ax(
+    ax: plt.Axes,
+    series: Dict[str, List[float]],
+    x_upper: Optional[float] = None,
+) -> None:
     all_vals: List[float] = []
     for s in SERIES_ORDER:
         vals = series.get(s)
@@ -528,18 +580,9 @@ def _plot_throughput_cdf_on_ax(ax: plt.Axes, series: Dict[str, List[float]]) -> 
                 linewidth=1.0,
                 label=SERIES_LABELS[s])
         all_vals.extend(sorted_vals.tolist())
-    if all_vals:
-        x_max = _nice_upper(float(np.max(all_vals)))
-        for n_ticks in (3, 4, 5, 6):
-            step = x_max / (n_ticks - 1)
-            if step == int(step):
-                break
-        ax.set_xticks(np.linspace(0, x_max, n_ticks))
-        ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{int(v)}"))
-        ax.set_xlim(0, x_max)
-    ax.set_ylim(0, 1.05)
-    ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{v:.1f}"))
-    ax.yaxis.set_major_locator(ticker.MultipleLocator(0.25))
+    x_max = x_upper if x_upper is not None else _nice_upper(float(np.max(all_vals)) if all_vals else 1.0)
+    _set_linear_axis_with_endpoint(ax, axis="x", lower=0.0, upper=x_max, target_ticks=5, decimals=0)
+    _set_linear_axis_with_endpoint(ax, axis="y", lower=0.0, upper=1.0, target_ticks=5, decimals=2)
     ax.grid(axis="both", zorder=0)
     ax.set_axisbelow(True)
 
@@ -560,18 +603,32 @@ def _legend_handles(series_keys: Optional[List[str]] = None) -> List:
     ]
 
 
+def _bar_legend_handles(series_keys: Optional[List[str]] = None) -> List:
+    keys = series_keys if series_keys is not None else SERIES_ORDER
+    return [
+        Patch(
+            facecolor=SERIES_COLORS[s],
+            edgecolor="black",
+            linewidth=0.4,
+            label=SERIES_LABELS[s],
+        )
+        for s in keys
+    ]
+
+
 # ---------------------------------------------------------------------------
 # Plot 1: Latency CDF (single RPS)
 # ---------------------------------------------------------------------------
 
 def plot_latency_cdf(series: Dict[str, List[float]], out_path: Path) -> None:
-    fig, ax = plt.subplots(figsize=(3.3, 1.3))
+    fig, ax = plt.subplots(figsize=(2.3, 1.35))
     _plot_cdf_on_ax(ax, series, metric="latency")
     ax.set_xlabel("Latency (ms)")
     ax.set_ylabel("CDF")
     ax.legend(handles=_legend_handles(_present_series(series)), frameon=False, loc="lower right",
-              ncol=1, handlelength=1.5, handletextpad=0.3)
-    fig.tight_layout()
+              ncol=1, handlelength=1.0, handletextpad=0.2, labelspacing=0.15,
+              borderpad=0.15, fontsize=5.4)
+    fig.tight_layout(pad=0.2)
     save_figure(fig, out_path)
     plt.close(fig)
 
@@ -582,33 +639,7 @@ def plot_latency_cdf(series: Dict[str, List[float]], out_path: Path) -> None:
 
 def plot_throughput_cdf(throughput: Dict[str, List[float]], out_path: Path) -> None:
     fig, ax = plt.subplots(figsize=(3.3, 1.3))
-    all_vals: List[float] = []
-    for s in SERIES_ORDER:
-        vals = throughput.get(s)
-        if not vals:
-            continue
-        sorted_vals = np.sort(vals)
-        cdf = np.arange(1, len(sorted_vals) + 1) / len(sorted_vals)
-        ax.plot(sorted_vals, cdf,
-                color=SERIES_COLORS[s],
-                linestyle=SERIES_LINESTYLE[s],
-                linewidth=1.0,
-                label=SERIES_LABELS[s])
-        all_vals.extend(sorted_vals.tolist())
-    if all_vals:
-        x_max = _nice_upper(float(np.max(all_vals)))
-        for n_ticks in (3, 4, 5, 6):
-            step = x_max / (n_ticks - 1)
-            if step == int(step):
-                break
-        ax.set_xticks(np.linspace(0, x_max, n_ticks))
-        ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{int(v)}"))
-        ax.set_xlim(0, x_max)
-    ax.set_ylim(0, 1.05)
-    ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{v:.1f}"))
-    ax.yaxis.set_major_locator(ticker.MultipleLocator(0.25))
-    ax.grid(axis="both", zorder=0)
-    ax.set_axisbelow(True)
+    _plot_throughput_cdf_on_ax(ax, throughput)
     ax.set_xlabel("Throughput (req/s)")
     ax.set_ylabel("CDF")
     ax.legend(handles=_legend_handles(_present_series(throughput)), frameon=False, loc="lower right",
@@ -749,12 +780,22 @@ def plot_sweep_cdf(
     if n == 1:
         axes = [axes]
     fig.subplots_adjust(wspace=0.10)
+
+    if metric == "latency":
+        global_x_upper = 100.0
+    else:
+        all_vals: List[float] = []
+        for rps in rps_list:
+            for values in all_series.get(rps, {}).values():
+                all_vals.extend(values)
+        global_x_upper = _nice_upper(float(np.max(all_vals)) if all_vals else 1.0)
+
     for ax, rps in zip(axes, rps_list):
         if metric == "latency":
-            _plot_cdf_on_ax(ax, all_series.get(rps, {}), metric="latency")
+            _plot_cdf_on_ax(ax, all_series.get(rps, {}), metric="latency", x_upper=global_x_upper)
             xlabel = "Latency (ms)"
         else:
-            _plot_throughput_cdf_on_ax(ax, all_series.get(rps, {}))
+            _plot_throughput_cdf_on_ax(ax, all_series.get(rps, {}), x_upper=global_x_upper)
             xlabel = "Throughput (req/s)"
         ax.set_title(f"{rps} req/s", pad=2)
         ax.set_xlabel(xlabel)
@@ -836,6 +877,7 @@ def plot_ntasks_mean_latency(
         ax.set_xticks(ntasks_list)
         ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{int(v)}"))
         ax.grid(axis="both", zorder=0)
+        ax.set_ylim(0,200)
         ax.set_axisbelow(True)
         if ax is axes[0]:
             ax.set_ylabel("Mean Response Time (ms)")
@@ -878,18 +920,17 @@ def plot_p99_vs_rps(
 
     n_groups = len(rps_with_data)
     n_bars   = len(present)
-    group_w  = 0.8                  # total width occupied by all bars in one group
-    bar_w    = group_w / n_bars     # each bar gets an equal slice — bars touch
-    fig_w    = max(1.8 * n_groups, 3.5)
-
-    fig, ax = plt.subplots(figsize=(fig_w, 2.4))
+    group_w  = 0.9                  # widen groups so bars are more visible in paper layout
+    bar_w    = group_w / n_bars
+    fig, ax = plt.subplots(figsize=(1.35, 1.35))
 
     x = np.arange(n_groups)
     # Offsets so bars are centred on x with no gap between them
     offsets = np.linspace(-(n_bars - 1) / 2, (n_bars - 1) / 2, n_bars) * bar_w
-
+    all_positive_vals: List[float] = []
     for offset, series in zip(offsets, present):
         vals = [p99_data.get(r, {}).get(series, float("nan")) for r in rps_with_data]
+        all_positive_vals.extend(v for v in vals if not np.isnan(v) and v > 0)
         bars = ax.bar(
             x + offset, vals,
             width=bar_w,
@@ -901,28 +942,36 @@ def plot_p99_vs_rps(
         for bar, v in zip(bars, vals):
             if not np.isnan(v):
                 ax.text(bar.get_x() + bar.get_width() / 2, v * 1.01,
-                        f"{v:.0f}", ha="center", va="bottom", fontsize=4.0, rotation=90)
+                        f"{v:.0f}", ha="center", va="bottom", fontsize=3.4, rotation=90)
 
-    title = "P99 Latency vs Request Rate"
-    if ntasks is not None:
-        title += f"  (ntasks={ntasks})"
-    ax.set_title(title, pad=3)
-    ax.set_xlabel("Request Rate (RPS per task)")
+    # title = "P99 Latency vs Request Rate"
+    # if ntasks is not None:
+    #     title += f"  (ntasks={ntasks})"
+    # ax.set_title(title, pad=3)
+    ax.set_xlabel("RPS/task")
     ax.set_ylabel("P99 Latency (ms)")
     ax.set_xticks(x)
     ax.set_xticklabels([str(r) for r in rps_with_data])
+    ax.set_xlim(-0.5, n_groups - 0.5)
+    ax.tick_params(axis="x", labelsize=6.0, pad=1)
+    ax.tick_params(axis="y", labelsize=6.0, pad=1)
     ax.grid(axis="y", zorder=0)
     ax.set_axisbelow(True)
-    _set_nice_ylim(ax)
+    _set_log_y_axis_with_endpoint(ax, all_positive_vals)
     ax.legend(
-        handles=_legend_handles(present),
-        loc="upper left",
-        fontsize=5,
+        handles=_bar_legend_handles(present),
+        loc="lower center",
+        bbox_to_anchor=(0.5, 1.02),
+        ncol=max(1, min(len(present), 3)),
+        fontsize=4.5,
         frameon=False,
-        handlelength=1.2,
-        handletextpad=0.3,
+        handlelength=0.9,
+        handletextpad=0.2,
+        labelspacing=0.1,
+        borderpad=0.1,
+        columnspacing=0.45,
     )
-    fig.tight_layout()
+    fig.tight_layout(pad=0.1)
     save_figure(fig, out_path)
     plt.close(fig)
 
@@ -1107,6 +1156,102 @@ def plot_per_task_service_time(
 
 
 # ---------------------------------------------------------------------------
+# MPS vs TPC batch exec-time distribution (overlap vs solo)
+# ---------------------------------------------------------------------------
+
+def _parse_device_log_batches(log_path: Path):
+    """Return list of (batch_size, start_ns, end_ns) from a device server log."""
+    import re
+    batches = []
+    if not log_path.exists():
+        return batches
+    pat = re.compile(r"Finished batch_size=(\d+).*?start=(\d+).*?end=(\d+)")
+    with log_path.open() as f:
+        for line in f:
+            m = pat.search(line)
+            if m:
+                batches.append((int(m.group(1)), int(m.group(2)), int(m.group(3))))
+    return batches
+
+
+def _classify_overlap(my_batches, other_batches):
+    """Split my_batches into (solo_ms, overlap_ms) based on wall-time overlap with other_batches."""
+    solo, overlap = [], []
+    for (bs, s, e) in my_batches:
+        dur = (e - s) / 1e6
+        ov = any(os_ < e and oe > s for (_, os_, oe) in other_batches)
+        (overlap if ov else solo).append(dur)
+    return solo, overlap
+
+
+def plot_mps_tpc_exec_dist(
+    log_dir: Path,
+    rps: int,
+    ntasks: int,
+    out_path: Path,
+) -> None:
+    """Histogram of per-batch GPU exec time split by concurrent overlap vs solo,
+    for TPC (s0) and MPS (s0).  Directly shows:
+      - MPS solo is still capped (no fast path when peer is idle)
+      - TPC solo recovers to near full-GPU speed
+    """
+    tpc0 = _parse_device_log_batches(log_dir / f"device_ns_tpc_0_rps{rps}_n{ntasks}.log")[1:]
+    tpc1 = _parse_device_log_batches(log_dir / f"device_ns_tpc_1_rps{rps}_n{ntasks}.log")[1:]
+    mps0 = _parse_device_log_batches(log_dir / f"device_ns_mps_0_rps{rps}_n{ntasks}.log")[1:]
+    mps1 = _parse_device_log_batches(log_dir / f"device_ns_mps_1_rps{rps}_n{ntasks}.log")[1:]
+
+    if not tpc0 and not mps0:
+        print(f"[Warn] No TPC/MPS device logs found in {log_dir} for rps={rps} n={ntasks}, skipping exec dist plot")
+        return
+
+    tpc_solo,    tpc_overlap    = _classify_overlap(tpc0, tpc1)
+    mps_solo,    mps_overlap    = _classify_overlap(mps0, mps1)
+
+    # Cap x-axis at 99th percentile across all groups to avoid extreme outlier stretch
+    all_durs = tpc_solo + tpc_overlap + mps_solo + mps_overlap
+    if not all_durs:
+        return
+    x_max = float(np.percentile(all_durs, 99))
+    bins = np.linspace(0, x_max, 40)
+
+    fig, axes = plt.subplots(1, 2, figsize=(4.6, 1.6), sharey=False)
+
+    COLOR_SOLO    = "#6B9AC4"   # muted blue  (matches NS-TPC / NS-MPS palette)
+    COLOR_OVERLAP = "#E06C75"   # pink-red
+
+    for ax, solo, ov, title in [
+        (axes[0], tpc_solo,  tpc_overlap,  "TPC isolation"),
+        (axes[1], mps_solo,  mps_overlap,  "MPS (50% SMs)"),
+    ]:
+        if solo:
+            ax.hist(solo,    bins=bins, alpha=0.75, color=COLOR_SOLO,    label="Solo",       density=True, zorder=2)
+        if ov:
+            ax.hist(ov,      bins=bins, alpha=0.75, color=COLOR_OVERLAP, label="Concurrent", density=True, zorder=2)
+        ax.set_title(title)
+        ax.set_xlabel("Batch exec time (ms)")
+        ax.set_ylabel("Density")
+        ax.grid(axis="y", zorder=0)
+        ax.set_axisbelow(True)
+
+        # Annotate means
+        for vals, color in [(solo, COLOR_SOLO), (ov, COLOR_OVERLAP)]:
+            if vals:
+                mu = float(np.mean(vals))
+                ax.axvline(mu, color=color, linestyle="--", linewidth=0.9, zorder=3)
+
+    handles = [
+        Patch(facecolor=COLOR_SOLO,    alpha=0.75, label="Solo (no concurrent peer)"),
+        Patch(facecolor=COLOR_OVERLAP, alpha=0.75, label="Concurrent (peer overlapping)"),
+    ]
+    fig.legend(handles=handles, loc="upper center", bbox_to_anchor=(0.5, 1.08),
+               ncol=2, frameon=False, fontsize=6)
+    fig.suptitle(f"GPU exec time distribution — RPS {rps}", y=1.14, fontsize=7)
+    fig.tight_layout(pad=0.3)
+    save_figure(fig, out_path)
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
 # Per-dir helper: run all per-(ntasks, rps) plots
 # ---------------------------------------------------------------------------
 
@@ -1137,6 +1282,17 @@ def _run_per_dir_plots(
     per_task_st = load_per_task_service_time(rps_root)
     if per_task_st:
         plot_per_task_service_time(per_task_st, out_dir / f"tpc_per_task_service_time_rps{rps}.pdf")
+    # MPS vs TPC exec-time distribution (overlap vs solo)
+    ntasks_dir = rps_root.parent  # e.g. ntasks_2
+    try:
+        ntasks = int(ntasks_dir.name.split("_", 1)[1])
+    except (IndexError, ValueError):
+        ntasks = 2  # fallback
+    log_dir = rps_root.parent.parent / "logs"  # results/logs/
+    plot_mps_tpc_exec_dist(
+        log_dir, rps, ntasks,
+        out_dir / f"tpc_mps_tpc_exec_dist_rps{rps}.pdf",
+    )
     return s, tput
 
 
