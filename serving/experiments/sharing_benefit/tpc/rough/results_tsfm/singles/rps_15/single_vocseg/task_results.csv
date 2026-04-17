@@ -1,2 +1,0 @@
-task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_non_server_exec_overhead_ms
-vocseg,single_vocseg,4446,15.331,67.5,52.965,125.77,164.134,34.822,18.498,0.003,11.078,16.391,32.678

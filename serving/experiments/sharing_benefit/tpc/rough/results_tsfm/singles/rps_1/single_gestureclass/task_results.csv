@@ -1,2 +1,2 @@
 task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_non_server_exec_overhead_ms
-gestureclass,single_gestureclass,315,1.0862,62.959,55.02,91.136,117.299,57.818,56.418,0.003,0.883,4.129,5.141
+gestureclass,single_gestureclass,621,1.0525,62.666,59.294,89.604,115.155,57.685,55.36,0.003,1.339,4.051,4.981

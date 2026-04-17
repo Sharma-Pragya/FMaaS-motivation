@@ -1,2 +1,2 @@
 task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_non_server_exec_overhead_ms
-ecgclass,single_ecgclass,5993,10.1576,76.292,67.217,121.911,162.646,58.049,56.747,0.002,0.742,17.241,18.243
+ecgclass,single_ecgclass,5993,10.1576,64.996,56.336,103.24,132.182,50.264,49.179,0.002,0.492,13.737,14.732

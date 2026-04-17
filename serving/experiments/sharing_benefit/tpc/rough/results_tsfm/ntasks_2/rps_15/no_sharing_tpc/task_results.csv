@@ -1,3 +1,0 @@
-task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_non_server_exec_overhead_ms
-ecgclass,no_sharing_tpc,4398,15.1655,1436.048,1111.716,4054.686,5614.831,810.579,784.833,0.001,0.832,622.459,625.469
-gestureclass,no_sharing_tpc,2580,8.8966,30167.556,28032.498,58373.204,59713.013,7462.296,7451.977,0.013,0.24,22676.497,22705.26

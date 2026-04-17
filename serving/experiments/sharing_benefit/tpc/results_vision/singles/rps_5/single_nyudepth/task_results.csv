@@ -1,2 +1,2 @@
 task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_non_server_exec_overhead_ms
-nyudepth,single_nyudepth,2906,4.9254,54.169,49.167,81.036,103.208,31.225,29.057,0.003,1.482,7.79,22.944
+nyudepth,single_nyudepth,2906,4.9254,52.748,48.205,78.56,101.114,30.357,28.474,0.003,1.01,7.474,22.391

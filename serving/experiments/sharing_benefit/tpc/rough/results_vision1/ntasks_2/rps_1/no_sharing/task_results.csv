@@ -1,0 +1,3 @@
+task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_non_server_exec_overhead_ms
+nyudepth,no_sharing,589,0.9983,64.124,61.715,80.065,93.632,44.745,31.179,0.005,12.203,4.821,19.379
+vocseg,no_sharing,593,1.0051,62.541,59.72,82.084,94.746,42.758,29.076,0.005,12.36,5.042,19.783
