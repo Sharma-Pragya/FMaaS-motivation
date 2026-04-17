@@ -58,13 +58,13 @@ def run_scheduler(scheduler_name: str, devices: dict, tasks_slo: dict, output_di
         plan = m4_mod.build_final_json(deployments, pipelines)
     elif scheduler_name == 'fmaas_place':
         from planner.data_loader import BatchProfile
-        batch_profile = BatchProfile()
+        batch_profile = BatchProfile(latency=latency, pipelines=pipelines)
         scheduler = FMaaSPlacementScheduler(profile, config, batch_profile=batch_profile, batch_mode=batch_mode)
         deployments = scheduler.schedule(devices, tasks_slo)
         plan = fmaas_place_mod.build_final_json(deployments, pipelines, scheduler.batch_size_map, scheduler.expected_batch_size_map)
     elif scheduler_name == 'clipper_place':
         from planner.data_loader import BatchProfile
-        batch_profile = BatchProfile()
+        batch_profile = BatchProfile(latency=latency, pipelines=pipelines)
         scheduler = ClipperPlacementScheduler(profile, config, batch_profile=batch_profile, batch_mode=batch_mode)
         deployments = scheduler.schedule(devices, tasks_slo)
         plan = clipper_place_mod.build_final_json(deployments, pipelines, scheduler.batch_size_map, scheduler.expected_batch_size_map)

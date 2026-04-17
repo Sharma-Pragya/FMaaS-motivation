@@ -4,114 +4,138 @@ This module provides a clean abstraction over the raw profiler data,
 offering indexed lookups and type-safe access methods.
 """
 
-import csv
-import os
 from typing import Dict, List, Optional, Tuple
 from .models import Component, Pipeline
 
 
 class BatchProfile:
-    """Loads batch_profile.csv and provides lookup methods for batching.
+    """Per-backbone/device/tpc batch-size profile sourced from `latency` dict.
 
-    The profile stores per-backbone, per-device measurements across batch sizes:
-    backbone_mean_ms, backbone_ms_per_sample, avg_latency_ms, etc.
+    The `latency` dict (from parser.profiler) is keyed as:
+        latency[pid][device][tpc][batch_size] = {
+            'avg_latency_ms', 'backbone_mean_ms',
+            'backbone_ms_per_sample', 'throughput_rps'
+        }
+
+    BatchProfile flattens this by (backbone, device, tpc) for batch-size lookups
+    used by batching-aware schedulers.
     """
 
-    def __init__(self, csv_path: Optional[str] = None):
-        if csv_path is None:
-            csv_path = os.path.join(os.path.dirname(__file__), "parser", "batch_profile.csv")
-        self._rows: List[Dict] = []
-        # Indexed: (backbone, device) -> list of row dicts sorted by batch_size
-        self._index: Dict[Tuple[str, str], List[Dict]] = {}
-        self._load(csv_path)
+    def __init__(
+        self,
+        latency: Optional[Dict] = None,
+        pipelines: Optional[Dict] = None,
+    ):
+        # (backbone, device, tpc) -> list of (batch_size, row_dict) sorted by batch_size
+        self._index: Dict[Tuple[str, str, int], List[Tuple[int, Dict]]] = {}
+        if latency is not None and pipelines is not None:
+            self._load(latency, pipelines)
 
-    def _load(self, csv_path: str) -> None:
-        with open(csv_path, newline="") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                if not row.get("backbone"):
-                    continue
-                parsed = {
-                    "backbone": row["backbone"],
-                    "task": row["task"],
-                    "batch_size": int(row["batch_size"]),
-                    "device": row["device"],
-                    "backbone_mean_ms": float(row["backbone_mean_ms"]),
-                    "backbone_ms_per_sample": float(row["backbone_ms_per_sample"]),
-                    "avg_latency_ms": float(row["avg_latency_ms"]),
-                    "decoder_mean_ms": float(row["decoder_mean_ms"]),
-                    "throughput_rps": float(row["throughput_rps"]),
-                }
-                self._rows.append(parsed)
-                key = (parsed["backbone"], parsed["device"])
-                self._index.setdefault(key, []).append(parsed)
+    def _load(self, latency: Dict, pipelines: Dict) -> None:
+        # Aggregate across pipelines: first-seen wins per (backbone, device, tpc, bs).
+        # All pipelines sharing a backbone see the same backbone_mean_ms at a given bs.
+        for pid, dev_map in latency.items():
+            pipe = pipelines.get(pid)
+            if not pipe:
+                continue
+            backbone = pipe['backbone']
+            for device, tpc_map in dev_map.items():
+                for tpc, bs_map in tpc_map.items():
+                    key = (backbone, device, int(tpc))
+                    existing_bs = {bs for bs, _ in self._index.get(key, [])}
+                    for bs, row in bs_map.items():
+                        if bs in existing_bs:
+                            continue
+                        self._index.setdefault(key, []).append((int(bs), row))
+                        existing_bs.add(bs)
 
-        # Sort each group by batch_size
         for key in self._index:
-            self._index[key].sort(key=lambda r: r["batch_size"])
+            self._index[key].sort(key=lambda x: x[0])
+
+    def _max_tpc(self, backbone: str, device: str) -> Optional[int]:
+        """Largest tpc profiled for (backbone, device)."""
+        tpcs = [t for (b, d, t) in self._index.keys() if b == backbone and d == device]
+        return max(tpcs) if tpcs else None
+
+    def _resolve_tpc(self, backbone: str, device: str, tpc: Optional[int]) -> int:
+        if tpc is not None:
+            return int(tpc)
+        resolved = self._max_tpc(backbone, device)
+        if resolved is None:
+            raise KeyError(f"No batch profile for backbone='{backbone}', device='{device}'")
+        return resolved
 
     def get_saturation_batch_size(
-        self, backbone: str, device: str, threshold: float = 0.05
+        self,
+        backbone: str,
+        device: str,
+        tpc: Optional[int] = None,
+        threshold: float = 0.05,
     ) -> Tuple[int, float]:
         """Find the batch size where backbone_ms_per_sample saturates.
 
-        Saturation = the first batch size where the relative decrease in
+        Saturation = first batch size where the relative decrease in
         backbone_ms_per_sample drops below `threshold` (default 5%).
 
         Returns:
             (saturation_batch_size, backbone_mean_ms at that batch size)
         """
-        rows = self._index.get((backbone, device), [])
+        tpc = self._resolve_tpc(backbone, device, tpc)
+        rows = self._index.get((backbone, device, tpc), [])
         if not rows:
-            raise KeyError(f"No batch profile for backbone='{backbone}', device='{device}'")
+            raise KeyError(f"No batch profile for backbone='{backbone}', device='{device}', tpc={tpc}")
 
-        prev = rows[0]
-        for row in rows[1:]:
-            relative_drop = (prev["backbone_ms_per_sample"] - row["backbone_ms_per_sample"]) / prev["backbone_ms_per_sample"]
-            print(f"Checking batch_size={row['batch_size']}: prev_ms_per_sample={prev['backbone_ms_per_sample']:.4f}, current_ms_per_sample={row['backbone_ms_per_sample']:.4f}, relative_drop={relative_drop:.4f}")
-            print(f"  Threshold={threshold:.4f} -> {'Saturated' if relative_drop < threshold else 'Not saturated'}" )
-            if relative_drop < threshold:
-                return row["batch_size"], row["backbone_mean_ms"]
-            prev = row
+        prev_bs, prev_row = rows[0]
+        for bs, row in rows[1:]:
+            rel_drop = (prev_row['backbone_ms_per_sample'] - row['backbone_ms_per_sample']) / prev_row['backbone_ms_per_sample']
+            print(f"Checking batch_size={bs}: prev_ms_per_sample={prev_row['backbone_ms_per_sample']:.4f}, current_ms_per_sample={row['backbone_ms_per_sample']:.4f}, relative_drop={rel_drop:.4f}")
+            print(f"  Threshold={threshold:.4f} -> {'Saturated' if rel_drop < threshold else 'Not saturated'}")
+            if rel_drop < threshold:
+                return bs, row['backbone_mean_ms']
+            prev_bs, prev_row = bs, row
 
-        # Never saturated — return last entry
-        last = rows[-1]
-        return last["batch_size"], last["backbone_mean_ms"]
+        last_bs, last_row = rows[-1]
+        return last_bs, last_row['backbone_mean_ms']
 
-    def get_backbone_mean_ms(self, backbone: str, device: str, batch_size: int) -> float:
-        """Get backbone_mean_ms for the closest available batch size (floor).
-
-        If the requested batch_size is smaller than the smallest profiled size,
-        returns the smallest profiled entry.
-        """
-        rows = self._index.get((backbone, device), [])
+    def get_backbone_mean_ms(
+        self, backbone: str, device: str, batch_size: int, tpc: Optional[int] = None,
+    ) -> float:
+        """Get backbone_mean_ms for the largest profiled batch_size <= requested."""
+        tpc = self._resolve_tpc(backbone, device, tpc)
+        rows = self._index.get((backbone, device, tpc), [])
         if not rows:
-            raise KeyError(f"No batch profile for backbone='{backbone}', device='{device}'")
+            raise KeyError(f"No batch profile for backbone='{backbone}', device='{device}', tpc={tpc}")
 
-        # Find largest profiled batch_size <= requested
         best = rows[0]
-        for row in rows:
-            if row["batch_size"] <= batch_size:
-                best = row
+        for bs, row in rows:
+            if bs <= batch_size:
+                best = (bs, row)
             else:
                 break
-        return best["backbone_mean_ms"]
+        return best[1]['backbone_mean_ms']
 
-    def get_max_batch_size(self, backbone: str, device: str) -> int:
-        """Return the largest profiled batch size for a backbone/device."""
-        rows = self._index.get((backbone, device), [])
+    def get_max_batch_size(
+        self, backbone: str, device: str, tpc: Optional[int] = None,
+    ) -> int:
+        tpc = self._resolve_tpc(backbone, device, tpc)
+        rows = self._index.get((backbone, device, tpc), [])
         if not rows:
-            raise KeyError(f"No batch profile for backbone='{backbone}', device='{device}'")
-        return rows[-1]["batch_size"]
+            raise KeyError(f"No batch profile for backbone='{backbone}', device='{device}', tpc={tpc}")
+        return rows[-1][0]
 
-    def get_available_batch_sizes(self, backbone: str, device: str) -> List[int]:
-        """Return sorted list of profiled batch sizes."""
-        rows = self._index.get((backbone, device), [])
-        return [r["batch_size"] for r in rows]
+    def get_available_batch_sizes(
+        self, backbone: str, device: str, tpc: Optional[int] = None,
+    ) -> List[int]:
+        try:
+            tpc = self._resolve_tpc(backbone, device, tpc)
+        except KeyError:
+            return []
+        return [bs for bs, _ in self._index.get((backbone, device, tpc), [])]
 
-    def snap_to_profile(self, backbone: str, device: str, target_bs: float) -> int:
-        """Snap a continuous batch size to the nearest available profiled size (floor)."""
-        sizes = self.get_available_batch_sizes(backbone, device)
+    def snap_to_profile(
+        self, backbone: str, device: str, target_bs: float, tpc: Optional[int] = None,
+    ) -> int:
+        sizes = self.get_available_batch_sizes(backbone, device, tpc)
         if not sizes:
             return 1
         best = sizes[0]
@@ -122,9 +146,10 @@ class BatchProfile:
                 break
         return best
 
-    def snap_ceil_to_profile(self, backbone: str, device: str, target_bs: float) -> int:
-        """Snap a continuous batch size to the nearest available profiled size (ceil)."""
-        sizes = self.get_available_batch_sizes(backbone, device)
+    def snap_ceil_to_profile(
+        self, backbone: str, device: str, target_bs: float, tpc: Optional[int] = None,
+    ) -> int:
+        sizes = self.get_available_batch_sizes(backbone, device, tpc)
         if not sizes:
             return 1
         for s in sizes:
@@ -233,17 +258,45 @@ class ProfileData:
         """Get a pipeline by ID."""
         return self.pipelines.get(pid)
     
-    def get_pipeline_latency(self, pid: str, device_type: str) -> Optional[float]:
-        """Get latency for a pipeline on a device type.
-        
+    def get_pipeline_latency(
+        self,
+        pid: str,
+        device_type: str,
+        tpc: Optional[int] = None,
+        batch_size: int = 1,
+    ) -> Optional[float]:
+        """Get avg_latency_ms for a pipeline on a device at a given tpc/batch_size.
+
         Args:
             pid: Pipeline ID.
             device_type: GPU type (e.g., 'NVIDIA A100').
-            
+            tpc: TPC count. If None, uses the largest profiled tpc.
+            batch_size: Batch size to look up. Snaps down to the largest
+                profiled batch_size <= requested.
+
         Returns:
-            Latency in milliseconds, or None if not available.
+            avg_latency_ms, or None if not available.
         """
-        return self._latency.get(pid, {}).get(device_type)
+        dev_map = self._latency.get(pid, {}).get(device_type)
+        if not dev_map:
+            return None
+
+        if tpc is None:
+            tpc = max(dev_map.keys())
+        bs_map = dev_map.get(int(tpc))
+        if not bs_map:
+            return None
+
+        # Snap down to largest profiled bs <= requested
+        available = sorted(bs_map.keys())
+        chosen = available[0]
+        for bs in available:
+            if bs <= batch_size:
+                chosen = bs
+            else:
+                break
+        row = bs_map[chosen]
+        return row['avg_latency_ms'] if isinstance(row, dict) else float(row)
     
     def get_pipeline_metric(self, pid: str) -> float:
         """Get the accuracy/MAE metric for a pipeline."""
