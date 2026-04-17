@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 
 import asyncssh
 
-from site_manager.config import activate_env, cmds, timeseries_env, username, vlm_env
+from site_manager.config import activate_env, cmds, ssh_key, timeseries_env, username, vlm_env
 from site_manager.grpc_client import EdgeRuntimeClient
 from site_manager.storage import get_output_dir
 
@@ -37,13 +37,16 @@ async def _ssh_start_server(ssh_host: str, username: str, conda_env: str, cmd: s
                             cuda_visible: str | None = None):
     """Run remote command on gpu node via SSH (agent forwarding must be enabled)."""
     try:
-        async with asyncssh.connect(
-            ssh_host,
+        ssh_kwargs = dict(
             username=username,
             agent_forwarding=True,
-            agent_path=os.environ.get("SSH_AUTH_SOCK"),
             known_hosts=None,
-        ) as conn:
+        )
+        if ssh_key:
+            ssh_kwargs["client_keys"] = [ssh_key]
+        else:
+            ssh_kwargs["agent_path"] = os.environ.get("SSH_AUTH_SOCK")
+        async with asyncssh.connect(ssh_host, **ssh_kwargs) as conn:
             cuda_env = f"export CUDA_VISIBLE_DEVICES={cuda_visible} && " if cuda_visible is not None else ""
             launch_cmd = (
                 "nohup bash -lc "
@@ -228,13 +231,16 @@ async def deploy_models(specs: list):
 async def _ssh_kill_server(ssh_host: str, username: str, grpc_port: int):
     """Gracefully kill a device server on a remote host."""
     try:
-        async with asyncssh.connect(
-            ssh_host,
+        ssh_kwargs = dict(
             username=username,
             agent_forwarding=True,
-            agent_path=os.environ.get("SSH_AUTH_SOCK"),
             known_hosts=None,
-        ) as conn:
+        )
+        if ssh_key:
+            ssh_kwargs["client_keys"] = [ssh_key]
+        else:
+            ssh_kwargs["agent_path"] = os.environ.get("SSH_AUTH_SOCK")
+        async with asyncssh.connect(ssh_host, **ssh_kwargs) as conn:
             kill_cmd = (
                 f"fuser -TERM {grpc_port}/tcp 2>/dev/null; "
                 f"sleep 2; "
