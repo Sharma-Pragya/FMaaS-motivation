@@ -53,6 +53,7 @@ class RuntimeServerConfig:
     max_model_len: int = None            # vLLM max sequence length (None = vLLM default)
     tpc_mode: str = "none"               # "none" | "libsmctrl" | "green"
     tpc_partition: list = None           # list of TPC IDs to pin this server to
+    worker_mode: str = "threaded"        # "threaded" | "inline" — per-task pipeline worker mode
 
 
 class EdgeRuntimeApplication:
@@ -109,6 +110,7 @@ class EdgeRuntimeApplication:
                     max_batch_wait_ms=config.max_batch_wait_ms,
                     queue_capacity=config.queue_capacity,
                     policy=policy,
+                    worker_mode=config.worker_mode,
                 )
         self._batch_task: asyncio.Task | None = None
         self._green_partition = None  # held for cleanup

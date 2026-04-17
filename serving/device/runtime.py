@@ -25,6 +25,18 @@ class BatchRunResult:
     gpu_alloc_peak_mb: float  # peak GPU memory allocated during this batch (MB)
 
 
+@dataclass
+class BackboneResult:
+    feats_by_idx: dict        # {orig_idx: feature tensor slice}
+    task_names: list[str]
+    start_time_ns: int
+    backbone_end_time_ns: int
+    proc_time_ns: int
+    peak_bytes: int
+    backbone_event: object | None = None  # CUDA event recorded after backbone forward,
+                                          # for decoder streams to wait on
+
+
 # ---------------------------------------------------------------------------
 # Abstract base
 # ---------------------------------------------------------------------------
@@ -115,21 +127,18 @@ class PyTorchRuntime(BaseRuntime):
             self._sync()
             return op_log
 
-    def run_batch(
+    def run_backbone(
         self,
         x: np.ndarray,
         task_names: list[str],
         mask: np.ndarray | None = None,
         questions: list[str | None] | None = None,
-    ) -> BatchRunResult:
-        """Run backbone forward(s) + per-task decoder passes.
+    ) -> BackboneResult:
+        """Run encoder+backbone forward(s) only; return features per request.
 
-        If tasks in the batch use different adapters (or no adapter), the batch
-        is split into adapter-groups and one backbone forward is run per group.
-        Tasks sharing the same adapter (including None) are forwarded together.
+        Adapter-grouping preserved from the original run_batch path.
         """
         import torch
-        import torch.nn as nn
         with self._lock:
             if self.pipeline is None:
                 raise RuntimeError("pipeline_not_loaded: backbone has not been loaded yet")
@@ -137,7 +146,6 @@ class PyTorchRuntime(BaseRuntime):
             is_cuda  = str(device).startswith("cuda")
             start_ns = time.time_ns()
 
-            # LLM path: x is None, prompts arrive via questions
             if x is None:
                 bx     = None
                 b_mask = None
@@ -145,18 +153,15 @@ class PyTorchRuntime(BaseRuntime):
                 bx = torch.from_numpy(x)
                 b_mask = torch.from_numpy(mask) if mask is not None else None
 
-            # --- Build adapter groups: list of (adapter_name, [indices]) ---
-            # Consecutive items with the same adapter are merged into one group.
             adapters_map = self.adapters or {}
             groups: list[tuple[str | None, list[int]]] = []
             for idx, task in enumerate(task_names):
-                adapter_name = adapters_map.get(task)  # None if no adapter
+                adapter_name = adapters_map.get(task)
                 if groups and groups[-1][0] == adapter_name:
                     groups[-1][1].append(idx)
                 else:
                     groups.append((adapter_name, [idx]))
 
-            # --- Backbone forward per adapter group ---
             feats_by_idx: dict[int, object] = {}
             proc_time_ns = 0
             peak_bytes   = 0
@@ -164,7 +169,6 @@ class PyTorchRuntime(BaseRuntime):
             stream_ctx = torch.cuda.stream(self._cuda_stream) if self._cuda_stream else nullcontext()
             with stream_ctx, torch.no_grad():
                 for adapter_name, indices in groups:
-                    # Set / unload adapter on the backbone
                     if adapter_name is not None:
                         self.pipeline.set_adapter(adapter_name)
                     else:
@@ -174,7 +178,6 @@ class PyTorchRuntime(BaseRuntime):
 
                     bb_start = time.time_ns()
                     if questions is not None:
-                        #LLM and VLM backbones can both have questions — only LLMs ignore the image tensor input.
                         sub_q = [questions[i] for i in indices]
                         if bx is not None:
                             sub_x = bx[indices]
@@ -185,7 +188,9 @@ class PyTorchRuntime(BaseRuntime):
                         sub_x = bx[indices]
                         sub_feats = self.pipeline.model_instance.forward(sub_x, sub_mask)
                     if is_cuda:
-                        torch.cuda.synchronize(device)
+                        # Stream-local sync, not device-wide — lets decoder
+                        # threads on OTHER streams keep running.
+                        self._cuda_stream.synchronize() if self._cuda_stream else torch.cuda.synchronize(device)
                     proc_time_ns += time.time_ns() - bb_start
 
                     if is_cuda:
@@ -196,76 +201,147 @@ class PyTorchRuntime(BaseRuntime):
                     for out_pos, orig_idx in enumerate(indices):
                         feats_by_idx[orig_idx] = sub_feats[out_pos : out_pos + 1]
 
-            # --- Decoder pass ---
-            # Group samples by task so same-task items can share one decoder
-            # forward while still preserving the original request order.
-            outputs       = [None] * len(task_names)
-            swap_times    = [0] * len(task_names)
-            decoder_times = [0] * len(task_names)
+            # Record an event on the backbone stream so decoder streams can
+            # wait on it without a CPU-side barrier.
+            backbone_event = None
+            if is_cuda and self._cuda_stream is not None:
+                backbone_event = torch.cuda.Event()
+                backbone_event.record(self._cuda_stream)
 
-            task_groups: dict[str, list[int]] = {}
-            for index, task_name in enumerate(task_names):
-                task_groups.setdefault(task_name, []).append(index)
-
-            for task_name, indices in task_groups.items():
-                swap_start = time.time_ns()
-                decoder_name = self.decoders.get(task_name)
-                active_decoder = self.pipeline.decoders[decoder_name] if decoder_name else None
-                swap_elapsed = time.time_ns() - swap_start
-                for index in indices:
-                    swap_times[index] = swap_elapsed
-
-                dec_start = time.time_ns()
-                feat_batch = [feats_by_idx[index] for index in indices]
-
-                if active_decoder is not None:
-                    feat_input = torch.cat(feat_batch, dim=0)
-                    with stream_ctx, torch.no_grad():
-                        logits = active_decoder.forward(feat_input)
-                    if is_cuda:
-                        torch.cuda.synchronize(device)
-                        dec_bytes = torch.cuda.memory_allocated(device)
-                        if dec_bytes > peak_bytes:
-                            peak_bytes = dec_bytes
-                    if isinstance(active_decoder.criterion, nn.CrossEntropyLoss):
-                        logits = torch.argmax(logits, dim=1)
-                    # if (
-                    #     hasattr(active_decoder, "requires_model")
-                    #     and active_decoder.requires_model
-                    #     and hasattr(self.pipeline.model_instance.model, "normalizer")
-                    # ):
-                    #     logits = self.pipeline.model_instance.model.normalizer(x=logits, mode="denorm")
-                    result_batch = logits.detach().cpu().numpy()
-
-                    if result_batch.ndim == 0:
-                        result_batch = result_batch.reshape(1)
-                    batched_results = [np.asarray(result_batch[i:i + 1]) for i in range(len(indices))]
-                else:
-                    batched_results = []
-                    for feat_i in feat_batch:
-                        if isinstance(feat_i, (list, str)):
-                            # VLM output: list of text strings — take the first element
-                            text = feat_i[0] if isinstance(feat_i, list) else feat_i
-                            batched_results.append(np.array([text], dtype=object))
-                        else:
-                            batched_results.append(feat_i.detach().cpu().float().numpy())
-
-                dec_elapsed = time.time_ns() - dec_start
-                per_item_dec_elapsed = dec_elapsed // len(indices)
-                for index, result_i in zip(indices, batched_results):
-                    decoder_times[index] = per_item_dec_elapsed
-                    outputs[index] = result_i.reshape(-1)
-            end_ns = time.time_ns()
-
-            return BatchRunResult(
-                outputs=outputs,
+            return BackboneResult(
+                feats_by_idx=feats_by_idx,
+                task_names=list(task_names),
                 start_time_ns=start_ns,
-                end_time_ns=end_ns,
+                backbone_end_time_ns=time.time_ns(),
                 proc_time_ns=proc_time_ns,
-                swap_time_ns=swap_times,
-                decoder_time_ns=decoder_times,
-                gpu_alloc_peak_mb=peak_bytes / (1024 ** 2),
+                peak_bytes=peak_bytes,
+                backbone_event=backbone_event,
             )
+
+    def run_decoders(
+        self,
+        task_name: str,
+        indices: list[int],
+        feats: list,
+        n_total: int,
+        decoder_stream=None,
+        backbone_event=None,
+    ) -> tuple[list, list[int], list[int], int]:
+        """Run the decoder for one task across the given feature slices.
+
+        Returns (outputs_sparse, swap_times_sparse, decoder_times_sparse, peak_bytes)
+        where *_sparse are length-n_total lists with entries only at `indices`.
+        Intended to be called on a per-task worker thread.
+
+        If `decoder_stream` is provided, the decoder runs on that stream
+        (instead of the backbone stream). `backbone_event` is an event recorded
+        on the backbone stream; the decoder stream will wait on it so backbone
+        feature writes are visible before the decoder reads them.
+        """
+        import torch
+        import torch.nn as nn
+
+        device  = self._loader.device
+        is_cuda = str(device).startswith("cuda")
+        outputs       = [None] * n_total
+        swap_times    = [0] * n_total
+        decoder_times = [0] * n_total
+        peak_bytes    = 0
+
+        # Prefer the per-decoder stream when provided; fall back to the shared one.
+        stream = decoder_stream if decoder_stream is not None else self._cuda_stream
+        stream_ctx = torch.cuda.stream(stream) if stream else nullcontext()
+
+        # Cross-stream dependency: decoder must not read features before the
+        # backbone has finished writing them. wait_event is async (CPU-side
+        # it just enqueues a wait on this stream).
+        if is_cuda and stream is not None and backbone_event is not None:
+            stream.wait_event(backbone_event)
+
+        swap_start = time.time_ns()
+        decoder_name = self.decoders.get(task_name)
+        active_decoder = self.pipeline.decoders[decoder_name] if decoder_name else None
+        swap_elapsed = time.time_ns() - swap_start
+        for index in indices:
+            swap_times[index] = swap_elapsed
+
+        dec_start = time.time_ns()
+        if active_decoder is not None:
+            feat_input = torch.cat(feats, dim=0)
+            with stream_ctx, torch.no_grad():
+                logits = active_decoder.forward(feat_input)
+                if isinstance(active_decoder.criterion, nn.CrossEntropyLoss):
+                    logits = torch.argmax(logits, dim=1)
+            # Stream-local sync — waits only for THIS decoder's kernels on its
+            # own stream, not the whole device. Other decoder threads on their
+            # own streams are unaffected.
+            if is_cuda and stream is not None:
+                stream.synchronize()
+            result_batch = logits.detach().cpu().numpy()
+            if result_batch.ndim == 0:
+                result_batch = result_batch.reshape(1)
+            batched_results = [np.asarray(result_batch[i:i + 1]) for i in range(len(indices))]
+        else:
+            batched_results = []
+            for feat_i in feats:
+                if isinstance(feat_i, (list, str)):
+                    text = feat_i[0] if isinstance(feat_i, list) else feat_i
+                    batched_results.append(np.array([text], dtype=object))
+                else:
+                    batched_results.append(feat_i.detach().cpu().float().numpy())
+
+        dec_elapsed = time.time_ns() - dec_start
+        per_item_dec_elapsed = dec_elapsed // max(len(indices), 1)
+        for index, result_i in zip(indices, batched_results):
+            decoder_times[index] = per_item_dec_elapsed
+            outputs[index] = result_i.reshape(-1)
+
+        return outputs, swap_times, decoder_times, peak_bytes
+
+    def run_batch(
+        self,
+        x: np.ndarray,
+        task_names: list[str],
+        mask: np.ndarray | None = None,
+        questions: list[str | None] | None = None,
+    ) -> BatchRunResult:
+        """Backbone + decoder on one thread (used by isolation_mode=none).
+
+        The batcher path uses run_backbone + per-task run_decoders directly
+        so the decoder stage can run on a task-owned thread.
+        """
+        bb = self.run_backbone(x, task_names, mask, questions)
+
+        outputs       = [None] * len(task_names)
+        swap_times    = [0] * len(task_names)
+        decoder_times = [0] * len(task_names)
+        peak_bytes    = bb.peak_bytes
+
+        task_groups: dict[str, list[int]] = {}
+        for index, task_name in enumerate(task_names):
+            task_groups.setdefault(task_name, []).append(index)
+
+        with self._lock:
+            for task_name, indices in task_groups.items():
+                feats = [bb.feats_by_idx[i] for i in indices]
+                outs, swaps, decs, pb = self.run_decoders(task_name, indices, feats, len(task_names))
+                for i in indices:
+                    outputs[i] = outs[i]
+                    swap_times[i] = swaps[i]
+                    decoder_times[i] = decs[i]
+                if pb > peak_bytes:
+                    peak_bytes = pb
+
+        end_ns = time.time_ns()
+        return BatchRunResult(
+            outputs=outputs,
+            start_time_ns=bb.start_time_ns,
+            end_time_ns=end_ns,
+            proc_time_ns=bb.proc_time_ns,
+            swap_time_ns=swap_times,
+            decoder_time_ns=decoder_times,
+            gpu_alloc_peak_mb=peak_bytes / (1024 ** 2),
+        )
 
 
 # ---------------------------------------------------------------------------

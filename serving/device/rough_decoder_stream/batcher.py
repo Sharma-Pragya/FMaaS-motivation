@@ -1,0 +1,291 @@
+import asyncio
+import threading
+import time
+from dataclasses import dataclass
+
+import numpy as np
+
+from device.runtime import BackboneResult, SharedModelRuntime
+from device.scheduler import FifoPolicy, RequestEnvelope, RoundRobinPolicy, WFQPolicy, STFQPolicy, TokenBucketPolicy, SABAPolicy, TenantQueues
+
+
+@dataclass
+class PreparedBatch:
+    requests: list[RequestEnvelope]
+    x: np.ndarray
+    task_names: list[str]
+    mask: np.ndarray | None
+    questions: list[str | None] | None = None  # per-request question strings for VLM
+
+
+class DeviceBatcher:
+    """Owns per-task queues and a single shared-model execution loop.
+
+    The async scheduler loop waits for the worker to become free, then forms
+    the next batch and hands it to a persistent worker thread via
+    threading.Event signals. This keeps batch selection aligned with the
+    freshest queue contents at dispatch time.
+    """
+
+    def __init__(
+        self,
+        runtime: SharedModelRuntime,
+        max_batch_size: int = 1,
+        max_batch_wait_ms: float = 1.0,
+        queue_capacity: int = 1024,
+        policy: "FifoPolicy | RoundRobinPolicy | WFQPolicy | TokenBucketPolicy | None" = None,
+    ):
+        self._runtime = runtime
+        self._queues = TenantQueues()
+        self._policy = policy if policy is not None else FifoPolicy()
+        self._max_batch_size = max_batch_size
+        self._max_batch_wait_s = max_batch_wait_ms / 1000.0
+        self._queue_capacity = queue_capacity
+        self._condition = asyncio.Condition()
+        self._stopped = False
+
+        # Persistent worker thread state
+        self._work_ready = threading.Event()   # async → worker: batch is ready
+        self._work_done = None                 # asyncio.Event set by worker when done
+        self._next_prepared: PreparedBatch | None = None
+        self._worker_thread: threading.Thread | None = None
+        self._worker_loop_ref: asyncio.AbstractEventLoop | None = None
+
+    async def enqueue(self, request: RequestEnvelope):
+        async with self._condition:
+            pending_before = self._queues.pending_count()
+            if pending_before >= self._queue_capacity:
+                print(
+                    f"[DeviceBatcher] Queue full for req={request.req_id} task={request.task} "
+                    f"(capacity={self._queue_capacity})"
+                )
+                raise RuntimeError("queue_full")
+            self._queues.push(request)
+            if isinstance(self._policy, STFQPolicy):
+                self._policy.assign_start_time(request)
+            # pending_after = pending_before + 1
+            # if pending_after == 1 or pending_after % 50 == 0:
+            #     print(
+            #         f"[DeviceBatcher] Enqueued req={request.req_id} task={request.task} "
+            #         f"total_pending={pending_after} per_task={self._queues.snapshot_depths()}"
+            #     )
+            self._condition.notify_all()
+
+    async def run_forever(self):
+        print("[DeviceBatcher] Scheduler loop started")
+        loop = asyncio.get_running_loop()
+        self._worker_loop_ref = loop
+        self._work_done = asyncio.Event()
+
+        self._worker_thread = threading.Thread(target=self._worker_loop, daemon=True)
+        self._worker_thread.start()
+        print("[DeviceBatcher] Persistent worker thread started")
+
+        while True:
+            # Wait for the worker to be free before selecting the next batch.
+            # This allows late arrivals to join the batch about to dispatch.
+            await self._work_done.wait()
+            self._work_done.clear()
+
+            prepared = await self._next_batch()
+            if prepared is None:
+                print("[DeviceBatcher] Scheduler loop stopping")
+                # Signal worker to exit
+                self._next_prepared = None
+                self._work_ready.set()
+                self._worker_thread.join(timeout=10)
+                return
+
+            self._next_prepared = prepared
+            self._work_ready.set()  # unblocks worker thread
+
+    async def stop(self):
+        async with self._condition:
+            self._stopped = True
+            self._condition.notify_all()
+
+    def _worker_loop(self):
+        """Pipelined worker: overlaps decoder N on _dec_stream with backbone N+1
+        on _cuda_stream.
+
+        Timeline (GPU):
+          cuda_stream:  [backbone B1]─────────[backbone B2]─────────[backbone B3]
+          dec_stream:              [decoder B1]           [decoder B2]
+
+        The decoder for batch N runs on _dec_stream concurrently with
+        backbone N+1 on _cuda_stream.  This is safe because:
+          - decoder only reads feature tensors (held alive by BackboneResult refs)
+            and decoder weights (separate nn.Modules from the backbone)
+          - set_adapter/unload_adapter in backbone N+1 only mutates the backbone
+            model, not the decoder modules
+          - GPU memory for features won't be reclaimed while BackboneResult holds
+            Python references to the tensors
+
+        Before shutdown, we join any in-flight decoder thread to ensure all
+        futures are resolved.
+        """
+        import torch
+
+        loop = self._worker_loop_ref
+        prev_dec_thread: threading.Thread | None = None
+
+        # Signal async side that worker is ready for first batch
+        loop.call_soon_threadsafe(self._work_done.set)
+
+        while True:
+            self._work_ready.wait()
+            self._work_ready.clear()
+
+            prepared = self._next_prepared
+            if prepared is None:
+                # Shutdown: wait for any in-flight decoder before exiting
+                if prev_dec_thread is not None:
+                    prev_dec_thread.join()
+                return
+
+            try:
+                # Phase 1: backbone forward on _cuda_stream.
+                # No need to join prev_dec_thread first — decoder N-1 runs on
+                # _dec_stream and touches only decoder weights + feature tensors
+                # (held alive by BackboneResult).  Backbone N uses _cuda_stream
+                # and only touches backbone weights + adapter state.
+                bb_result = self._runtime.run_backbone(
+                    prepared.x, prepared.task_names, prepared.mask, prepared.questions,
+                )
+
+                # Signal async side immediately — it can form the next batch
+                # while we run decoders below.
+                loop.call_soon_threadsafe(self._work_done.set)
+
+                # Join previous decoder thread (CPU-side only) before spawning
+                # the next one, so we don't accumulate unbounded threads.
+                # The GPU work already overlapped with the backbone above.
+                if prev_dec_thread is not None:
+                    prev_dec_thread.join()
+                    prev_dec_thread = None
+
+                # Phase 2: decoder on _dec_stream in a separate thread.
+                prev_dec_thread = threading.Thread(
+                    target=self._run_decoders_and_resolve,
+                    args=(prepared, bb_result, loop),
+                    daemon=True,
+                )
+                prev_dec_thread.start()
+
+            except Exception as exc:
+                import traceback
+                print(f"[DeviceBatcher] ERROR in backbone forward: {exc}")
+                traceback.print_exc()
+                for request in prepared.requests:
+                    loop.call_soon_threadsafe(self._fail_future_if_pending, request.future, exc)
+                # Still signal work_done so async loop doesn't deadlock
+                loop.call_soon_threadsafe(self._work_done.set)
+
+    def _run_decoders_and_resolve(
+        self,
+        prepared: PreparedBatch,
+        bb_result: BackboneResult,
+        loop: asyncio.AbstractEventLoop,
+    ):
+        """Run decoders on _dec_stream and resolve request futures.
+
+        Runs in a dedicated thread so that the worker thread can proceed to
+        backbone N+1 concurrently.  GPU work happens on _dec_stream which
+        overlaps with _cuda_stream.
+        """
+        try:
+            result = self._runtime.run_decoders(bb_result, use_dec_stream=True)
+            duration_s = (result.end_time_ns - result.start_time_ns) / 1e9
+            if isinstance(self._policy, SABAPolicy):
+                self._policy.update_batch_duration(duration_s)
+            if isinstance(self._policy, STFQPolicy):
+                self._policy.update_after_execution(
+                    prepared.task_names, duration_s, self._queues._queues,
+                )
+            pairs = []
+            for index, request in enumerate(prepared.requests):
+                payload = {
+                    "output": result.outputs[index],
+                    "start_time_ns": result.start_time_ns,
+                    "end_time_ns": result.end_time_ns,
+                    "proc_time_ns": result.proc_time_ns,
+                    "swap_time_ns": result.swap_time_ns[index],
+                    "decoder_time_ns": result.decoder_time_ns[index],
+                }
+                pairs.append((request.future, payload))
+            loop.call_soon_threadsafe(self._resolve_batch, pairs)
+            print(
+                f"[DeviceBatcher] Finished batch_size={len(prepared.requests)} "
+                f"start={result.start_time_ns} end={result.end_time_ns}"
+            )
+        except Exception as exc:
+            import traceback
+            print(f"[DeviceBatcher] ERROR in _run_decoders_and_resolve: {exc}")
+            traceback.print_exc()
+            for request in prepared.requests:
+                loop.call_soon_threadsafe(self._fail_future_if_pending, request.future, exc)
+
+    async def _next_batch(self):
+        # Wait until at least one request is queued after the worker becomes
+        # free, then accumulate for at most max_batch_wait before dispatch.
+        async with self._condition:
+            while self._queues.pending_count() == 0 and not self._stopped:
+                await self._condition.wait()
+            if self._stopped:
+                return None
+
+        # Brief accumulation window — lets a few more requests arrive before
+        # scheduling, so the policy has something to choose between.
+        # Once the batch is full we stop waiting early.
+        deadline = time.time() + self._max_batch_wait_s
+        while time.time() < deadline:
+            async with self._condition:
+                if self._queues.pending_count() >= self._max_batch_size:
+                    break
+            remaining = deadline - time.time()
+            if remaining > 0:
+                await asyncio.sleep(min(0.001, remaining))
+
+        # Policy selects which requests to run next
+        async with self._condition:
+            requests = self._queues.select_batch(self._policy, self._max_batch_size)
+        if not requests:
+            return None
+        return self._prepare_batch(requests)
+
+    def _prepare_batch(self, requests: list[RequestEnvelope]) -> PreparedBatch:
+        batch_ids = [request.req_id for request in requests]
+        task_names = [request.task for request in requests]
+        print(
+            f"[DeviceBatcher] Prepared batch_size={len(requests)} "
+            f"req_ids={batch_ids} tasks={task_names}"
+        )
+        xs = [request.x for request in requests]
+        x = None if xs[0] is None else np.concatenate(xs, axis=0)
+        masks = [request.mask for request in requests if request.mask is not None]
+        mask = np.concatenate(masks, axis=0) if len(masks) == len(requests) and masks else None
+        questions_raw = [request.question for request in requests]
+        questions = questions_raw if any(q is not None for q in questions_raw) else None
+        return PreparedBatch(
+            requests=requests,
+            x=x,
+            task_names=task_names,
+            mask=mask,
+            questions=questions,
+        )
+
+    @staticmethod
+    def _resolve_batch(pairs):
+        for future, payload in pairs:
+            if not future.done():
+                future.set_result(payload)
+
+    @staticmethod
+    def _set_result_if_pending(future, payload):
+        if not future.done():
+            future.set_result(payload)
+
+    @staticmethod
+    def _fail_future_if_pending(future, exc):
+        if not future.done():
+            future.set_exception(exc)

@@ -135,13 +135,18 @@ class ModelLoader:
         if self.logger is not None:
             self.logger.records.extend(op_logger.records)
 
-    def load_models(self, backbone: str, task_specs: list, model_config: dict | None = None) -> Logger:
+    def load_models(self, backbone: str, task_specs: list, model_config: dict | None = None,
+                    dec_stream=None) -> Logger:
         """Load backbone + task components. Each spec may have decoder and/or adapter fields.
 
         Decoder-only spec:  {"task": "ecgclass", "type": "classification", "path": "..."}
         Adapter-only spec:  {"task": "ecgclass", "adapter": "lora", "path": "..."}
         Both:               {"task": "ecgclass", "type": "classification", "path": "...", "adapter": "lora"}
+
+        If dec_stream is provided, decoder weights are loaded inside that CUDA
+        stream context so their allocations belong to its allocator pool.
         """
+        from contextlib import nullcontext
         op_log = self._op_logger()
         print(f"[ModelLoader] Loading backbone: {backbone}")
         with op_log.measure("load_backbone", device=self.device):
@@ -150,53 +155,40 @@ class ModelLoader:
         self.decoders = {}
         self.adapters = {}
         self.pipeline.logger = op_log
+        dec_ctx = torch.cuda.stream(dec_stream) if dec_stream is not None else nullcontext()
         for spec in task_specs:
             task, path = spec["task"], spec["path"]
             dtype = spec.get("type")
             adapter_type = spec.get("adapter")
             print(f"[ModelLoader] Loading task: {task} (decoder={dtype}, adapter={adapter_type}) from {path}")
             if dtype:
-                decoder_obj = _build_decoder(backbone, task, dtype, self.device)
-                self.decoders[task] = self.pipeline.add_decoder(decoder_obj, load=True, train=False, path=path)
+                with dec_ctx:
+                    decoder_obj = _build_decoder(backbone, task, dtype, self.device)
+                    self.decoders[task] = self.pipeline.add_decoder(decoder_obj, load=True, train=False, path=path)
             if adapter_type:
                 peft_cfg = _build_adapter_cfg(adapter_type)
                 self.adapters[task] = self.pipeline.add_adapter(peft_cfg, load=True, train=False, path=path)
         self.pipeline.logger = self.logger
         self._loaded = True
-        self._set_eval_mode()
         print(f"[ModelLoader] Loaded {self.pipeline.model_instance.__class__.__name__} "
               f"with {len(self.decoders)} decoder(s), {sum(v is not None for v in self.adapters.values())} adapter(s).")
         self._merge(op_log)
         return op_log
 
-    def _set_eval_mode(self):
-        """Put backbone + all loaded decoders in eval mode.
-
-        Required so layers with train/eval-dependent behavior (BatchNorm1d,
-        Dropout, etc.) don't crash on batch_size=1 requests. BatchNorm raises
-        "Expected more than 1 value per channel when training" for a size-1
-        batch when left in train mode. The runtime never re-enables train mode.
-        """
-        if self.pipeline is None:
-            return
-        self.pipeline.set_eval_mode()
-        for decoder_name in self.decoders.values():
-            decoder_obj = self.pipeline.decoders.get(decoder_name)
-            if decoder_obj is not None and hasattr(decoder_obj, "model"):
-                decoder_obj.model.eval()
-
-    def add_decoder(self, decoder_specs: list) -> Logger:
+    def add_decoder(self, decoder_specs: list, dec_stream=None) -> Logger:
         if not self._loaded or self.pipeline is None:
             raise RuntimeError("No backbone loaded. Call load_models() first.")
+        from contextlib import nullcontext
         op_log = self._op_logger()
         self.pipeline.logger = op_log
+        dec_ctx = torch.cuda.stream(dec_stream) if dec_stream is not None else nullcontext()
         for dec in decoder_specs:
             task, dtype, path = dec["task"], dec["type"], dec["path"]
             print(f"[ModelLoader] Hot-adding decoder: {task} ({dtype}) from {path}")
-            decoder_obj = _build_decoder(self.backbone_name, task, dtype, self.device)
-            self.decoders[task] = self.pipeline.add_decoder(decoder_obj, load=True, train=False, path=path)
+            with dec_ctx:
+                decoder_obj = _build_decoder(self.backbone_name, task, dtype, self.device)
+                self.decoders[task] = self.pipeline.add_decoder(decoder_obj, load=True, train=False, path=path)
         self.pipeline.logger = self.logger
-        self._set_eval_mode()
         print(f"[ModelLoader] Hot-added {len(decoder_specs)} decoder(s). Total: {len(self.decoders)}")
         self._merge(op_log)
         return op_log
@@ -221,7 +213,7 @@ class ModelLoader:
         self._merge(op_log)
         return op_log
 
-    def swap_backbone(self, backbone: str, task_specs: list) -> Logger:
+    def swap_backbone(self, backbone: str, task_specs: list, dec_stream=None) -> Logger:
         if self.pipeline is not None:
             print(f"[ModelLoader] Releasing '{self.backbone_name}' from GPU memory...")
             del self.pipeline
@@ -233,4 +225,4 @@ class ModelLoader:
         torch.cuda.empty_cache()
         gc.collect()
         print("[ModelLoader] GPU memory released. Loading new backbone...")
-        return self.load_models(backbone, task_specs)
+        return self.load_models(backbone, task_specs, dec_stream=dec_stream)
