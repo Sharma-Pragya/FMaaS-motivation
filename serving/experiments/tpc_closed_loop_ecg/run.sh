@@ -53,7 +53,7 @@ else
 fi
 
 CUDA_DEVICE="${CUDA_DEVICE:-cuda:0}"
-BACKBONE="${BACKBONE:-momentbase}"
+BACKBONE="${BACKBONE:-momentlarge}"
 PHASE_DURATION="${PHASE_DURATION:-60}"
 WARMUP_SECS="${WARMUP_SECS:-5}"
 CONCURRENCY="${CONCURRENCY:-1}"
@@ -63,6 +63,8 @@ MAX_BATCH_WAIT_MS="${MAX_BATCH_WAIT_MS:-0}"
 DEVICE_STARTUP_WAIT="${DEVICE_STARTUP_WAIT:-5}"
 RESULTS_BASE="${RESULTS_BASE:-experiments/tpc_closed_loop_ecg/results}"
 TPC_MODE="${TPC_MODE:-libsmctrl}"
+MODE="${MODE:-closed}"
+TARGET_RPS="${TARGET_RPS:-10}"
 
 LOG_DIR="${RESULTS_BASE}/logs"
 mkdir -p "$LOG_DIR"
@@ -112,7 +114,9 @@ echo "  Backbone       : $BACKBONE"
 echo "  CUDA device    : $CUDA_DEVICE"
 echo "  Duration/run   : ${PHASE_DURATION}s"
 echo "  Warmup         : ${WARMUP_SECS}s"
+echo "  Mode           : $MODE"
 echo "  Concurrency    : $CONCURRENCY"
+echo "  Target RPS     : $TARGET_RPS"
 echo "  TPC mode       : $TPC_MODE"
 echo "  Total TPCs     : $TOTAL_TPCS"
 echo "  Sweep TPCs     : ${TPC_COUNTS[*]}"
@@ -161,7 +165,9 @@ run_case() {
     $PYTHON -u experiments/tpc_closed_loop_ecg/run.py \
         --device-url "localhost:${DEVICE_PORT}" \
         --backbone "$BACKBONE" \
+        --mode "$MODE" \
         --concurrency "$CONCURRENCY" \
+        --target-rps "$TARGET_RPS" \
         --duration "$PHASE_DURATION" \
         --warmup-secs "$WARMUP_SECS" \
         --tpc-count "$tpc_count" \
@@ -174,7 +180,9 @@ run_case() {
   "cuda_device": "${CUDA_DEVICE}",
   "tpc_mode": "${TPC_MODE}",
   "tpc_count": ${tpc_count},
+  "mode": "${MODE}",
   "concurrency": ${CONCURRENCY},
+  "target_rps": ${TARGET_RPS},
   "phase_duration_s": ${PHASE_DURATION},
   "warmup_s": ${WARMUP_SECS},
   "device_port": ${DEVICE_PORT},

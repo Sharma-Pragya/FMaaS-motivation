@@ -157,6 +157,91 @@ async def run_closed_loop(
     return records
 
 
+async def run_open_loop(
+    device_url: str,
+    data: Dict[str, np.ndarray | None],
+    target_rps: float,
+    duration: float,
+    req_timeout: float = 60.0,
+) -> List[Record]:
+    client = EdgeRuntimeClient(device_url)
+    await client.wait_ready()
+    records: List[Record] = []
+    record_lock = asyncio.Lock()
+    req_counter = 0
+    req_lock = asyncio.Lock()
+    start_wall = time.time()
+    errors = 0
+
+    async def _next_req_id() -> int:
+        nonlocal req_counter
+        async with req_lock:
+            req_id = req_counter
+            req_counter += 1
+            return req_id
+
+    async def _fire(req_id: int, send_abs: float) -> None:
+        nonlocal errors
+        try:
+            resp = await asyncio.wait_for(
+                client.infer({
+                    "req_id": req_id,
+                    "task": TASK,
+                    "x": data["x"],
+                    "mask": data.get("mask"),
+                }),
+                timeout=req_timeout,
+            )
+        except Exception:
+            errors += 1
+            return
+
+        done_abs = time.time()
+        total_response_time_ms = (done_abs - send_abs) * 1000.0
+        server_start_s = resp["start_time_ns"] / 1e9
+        server_exec_ms = (resp["end_time_ns"] - resp["start_time_ns"]) / 1e6
+        server_proc_ms = resp["proc_time_ns"] / 1e6
+        server_swap_ms = resp["swap_time_ns"] / 1e6
+        queue_wait_plus_rpc_ms = max(0.0, (server_start_s - send_abs) * 1000.0)
+
+        async with record_lock:
+            records.append((
+                send_abs - start_wall,
+                done_abs - start_wall,
+                total_response_time_ms,
+                total_response_time_ms,
+                server_exec_ms,
+                server_proc_ms,
+                server_swap_ms,
+                queue_wait_plus_rpc_ms,
+                resp["start_time_ns"],
+                0,  # worker_id not used in open-loop
+            ))
+
+    in_flight = []
+    deadline = start_wall + duration
+    while time.time() < deadline:
+        send_abs = time.time()
+        req_id = await _next_req_id()
+        in_flight.append(asyncio.create_task(_fire(req_id, send_abs)))
+        gap = np.random.exponential(1.0 / target_rps)
+        remaining = (send_abs + gap) - time.time()
+        if remaining > 0:
+            await asyncio.sleep(remaining)
+
+    if in_flight:
+        await asyncio.gather(*in_flight, return_exceptions=True)
+
+    await client.close()
+    n_sent = req_counter
+    n_done = len(records)
+    print(
+        f"[OpenLoop] target_rps={target_rps:.1f} sent={n_sent} "
+        f"completed={n_done} actual_rps={n_done / duration:.2f} errors={errors}"
+    )
+    return records
+
+
 def save_results(
     records: List[Record],
     out_dir: Path,
@@ -295,6 +380,8 @@ def main() -> int:
     parser.add_argument("--duration", type=float, default=float(os.environ.get("PHASE_DURATION", "180")))
     parser.add_argument("--warmup-secs", type=float, default=float(os.environ.get("WARMUP_SECS", "10")))
     parser.add_argument("--tpc-count", type=int, required=True)
+    parser.add_argument("--mode", choices=["closed", "open"], default=os.environ.get("MODE", "closed"))
+    parser.add_argument("--target-rps", type=float, default=float(os.environ.get("TARGET_RPS", "10")))
     parser.add_argument(
         "--exp-dir",
         default=os.environ.get("EXP_DIR", "experiments/tpc_closed_loop_ecg/results"),
@@ -304,11 +391,15 @@ def main() -> int:
     out_dir = (SERVING_DIR / args.exp_dir).resolve()
 
     print("=" * 72)
-    print("  Closed-Loop ECG TPC Sweep")
+    print("  ECG TPC Sweep")
+    print(f"  Mode         : {args.mode}-loop")
     print(f"  Backbone     : {args.backbone}")
     print(f"  Device URL   : {args.device_url}")
     print(f"  TPC count    : {args.tpc_count}")
-    print(f"  Concurrency  : {args.concurrency}")
+    if args.mode == "closed":
+        print(f"  Concurrency  : {args.concurrency}")
+    else:
+        print(f"  Target RPS   : {args.target_rps}")
     print(f"  Duration     : {args.duration}s (warmup={args.warmup_secs}s)")
     print(f"  Results      : {out_dir}")
     print("=" * 72)
@@ -317,13 +408,22 @@ def main() -> int:
     asyncio.run(deploy(args.device_url, args.backbone))
     asyncio.run(asyncio.sleep(1))
 
-    print(f"[Run] Starting closed-loop traffic for {args.duration}s ...")
-    records = asyncio.run(run_closed_loop(
-        device_url=args.device_url,
-        data=data,
-        concurrency=args.concurrency,
-        duration=args.duration,
-    ))
+    if args.mode == "open":
+        print(f"[Run] Starting open-loop traffic at {args.target_rps} RPS for {args.duration}s ...")
+        records = asyncio.run(run_open_loop(
+            device_url=args.device_url,
+            data=data,
+            target_rps=args.target_rps,
+            duration=args.duration,
+        ))
+    else:
+        print(f"[Run] Starting closed-loop traffic for {args.duration}s ...")
+        records = asyncio.run(run_closed_loop(
+            device_url=args.device_url,
+            data=data,
+            concurrency=args.concurrency,
+            duration=args.duration,
+        ))
 
     save_results(
         records=records,
