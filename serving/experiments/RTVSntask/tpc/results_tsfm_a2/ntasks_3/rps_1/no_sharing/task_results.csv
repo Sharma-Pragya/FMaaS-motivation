@@ -1,0 +1,4 @@
+task,slot,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_non_server_exec_overhead_ms
+ecgclass,slot_0:ecgclass,no_sharing,589,0.9983,63.592,57.292,92.264,98.769,59.422,57.429,0.004,1.057,3.205,4.17
+gestureclass,slot_1:gestureclass,no_sharing,617,1.0458,63.031,56.285,90.976,105.894,58.248,56.281,0.003,1.052,3.86,4.784
+heartrate,slot_2:heartrate,no_sharing,587,0.9949,76.777,68.095,114.75,150.061,71.296,69.293,0.004,1.104,4.537,5.481

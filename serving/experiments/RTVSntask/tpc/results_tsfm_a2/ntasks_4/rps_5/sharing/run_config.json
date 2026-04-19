@@ -5,7 +5,7 @@
   "num_tasks": 4,
   "backbone": "momentlarge",
   "cuda_device": "cuda:0",
-  "max_batch_size": 100,
+  "max_batch_size": 32,
   "max_batch_wait_ms": 0,
   "phase_duration_s": 600,
   "rps_per_task": 5,

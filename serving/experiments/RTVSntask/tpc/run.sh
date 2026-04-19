@@ -89,7 +89,7 @@ NUM_TASKS_SWEEP="${NUM_TASKS_SWEEP:-1,2,3,4,5}"
 PHASE_DURATION="${PHASE_DURATION:-600}"
 DEVICE_PORT="${DEVICE_PORT:-8000}"
 MAX_BATCH_SIZE="${MAX_BATCH_SIZE:-32}"
-RESULTS_BASE="${RESULTS_BASE:-experiments/RTVSntask/tpc/results_tsfm}"
+RESULTS_BASE="${RESULTS_BASE:-experiments/RTVSntask/tpc/results_tsfm_a2}"
 DEVICE_STARTUP_WAIT="${DEVICE_STARTUP_WAIT:-5}"
 MAX_BATCH_WAIT_MS="${MAX_BATCH_WAIT_MS:-0}"
 TPC_MODE="${TPC_MODE:-libsmctrl}"
@@ -217,12 +217,13 @@ ensure_mps_running() {
     echo "[run.sh] MPS control daemon is responsive" >&2
 }
 
-# start_device PORT SCHEDULER LOG RPS TASK_RATES [TPC_MODE [TPC_PARTITION [MPS_PCT]]]
+# start_device PORT SCHEDULER LOG RPS TASK_RATES [TPC_MODE [TPC_PARTITION [MPS_PCT [WORKER_MODE]]]]
 # MPS_PCT: if non-empty, passes --mps-thread-pct to the device server (set before CUDA init).
+# WORKER_MODE: "threaded" (default) | "inline" — per-task pipeline worker mode.
 # Prints the PID of the started server on stdout; all other output goes to stderr.
 start_device() {
     local port="$1" scheduler="$2" log="$3" rps="$4" task_rates="$5"
-    local tpc_mode="${6:-none}" tpc_partition="${7:-}" mps_pct="${8:-}"
+    local tpc_mode="${6:-none}" tpc_partition="${7:-}" mps_pct="${8:-}" worker_mode="${9:-threaded}"
 
     pkill -f "device/main.py.*--port ${port}" 2>/dev/null || true
     sleep 1
@@ -235,6 +236,7 @@ start_device() {
     if [[ -n "$mps_pct" ]]; then
         mps_args="--mps-thread-pct $mps_pct"
     fi
+    local worker_args="--worker-mode $worker_mode"
 
     # Sanity check: warn if GPU memory is still mostly occupied from a previous run
     local gpu_free gpu_total
@@ -264,6 +266,7 @@ start_device() {
         --task-rates        "$task_rates"    \
         $tpc_args \
         $mps_args \
+        $worker_args \
         > "$log" 2>&1 &
     local pid=$!
     echo "[run.sh] PID=$pid  log=$log" >&2
@@ -336,8 +339,9 @@ run_condition() {
             local task_rates="${task}:${agg_rps}"
             local port="$DEVICE_PORT"
             local pid
+            # Single task per server → no per-task overlap to gain; use inline worker.
             pid=$(start_device "$port" "fifo" "$LOG_DIR/device_${condition}_rps${rps}_n${ntasks}.log" \
-                  "$agg_rps" "$task_rates")
+                  "$agg_rps" "$task_rates" "none" "" "" "inline")
             DEVICE_PIDS+=("$pid")
             run_py --condition "$condition" --rps "$agg_rps" --device-urls "localhost:${port}"
             ;;
@@ -371,9 +375,10 @@ print(sm // 2)  # TPCs ~ SMs/2
                 part=$(seq -s ' ' "$start_tpc" "$end_tpc")
                 echo "[run.sh] TPC server $i: task=${task} port=${port} tpcs=[${part}]"
                 local pid
+                # One task per server → inline worker (no per-task overlap to gain).
                 pid=$(start_device "$port" "fifo" \
                       "$LOG_DIR/device_ns_tpc_${i}_rps${rps}_n${ntasks}.log" \
-                      "$rps" "${task}:${rps}" "$TPC_MODE" "$part")
+                      "$rps" "${task}:${rps}" "$TPC_MODE" "$part" "" "inline")
                 DEVICE_PIDS+=("$pid")
                 device_urls+="${device_urls:+,}localhost:${port}"
             done
@@ -386,9 +391,10 @@ print(sm // 2)  # TPCs ~ SMs/2
                 local task="${TASKS[$i]}"
                 local port=$((DEVICE_PORT + i))
                 local pid
+                # One task per server → inline worker (no per-task overlap to gain).
                 pid=$(start_device "$port" "fifo" \
                       "$LOG_DIR/device_ns_${i}_rps${rps}_n${ntasks}.log" \
-                      "$rps" "${task}:${rps}")
+                      "$rps" "${task}:${rps}" "none" "" "" "inline")
                 DEVICE_PIDS+=("$pid")
                 device_urls+="${device_urls:+,}localhost:${port}"
             done
@@ -406,9 +412,10 @@ print(sm // 2)  # TPCs ~ SMs/2
                 local task="${TASKS[$i]}"
                 local port=$((DEVICE_PORT + i))
                 local pid
+                # One task per server → inline worker (no per-task overlap to gain).
                 pid=$(start_device "$port" "fifo" \
                       "$LOG_DIR/device_ns_mps_${i}_rps${rps}_n${ntasks}.log" \
-                      "$rps" "${task}:${rps}" "none" "" "$mps_pct")
+                      "$rps" "${task}:${rps}" "none" "" "$mps_pct" "inline")
                 DEVICE_PIDS+=("$pid")
                 device_urls+="${device_urls:+,}localhost:${port}"
             done
@@ -497,9 +504,10 @@ print(sm // 2)
     mkdir -p "$out_dir"
 
     local pid
+    # Single task per server → inline worker (no per-task overlap to gain).
     pid=$(start_device "$DEVICE_PORT" "fifo" \
           "$LOG_DIR/device_${condition}_rps${rps}.log" \
-          "$rps" "${task}:${rps}" "$TPC_MODE" "$part")
+          "$rps" "${task}:${rps}" "$TPC_MODE" "$part" "" "inline")
     DEVICE_PIDS+=("$pid")
 
     $PYTHON -u experiments/RTVSntask/tpc/run.py \
@@ -616,8 +624,8 @@ else
         # unset _seen_tasks
         # conditions+=("no_sharing" "no_sharing_tpc" "no_sharing_mps" "sharing")
         # conditions+=("no_sharing_tpc" "sharing")
+        conditions+=("sharing" "no_sharing" "no_sharing_tpc")
         conditions+=("single_${ALL_TSFM_TASKS[0]}")
-        conditions+=("no_sharing_tpc" "sharing")
         for rps in "${RPS_LIST[@]}"; do
             echo ""
             echo "################################################################"

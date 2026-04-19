@@ -1,4 +1,4 @@
 task,slot,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_non_server_exec_overhead_ms
-ecgclass,slot_0:ecgclass,no_sharing_tpc,589,0.9983,150.725,111.923,280.684,457.494,138.472,135.948,0.002,1.901,11.298,12.253
-gestureclass,slot_1:gestureclass,no_sharing_tpc,617,1.0458,151.389,112.332,287.883,442.249,137.311,134.903,0.002,1.831,13.082,14.078
-heartrate,slot_2:heartrate,no_sharing_tpc,587,0.9949,150.057,111.654,292.147,358.704,136.866,134.93,0.003,1.415,12.239,13.191
+ecgclass,slot_0:ecgclass,no_sharing_tpc,589,0.9983,150.534,112.247,275.029,452.907,138.778,136.463,0.003,1.24,10.827,11.756
+gestureclass,slot_1:gestureclass,no_sharing_tpc,617,1.0458,151.5,112.39,287.21,440.897,137.725,135.444,0.004,1.266,12.823,13.776
+heartrate,slot_2:heartrate,no_sharing_tpc,587,0.9949,150.703,112.154,289.617,354.759,137.856,135.616,0.004,1.268,11.943,12.847

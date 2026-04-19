@@ -62,7 +62,7 @@ import numpy as np
 # ---------------------------------------------------------------------------
 
 SERIES_ORDER  = ["single", "no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing"]
-DEFAULT_INCLUDED_SERIES = [ "no_sharing_tpc", "sharing"]
+DEFAULT_INCLUDED_SERIES = ["no_sharing","no_sharing_tpc", "sharing"]
 SERIES_COLORS = {
     "single":         "#A9C7B5",   # sage green
     "no_sharing_tpc": "#6B9AC4",   # muted blue
