@@ -22,7 +22,7 @@ if str(SERVING_DIR) not in sys.path:
 from device.runtime import PyTorchRuntime
 from site_manager.config import DATASET_DIR
 
-BACKBONE     = "momentbase"
+BACKBONE     = "momentlarge"
 TASK         = "ecgclass"
 DECODER_TYPE = "classification"
 DECODER_PATH = f"{TASK}_{BACKBONE}_mlp"
