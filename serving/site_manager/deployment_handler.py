@@ -48,10 +48,14 @@ async def _ssh_start_server(ssh_host: str, username: str, conda_env: str, cmd: s
             ssh_kwargs["agent_path"] = os.environ.get("SSH_AUTH_SOCK")
         async with asyncssh.connect(ssh_host, **ssh_kwargs) as conn:
             cuda_env = f"export CUDA_VISIBLE_DEVICES={cuda_visible} && " if cuda_visible is not None else ""
+            # Re-activate conda inside the nohup'd shell — `bash -lc` resets PATH,
+            # so the outer activation does not carry into this inner login shell.
             launch_cmd = (
                 "nohup bash -lc "
                 "\"echo \\\"[Launcher] START ts=$(date -Is) shell_pid=$$\\\"; "
-                f"{cmd}; "
+                f"{cmds} && {activate_env} {conda_env} "
+                "&& export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CONDA_PREFIX/lib; "
+                f"{cuda_env}{cmd}; "
                 "rc=$?; "
                 "echo \\\"[Launcher] EXIT ts=$(date -Is) rc=${rc}\\\"\" "
                 f"> {log_path} 2>&1 &"
@@ -59,7 +63,7 @@ async def _ssh_start_server(ssh_host: str, username: str, conda_env: str, cmd: s
             remote_cmd = (
                 f"bash -lc '{cmds} && {activate_env} {conda_env} "
                 f"&& export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CONDA_PREFIX/lib "
-                f"&& {cuda_env}{launch_cmd}'"
+                f"&& {launch_cmd}'"
             )
 
             print(f"[SSH] Launching on {ssh_host}: {remote_cmd}")
@@ -154,6 +158,16 @@ async def _deploy_one(spec: dict):
     max_model_len = spec.get("max_model_len", None)
     if max_model_len is not None:
         server_cmd += f"--max-model-len {max_model_len} "
+
+    tpc_mode = spec.get("tpc_mode", None)
+    tpc_partition = spec.get("tpc_partition", None)
+    if tpc_mode and tpc_mode != "none" and tpc_partition:
+        part_str = " ".join(str(p) for p in tpc_partition)
+        server_cmd += f"--tpc-mode {tpc_mode} --tpc-partition {part_str} "
+
+    worker_mode = spec.get("worker_mode", None)
+    if worker_mode:
+        server_cmd += f"--worker-mode {worker_mode} "
 
     # Build --task-rates from tasks dict if present
     tasks_dict = spec.get("tasks", {})

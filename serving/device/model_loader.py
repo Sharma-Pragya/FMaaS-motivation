@@ -1,5 +1,6 @@
 # device/model_loader.py
 import gc
+import re
 import torch
 
 from fmtk.pipeline import Pipeline
@@ -19,6 +20,19 @@ from fmtk.components.backbones.mae import MAEModel
 from fmtk.components.backbones.resnet import ResNetVisionModel
 from fmtk.components.backbones.papagei import PapageiModel
 from fmtk.components.backbones.phi import PhiModel
+
+
+_SYNTHETIC_APP_RE = re.compile(r"^(?P<base>.+)__app\d+$")
+
+
+def _resolve_decoder_lookup_task(task: str, base_task: str | None = None) -> str:
+    """Map synthetic logical app ids back to the trained decoder config name."""
+    if base_task:
+        return base_task
+    match = _SYNTHETIC_APP_RE.match(task)
+    if match:
+        return match.group("base")
+    return task
 
 
 def _build_pipeline(backbone: str, device, logger: Logger | None, model_config: dict | None = None) -> Pipeline:
@@ -83,15 +97,16 @@ def _build_adapter_cfg(adapter_type: str):
     return LoraConfig(**cfg)
 
 
-def _build_decoder(backbone: str, task: str, dtype: str, device):
+def _build_decoder(backbone: str, task: str, dtype: str, device, base_task: str | None = None):
+    lookup_task = _resolve_decoder_lookup_task(task, base_task=base_task)
     if dtype == "regression":
         cfg = DECODERS[f"mlp_{backbone}_regression"]["decoder_config"]["cfg"]
         return RegressionMLP(device=device, cfg=cfg)
     elif dtype == "classification":
-        cfg = DECODERS[f"mlp_{backbone}_{task}"]["decoder_config"]["cfg"]
+        cfg = DECODERS[f"mlp_{backbone}_{lookup_task}"]["decoder_config"]["cfg"]
         return ClassificationMLP(device=device, cfg=cfg)
     elif dtype == "linear_classification":
-        cfg = DECODERS[f"linear_{backbone}_{task}"]["decoder_config"]["cfg"]
+        cfg = DECODERS[f"linear_{backbone}_{lookup_task}"]["decoder_config"]["cfg"]
         return ClassificationLinear(device=device, cfg=cfg)
     elif dtype == "forecasting":
         cfg = DECODERS[f"mlp_{backbone}_forecasting"]["decoder_config"]["cfg"]
@@ -102,7 +117,7 @@ def _build_decoder(backbone: str, task: str, dtype: str, device):
         return MonocularDepthDecoder(device=device, cfg=cfg)
     elif dtype == "linear_seg":
         bb = backbone.replace("-patch", "")
-        cfg = DECODERS[f"linseg_{bb}_{task}"]["decoder_config"]["cfg"]
+        cfg = DECODERS[f"linseg_{bb}_{lookup_task}"]["decoder_config"]["cfg"]
         return LinearSemanticSegmenter(device=device, cfg=cfg)
     else:
         raise ValueError(f"Unknown decoder type: {dtype}")
@@ -152,11 +167,12 @@ class ModelLoader:
         self.pipeline.logger = op_log
         for spec in task_specs:
             task, path = spec["task"], spec["path"]
+            base_task = spec.get("base_task", task)
             dtype = spec.get("type")
             adapter_type = spec.get("adapter")
             print(f"[ModelLoader] Loading task: {task} (decoder={dtype}, adapter={adapter_type}) from {path}")
             if dtype:
-                decoder_obj = _build_decoder(backbone, task, dtype, self.device)
+                decoder_obj = _build_decoder(backbone, task, dtype, self.device, base_task=base_task)
                 self.decoders[task] = self.pipeline.add_decoder(decoder_obj, load=True, train=False, path=path)
             if adapter_type:
                 peft_cfg = _build_adapter_cfg(adapter_type)
@@ -192,8 +208,11 @@ class ModelLoader:
         self.pipeline.logger = op_log
         for dec in decoder_specs:
             task, dtype, path = dec["task"], dec["type"], dec["path"]
+            base_task = dec.get("base_task", task)
             print(f"[ModelLoader] Hot-adding decoder: {task} ({dtype}) from {path}")
-            decoder_obj = _build_decoder(self.backbone_name, task, dtype, self.device)
+            decoder_obj = _build_decoder(
+                self.backbone_name, task, dtype, self.device, base_task=base_task
+            )
             self.decoders[task] = self.pipeline.add_decoder(decoder_obj, load=True, train=False, path=path)
         self.pipeline.logger = self.logger
         self._set_eval_mode()

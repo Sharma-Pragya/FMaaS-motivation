@@ -126,7 +126,72 @@ def _initialize_data():
             print('[TraceRunner] WARNING: could not load LLM dataset for ' + repr(task_key) + ': ' + str(e))
     _DATA = {task: next(iter(loader)) for task, loader in loaders.items()}
 
+    # Load repeated-task aliases from client/repeated_task.py (optional).
+    # File contents: a dict literal {pattern: base_task}, where a trailing '*'
+    # in pattern means "match any synthetic task with this prefix". Examples:
+    #   "ecgclass*": "ecgclass"   ->   ecgclass_a, ecgclass_b, ... reuse ecgclass data
+    # Entries without '*' are treated as exact-name aliases.
+    _load_repeated_task_aliases()
+
     print(f"[TraceRunner] Initialized {len(_DATA)} dataloaders.")
+
+
+# ── Repeated-task aliases ──────────────────────────────────────────────────
+
+# Set of (prefix, base_task) for patterns ending in '*', and exact aliases.
+_REPEAT_PREFIX_RULES: list = []
+_REPEAT_EXACT_ALIASES: dict = {}
+
+
+def _load_repeated_task_aliases() -> None:
+    """Read client/repeated_task.py as a dict literal and register aliases.
+
+    Missing / empty file is fine. Silently skips unparsable content but logs.
+    """
+    global _REPEAT_PREFIX_RULES, _REPEAT_EXACT_ALIASES
+    import ast
+    path = os.path.join(os.path.dirname(__file__), "repeated_task.py")
+    if not os.path.isfile(path):
+        return
+    try:
+        with open(path) as f:
+            raw = f.read().strip()
+        if not raw:
+            return
+        mapping = ast.literal_eval(raw)
+        if not isinstance(mapping, dict):
+            print(f"[TraceRunner] repeated_task.py: expected dict, got {type(mapping).__name__}")
+            return
+    except Exception as e:
+        print(f"[TraceRunner] Failed to parse repeated_task.py: {e}")
+        return
+
+    prefix_rules: list = []
+    exact: dict = {}
+    for pat, base in mapping.items():
+        if not isinstance(pat, str) or not isinstance(base, str):
+            continue
+        if pat.endswith("*"):
+            prefix_rules.append((pat[:-1], base))
+        else:
+            exact[pat] = base
+    _REPEAT_PREFIX_RULES = prefix_rules
+    _REPEAT_EXACT_ALIASES = exact
+    if prefix_rules or exact:
+        print(f"[TraceRunner] Loaded repeated_task aliases: "
+              f"exact={list(exact.keys())} prefixes={[p for p, _ in prefix_rules]}")
+
+
+def _resolve_data_task(task: str) -> str:
+    """Map a (possibly synthetic) task name to a base task present in _DATA."""
+    if task in _DATA:
+        return task
+    if task in _REPEAT_EXACT_ALIASES:
+        return _REPEAT_EXACT_ALIASES[task]
+    for prefix, base in _REPEAT_PREFIX_RULES:
+        if task.startswith(prefix) and base in _DATA:
+            return base
+    return task
 
 
 # ── gRPC client cache (per-runner asyncio loop) ────────────────────────────
@@ -403,7 +468,7 @@ class TraceRunner:
         for task, routes in task_routes.items():
             if task not in trace_tasks:
                 continue
-            batch = _DATA.get(task)
+            batch = _DATA.get(_resolve_data_task(task))
             if batch is None:
                 continue
             inputs = {"task": task}
@@ -429,7 +494,7 @@ class TraceRunner:
         # Avoids repeated .numpy().astype() allocations in the hot dispatch loop.
         self._input_cache = {}
         for task in {req["task"] for req in self._trace}:
-            batch = _DATA.get(task)
+            batch = _DATA.get(_resolve_data_task(task))
             if batch is None:
                 continue
             inp = {"task": task}

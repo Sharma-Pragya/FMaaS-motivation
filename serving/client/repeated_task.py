@@ -1,0 +1,11 @@
+{"ecgclass*":"ecgclass",
+"heartrate*":"heartrate",
+"diasbp*":"diasbp",
+"sysbp*":"sysbp",
+"gestureclass*":"gestureclass",
+"etth1fore*":"etth1fore",
+"weatherfore*":"weatherfore",
+"trafficfore*":"trafficfore",
+"eclfore*":"eclfore",
+"exchangefore*":"exchangefore"
+}

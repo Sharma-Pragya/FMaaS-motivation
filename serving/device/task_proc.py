@@ -127,6 +127,7 @@ def task_proc_main(
         bb   = spec["backbone"]
         dtype = spec["type"]
         path  = spec["path"]
+        base_task = spec.get("base_task", task)
         model_category = spec.get("model_category", "tsfm")
         print(f"[TaskProc:{task}] Loading decoder backbone={bb} type={dtype} path={path} model_category={model_category}")
 
@@ -139,7 +140,7 @@ def task_proc_main(
             torch.cuda.reset_peak_memory_stats()
 
         pipeline = Pipeline(dummy)
-        decoder_obj = _build_decoder(bb, task, dtype, device)
+        decoder_obj = _build_decoder(bb, task, dtype, device, base_task=base_task)
         pipeline.add_decoder(decoder_obj, load=True, train=False, path=path)
         # decoder_obj.model now has weights loaded and is on GPU (add_decoder handles this)
         decoder_obj.model.eval()
