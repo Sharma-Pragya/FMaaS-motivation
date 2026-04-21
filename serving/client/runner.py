@@ -71,12 +71,23 @@ def _initialize_data():
     from fmtk.datasetloaders.ecl import ECLDataset
     from fmtk.datasetloaders.traffic import TrafficDataset
     from fmtk.datasetloaders.vlm_dataset import VLMDataset, vlm_collate_fn
+    from fmtk.datasetloaders.nyudepthv2 import NYUDepthV2Dataset
+    from fmtk.datasetloaders.voc12 import VOC12Dataset
+    from fmtk.datasetloaders.cifar10 import CIFAR10Dataset
+    from fmtk.datasetloaders.EuroSAT import EuroSATDataset
+    from fmtk.datasetloaders.ShanghaiTech import ShanghaiTechDataset
     from fmtk.tasks.vlm_utils import get_vlm_dataset_config
     from site_manager.config import DATASET_DIR, DEFAULT_BATCH_SIZE
 
     d = DATASET_DIR
+    print(DATASET_DIR)
     cfg = {"batch_size": DEFAULT_BATCH_SIZE, "shuffle": False}
     loaders = {
+        "nyudepth":     DataLoader(NYUDepthV2Dataset({"dataset_path": f"{d}/nyu-depth-v2"}, {"task_type": "regression"}, "test"), **cfg),
+        "vocseg":       DataLoader(VOC12Dataset({"dataset_path": f"{d}/PASCAL-VOC", "target_size": 224}, {"task_type": "segmentation"}, "test"), **cfg),
+        "imgclass10":   DataLoader(CIFAR10Dataset({"dataset_path": f"{d}/CIFAR10", "target_size": 224}, {"task_type": "classification"}, "test"), **cfg),
+        "eurosatclass":   DataLoader(EuroSATDataset({"dataset_path": f"{d}/EuroSAT", "target_size": 224}, {"task_type": "classification"}, "test"), **cfg),
+        # "crowdcount":     DataLoader(ShanghaiTechDataset({"dataset_path": f"{d}/ShanghaiTech", "part": "A", "target_size": 224}, {"task_type": "regression"}, "test"), **cfg),
         "ecgclass":     DataLoader(ECG5000Dataset({"dataset_path": f"{d}/ECG5000","seq_len": 512}, {"task_type": "classification"}, "test"), **cfg),
         "heartrate":    DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data","seq_len": 512,"num_channels":1}, {"task_type": "regression", "label": "hr"}, "test"), **cfg),
         "diasbp":       DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data","seq_len": 512,"num_channels":1}, {"task_type": "regression", "label": "diasbp"}, "test"), **cfg),
@@ -714,12 +725,11 @@ def _write_csv(reqs_latency: list, req_metadata: dict, output_dir: str):
             "device_start_time,device_end_time,client_receive_time,"
             "client_prep_time(ms),client_submit_to_backend_start(ms),"
             "backend_exec_time(ms),backend_to_client_return(ms),"
-            "end_to_end_latency(ms),proc_time(ms),swap_time(ms),decoder_time(ms),"
-            "pred,true\n"
+            "end_to_end_latency(ms),proc_time(ms),swap_time(ms),decoder_time(ms)\n"
         )
         for entry in valid:
             (req_id, device_url, send_t, submit_t, dev_start, dev_end,
-             recv_t, e2e, proc, swap, dec, pred, true_val) = entry
+             recv_t, e2e, proc, swap, dec, _pred, _true_val) = entry
             req       = req_metadata.get(req_id, {})
             req_time  = req.get("req_time", -1)
             task      = req.get("task", "unknown")
@@ -734,7 +744,7 @@ def _write_csv(reqs_latency: list, req_metadata: dict, output_dir: str):
                 f"{req_id},{req_time},{site_mgr},{device_url},{backbone},{task},"
                 f"{send_t},{submit_t},{dev_start},{dev_end},{recv_t},"
                 f"{prep},{sub_ms},{exec_ms},{ret_ms},{e2e*1000},"
-                f"{proc*1000},{swap*1000},{dec*1000},{pred},{true_val}\n"
+                f"{proc*1000},{swap*1000},{dec*1000}\n"
             )
 
     with open(summary_path, "w") as f:

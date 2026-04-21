@@ -454,6 +454,92 @@ DECODERS={
         'decoder_type': 'linear_seg',
         'decoder_config':{'device': DEVICE, 'cfg':{'input_dim':1536, 'output_dim':21, 'height':16, 'width':16, 'pixel_height':224, 'pixel_width':224, 'ignore_index':255, 'mode':'PATCH'}}
     },
+
+    # ── Vision decoders (linear, 10-class classification) ──────────────
+    'linear_dinosmall_imgclass10': {
+        'decoder_type': 'linear',
+        'decoder_config': {
+            'device': DEVICE,
+            'cfg': {'input_dim': 384, 'output_dim': 10},
+        }
+    },
+    'linear_dinobase_imgclass10': {
+        'decoder_type': 'linear',
+        'decoder_config': {
+            'device': DEVICE,
+            'cfg': {'input_dim': 768, 'output_dim': 10},
+        }
+    },
+    'linear_dinolarge_imgclass10': {
+        'decoder_type': 'linear',
+        'decoder_config': {
+            'device': DEVICE,
+            'cfg': {'input_dim': 1024, 'output_dim': 10},
+        }
+    },
+    'linear_dinogiant_imgclass10': {
+        'decoder_type': 'linear',
+        'decoder_config': {
+            'device': DEVICE,
+            'cfg': {'input_dim': 1536, 'output_dim': 10},
+        }
+    },
+    'linear_maebase_imgclass10': {
+        'decoder_type': 'linear',
+        'decoder_config': {
+            'device': DEVICE,
+            'cfg': {'input_dim': 768, 'output_dim': 10},
+        }
+    },
+    'linear_maelarge_imgclass10': {
+        'decoder_type': 'linear',
+        'decoder_config': {
+            'device': DEVICE,
+            'cfg': {'input_dim': 1024, 'output_dim': 10},
+        }
+    },
+    'linear_maehuge_imgclass10': {
+        'decoder_type': 'linear',
+        'decoder_config': {
+            'device': DEVICE,
+            'cfg': {'input_dim': 1280, 'output_dim': 10},
+        }
+    },
+    'linear_swintiny_imgclass10': {
+        'decoder_type': 'linear',
+        'decoder_config': {
+            'device': DEVICE,
+            'cfg': {'input_dim': 768, 'output_dim': 10},
+        }
+    },
+    'linear_swinsmall_imgclass10': {
+        'decoder_type': 'linear',
+        'decoder_config': {
+            'device': DEVICE,
+            'cfg': {'input_dim': 768, 'output_dim': 10},
+        }
+    },
+    'linear_swinbase_imgclass10': {
+        'decoder_type': 'linear',
+        'decoder_config': {
+            'device': DEVICE,
+            'cfg': {'input_dim': 1024, 'output_dim': 10},
+        }
+    },
+    'linear_swinlarge_imgclass10': {
+        'decoder_type': 'linear',
+        'decoder_config': {
+            'device': DEVICE,
+            'cfg': {'input_dim': 1536, 'output_dim': 10},
+        }
+    },
+    'linear_vgg_imgclass10': {
+        'decoder_type': 'linear',
+        'decoder_config': {
+            'device': DEVICE,
+            'cfg': {'input_dim': 4096, 'output_dim': 10},
+        }
+    },
 }
 
 ADAPTERS = {

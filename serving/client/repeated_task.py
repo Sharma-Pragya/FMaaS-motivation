@@ -7,5 +7,10 @@
 "weatherfore*":"weatherfore",
 "trafficfore*":"trafficfore",
 "eclfore*":"eclfore",
-"exchangefore*":"exchangefore"
+"exchangefore*":"exchangefore",
+"nyudepth*":"nyudepth",
+"vocseg*":"vocseg",
+"imgclass10*":"imgclass10",
+"eurosatclass*":"eurosatclass",
+"crowdcount*":"crowdcount"
 }
