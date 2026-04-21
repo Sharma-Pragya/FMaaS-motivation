@@ -126,6 +126,25 @@ async def _deploy_one(spec: dict):
         "papageip",
         "papageis",
         "papageissvri",
+        "dinosmall",
+        "dinobase",
+        "dinolarge",
+        "dinogiant",
+        "dinosmall-patch",
+        "dinobase-patch",
+        "dinolarge-patch",
+        "dinogiant-patch",
+        "swintiny",
+        "swinsmall",
+        "swinbase",
+        "swinlarge",
+        "maebase",
+        "maelarge",
+        "maehuge",
+        "vgg11",
+        "vgg13",
+        "vgg16",
+        "vgg19",
     ]:
         conda_env = timeseries_env
         server_cmd = f"python -u device/main.py --port {grpc_port} "
@@ -223,7 +242,7 @@ async def deploy_models(specs: list):
 
     async def _deploy_group(group_specs):
         results = []
-        for spec in group_specs:
+        for idx, spec in enumerate(group_specs):
             try:
                 result = await _deploy_one(spec)
                 results.append(result)
@@ -234,6 +253,23 @@ async def deploy_models(specs: list):
                     "backbone": spec.get("backbone"),
                     "error": str(exc),
                 })
+                continue
+
+            status = ""
+            if isinstance(result, dict):
+                status = str(result.get("status", ""))
+            if "out of memory" in status.lower() or "oom" in status.lower():
+                remaining = len(group_specs) - idx - 1
+                print(f"[SiteManager] OOM on {spec.get('device')} "
+                      f"({spec.get('backbone')}): aborting group, "
+                      f"skipping {remaining} remaining deployment(s).")
+                for skipped in group_specs[idx + 1:]:
+                    results.append({
+                        "status": "skipped_after_oom",
+                        "device": skipped.get("device"),
+                        "backbone": skipped.get("backbone"),
+                    })
+                break
         return results
 
     group_results = await asyncio.gather(*[_deploy_group(g) for g in groups.values()])
