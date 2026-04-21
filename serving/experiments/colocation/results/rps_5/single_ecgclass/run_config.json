@@ -1,0 +1,12 @@
+{
+  "condition": "single_ecgclass",
+  "tasks": ["ecgclass", "nyudepth"],
+  "task_backbones": "ecgclass:momentlarge,nyudepth:dinobase-patch",
+  "cuda_device": "cuda:0",
+  "max_batch_size": 1,
+  "max_batch_wait_ms": 0,
+  "phase_duration_s": 190,
+  "rps_per_task": 5,
+  "device_port_base": 8000,
+  "device_startup_wait_s": 5
+}
