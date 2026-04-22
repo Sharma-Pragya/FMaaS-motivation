@@ -66,6 +66,10 @@ USECOLS = [
     "req_time",
     "end_to_end_latency(ms)",
     "backend_exec_time(ms)",
+    "proc_time(ms)",
+    "decoder_time(ms)",
+    "device",
+    "device_start_time",
     "task",
     "backbone",
 ]
@@ -73,6 +77,10 @@ DTYPES = {
     "req_time":               "float32",
     "end_to_end_latency(ms)": "float32",
     "backend_exec_time(ms)":  "float32",
+    "proc_time(ms)":          "float32",
+    "decoder_time(ms)":       "float32",
+    "device":                 "category",
+    "device_start_time":      "float64",
     "task":                   "category",
     "backbone":               "category",
 }
@@ -1107,6 +1115,157 @@ def plot_deployments(exp_dir: Path, out_root: Path) -> None:
 
 # ── Main ───────────────────────────────────────────────────────────
 
+def plot_latency_vs_load(data: Dict[str, Dict[int, pd.DataFrame]],
+                         out_path: Path,
+                         window_s: float = 0.2) -> None:
+    """Latency vs instantaneous device load, per condition, for one N.
+
+    For each request we compute the RPS on its device in a small window
+    around its arrival, then bin requests by that load and plot median and
+    p99 end-to-end latency per bin. The knee of this curve shifts right
+    under sharing (it tolerates higher instantaneous load) — that is the
+    burst-absorption claim made visual.
+    """
+    conds = [c for c in SERIES_ORDER if c in data]
+    if not conds:
+        return
+    ns_all = sorted({n for c in conds for n in data[c].keys()})
+    if not ns_all:
+        return
+    # Pick the largest common N (best signal for bursts + colocation).
+    common = set(data[conds[0]].keys())
+    for c in conds[1:]:
+        common &= set(data[c].keys())
+    if not common:
+        return
+    n = max(common)
+
+    fig, axes = plt.subplots(1, 2, figsize=(10.5, 4.2), sharex=False)
+    for cond in conds:
+        df = data[cond].get(n)
+        if df is None or df.empty:
+            continue
+        df = df.copy()
+        df["t"] = df["req_time"].astype("float64")
+        # Instantaneous per-device RPS: count requests on the same device
+        # within ±window_s/2 of each request's arrival time.
+        rps = np.zeros(len(df), dtype="float32")
+        for dev, sub in df.groupby("device", observed=True):
+            t = sub["t"].to_numpy()
+            order = np.argsort(t)
+            t_sorted = t[order]
+            lo = np.searchsorted(t_sorted, t_sorted - window_s / 2, side="left")
+            hi = np.searchsorted(t_sorted, t_sorted + window_s / 2, side="right")
+            cnt = (hi - lo) / window_s
+            out = np.empty_like(cnt)
+            out[order] = cnt
+            rps[sub.index.to_numpy()] = out
+        df["inst_rps"] = rps
+        lat = df["end_to_end_latency(ms)"].to_numpy()
+
+        # Bin by load quantile for stable x support across methods.
+        q_edges = np.quantile(df["inst_rps"], np.linspace(0, 1, 21))
+        q_edges = np.unique(q_edges)
+        if len(q_edges) < 3:
+            continue
+        idx = np.digitize(df["inst_rps"], q_edges[1:-1], right=True)
+        bins = pd.DataFrame({"bin": idx, "rps": df["inst_rps"], "lat": lat})
+        agg = bins.groupby("bin").agg(
+            x=("rps", "mean"),
+            p50=("lat", "median"),
+            p99=("lat", lambda s: np.quantile(s, 0.99)),
+            n=("lat", "size"),
+        ).reset_index()
+        agg = agg[agg["n"] >= 30]
+        if agg.empty:
+            continue
+
+        color = SERIES_COLORS.get(cond, "#888888")
+        label = SERIES_LABELS.get(cond, cond)
+        axes[0].plot(agg["x"], agg["p50"], marker="o", ms=3.5, color=color,
+                     linestyle=SERIES_LINESTYLE.get(cond, "-"), label=label)
+        axes[1].plot(agg["x"], agg["p99"], marker="o", ms=3.5, color=color,
+                     linestyle=SERIES_LINESTYLE.get(cond, "-"), label=label)
+
+    for ax, stat in zip(axes, ["median", "p99"]):
+        ax.set_xlabel(f"Instantaneous per-device load (req/s, {int(window_s*1000)} ms window)")
+        ax.set_ylabel(f"End-to-end latency ({stat}, ms)")
+        ax.grid(alpha=0.3)
+    axes[0].set_title(f"Median latency vs load (N={n})")
+    axes[1].set_title(f"p99 latency vs load (N={n})")
+    axes[0].legend(fontsize=8)
+    fig.tight_layout()
+    save_figure(fig, out_path)
+
+
+def plot_backbone_decoder_breakdown(data: Dict[str, Dict[int, pd.DataFrame]],
+                                     out_path: Path) -> None:
+    """Stacked bars of mean backbone vs decoder exec time, per (N, condition).
+
+    Also annotates each bar with the request-weighted backbone batch size.
+    Shows that sharing amortizes the backbone forward pass (proc_time) across
+    tasks, while decoder_time stays roughly flat — i.e. the gain is kernel
+    fusion at the shared trunk, not at the per-task heads.
+    """
+    conds = [c for c in SERIES_ORDER if c in data]
+    if not conds:
+        return
+    ns = sorted({n for c in conds for n in data[c].keys()})
+    if not ns:
+        return
+
+    rows = []
+    for cond in conds:
+        for n in ns:
+            df = data[cond].get(n)
+            if df is None or df.empty:
+                continue
+            g = df.groupby(["device", "device_start_time"]).size().rename("bs")
+            d = df.merge(g, on=["device", "device_start_time"])
+            rows.append({
+                "cond": cond,
+                "N": n,
+                "backbone_ms": float(df["proc_time(ms)"].mean()),
+                "decoder_ms": float(df["decoder_time(ms)"].mean()),
+                "bs_rw": float((d["bs"] * d["bs"]).sum() / d["bs"].sum()),
+            })
+    if not rows:
+        return
+    summary = pd.DataFrame(rows)
+
+    fig, ax = plt.subplots(figsize=(max(6.5, 1.2 * len(ns) + 2), 4.2))
+    width = 0.8 / len(conds)
+    x = np.arange(len(ns))
+    for i, cond in enumerate(conds):
+        sub = summary[summary["cond"] == cond].set_index("N").reindex(ns)
+        offset = (i - (len(conds) - 1) / 2) * width
+        color = SERIES_COLORS.get(cond, "#888888")
+        # darker = backbone, lighter = decoder
+        ax.bar(x + offset, sub["backbone_ms"], width,
+               color=color, edgecolor="black", linewidth=0.4,
+               label=f"{SERIES_LABELS.get(cond, cond)} — backbone")
+        ax.bar(x + offset, sub["decoder_ms"], width,
+               bottom=sub["backbone_ms"],
+               color=color, alpha=0.35, edgecolor="black", linewidth=0.4,
+               label=f"{SERIES_LABELS.get(cond, cond)} — decoder")
+        for xi, n in enumerate(ns):
+            if pd.isna(sub.loc[n, "backbone_ms"]):
+                continue
+            top = sub.loc[n, "backbone_ms"] + sub.loc[n, "decoder_ms"]
+            ax.text(x[xi] + offset, top + 0.6,
+                    f"b={sub.loc[n, 'bs_rw']:.1f}",
+                    ha="center", va="bottom", fontsize=7)
+
+    ax.set_xticks(x)
+    ax.set_xticklabels([f"N={n}" for n in ns])
+    ax.set_ylabel("Mean per-request exec time (ms)")
+    ax.set_title("Backbone vs decoder exec time  (b = request-weighted batch size)")
+    ax.grid(axis="y", alpha=0.3)
+    ax.legend(fontsize=7, ncol=len(conds), loc="upper left")
+    fig.tight_layout()
+    save_figure(fig, out_path)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--exp-dir", type=str,
@@ -1158,6 +1317,8 @@ def main() -> None:
     plot_backbone_latency_vs_n(data, out_dir / "backbone_latency_vs_n_p95.pdf", "p95")
     plot_success_rate_vs_n(run_status, out_dir / "success_rate_vs_napps.pdf")
     plot_latency_cdfs(data, out_dir)
+    plot_backbone_decoder_breakdown(data, out_dir / "backbone_decoder_breakdown.pdf")
+    plot_latency_vs_load(data, out_dir / "latency_vs_load.pdf")
     plot_per_n_details(data, out_dir / "perN")
     plot_deployments(exp_dir, out_dir / "perN")
     print(f"[Plot] Done. Output in {out_dir}")

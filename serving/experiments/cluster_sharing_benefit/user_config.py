@@ -28,7 +28,7 @@ the client runner reuses the base task's dataset, e.g. {"ecgclass*": "ecgclass"}
 
 # ── Runtime knobs ────────────────────────────────────────────────────
 experiment = {
-    'trace':                 'poisson_per_task',
+    'trace':                 'alibaba_gentd26', #alibaba_gentd26,poisson_per_task
     'duration':              180,
     'max_batch_wait_ms':     0,
     'max_batch_size':        32,
@@ -76,7 +76,7 @@ tasks = {
 # Subset of devices to use. Defaults to all GPUs.
 gpus = list(devices.keys())
 
-n_apps_list = [128]
+n_apps_list = [8,16,32,64,128]
 
 # Ordered pool. Cycled when N > len(pool). One entry = one app.
 # Repeated entries are auto-renamed to "<task>__app<app_idx>" at generation time.

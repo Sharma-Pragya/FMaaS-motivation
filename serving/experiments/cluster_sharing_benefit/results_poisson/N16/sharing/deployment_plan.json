@@ -1,0 +1,257 @@
+{
+  "sites": [
+    {
+      "id": "site2",
+      "deployments": [
+        {
+          "device": "192.168.245.191:8000",
+          "device_name": "device1",
+          "device_type": "NVIDIA A2",
+          "backbone": "dinosmall",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "nyudepth",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": "nyudepth_dinosmall_monocular"
+            },
+            {
+              "task": "vocseg",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app8",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": "nyudepth_dinosmall_monocular"
+            },
+            {
+              "task": "vocseg__app12",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            }
+          ],
+          "tasks": {
+            "nyudepth": {
+              "type": "monocular",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "vocseg": {
+              "type": "linear_seg",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "nyudepth__app8": {
+              "type": "monocular",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "vocseg__app12": {
+              "type": "linear_seg",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            }
+          },
+          "max_batch_size": 32,
+          "max_batch_wait_ms": 0,
+          "isolation_mode": "shared",
+          "max_model_len": 256,
+          "gpu_memory_utilization": 0.85
+        },
+        {
+          "device": "192.168.245.193:8000",
+          "device_name": "device2",
+          "device_type": "NVIDIA A2",
+          "backbone": "momentbase",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "heartrate",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "sysbp",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app9",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "sysbp__app13",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_momentbase_mlp"
+            }
+          ],
+          "tasks": {
+            "heartrate": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "sysbp": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "heartrate__app9": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "sysbp__app13": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            }
+          },
+          "max_batch_size": 32,
+          "max_batch_wait_ms": 0,
+          "isolation_mode": "shared",
+          "max_model_len": 256,
+          "gpu_memory_utilization": 0.85
+        },
+        {
+          "device": "192.168.245.194:8000",
+          "device_name": "device3",
+          "device_type": "NVIDIA A2",
+          "backbone": "swinsmall",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "imgclass10",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app10",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app14",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            }
+          ],
+          "tasks": {
+            "imgclass10": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "eurosatclass": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "imgclass10__app10": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "eurosatclass__app14": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            }
+          },
+          "max_batch_size": 32,
+          "max_batch_wait_ms": 0,
+          "isolation_mode": "shared",
+          "max_model_len": 256,
+          "gpu_memory_utilization": 0.85
+        },
+        {
+          "device": "192.168.245.195:8000",
+          "device_name": "device4",
+          "device_type": "NVIDIA A2",
+          "backbone": "papageissvri",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "diasbp",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "diasbp__app11",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app15",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            }
+          ],
+          "tasks": {
+            "diasbp": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "etth1fore": {
+              "type": "forecasting",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "diasbp__app11": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "etth1fore__app15": {
+              "type": "forecasting",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            }
+          },
+          "max_batch_size": 32,
+          "max_batch_wait_ms": 0,
+          "isolation_mode": "shared",
+          "max_model_len": 256,
+          "gpu_memory_utilization": 0.85
+        }
+      ]
+    }
+  ]
+}
