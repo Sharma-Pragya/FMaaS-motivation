@@ -1,0 +1,18 @@
+{
+  "experiment": "batch_size_vs_rps",
+  "task": "ecgclass",
+  "backbone": "momentbase",
+  "device_url": "localhost:8000",
+  "rps": 300.0,
+  "num_clients": 10,
+  "per_client_rps": 30.0,
+  "batch_wait_ms": 5.0,
+  "max_batch_size_server": 64,
+  "scheduler_policy": "fifo",
+  "duration_s": 60.0,
+  "warmup_secs": 10.0,
+  "poisson_seed": 42,
+  "t_start": "2026-04-04T00:03:48.519771+00:00",
+  "t_end": "2026-04-04T00:05:18.613132+00:00",
+  "hostname": "ip-172-31-40-135"
+}

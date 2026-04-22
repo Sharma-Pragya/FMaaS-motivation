@@ -1,0 +1,16 @@
+{
+  "experiment":          "batch_size_vs_rps",
+  "backbone":            "momentbase",
+  "cuda_device":         "cuda:0",
+  "rps_sweep":           "100,200,300",
+  "wait_sweep_ms":       "0,5,10",
+  "num_clients":         1,
+  "experiment_mode":     "system_tasks",
+  "phase_duration_s":    60,
+  "max_batch_size":      64,
+  "scheduler_policy":    "fifo",
+  "device_port":         8000,
+  "device_startup_wait": 5,
+  "t_start":             "2026-04-04T03:50:32Z",
+  "hostname":            "ip-172-31-40-135"
+}

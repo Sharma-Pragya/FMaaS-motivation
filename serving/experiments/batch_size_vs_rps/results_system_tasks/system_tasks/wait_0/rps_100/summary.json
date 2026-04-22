@@ -1,0 +1,16 @@
+{
+  "n_batches": 1199,
+  "mean_batch_size": 4.195162635529608,
+  "p50_batch_size": 4.0,
+  "p95_batch_size": 7.0,
+  "max_batch_size_obs": 10,
+  "task_count": 10,
+  "rps": 100.0,
+  "duration_s": 60.0,
+  "warmup_secs": 10.0,
+  "batch_wait_ms": 0.0,
+  "n_requests_total": 6068,
+  "n_requests_measured": 5030,
+  "avg_latency_ms": 93.77035155069582,
+  "p99_latency_ms": 220.54108500000004
+}

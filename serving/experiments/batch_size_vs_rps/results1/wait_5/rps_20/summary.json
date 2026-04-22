@@ -1,0 +1,19 @@
+{
+  "task": "ecgclass",
+  "backbone": "momentbase",
+  "rps": 20.0,
+  "batch_wait_ms": 5.0,
+  "duration_s": 60.0,
+  "warmup_secs": 10.0,
+  "t_start": "2026-04-03T23:17:43.248554+00:00",
+  "t_end": "2026-04-03T23:18:43.220750+00:00",
+  "n_requests_total": 1191,
+  "n_requests_measured": 981,
+  "n_batches": 764,
+  "mean_batch_size": 1.284,
+  "p50_batch_size": 1.0,
+  "p95_batch_size": 2.0,
+  "max_batch_size_obs": 5,
+  "avg_latency_ms": 39.273,
+  "p99_latency_ms": 70.138
+}

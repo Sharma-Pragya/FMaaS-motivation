@@ -1,0 +1,26 @@
+{
+  "experiment": "batch_size_vs_rps_systeminspired",
+  "device_url": "localhost:8000",
+  "backbone": "momentbase",
+  "tasks": [
+    "diasbp",
+    "ecgclass",
+    "eclfore",
+    "etth1fore",
+    "exchangefore",
+    "gestureclass",
+    "heartrate",
+    "sysbp",
+    "trafficfore",
+    "weatherfore"
+  ],
+  "req_rate": 100.0,
+  "duration_s": 60.0,
+  "warmup_secs": 10.0,
+  "batch_wait_ms": 0.0,
+  "trace": "poisson_per_task",
+  "seed": 42,
+  "t_start": "2026-04-04T03:51:00.494280+00:00",
+  "t_end": "2026-04-04T03:52:00.560367+00:00",
+  "hostname": "ip-172-31-40-135"
+}
