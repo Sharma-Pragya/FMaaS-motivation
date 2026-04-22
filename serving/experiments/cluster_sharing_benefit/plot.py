@@ -476,6 +476,100 @@ def plot_memory_bars_vs_n(exp_dir: Path, out_path: Path,
     plt.close(fig)
 
 
+# ── Runtime memory (per-deployment peak, summed) ───────────────────
+
+def _runtime_peak_mb_sum(csv_path: Path) -> float | None:
+    """Sum of per-deployment peak gpu_alloc_peak_mb across all deployments in a run.
+
+    A deployment is identified by (device, backbone); peak is max over its requests.
+    """
+    if not csv_path.is_file():
+        return None
+    try:
+        df = pd.read_csv(csv_path, usecols=["device", "backbone", "gpu_alloc_peak_mb"])
+    except Exception:
+        return None
+    if df.empty or "gpu_alloc_peak_mb" not in df.columns:
+        return None
+    df = df.dropna(subset=["gpu_alloc_peak_mb"])
+    if df.empty:
+        return None
+    per_dep_peak = df.groupby(["device", "backbone"])["gpu_alloc_peak_mb"].max()
+    return float(per_dep_peak.sum())
+
+
+def _scan_runtime_peak(exp_dir: Path) -> Dict[str, Dict[int, float]]:
+    out: Dict[str, Dict[int, float]] = {}
+    for n_dir in sorted(exp_dir.iterdir()):
+        m = N_DIR_RE.match(n_dir.name) if n_dir.is_dir() else None
+        if not m:
+            continue
+        n = int(m.group(1))
+        for cond_dir in sorted(n_dir.iterdir()):
+            if not cond_dir.is_dir():
+                continue
+            mb = _runtime_peak_mb_sum(cond_dir / "request_latency_results.csv")
+            if mb is None:
+                continue
+            out.setdefault(cond_dir.name, {})[n] = mb
+    return out
+
+
+def plot_runtime_memory_bars_vs_n(exp_dir: Path, out_path: Path,
+                                  ns_filter: set[int] | None = None) -> None:
+    """Bar plot of sum-of-per-deployment runtime peak GPU memory vs N.
+
+    Per-deployment peak = max(gpu_alloc_peak_mb) over requests for (device, backbone).
+    Cluster total = sum across deployments; shared-weight bytes counted once per
+    deployment, avoiding the per-request overcount.
+    """
+    mem = _scan_runtime_peak(exp_dir)
+    if not mem:
+        return
+    if ns_filter is not None:
+        mem = {k: {n: v for n, v in d.items() if n in ns_filter}
+               for k, d in mem.items()}
+        mem = {k: d for k, d in mem.items() if d}
+    all_ns = sorted({n for d in mem.values() for n in d.keys()})
+    keys = [k for k in SERIES_ORDER if k in mem]
+    if not all_ns or not keys:
+        return
+    max_mb = max((mem[k].get(n, 0.0) for k in keys for n in all_ns), default=0.0)
+    use_gb = max_mb >= 1024.0
+    unit = "GB" if use_gb else "MB"
+    scale = 1.0 / 1024.0 if use_gb else 1.0
+
+    fig, ax = plt.subplots(figsize=(1.8, 1.2))
+    x = np.arange(len(all_ns), dtype=float)
+    width = 0.8 / len(keys)
+    vmax = 0.0
+    for i, key in enumerate(keys):
+        ys = [mem[key].get(n, 0.0) * scale for n in all_ns]
+        bars = ax.bar(
+            x + (i - (len(keys) - 1) / 2) * width, ys, width,
+            color=SERIES_COLORS[key], edgecolor="black", linewidth=0.4,
+            label=SERIES_LABELS[key],
+        )
+        for b, v in zip(bars, ys):
+            if v > 0 and np.isfinite(v):
+                fmt = f"{v:.1f}" if use_gb else f"{v:.0f}"
+                ax.text(b.get_x() + b.get_width() / 2, b.get_height(),
+                        fmt, ha="center", va="bottom", fontsize=5.0)
+        vmax = max(vmax, max(ys, default=0.0))
+    ax.set_xticks(x)
+    ax.set_xticklabels([str(n) for n in all_ns])
+    ax.set_xlabel("N (apps)")
+    ax.set_ylabel(f"Runtime memory ({unit})")
+    ax.set_ylim(0, _nice_upper(vmax * 1.12))
+    ax.grid(True, axis="y")
+    ax.legend(frameon=False, ncol=min(3, len(keys)),
+              handlelength=1.0, handletextpad=0.3, columnspacing=0.7,
+              loc="lower center", bbox_to_anchor=(0.5, 1.02),
+              borderaxespad=0.0)
+    save_figure(fig, out_path)
+    plt.close(fig)
+
+
 def plot_throughput_vs_n(data, out_path: Path, warmup_secs: float) -> None:
     if not data:
         return
@@ -1269,7 +1363,7 @@ def plot_backbone_decoder_breakdown(data: Dict[str, Dict[int, pd.DataFrame]],
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--exp-dir", type=str,
-                        default=str(SERVING_DIR / "experiments/cluster_sharing_benefit/results"))
+                        default=str(SERVING_DIR / "experiments/cluster_sharing_benefit/results_alibaba"))
     parser.add_argument("--warmup-secs", type=float, default=10.0)
     parser.add_argument("--ns", type=str, default="8,16,32,64,128",
                         help="Comma-separated list of N values to include "
@@ -1311,6 +1405,9 @@ def main() -> None:
     plot_latency_bars_vs_n(data, out_dir)
     plot_memory_bars_vs_n(exp_dir, out_dir / "memory_bars_vs_napps.pdf",
                           ns_filter=ns_filter)
+    plot_runtime_memory_bars_vs_n(exp_dir,
+                                  out_dir / "runtime_memory_bars_vs_napps.pdf",
+                                  ns_filter=ns_filter)
     plot_throughput_vs_n(data, out_dir / "throughput_vs_napps.pdf",
                          warmup_secs=args.warmup_secs)
     plot_backbone_latency_vs_n(data, out_dir / "backbone_latency_vs_n_mean.pdf", "mean")
