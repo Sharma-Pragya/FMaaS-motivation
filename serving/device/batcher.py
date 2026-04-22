@@ -219,6 +219,7 @@ class DeviceBatcher:
             backbone_event=job.backbone_event,
         )
         end_ns = time.time_ns()
+        batch_peak_mb = (max(job.peak_bytes_bb, peak_bytes)) / (1024 ** 2)
         pairs = []
         for i, request in zip(job.indices, job.requests):
             payload = {
@@ -228,6 +229,7 @@ class DeviceBatcher:
                 "proc_time_ns": job.proc_time_ns,
                 "swap_time_ns": swaps[i],
                 "decoder_time_ns": decs[i],
+                "gpu_alloc_peak_mb": batch_peak_mb,
             }
             pairs.append((request.future, payload))
         loop = self._worker_loop_ref

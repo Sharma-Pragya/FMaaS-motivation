@@ -230,6 +230,7 @@ class EdgeRuntimeApplication:
                 "proc_time_ns":    result.proc_time_ns,
                 "swap_time_ns":    result.swap_time_ns[0],
                 "decoder_time_ns": result.decoder_time_ns[0],
+                "gpu_alloc_peak_mb": result.gpu_alloc_peak_mb,
             }
         loop = asyncio.get_running_loop()
         future = loop.create_future()
@@ -326,6 +327,7 @@ class EdgeRuntimeServicer(edge_runtime_pb2_grpc.EdgeRuntimeServicer):
             decoder_time_ns=response["decoder_time_ns"],
             status="ok",
             text_output=text_output,
+            gpu_alloc_peak_mb=float(response.get("gpu_alloc_peak_mb", 0.0) or 0.0),
         )
 
     async def Control(self, request, context):

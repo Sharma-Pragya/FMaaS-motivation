@@ -39,5 +39,8 @@ def generate_trace(
     elif trace_type in ('poisson', 'poisson_per_task'):
         from traces.poisson_per_task import generate_requests
         return generate_requests(req_rate, duration, task_names, seed, req_id_offset, tasks_dict)
+    elif trace_type == 'alibaba_gentd26':
+        from traces.alibaba_gentd26 import generate_requests
+        return generate_requests(req_rate, duration, task_names, seed, req_id_offset, tasks_dict)
     else:
         raise ValueError(f"Unknown trace type: {trace_type}")

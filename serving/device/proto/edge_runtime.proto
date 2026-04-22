@@ -31,6 +31,7 @@ message InferResponse {
   int64 decoder_time_ns = 7;
   string status = 8;
   string text_output = 9;
+  float gpu_alloc_peak_mb = 10;
 }
 
 message ControlRequest {

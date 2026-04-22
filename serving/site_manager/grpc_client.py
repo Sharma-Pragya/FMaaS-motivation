@@ -75,6 +75,7 @@ class EdgeRuntimeClient:
             "swap_time_ns": response.swap_time_ns,
             "decoder_time_ns": response.decoder_time_ns,
             "status": response.status,
+            "gpu_alloc_peak_mb": response.gpu_alloc_peak_mb,
         }
 
     async def control(self, command: str, payload_json: str, timeout_s: float | None = 120.0):

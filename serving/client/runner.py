@@ -261,6 +261,7 @@ async def _send_request(req_id, device_url, inputs_dict, outputs_dict, client_ke
     proc_time = response["proc_time_ns"]  / 1e9
     swap_time = response["swap_time_ns"]  / 1e9
     dec_time  = response["decoder_time_ns"] / 1e9
+    gpu_peak_mb = float(response.get("gpu_alloc_peak_mb", 0.0) or 0.0)
     result = response["output"]
     text_out = response.get("text_output", "")
     if text_out:
@@ -282,6 +283,7 @@ async def _send_request(req_id, device_url, inputs_dict, outputs_dict, client_ke
         recv_time - send_time,   # e2e
         proc_time, swap_time, dec_time,
         pred, true_val,
+        gpu_peak_mb,
     )
 
 
@@ -725,11 +727,12 @@ def _write_csv(reqs_latency: list, req_metadata: dict, output_dir: str):
             "device_start_time,device_end_time,client_receive_time,"
             "client_prep_time(ms),client_submit_to_backend_start(ms),"
             "backend_exec_time(ms),backend_to_client_return(ms),"
-            "end_to_end_latency(ms),proc_time(ms),swap_time(ms),decoder_time(ms)\n"
+            "end_to_end_latency(ms),proc_time(ms),swap_time(ms),decoder_time(ms),"
+            "gpu_alloc_peak_mb\n"
         )
         for entry in valid:
             (req_id, device_url, send_t, submit_t, dev_start, dev_end,
-             recv_t, e2e, proc, swap, dec, _pred, _true_val) = entry
+             recv_t, e2e, proc, swap, dec, _pred, _true_val, gpu_peak_mb) = entry
             req       = req_metadata.get(req_id, {})
             req_time  = req.get("req_time", -1)
             task      = req.get("task", "unknown")
@@ -744,7 +747,7 @@ def _write_csv(reqs_latency: list, req_metadata: dict, output_dir: str):
                 f"{req_id},{req_time},{site_mgr},{device_url},{backbone},{task},"
                 f"{send_t},{submit_t},{dev_start},{dev_end},{recv_t},"
                 f"{prep},{sub_ms},{exec_ms},{ret_ms},{e2e*1000},"
-                f"{proc*1000},{swap*1000},{dec*1000}\n"
+                f"{proc*1000},{swap*1000},{dec*1000},{gpu_peak_mb}\n"
             )
 
     with open(summary_path, "w") as f:
