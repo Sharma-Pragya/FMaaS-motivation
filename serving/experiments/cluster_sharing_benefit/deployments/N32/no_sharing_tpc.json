@@ -1,0 +1,921 @@
+{
+  "sites": [
+    {
+      "id": "site2",
+      "deployments": [
+        {
+          "device": "172.31.40.38:8000",
+          "device_name": "device1",
+          "device_type": "NVIDIA T4",
+          "backbone": "dinosmall",
+          "cuda": "cuda:0",
+          "scheduler_policy": "fifo",
+          "worker_mode": "inline",
+          "decoders": [
+            {
+              "task": "nyudepth",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": "nyudepth_dinosmall_monocular"
+            }
+          ],
+          "tasks": {
+            "nyudepth": {
+              "type": "monocular",
+              "request_per_sec": 2.0
+            }
+          },
+          "tpc_mode": "libsmctrl",
+          "tpc_partition": [
+            0,
+            1
+          ]
+        },
+        {
+          "device": "172.31.40.38:8010",
+          "device_name": "device1",
+          "device_type": "NVIDIA T4",
+          "backbone": "momentlarge",
+          "cuda": "cuda:0",
+          "scheduler_policy": "fifo",
+          "worker_mode": "inline",
+          "decoders": [
+            {
+              "task": "etth1fore",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_momentlarge_mlp"
+            }
+          ],
+          "tasks": {
+            "etth1fore": {
+              "type": "forecasting",
+              "request_per_sec": 2.0
+            }
+          },
+          "tpc_mode": "libsmctrl",
+          "tpc_partition": [
+            2,
+            3
+          ]
+        },
+        {
+          "device": "172.31.40.38:8020",
+          "device_name": "device1",
+          "device_type": "NVIDIA T4",
+          "backbone": "dinosmall",
+          "cuda": "cuda:0",
+          "scheduler_policy": "fifo",
+          "worker_mode": "inline",
+          "decoders": [
+            {
+              "task": "nyudepth__app8",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": "nyudepth_dinosmall_monocular"
+            }
+          ],
+          "tasks": {
+            "nyudepth__app8": {
+              "type": "monocular",
+              "request_per_sec": 2.0
+            }
+          },
+          "tpc_mode": "libsmctrl",
+          "tpc_partition": [
+            4,
+            5
+          ]
+        },
+        {
+          "device": "172.31.40.38:8030",
+          "device_name": "device1",
+          "device_type": "NVIDIA T4",
+          "backbone": "momentlarge",
+          "cuda": "cuda:0",
+          "scheduler_policy": "fifo",
+          "worker_mode": "inline",
+          "decoders": [
+            {
+              "task": "etth1fore__app12",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_momentlarge_mlp"
+            }
+          ],
+          "tasks": {
+            "etth1fore__app12": {
+              "type": "forecasting",
+              "request_per_sec": 2.0
+            }
+          },
+          "tpc_mode": "libsmctrl",
+          "tpc_partition": [
+            6,
+            7
+          ]
+        },
+        {
+          "device": "172.31.40.38:8040",
+          "device_name": "device1",
+          "device_type": "NVIDIA T4",
+          "backbone": "dinosmall",
+          "cuda": "cuda:0",
+          "scheduler_policy": "fifo",
+          "worker_mode": "inline",
+          "decoders": [
+            {
+              "task": "nyudepth__app16",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": "nyudepth_dinosmall_monocular"
+            }
+          ],
+          "tasks": {
+            "nyudepth__app16": {
+              "type": "monocular",
+              "request_per_sec": 2.0
+            }
+          },
+          "tpc_mode": "libsmctrl",
+          "tpc_partition": [
+            8,
+            9,
+            10
+          ]
+        },
+        {
+          "device": "172.31.40.38:8050",
+          "device_name": "device1",
+          "device_type": "NVIDIA T4",
+          "backbone": "momentlarge",
+          "cuda": "cuda:0",
+          "scheduler_policy": "fifo",
+          "worker_mode": "inline",
+          "decoders": [
+            {
+              "task": "etth1fore__app20",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_momentlarge_mlp"
+            }
+          ],
+          "tasks": {
+            "etth1fore__app20": {
+              "type": "forecasting",
+              "request_per_sec": 2.0
+            }
+          },
+          "tpc_mode": "libsmctrl",
+          "tpc_partition": [
+            11,
+            12,
+            13
+          ]
+        },
+        {
+          "device": "172.31.40.38:8060",
+          "device_name": "device1",
+          "device_type": "NVIDIA T4",
+          "backbone": "dinosmall",
+          "cuda": "cuda:0",
+          "scheduler_policy": "fifo",
+          "worker_mode": "inline",
+          "decoders": [
+            {
+              "task": "nyudepth__app24",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": "nyudepth_dinosmall_monocular"
+            }
+          ],
+          "tasks": {
+            "nyudepth__app24": {
+              "type": "monocular",
+              "request_per_sec": 2.0
+            }
+          },
+          "tpc_mode": "libsmctrl",
+          "tpc_partition": [
+            14,
+            15,
+            16
+          ]
+        },
+        {
+          "device": "172.31.40.38:8070",
+          "device_name": "device1",
+          "device_type": "NVIDIA T4",
+          "backbone": "momentlarge",
+          "cuda": "cuda:0",
+          "scheduler_policy": "fifo",
+          "worker_mode": "inline",
+          "decoders": [
+            {
+              "task": "etth1fore__app28",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_momentlarge_mlp"
+            }
+          ],
+          "tasks": {
+            "etth1fore__app28": {
+              "type": "forecasting",
+              "request_per_sec": 2.0
+            }
+          },
+          "tpc_mode": "libsmctrl",
+          "tpc_partition": [
+            17,
+            18,
+            19
+          ]
+        },
+        {
+          "device": "172.31.34.115:8000",
+          "device_name": "device2",
+          "device_type": "NVIDIA T4",
+          "backbone": "momentbase",
+          "cuda": "cuda:0",
+          "scheduler_policy": "fifo",
+          "worker_mode": "inline",
+          "decoders": [
+            {
+              "task": "heartrate",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            }
+          ],
+          "tasks": {
+            "heartrate": {
+              "type": "regression",
+              "request_per_sec": 2.0
+            }
+          },
+          "tpc_mode": "libsmctrl",
+          "tpc_partition": [
+            0,
+            1
+          ]
+        },
+        {
+          "device": "172.31.34.115:8010",
+          "device_name": "device2",
+          "device_type": "NVIDIA T4",
+          "backbone": "swinbase",
+          "cuda": "cuda:0",
+          "scheduler_policy": "fifo",
+          "worker_mode": "inline",
+          "decoders": [
+            {
+              "task": "eurosatclass",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            }
+          ],
+          "tasks": {
+            "eurosatclass": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0
+            }
+          },
+          "tpc_mode": "libsmctrl",
+          "tpc_partition": [
+            2,
+            3
+          ]
+        },
+        {
+          "device": "172.31.34.115:8020",
+          "device_name": "device2",
+          "device_type": "NVIDIA T4",
+          "backbone": "momentbase",
+          "cuda": "cuda:0",
+          "scheduler_policy": "fifo",
+          "worker_mode": "inline",
+          "decoders": [
+            {
+              "task": "heartrate__app9",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            }
+          ],
+          "tasks": {
+            "heartrate__app9": {
+              "type": "regression",
+              "request_per_sec": 2.0
+            }
+          },
+          "tpc_mode": "libsmctrl",
+          "tpc_partition": [
+            4,
+            5
+          ]
+        },
+        {
+          "device": "172.31.34.115:8030",
+          "device_name": "device2",
+          "device_type": "NVIDIA T4",
+          "backbone": "swinbase",
+          "cuda": "cuda:0",
+          "scheduler_policy": "fifo",
+          "worker_mode": "inline",
+          "decoders": [
+            {
+              "task": "eurosatclass__app13",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            }
+          ],
+          "tasks": {
+            "eurosatclass__app13": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0
+            }
+          },
+          "tpc_mode": "libsmctrl",
+          "tpc_partition": [
+            6,
+            7
+          ]
+        },
+        {
+          "device": "172.31.34.115:8040",
+          "device_name": "device2",
+          "device_type": "NVIDIA T4",
+          "backbone": "momentbase",
+          "cuda": "cuda:0",
+          "scheduler_policy": "fifo",
+          "worker_mode": "inline",
+          "decoders": [
+            {
+              "task": "heartrate__app17",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            }
+          ],
+          "tasks": {
+            "heartrate__app17": {
+              "type": "regression",
+              "request_per_sec": 2.0
+            }
+          },
+          "tpc_mode": "libsmctrl",
+          "tpc_partition": [
+            8,
+            9,
+            10
+          ]
+        },
+        {
+          "device": "172.31.34.115:8050",
+          "device_name": "device2",
+          "device_type": "NVIDIA T4",
+          "backbone": "swinbase",
+          "cuda": "cuda:0",
+          "scheduler_policy": "fifo",
+          "worker_mode": "inline",
+          "decoders": [
+            {
+              "task": "eurosatclass__app21",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            }
+          ],
+          "tasks": {
+            "eurosatclass__app21": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0
+            }
+          },
+          "tpc_mode": "libsmctrl",
+          "tpc_partition": [
+            11,
+            12,
+            13
+          ]
+        },
+        {
+          "device": "172.31.34.115:8060",
+          "device_name": "device2",
+          "device_type": "NVIDIA T4",
+          "backbone": "momentbase",
+          "cuda": "cuda:0",
+          "scheduler_policy": "fifo",
+          "worker_mode": "inline",
+          "decoders": [
+            {
+              "task": "heartrate__app25",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            }
+          ],
+          "tasks": {
+            "heartrate__app25": {
+              "type": "regression",
+              "request_per_sec": 2.0
+            }
+          },
+          "tpc_mode": "libsmctrl",
+          "tpc_partition": [
+            14,
+            15,
+            16
+          ]
+        },
+        {
+          "device": "172.31.34.115:8070",
+          "device_name": "device2",
+          "device_type": "NVIDIA T4",
+          "backbone": "swinbase",
+          "cuda": "cuda:0",
+          "scheduler_policy": "fifo",
+          "worker_mode": "inline",
+          "decoders": [
+            {
+              "task": "eurosatclass__app29",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            }
+          ],
+          "tasks": {
+            "eurosatclass__app29": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0
+            }
+          },
+          "tpc_mode": "libsmctrl",
+          "tpc_partition": [
+            17,
+            18,
+            19
+          ]
+        },
+        {
+          "device": "172.31.39.15:8000",
+          "device_name": "device3",
+          "device_type": "NVIDIA T4",
+          "backbone": "swinsmall",
+          "cuda": "cuda:0",
+          "scheduler_policy": "fifo",
+          "worker_mode": "inline",
+          "decoders": [
+            {
+              "task": "imgclass10",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            }
+          ],
+          "tasks": {
+            "imgclass10": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0
+            }
+          },
+          "tpc_mode": "libsmctrl",
+          "tpc_partition": [
+            0,
+            1
+          ]
+        },
+        {
+          "device": "172.31.39.15:8010",
+          "device_name": "device3",
+          "device_type": "NVIDIA T4",
+          "backbone": "papageip",
+          "cuda": "cuda:0",
+          "scheduler_policy": "fifo",
+          "worker_mode": "inline",
+          "decoders": [
+            {
+              "task": "sysbp",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            }
+          ],
+          "tasks": {
+            "sysbp": {
+              "type": "regression",
+              "request_per_sec": 2.0
+            }
+          },
+          "tpc_mode": "libsmctrl",
+          "tpc_partition": [
+            2,
+            3
+          ]
+        },
+        {
+          "device": "172.31.39.15:8020",
+          "device_name": "device3",
+          "device_type": "NVIDIA T4",
+          "backbone": "swinsmall",
+          "cuda": "cuda:0",
+          "scheduler_policy": "fifo",
+          "worker_mode": "inline",
+          "decoders": [
+            {
+              "task": "imgclass10__app10",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            }
+          ],
+          "tasks": {
+            "imgclass10__app10": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0
+            }
+          },
+          "tpc_mode": "libsmctrl",
+          "tpc_partition": [
+            4,
+            5
+          ]
+        },
+        {
+          "device": "172.31.39.15:8030",
+          "device_name": "device3",
+          "device_type": "NVIDIA T4",
+          "backbone": "papageip",
+          "cuda": "cuda:0",
+          "scheduler_policy": "fifo",
+          "worker_mode": "inline",
+          "decoders": [
+            {
+              "task": "sysbp__app14",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            }
+          ],
+          "tasks": {
+            "sysbp__app14": {
+              "type": "regression",
+              "request_per_sec": 2.0
+            }
+          },
+          "tpc_mode": "libsmctrl",
+          "tpc_partition": [
+            6,
+            7
+          ]
+        },
+        {
+          "device": "172.31.39.15:8040",
+          "device_name": "device3",
+          "device_type": "NVIDIA T4",
+          "backbone": "swinsmall",
+          "cuda": "cuda:0",
+          "scheduler_policy": "fifo",
+          "worker_mode": "inline",
+          "decoders": [
+            {
+              "task": "imgclass10__app18",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            }
+          ],
+          "tasks": {
+            "imgclass10__app18": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0
+            }
+          },
+          "tpc_mode": "libsmctrl",
+          "tpc_partition": [
+            8,
+            9,
+            10
+          ]
+        },
+        {
+          "device": "172.31.39.15:8050",
+          "device_name": "device3",
+          "device_type": "NVIDIA T4",
+          "backbone": "papageip",
+          "cuda": "cuda:0",
+          "scheduler_policy": "fifo",
+          "worker_mode": "inline",
+          "decoders": [
+            {
+              "task": "sysbp__app22",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            }
+          ],
+          "tasks": {
+            "sysbp__app22": {
+              "type": "regression",
+              "request_per_sec": 2.0
+            }
+          },
+          "tpc_mode": "libsmctrl",
+          "tpc_partition": [
+            11,
+            12,
+            13
+          ]
+        },
+        {
+          "device": "172.31.39.15:8060",
+          "device_name": "device3",
+          "device_type": "NVIDIA T4",
+          "backbone": "swinsmall",
+          "cuda": "cuda:0",
+          "scheduler_policy": "fifo",
+          "worker_mode": "inline",
+          "decoders": [
+            {
+              "task": "imgclass10__app26",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            }
+          ],
+          "tasks": {
+            "imgclass10__app26": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0
+            }
+          },
+          "tpc_mode": "libsmctrl",
+          "tpc_partition": [
+            14,
+            15,
+            16
+          ]
+        },
+        {
+          "device": "172.31.39.15:8070",
+          "device_name": "device3",
+          "device_type": "NVIDIA T4",
+          "backbone": "papageip",
+          "cuda": "cuda:0",
+          "scheduler_policy": "fifo",
+          "worker_mode": "inline",
+          "decoders": [
+            {
+              "task": "sysbp__app30",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            }
+          ],
+          "tasks": {
+            "sysbp__app30": {
+              "type": "regression",
+              "request_per_sec": 2.0
+            }
+          },
+          "tpc_mode": "libsmctrl",
+          "tpc_partition": [
+            17,
+            18,
+            19
+          ]
+        },
+        {
+          "device": "172.31.46.11:8000",
+          "device_name": "device4",
+          "device_type": "NVIDIA T4",
+          "backbone": "papageissvri",
+          "cuda": "cuda:0",
+          "scheduler_policy": "fifo",
+          "worker_mode": "inline",
+          "decoders": [
+            {
+              "task": "diasbp",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageissvri_mlp"
+            }
+          ],
+          "tasks": {
+            "diasbp": {
+              "type": "regression",
+              "request_per_sec": 2.0
+            }
+          },
+          "tpc_mode": "libsmctrl",
+          "tpc_partition": [
+            0,
+            1
+          ]
+        },
+        {
+          "device": "172.31.46.11:8010",
+          "device_name": "device4",
+          "device_type": "NVIDIA T4",
+          "backbone": "dinobase",
+          "cuda": "cuda:0",
+          "scheduler_policy": "fifo",
+          "worker_mode": "inline",
+          "decoders": [
+            {
+              "task": "vocseg",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            }
+          ],
+          "tasks": {
+            "vocseg": {
+              "type": "linear_seg",
+              "request_per_sec": 2.0
+            }
+          },
+          "tpc_mode": "libsmctrl",
+          "tpc_partition": [
+            2,
+            3
+          ]
+        },
+        {
+          "device": "172.31.46.11:8020",
+          "device_name": "device4",
+          "device_type": "NVIDIA T4",
+          "backbone": "papageissvri",
+          "cuda": "cuda:0",
+          "scheduler_policy": "fifo",
+          "worker_mode": "inline",
+          "decoders": [
+            {
+              "task": "diasbp__app11",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageissvri_mlp"
+            }
+          ],
+          "tasks": {
+            "diasbp__app11": {
+              "type": "regression",
+              "request_per_sec": 2.0
+            }
+          },
+          "tpc_mode": "libsmctrl",
+          "tpc_partition": [
+            4,
+            5
+          ]
+        },
+        {
+          "device": "172.31.46.11:8030",
+          "device_name": "device4",
+          "device_type": "NVIDIA T4",
+          "backbone": "dinobase",
+          "cuda": "cuda:0",
+          "scheduler_policy": "fifo",
+          "worker_mode": "inline",
+          "decoders": [
+            {
+              "task": "vocseg__app15",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            }
+          ],
+          "tasks": {
+            "vocseg__app15": {
+              "type": "linear_seg",
+              "request_per_sec": 2.0
+            }
+          },
+          "tpc_mode": "libsmctrl",
+          "tpc_partition": [
+            6,
+            7
+          ]
+        },
+        {
+          "device": "172.31.46.11:8040",
+          "device_name": "device4",
+          "device_type": "NVIDIA T4",
+          "backbone": "papageissvri",
+          "cuda": "cuda:0",
+          "scheduler_policy": "fifo",
+          "worker_mode": "inline",
+          "decoders": [
+            {
+              "task": "diasbp__app19",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageissvri_mlp"
+            }
+          ],
+          "tasks": {
+            "diasbp__app19": {
+              "type": "regression",
+              "request_per_sec": 2.0
+            }
+          },
+          "tpc_mode": "libsmctrl",
+          "tpc_partition": [
+            8,
+            9,
+            10
+          ]
+        },
+        {
+          "device": "172.31.46.11:8050",
+          "device_name": "device4",
+          "device_type": "NVIDIA T4",
+          "backbone": "dinobase",
+          "cuda": "cuda:0",
+          "scheduler_policy": "fifo",
+          "worker_mode": "inline",
+          "decoders": [
+            {
+              "task": "vocseg__app23",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            }
+          ],
+          "tasks": {
+            "vocseg__app23": {
+              "type": "linear_seg",
+              "request_per_sec": 2.0
+            }
+          },
+          "tpc_mode": "libsmctrl",
+          "tpc_partition": [
+            11,
+            12,
+            13
+          ]
+        },
+        {
+          "device": "172.31.46.11:8060",
+          "device_name": "device4",
+          "device_type": "NVIDIA T4",
+          "backbone": "papageissvri",
+          "cuda": "cuda:0",
+          "scheduler_policy": "fifo",
+          "worker_mode": "inline",
+          "decoders": [
+            {
+              "task": "diasbp__app27",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageissvri_mlp"
+            }
+          ],
+          "tasks": {
+            "diasbp__app27": {
+              "type": "regression",
+              "request_per_sec": 2.0
+            }
+          },
+          "tpc_mode": "libsmctrl",
+          "tpc_partition": [
+            14,
+            15,
+            16
+          ]
+        },
+        {
+          "device": "172.31.46.11:8070",
+          "device_name": "device4",
+          "device_type": "NVIDIA T4",
+          "backbone": "dinobase",
+          "cuda": "cuda:0",
+          "scheduler_policy": "fifo",
+          "worker_mode": "inline",
+          "decoders": [
+            {
+              "task": "vocseg__app31",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            }
+          ],
+          "tasks": {
+            "vocseg__app31": {
+              "type": "linear_seg",
+              "request_per_sec": 2.0
+            }
+          },
+          "tpc_mode": "libsmctrl",
+          "tpc_partition": [
+            17,
+            18,
+            19
+          ]
+        }
+      ]
+    }
+  ]
+}

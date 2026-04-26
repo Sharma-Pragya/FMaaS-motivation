@@ -967,6 +967,7 @@ BACKBONE_ABBREV = {
     "swinsmall":      "SS",
     "swinbase":       "SB",
     "papageissvri":   "PG",
+    "papageisp":     "PP",
 }
 
 TASK_PASTELS = [
@@ -1292,6 +1293,172 @@ def plot_latency_vs_load(data: Dict[str, Dict[int, pd.DataFrame]],
     save_figure(fig, out_path)
 
 
+def plot_backbone_exec_bars(data: Dict[str, Dict[int, pd.DataFrame]],
+                            out_path: Path) -> None:
+    """Grouped bar chart: mean backbone exec time per batch, per backbone per N.
+
+    X-axis: N values.  One subplot per backbone.  One bar-group per N,
+    one bar per condition.  Matches the style of _bars_vs_n / latency_bars_mean.
+    """
+    backbone_order  = ["dinosmall", "momentbase", "swinsmall", "papageissvri"]
+    backbone_labels = {
+        "dinosmall":    "DINOv2-S",
+        "momentbase":   "MOMENT-B",
+        "swinsmall":    "Swin-S",
+        "papageissvri": "Papagei",
+    }
+
+    keys   = [k for k in SERIES_ORDER if k in data]
+    all_ns = sorted({n for k in keys for n in data[k]})
+    if not keys or not all_ns:
+        return
+
+    # Compute per-batch mean proc_time for every (cond, N, backbone)
+    # proc_time is identical for every request in the same batch, so take
+    # the first value per (device, device_start_time) group.
+    vals: Dict[str, Dict[int, Dict[str, float]]] = {}
+    for cond in keys:
+        vals[cond] = {}
+        for n in all_ns:
+            df = data[cond].get(n)
+            if df is None or df.empty:
+                continue
+            vals[cond][n] = {}
+            for bb, grp in df.groupby("backbone"):
+                vals[cond][n][str(bb)] = float(
+                    grp.groupby(["device", "device_start_time"])["proc_time(ms)"]
+                       .first().mean()
+                )
+
+    backbones = [b for b in backbone_order
+                 if any(b in vals[c].get(n, {}) for c in keys for n in all_ns)]
+    if not backbones:
+        return
+
+    n_bb   = len(backbones)
+    x      = np.arange(len(all_ns), dtype=float)
+    width  = 0.8 / len(keys)
+
+    fig, axes = plt.subplots(1, n_bb, figsize=(1.8 * n_bb, 1.2), sharey=False)
+    if n_bb == 1:
+        axes = [axes]
+
+    for ax, bb in zip(axes, backbones):
+        vmax = 0.0
+        for i, cond in enumerate(keys):
+            ys = [vals[cond].get(n, {}).get(bb, 0.0) for n in all_ns]
+            if _series_is_all_zero_or_nan(ys):
+                continue
+            bars = ax.bar(
+                x + (i - (len(keys) - 1) / 2) * width, ys, width,
+                color=SERIES_COLORS[cond], edgecolor="black", linewidth=0.4,
+                label=SERIES_LABELS[cond],
+            )
+            for b, v in zip(bars, ys):
+                if v > 0 and np.isfinite(v):
+                    ax.text(b.get_x() + b.get_width() / 2, b.get_height(),
+                            f"{v:.0f}", ha="center", va="bottom", fontsize=5.0)
+            vmax = max(vmax, max((v for v in ys if np.isfinite(v)), default=0.0))
+
+        ax.set_xticks(x)
+        ax.set_xticklabels([str(n) for n in all_ns])
+        ax.set_xlabel("N (apps)")
+        ax.set_title(backbone_labels.get(bb, bb), fontsize=7, pad=2)
+        ax.set_ylim(0, _nice_upper(vmax * 1.12))
+        ax.grid(True, axis="y")
+        if ax is axes[0]:
+            ax.set_ylabel("Backbone exec (ms)")
+
+    # Single shared legend above all subplots
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, frameon=False,
+               ncol=len(keys), handlelength=1.0, handletextpad=0.3,
+               columnspacing=0.7, loc="lower center",
+               bbox_to_anchor=(0.5, 1.02), borderaxespad=0.0,
+               fontsize=6)
+    fig.tight_layout()
+    save_figure(fig, out_path)
+
+
+def plot_backbone_exec_bars_per_n(data: Dict[str, Dict[int, pd.DataFrame]],
+                                   out_dir: Path) -> None:
+    """Per-N backbone exec bar chart: x-axis = backbones, grouped bars per condition.
+
+    Saves backbone_exec_bars_N{n}.pdf for every N that has data.
+    """
+    backbone_order  = ["dinosmall", "momentbase", "swinsmall", "papageissvri"]
+    backbone_labels = {
+        "dinosmall":    "DINOv2-S",
+        "momentbase":   "MOMENT-B",
+        "swinsmall":    "Swin-S",
+        "papageissvri": "Papagei",
+    }
+
+    keys   = [k for k in SERIES_ORDER if k in data]
+    all_ns = sorted({n for k in keys for n in data[k]})
+    if not keys or not all_ns:
+        return
+
+    # Pre-compute per-batch mean proc_time for every (cond, N, backbone)
+    vals: Dict[str, Dict[int, Dict[str, float]]] = {}
+    for cond in keys:
+        vals[cond] = {}
+        for n in all_ns:
+            df = data[cond].get(n)
+            if df is None or df.empty:
+                continue
+            vals[cond][n] = {}
+            for bb, grp in df.groupby("backbone"):
+                vals[cond][n][str(bb)] = float(
+                    grp.groupby(["device", "device_start_time"])["proc_time(ms)"]
+                       .first().mean()
+                )
+
+    for n in all_ns:
+        backbones = [b for b in backbone_order
+                     if any(b in vals[c].get(n, {}) for c in keys)]
+        if not backbones:
+            continue
+
+        n_bb  = len(backbones)
+        x     = np.arange(n_bb, dtype=float)
+        width = 0.8 / len(keys)
+
+        fig, ax = plt.subplots(figsize=(1.8, 1.2))
+        vmax = 0.0
+        for i, cond in enumerate(keys):
+            ys = [vals[cond].get(n, {}).get(bb, 0.0) for bb in backbones]
+            if _series_is_all_zero_or_nan(ys):
+                continue
+            bars = ax.bar(
+                x + (i - (len(keys) - 1) / 2) * width, ys, width,
+                color=SERIES_COLORS[cond], edgecolor="black", linewidth=0.4,
+                label=SERIES_LABELS[cond],
+            )
+            for b, v in zip(bars, ys):
+                if v > 0 and np.isfinite(v):
+                    ax.text(b.get_x() + b.get_width() / 2, b.get_height(),
+                            f"{v:.0f}", ha="center", va="bottom", fontsize=5.0)
+            vmax = max(vmax, max((v for v in ys if np.isfinite(v)), default=0.0))
+
+        ax.set_xticks(x)
+        ax.set_xticklabels([backbone_labels.get(bb, bb) for bb in backbones],
+                           rotation=30, ha="right", fontsize=5.5)
+        ax.set_ylabel("Backbone exec (ms)")
+        ax.set_ylim(0, _nice_upper(vmax * 1.12))
+        ax.grid(True, axis="y")
+
+        handles, labels = ax.get_legend_handles_labels()
+        fig.legend(handles, labels, frameon=False,
+                   ncol=len(keys), handlelength=1.0, handletextpad=0.3,
+                   columnspacing=0.7, loc="lower center",
+                   bbox_to_anchor=(0.5, 1.02), borderaxespad=0.0,
+                   fontsize=6)
+        fig.tight_layout()
+        save_figure(fig, out_dir / f"backbone_exec_bars_N{n}.pdf")
+        plt.close(fig)
+
+
 def plot_backbone_decoder_breakdown(data: Dict[str, Dict[int, pd.DataFrame]],
                                      out_path: Path) -> None:
     """Stacked bars of mean backbone vs decoder exec time, per (N, condition).
@@ -1363,9 +1530,9 @@ def plot_backbone_decoder_breakdown(data: Dict[str, Dict[int, pd.DataFrame]],
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--exp-dir", type=str,
-                        default=str(SERVING_DIR / "experiments/cluster_sharing_benefit/results_alibaba"))
+                        default=str(SERVING_DIR / "experiments/cluster_sharing_benefit/results"))
     parser.add_argument("--warmup-secs", type=float, default=10.0)
-    parser.add_argument("--ns", type=str, default="8,16,32,64,128",
+    parser.add_argument("--ns", type=str, default="8,16,32,64,128,20,40,80,160",
                         help="Comma-separated list of N values to include "
                              "(e.g. --ns 8,16,24). Default: 8,16,32,64,128.")
     args = parser.parse_args()
@@ -1415,6 +1582,8 @@ def main() -> None:
     plot_success_rate_vs_n(run_status, out_dir / "success_rate_vs_napps.pdf")
     plot_latency_cdfs(data, out_dir)
     plot_backbone_decoder_breakdown(data, out_dir / "backbone_decoder_breakdown.pdf")
+    plot_backbone_exec_bars(data, out_dir / "backbone_exec_bars.pdf")
+    plot_backbone_exec_bars_per_n(data, out_dir)
     plot_latency_vs_load(data, out_dir / "latency_vs_load.pdf")
     plot_per_n_details(data, out_dir / "perN")
     plot_deployments(exp_dir, out_dir / "perN")

@@ -113,7 +113,10 @@ def main() -> int:
             if base not in cfg.tasks:
                 raise KeyError(f"task_meta: base {base!r} not in user_config.tasks")
             if synth not in cfg.tasks:
-                cfg.tasks[synth] = dict(cfg.tasks[base])
+                entry = dict(cfg.tasks[base])
+                max_seed = max((t.get("seed", 0) for t in cfg.tasks.values()), default=0)
+                entry["seed"] = max_seed + 100
+                cfg.tasks[synth] = entry
 
     active_tasks = _plan_tasks(plan)
     print(f"[Runner] N={args.n_apps} condition={args.condition} tasks={active_tasks}")

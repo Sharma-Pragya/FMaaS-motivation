@@ -1,0 +1,1489 @@
+{
+  "sites": [
+    {
+      "id": "site2",
+      "deployments": [
+        {
+          "device": "172.31.40.38:8000",
+          "device_name": "device1",
+          "device_type": "NVIDIA T4",
+          "backbone": "dinosmall",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "nyudepth",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": "nyudepth_dinosmall_monocular"
+            },
+            {
+              "task": "vocseg",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app8",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": "nyudepth_dinosmall_monocular"
+            },
+            {
+              "task": "vocseg__app12",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app16",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": "nyudepth_dinosmall_monocular"
+            },
+            {
+              "task": "vocseg__app20",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app24",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": "nyudepth_dinosmall_monocular"
+            },
+            {
+              "task": "vocseg__app28",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app32",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": "nyudepth_dinosmall_monocular"
+            },
+            {
+              "task": "vocseg__app36",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app40",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": "nyudepth_dinosmall_monocular"
+            },
+            {
+              "task": "vocseg__app44",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app48",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": "nyudepth_dinosmall_monocular"
+            },
+            {
+              "task": "vocseg__app52",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app56",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": "nyudepth_dinosmall_monocular"
+            },
+            {
+              "task": "vocseg__app60",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app64",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": "nyudepth_dinosmall_monocular"
+            },
+            {
+              "task": "vocseg__app68",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app72",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": "nyudepth_dinosmall_monocular"
+            },
+            {
+              "task": "vocseg__app76",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app80",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": "nyudepth_dinosmall_monocular"
+            },
+            {
+              "task": "vocseg__app84",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app88",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": "nyudepth_dinosmall_monocular"
+            },
+            {
+              "task": "vocseg__app92",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app96",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": "nyudepth_dinosmall_monocular"
+            },
+            {
+              "task": "vocseg__app100",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app104",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": "nyudepth_dinosmall_monocular"
+            },
+            {
+              "task": "vocseg__app108",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app112",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": "nyudepth_dinosmall_monocular"
+            },
+            {
+              "task": "vocseg__app116",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app120",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": "nyudepth_dinosmall_monocular"
+            },
+            {
+              "task": "vocseg__app124",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            }
+          ],
+          "tasks": {
+            "nyudepth": {
+              "type": "monocular",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "vocseg": {
+              "type": "linear_seg",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "nyudepth__app8": {
+              "type": "monocular",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "vocseg__app12": {
+              "type": "linear_seg",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "nyudepth__app16": {
+              "type": "monocular",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "vocseg__app20": {
+              "type": "linear_seg",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "nyudepth__app24": {
+              "type": "monocular",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "vocseg__app28": {
+              "type": "linear_seg",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "nyudepth__app32": {
+              "type": "monocular",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "vocseg__app36": {
+              "type": "linear_seg",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "nyudepth__app40": {
+              "type": "monocular",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "vocseg__app44": {
+              "type": "linear_seg",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "nyudepth__app48": {
+              "type": "monocular",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "vocseg__app52": {
+              "type": "linear_seg",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "nyudepth__app56": {
+              "type": "monocular",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "vocseg__app60": {
+              "type": "linear_seg",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "nyudepth__app64": {
+              "type": "monocular",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "vocseg__app68": {
+              "type": "linear_seg",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "nyudepth__app72": {
+              "type": "monocular",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "vocseg__app76": {
+              "type": "linear_seg",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "nyudepth__app80": {
+              "type": "monocular",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "vocseg__app84": {
+              "type": "linear_seg",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "nyudepth__app88": {
+              "type": "monocular",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "vocseg__app92": {
+              "type": "linear_seg",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "nyudepth__app96": {
+              "type": "monocular",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "vocseg__app100": {
+              "type": "linear_seg",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "nyudepth__app104": {
+              "type": "monocular",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "vocseg__app108": {
+              "type": "linear_seg",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "nyudepth__app112": {
+              "type": "monocular",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "vocseg__app116": {
+              "type": "linear_seg",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "nyudepth__app120": {
+              "type": "monocular",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "vocseg__app124": {
+              "type": "linear_seg",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            }
+          },
+          "max_batch_size": 32,
+          "max_batch_wait_ms": 0,
+          "isolation_mode": "shared",
+          "max_model_len": 256,
+          "gpu_memory_utilization": 0.85
+        },
+        {
+          "device": "172.31.34.115:8000",
+          "device_name": "device2",
+          "device_type": "NVIDIA T4",
+          "backbone": "momentbase",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "heartrate",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "sysbp",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app9",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "sysbp__app13",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app17",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "sysbp__app21",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app25",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "sysbp__app29",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app33",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "sysbp__app37",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app41",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "sysbp__app45",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app49",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "sysbp__app53",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app57",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "sysbp__app61",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app65",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "sysbp__app69",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app73",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "sysbp__app77",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app81",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "sysbp__app85",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app89",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "sysbp__app93",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app97",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "sysbp__app101",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app105",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "sysbp__app109",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app113",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "sysbp__app117",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app121",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "sysbp__app125",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_momentbase_mlp"
+            }
+          ],
+          "tasks": {
+            "heartrate": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "sysbp": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "heartrate__app9": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "sysbp__app13": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "heartrate__app17": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "sysbp__app21": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "heartrate__app25": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "sysbp__app29": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "heartrate__app33": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "sysbp__app37": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "heartrate__app41": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "sysbp__app45": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "heartrate__app49": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "sysbp__app53": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "heartrate__app57": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "sysbp__app61": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "heartrate__app65": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "sysbp__app69": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "heartrate__app73": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "sysbp__app77": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "heartrate__app81": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "sysbp__app85": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "heartrate__app89": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "sysbp__app93": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "heartrate__app97": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "sysbp__app101": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "heartrate__app105": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "sysbp__app109": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "heartrate__app113": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "sysbp__app117": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "heartrate__app121": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "sysbp__app125": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            }
+          },
+          "max_batch_size": 32,
+          "max_batch_wait_ms": 0,
+          "isolation_mode": "shared",
+          "max_model_len": 256,
+          "gpu_memory_utilization": 0.85
+        },
+        {
+          "device": "172.31.39.15:8000",
+          "device_name": "device3",
+          "device_type": "NVIDIA T4",
+          "backbone": "swinsmall",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "imgclass10",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app10",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app14",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app18",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app22",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app26",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app30",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app34",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app38",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app42",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app46",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app50",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app54",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app58",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app62",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app66",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app70",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app74",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app78",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app82",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app86",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app90",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app94",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app98",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app102",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app106",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app110",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app114",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app118",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app122",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app126",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            }
+          ],
+          "tasks": {
+            "imgclass10": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "eurosatclass": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "imgclass10__app10": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "eurosatclass__app14": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "imgclass10__app18": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "eurosatclass__app22": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "imgclass10__app26": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "eurosatclass__app30": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "imgclass10__app34": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "eurosatclass__app38": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "imgclass10__app42": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "eurosatclass__app46": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "imgclass10__app50": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "eurosatclass__app54": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "imgclass10__app58": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "eurosatclass__app62": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "imgclass10__app66": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "eurosatclass__app70": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "imgclass10__app74": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "eurosatclass__app78": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "imgclass10__app82": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "eurosatclass__app86": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "imgclass10__app90": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "eurosatclass__app94": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "imgclass10__app98": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "eurosatclass__app102": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "imgclass10__app106": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "eurosatclass__app110": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "imgclass10__app114": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "eurosatclass__app118": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "imgclass10__app122": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "eurosatclass__app126": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            }
+          },
+          "max_batch_size": 32,
+          "max_batch_wait_ms": 0,
+          "isolation_mode": "shared",
+          "max_model_len": 256,
+          "gpu_memory_utilization": 0.85
+        },
+        {
+          "device": "172.31.46.11:8000",
+          "device_name": "device4",
+          "device_type": "NVIDIA T4",
+          "backbone": "papageissvri",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "diasbp",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "diasbp__app11",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app15",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "diasbp__app19",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app23",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "diasbp__app27",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app31",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "diasbp__app35",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app39",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "diasbp__app43",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app47",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "diasbp__app51",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app55",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "diasbp__app59",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app63",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "diasbp__app67",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app71",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "diasbp__app75",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app79",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "diasbp__app83",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app87",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "diasbp__app91",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app95",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "diasbp__app99",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app103",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "diasbp__app107",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app111",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "diasbp__app115",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app119",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "diasbp__app123",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app127",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            }
+          ],
+          "tasks": {
+            "diasbp": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "etth1fore": {
+              "type": "forecasting",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "diasbp__app11": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "etth1fore__app15": {
+              "type": "forecasting",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "diasbp__app19": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "etth1fore__app23": {
+              "type": "forecasting",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "diasbp__app27": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "etth1fore__app31": {
+              "type": "forecasting",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "diasbp__app35": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "etth1fore__app39": {
+              "type": "forecasting",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "diasbp__app43": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "etth1fore__app47": {
+              "type": "forecasting",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "diasbp__app51": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "etth1fore__app55": {
+              "type": "forecasting",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "diasbp__app59": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "etth1fore__app63": {
+              "type": "forecasting",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "diasbp__app67": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "etth1fore__app71": {
+              "type": "forecasting",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "diasbp__app75": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "etth1fore__app79": {
+              "type": "forecasting",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "diasbp__app83": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "etth1fore__app87": {
+              "type": "forecasting",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "diasbp__app91": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "etth1fore__app95": {
+              "type": "forecasting",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "diasbp__app99": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "etth1fore__app103": {
+              "type": "forecasting",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "diasbp__app107": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "etth1fore__app111": {
+              "type": "forecasting",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "diasbp__app115": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "etth1fore__app119": {
+              "type": "forecasting",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "diasbp__app123": {
+              "type": "regression",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "etth1fore__app127": {
+              "type": "forecasting",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            }
+          },
+          "max_batch_size": 32,
+          "max_batch_wait_ms": 0,
+          "isolation_mode": "shared",
+          "max_model_len": 256,
+          "gpu_memory_utilization": 0.85
+        }
+      ]
+    }
+  ]
+}

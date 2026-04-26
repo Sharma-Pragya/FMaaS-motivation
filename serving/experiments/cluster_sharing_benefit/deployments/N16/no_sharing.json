@@ -4,9 +4,9 @@
       "id": "site2",
       "deployments": [
         {
-          "device": "192.168.245.191:8000",
+          "device": "172.31.40.38:8000",
           "device_name": "device1",
-          "device_type": "NVIDIA A2",
+          "device_type": "NVIDIA T4",
           "backbone": "dinosmall",
           "cuda": "cuda:0",
           "scheduler_policy": "fifo",
@@ -27,32 +27,32 @@
           }
         },
         {
-          "device": "192.168.245.191:8010",
+          "device": "172.31.40.38:8010",
           "device_name": "device1",
-          "device_type": "NVIDIA A2",
-          "backbone": "dinosmall",
+          "device_type": "NVIDIA T4",
+          "backbone": "momentlarge",
           "cuda": "cuda:0",
           "scheduler_policy": "fifo",
           "worker_mode": "inline",
           "decoders": [
             {
-              "task": "vocseg",
-              "base_task": "vocseg",
-              "type": "linear_seg",
-              "path": null
+              "task": "etth1fore",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_momentlarge_mlp"
             }
           ],
           "tasks": {
-            "vocseg": {
-              "type": "linear_seg",
+            "etth1fore": {
+              "type": "forecasting",
               "request_per_sec": 2.0
             }
           }
         },
         {
-          "device": "192.168.245.191:8020",
+          "device": "172.31.40.38:8020",
           "device_name": "device1",
-          "device_type": "NVIDIA A2",
+          "device_type": "NVIDIA T4",
           "backbone": "dinosmall",
           "cuda": "cuda:0",
           "scheduler_policy": "fifo",
@@ -73,32 +73,32 @@
           }
         },
         {
-          "device": "192.168.245.191:8030",
+          "device": "172.31.40.38:8030",
           "device_name": "device1",
-          "device_type": "NVIDIA A2",
-          "backbone": "dinosmall",
+          "device_type": "NVIDIA T4",
+          "backbone": "momentlarge",
           "cuda": "cuda:0",
           "scheduler_policy": "fifo",
           "worker_mode": "inline",
           "decoders": [
             {
-              "task": "vocseg__app12",
-              "base_task": "vocseg",
-              "type": "linear_seg",
-              "path": null
+              "task": "etth1fore__app12",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_momentlarge_mlp"
             }
           ],
           "tasks": {
-            "vocseg__app12": {
-              "type": "linear_seg",
+            "etth1fore__app12": {
+              "type": "forecasting",
               "request_per_sec": 2.0
             }
           }
         },
         {
-          "device": "192.168.245.193:8000",
+          "device": "172.31.34.115:8000",
           "device_name": "device2",
-          "device_type": "NVIDIA A2",
+          "device_type": "NVIDIA T4",
           "backbone": "momentbase",
           "cuda": "cuda:0",
           "scheduler_policy": "fifo",
@@ -119,32 +119,32 @@
           }
         },
         {
-          "device": "192.168.245.193:8010",
+          "device": "172.31.34.115:8010",
           "device_name": "device2",
-          "device_type": "NVIDIA A2",
-          "backbone": "momentbase",
+          "device_type": "NVIDIA T4",
+          "backbone": "swinbase",
           "cuda": "cuda:0",
           "scheduler_policy": "fifo",
           "worker_mode": "inline",
           "decoders": [
             {
-              "task": "sysbp",
-              "base_task": "sysbp",
-              "type": "regression",
-              "path": "sysbp_momentbase_mlp"
+              "task": "eurosatclass",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
             }
           ],
           "tasks": {
-            "sysbp": {
-              "type": "regression",
+            "eurosatclass": {
+              "type": "linear_classification",
               "request_per_sec": 2.0
             }
           }
         },
         {
-          "device": "192.168.245.193:8020",
+          "device": "172.31.34.115:8020",
           "device_name": "device2",
-          "device_type": "NVIDIA A2",
+          "device_type": "NVIDIA T4",
           "backbone": "momentbase",
           "cuda": "cuda:0",
           "scheduler_policy": "fifo",
@@ -165,32 +165,32 @@
           }
         },
         {
-          "device": "192.168.245.193:8030",
+          "device": "172.31.34.115:8030",
           "device_name": "device2",
-          "device_type": "NVIDIA A2",
-          "backbone": "momentbase",
+          "device_type": "NVIDIA T4",
+          "backbone": "swinbase",
           "cuda": "cuda:0",
           "scheduler_policy": "fifo",
           "worker_mode": "inline",
           "decoders": [
             {
-              "task": "sysbp__app13",
-              "base_task": "sysbp",
-              "type": "regression",
-              "path": "sysbp_momentbase_mlp"
+              "task": "eurosatclass__app13",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
             }
           ],
           "tasks": {
-            "sysbp__app13": {
-              "type": "regression",
+            "eurosatclass__app13": {
+              "type": "linear_classification",
               "request_per_sec": 2.0
             }
           }
         },
         {
-          "device": "192.168.245.194:8000",
+          "device": "172.31.39.15:8000",
           "device_name": "device3",
-          "device_type": "NVIDIA A2",
+          "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
           "cuda": "cuda:0",
           "scheduler_policy": "fifo",
@@ -211,32 +211,32 @@
           }
         },
         {
-          "device": "192.168.245.194:8010",
+          "device": "172.31.39.15:8010",
           "device_name": "device3",
-          "device_type": "NVIDIA A2",
-          "backbone": "swinsmall",
+          "device_type": "NVIDIA T4",
+          "backbone": "papageip",
           "cuda": "cuda:0",
           "scheduler_policy": "fifo",
           "worker_mode": "inline",
           "decoders": [
             {
-              "task": "eurosatclass",
-              "base_task": "eurosatclass",
-              "type": "linear_classification",
-              "path": null
+              "task": "sysbp",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
             }
           ],
           "tasks": {
-            "eurosatclass": {
-              "type": "linear_classification",
+            "sysbp": {
+              "type": "regression",
               "request_per_sec": 2.0
             }
           }
         },
         {
-          "device": "192.168.245.194:8020",
+          "device": "172.31.39.15:8020",
           "device_name": "device3",
-          "device_type": "NVIDIA A2",
+          "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
           "cuda": "cuda:0",
           "scheduler_policy": "fifo",
@@ -257,32 +257,32 @@
           }
         },
         {
-          "device": "192.168.245.194:8030",
+          "device": "172.31.39.15:8030",
           "device_name": "device3",
-          "device_type": "NVIDIA A2",
-          "backbone": "swinsmall",
+          "device_type": "NVIDIA T4",
+          "backbone": "papageip",
           "cuda": "cuda:0",
           "scheduler_policy": "fifo",
           "worker_mode": "inline",
           "decoders": [
             {
-              "task": "eurosatclass__app14",
-              "base_task": "eurosatclass",
-              "type": "linear_classification",
-              "path": null
+              "task": "sysbp__app14",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
             }
           ],
           "tasks": {
-            "eurosatclass__app14": {
-              "type": "linear_classification",
+            "sysbp__app14": {
+              "type": "regression",
               "request_per_sec": 2.0
             }
           }
         },
         {
-          "device": "192.168.245.195:8000",
+          "device": "172.31.46.11:8000",
           "device_name": "device4",
-          "device_type": "NVIDIA A2",
+          "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
           "cuda": "cuda:0",
           "scheduler_policy": "fifo",
@@ -303,32 +303,32 @@
           }
         },
         {
-          "device": "192.168.245.195:8010",
+          "device": "172.31.46.11:8010",
           "device_name": "device4",
-          "device_type": "NVIDIA A2",
-          "backbone": "papageissvri",
+          "device_type": "NVIDIA T4",
+          "backbone": "dinobase",
           "cuda": "cuda:0",
           "scheduler_policy": "fifo",
           "worker_mode": "inline",
           "decoders": [
             {
-              "task": "etth1fore",
-              "base_task": "etth1fore",
-              "type": "forecasting",
-              "path": "etth1fore_papageissvri_mlp"
+              "task": "vocseg",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
             }
           ],
           "tasks": {
-            "etth1fore": {
-              "type": "forecasting",
+            "vocseg": {
+              "type": "linear_seg",
               "request_per_sec": 2.0
             }
           }
         },
         {
-          "device": "192.168.245.195:8020",
+          "device": "172.31.46.11:8020",
           "device_name": "device4",
-          "device_type": "NVIDIA A2",
+          "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
           "cuda": "cuda:0",
           "scheduler_policy": "fifo",
@@ -349,24 +349,24 @@
           }
         },
         {
-          "device": "192.168.245.195:8030",
+          "device": "172.31.46.11:8030",
           "device_name": "device4",
-          "device_type": "NVIDIA A2",
-          "backbone": "papageissvri",
+          "device_type": "NVIDIA T4",
+          "backbone": "dinobase",
           "cuda": "cuda:0",
           "scheduler_policy": "fifo",
           "worker_mode": "inline",
           "decoders": [
             {
-              "task": "etth1fore__app15",
-              "base_task": "etth1fore",
-              "type": "forecasting",
-              "path": "etth1fore_papageissvri_mlp"
+              "task": "vocseg__app15",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
             }
           ],
           "tasks": {
-            "etth1fore__app15": {
-              "type": "forecasting",
+            "vocseg__app15": {
+              "type": "linear_seg",
               "request_per_sec": 2.0
             }
           }

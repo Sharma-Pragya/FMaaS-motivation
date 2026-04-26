@@ -24,7 +24,7 @@ cd "$SERVING_DIR"
 
 N_APPS_LIST="${N_APPS_LIST:-}"
 CONDITIONS="${CONDITIONS:-}"
-DURATION="${DURATION:-600}"
+DURATION="${DURATION:-}"
 RESULTS_DIR="${RESULTS_DIR:-experiments/cluster_sharing_benefit/results}"
 SKIP_GEN="${SKIP_GEN:-0}"
 
@@ -46,7 +46,12 @@ from experiments.cluster_sharing_benefit.user_config import conditions
 print(' '.join(conditions))
 ")
 fi
-
+if [[ -z "$DURATION" ]]; then
+    DURATION=$(python3 -c "
+from experiments.cluster_sharing_benefit.user_config import experiment
+print(experiment['duration'])
+")
+fi
 info "N values:   $N_APPS_LIST"
 info "Conditions: $CONDITIONS"
 info "Duration:   ${DURATION}s"

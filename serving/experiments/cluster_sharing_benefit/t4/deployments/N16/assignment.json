@@ -1,0 +1,147 @@
+{
+  "n_apps": 16,
+  "gpus": [
+    "device1",
+    "device2",
+    "device3",
+    "device4"
+  ],
+  "apps_per_gpu": [
+    [
+      {
+        "task": "nyudepth",
+        "backbone": "dinosmall",
+        "logical_task": "nyudepth",
+        "base_task": "nyudepth",
+        "decoder_path": "nyudepth_dinosmall_monocular",
+        "app_idx": 0
+      },
+      {
+        "task": "vocseg",
+        "backbone": "dinosmall",
+        "logical_task": "vocseg",
+        "base_task": "vocseg",
+        "decoder_path": null,
+        "app_idx": 4
+      },
+      {
+        "task": "nyudepth__app8",
+        "backbone": "dinosmall",
+        "logical_task": "nyudepth",
+        "base_task": "nyudepth",
+        "decoder_path": "nyudepth_dinosmall_monocular",
+        "app_idx": 8
+      },
+      {
+        "task": "vocseg__app12",
+        "backbone": "dinosmall",
+        "logical_task": "vocseg",
+        "base_task": "vocseg",
+        "decoder_path": null,
+        "app_idx": 12
+      }
+    ],
+    [
+      {
+        "task": "heartrate",
+        "backbone": "momentbase",
+        "logical_task": "heartrate",
+        "base_task": "heartrate",
+        "decoder_path": "heartrate_momentbase_mlp",
+        "app_idx": 1
+      },
+      {
+        "task": "sysbp",
+        "backbone": "momentbase",
+        "logical_task": "sysbp",
+        "base_task": "sysbp",
+        "decoder_path": "sysbp_momentbase_mlp",
+        "app_idx": 5
+      },
+      {
+        "task": "heartrate__app9",
+        "backbone": "momentbase",
+        "logical_task": "heartrate",
+        "base_task": "heartrate",
+        "decoder_path": "heartrate_momentbase_mlp",
+        "app_idx": 9
+      },
+      {
+        "task": "sysbp__app13",
+        "backbone": "momentbase",
+        "logical_task": "sysbp",
+        "base_task": "sysbp",
+        "decoder_path": "sysbp_momentbase_mlp",
+        "app_idx": 13
+      }
+    ],
+    [
+      {
+        "task": "imgclass10",
+        "backbone": "swinsmall",
+        "logical_task": "imgclass10",
+        "base_task": "imgclass10",
+        "decoder_path": null,
+        "app_idx": 2
+      },
+      {
+        "task": "eurosatclass",
+        "backbone": "swinsmall",
+        "logical_task": "eurosatclass",
+        "base_task": "eurosatclass",
+        "decoder_path": null,
+        "app_idx": 6
+      },
+      {
+        "task": "imgclass10__app10",
+        "backbone": "swinsmall",
+        "logical_task": "imgclass10",
+        "base_task": "imgclass10",
+        "decoder_path": null,
+        "app_idx": 10
+      },
+      {
+        "task": "eurosatclass__app14",
+        "backbone": "swinsmall",
+        "logical_task": "eurosatclass",
+        "base_task": "eurosatclass",
+        "decoder_path": null,
+        "app_idx": 14
+      }
+    ],
+    [
+      {
+        "task": "diasbp",
+        "backbone": "papageissvri",
+        "logical_task": "diasbp",
+        "base_task": "diasbp",
+        "decoder_path": "diasbp_papageissvri_mlp",
+        "app_idx": 3
+      },
+      {
+        "task": "etth1fore",
+        "backbone": "papageissvri",
+        "logical_task": "etth1fore",
+        "base_task": "etth1fore",
+        "decoder_path": "etth1fore_papageissvri_mlp",
+        "app_idx": 7
+      },
+      {
+        "task": "diasbp__app11",
+        "backbone": "papageissvri",
+        "logical_task": "diasbp",
+        "base_task": "diasbp",
+        "decoder_path": "diasbp_papageissvri_mlp",
+        "app_idx": 11
+      },
+      {
+        "task": "etth1fore__app15",
+        "backbone": "papageissvri",
+        "logical_task": "etth1fore",
+        "base_task": "etth1fore",
+        "decoder_path": "etth1fore_papageissvri_mlp",
+        "app_idx": 15
+      }
+    ]
+  ]
+}

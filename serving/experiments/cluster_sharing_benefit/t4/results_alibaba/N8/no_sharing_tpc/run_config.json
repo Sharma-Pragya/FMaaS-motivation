@@ -1,0 +1,38 @@
+{
+  "n_apps": 8,
+  "condition": "no_sharing_tpc",
+  "duration": 600.0,
+  "trace_type": "alibaba_gentd26",
+  "seed": 42,
+  "active_tasks": [
+    "nyudepth",
+    "vocseg",
+    "heartrate",
+    "sysbp",
+    "imgclass10",
+    "eurosatclass",
+    "diasbp",
+    "etth1fore"
+  ],
+  "task_rates": {
+    "nyudepth": 2.0,
+    "vocseg": 2.0,
+    "heartrate": 2.0,
+    "sysbp": 2.0,
+    "imgclass10": 2.0,
+    "eurosatclass": 2.0,
+    "diasbp": 2.0,
+    "etth1fore": 2.0
+  },
+  "experiment": {
+    "trace": "alibaba_gentd26",
+    "duration": 600,
+    "max_batch_wait_ms": 0,
+    "max_batch_size": 32,
+    "isolation_mode": "shared",
+    "warmup_gap": 2.0,
+    "pretrace_warmup_secs": 15.0,
+    "max_model_len": 256,
+    "batch_mode": "fixedpoint"
+  }
+}

@@ -17,11 +17,11 @@
         "app_idx": 0
       },
       {
-        "task": "vocseg",
-        "backbone": "dinosmall",
-        "logical_task": "vocseg",
-        "base_task": "vocseg",
-        "decoder_path": null,
+        "task": "etth1fore",
+        "backbone": "momentlarge",
+        "logical_task": "etth1fore",
+        "base_task": "etth1fore",
+        "decoder_path": "etth1fore_momentlarge_mlp",
         "app_idx": 4
       },
       {
@@ -33,11 +33,11 @@
         "app_idx": 8
       },
       {
-        "task": "vocseg__app12",
-        "backbone": "dinosmall",
-        "logical_task": "vocseg",
-        "base_task": "vocseg",
-        "decoder_path": null,
+        "task": "etth1fore__app12",
+        "backbone": "momentlarge",
+        "logical_task": "etth1fore",
+        "base_task": "etth1fore",
+        "decoder_path": "etth1fore_momentlarge_mlp",
         "app_idx": 12
       }
     ],
@@ -51,11 +51,11 @@
         "app_idx": 1
       },
       {
-        "task": "sysbp",
-        "backbone": "momentbase",
-        "logical_task": "sysbp",
-        "base_task": "sysbp",
-        "decoder_path": "sysbp_momentbase_mlp",
+        "task": "eurosatclass",
+        "backbone": "swinbase",
+        "logical_task": "eurosatclass",
+        "base_task": "eurosatclass",
+        "decoder_path": null,
         "app_idx": 5
       },
       {
@@ -67,11 +67,11 @@
         "app_idx": 9
       },
       {
-        "task": "sysbp__app13",
-        "backbone": "momentbase",
-        "logical_task": "sysbp",
-        "base_task": "sysbp",
-        "decoder_path": "sysbp_momentbase_mlp",
+        "task": "eurosatclass__app13",
+        "backbone": "swinbase",
+        "logical_task": "eurosatclass",
+        "base_task": "eurosatclass",
+        "decoder_path": null,
         "app_idx": 13
       }
     ],
@@ -85,11 +85,11 @@
         "app_idx": 2
       },
       {
-        "task": "eurosatclass",
-        "backbone": "swinsmall",
-        "logical_task": "eurosatclass",
-        "base_task": "eurosatclass",
-        "decoder_path": null,
+        "task": "sysbp",
+        "backbone": "papageip",
+        "logical_task": "sysbp",
+        "base_task": "sysbp",
+        "decoder_path": "sysbp_papageip_mlp",
         "app_idx": 6
       },
       {
@@ -101,11 +101,11 @@
         "app_idx": 10
       },
       {
-        "task": "eurosatclass__app14",
-        "backbone": "swinsmall",
-        "logical_task": "eurosatclass",
-        "base_task": "eurosatclass",
-        "decoder_path": null,
+        "task": "sysbp__app14",
+        "backbone": "papageip",
+        "logical_task": "sysbp",
+        "base_task": "sysbp",
+        "decoder_path": "sysbp_papageip_mlp",
         "app_idx": 14
       }
     ],
@@ -119,11 +119,11 @@
         "app_idx": 3
       },
       {
-        "task": "etth1fore",
-        "backbone": "papageissvri",
-        "logical_task": "etth1fore",
-        "base_task": "etth1fore",
-        "decoder_path": "etth1fore_papageissvri_mlp",
+        "task": "vocseg",
+        "backbone": "dinobase",
+        "logical_task": "vocseg",
+        "base_task": "vocseg",
+        "decoder_path": null,
         "app_idx": 7
       },
       {
@@ -135,11 +135,11 @@
         "app_idx": 11
       },
       {
-        "task": "etth1fore__app15",
-        "backbone": "papageissvri",
-        "logical_task": "etth1fore",
-        "base_task": "etth1fore",
-        "decoder_path": "etth1fore_papageissvri_mlp",
+        "task": "vocseg__app15",
+        "backbone": "dinobase",
+        "logical_task": "vocseg",
+        "base_task": "vocseg",
+        "decoder_path": null,
         "app_idx": 15
       }
     ]
