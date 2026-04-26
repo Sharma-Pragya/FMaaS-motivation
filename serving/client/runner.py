@@ -262,27 +262,28 @@ async def _send_request(req_id, device_url, inputs_dict, outputs_dict, client_ke
     swap_time = response["swap_time_ns"]  / 1e9
     dec_time  = response["decoder_time_ns"] / 1e9
     gpu_peak_mb = float(response.get("gpu_alloc_peak_mb", 0.0) or 0.0)
-    result = response["output"]
-    text_out = response.get("text_output", "")
-    if text_out:
-        # VLM response: use generated text as prediction
-        pred = text_out
-    elif getattr(result, "size", 1) == 1:
-        pred = result.item()
-    else:
-        pred = result.flatten().tolist()
-    true_val = outputs_dict.get("y")
-    if isinstance(true_val, (list, str)):
-        true_val = true_val[0] if isinstance(true_val, list) else true_val
-    elif true_val is not None:
-        true_val = true_val.item() if true_val.size == 1 else true_val.flatten().tolist()
+    # Output tensors (pred/true_val) are not written to CSV — skipped to avoid
+    # accumulating GBs of vision output arrays (224x224) across 20k+ requests.
+    # result = response["output"]
+    # text_out = response.get("text_output", "")
+    # if text_out:
+    #     pred = text_out
+    # elif getattr(result, "size", 1) == 1:
+    #     pred = result.item()
+    # else:
+    #     pred = result.flatten().tolist()
+    # true_val = outputs_dict.get("y")
+    # if isinstance(true_val, (list, str)):
+    #     true_val = true_val[0] if isinstance(true_val, list) else true_val
+    # elif true_val is not None:
+    #     true_val = true_val.item() if true_val.size == 1 else true_val.flatten().tolist()
 
     return (
         req_id, device_url,
         send_time, submit_time, dev_start, dev_end, recv_time,
         recv_time - send_time,   # e2e
         proc_time, swap_time, dec_time,
-        pred, true_val,
+        None, None,
         gpu_peak_mb,
     )
 
