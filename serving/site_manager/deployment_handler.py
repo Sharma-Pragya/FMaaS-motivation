@@ -78,7 +78,8 @@ async def _ssh_start_server(ssh_host: str, username: str, conda_env: str, cmd: s
 
 
 async def _send_control(grpc_url: str, command: str, payload_json: str,
-                        max_retries: int = 10, retry_delay: float = 5.0):
+                        max_retries: int = 10, retry_delay: float = 5.0,
+                        log_path: str = None):
     """Send a control command to a device, retrying until the server is ready.
 
     The device process may take several seconds to start (especially when
@@ -86,6 +87,17 @@ async def _send_control(grpc_url: str, command: str, payload_json: str,
     load command and leaving pipeline=None.
     """
     for attempt in range(1, max_retries + 1):
+        # Before each attempt, check if the device process already crashed
+        if log_path and os.path.isfile(log_path):
+            with open(log_path) as _lf:
+                log_contents = _lf.read()
+            if "CUDA error: out of memory" in log_contents or "RuntimeError" in log_contents:
+                print(f"[CustomGRPC] {grpc_url} device process crashed (OOM or RuntimeError) — aborting retries.")
+                return {"status": "error_oom"}
+            if "[Launcher] EXIT" in log_contents and "[Device] gRPC runtime listening" not in log_contents:
+                print(f"[CustomGRPC] {grpc_url} device process exited before gRPC started — aborting retries.")
+                return {"status": "error_process_exited"}
+
         client = EdgeRuntimeClient(grpc_url)
         try:
             print(f"[SiteManager] Sending '{command}' to {grpc_url} (attempt {attempt}/{max_retries})")
@@ -103,6 +115,27 @@ async def _send_control(grpc_url: str, command: str, payload_json: str,
                 return False
         finally:
             await client.close()
+
+
+async def _wait_for_grpc_ready(log_path: str, timeout_s: float = 60.0, poll_interval: float = 2.0) -> bool:
+    """Poll log_path until gRPC is listening or the process exits/crashes.
+
+    Returns True if gRPC is ready, False if the process crashed or timed out.
+    """
+    deadline = asyncio.get_event_loop().time() + timeout_s
+    while asyncio.get_event_loop().time() < deadline:
+        await asyncio.sleep(poll_interval)
+        if not os.path.isfile(log_path):
+            continue
+        with open(log_path) as f:
+            contents = f.read()
+        if "[Device] gRPC runtime listening" in contents:
+            return True
+        if "[Launcher] EXIT" in contents or "CUDA error" in contents or "RuntimeError" in contents:
+            print(f"[SiteManager] {log_path}: process exited before gRPC ready.")
+            return False
+    print(f"[SiteManager] {log_path}: timed out waiting for gRPC ready after {timeout_s}s.")
+    return False
 
 
 async def _deploy_one(spec: dict):
@@ -207,11 +240,16 @@ async def _deploy_one(spec: dict):
     await _ssh_start_server(ssh_host, username, conda_env, server_cmd, log_path,
                             cuda_visible=cuda_visible)
 
+    ready = await _wait_for_grpc_ready(log_path, timeout_s=60.0)
+    if not ready:
+        print(f"[SiteManager] {grpc_url} process crashed before gRPC started — skipping load.")
+        return {"status": "error_process_exited"}
+
     config_payload = {
         "backbone": spec["backbone"],
         "decoders": spec["decoders"],
     }
-    deployment_status = await _send_control(grpc_url, "load", json.dumps(config_payload))
+    deployment_status = await _send_control(grpc_url, "load", json.dumps(config_payload), log_path=log_path)
     return deployment_status
 
 
@@ -306,15 +344,20 @@ async def _ssh_kill_server(ssh_host: str, username: str, grpc_port: int):
 
 async def shutdown_devices(specs: list):
     """Kill all device servers launched for the given deployment specs."""
+    from collections import defaultdict
     seen = set()
-    tasks = []
+    per_host = defaultdict(list)  # ssh_host -> [grpc_port, ...]
     for spec in specs:
         ssh_host, _, grpc_port = _parse_url(spec["device"])
         key = (ssh_host, grpc_port)
         if key not in seen:
             seen.add(key)
-            tasks.append(_ssh_kill_server(ssh_host, username, grpc_port))
+            per_host[ssh_host].append(grpc_port)
 
-    if tasks:
-        await asyncio.gather(*tasks)
+    async def _kill_host(ssh_host, ports):
+        for port in ports:
+            await _ssh_kill_server(ssh_host, username, port)
+
+    if per_host:
+        await asyncio.gather(*[_kill_host(h, ports) for h, ports in per_host.items()])
     print(f"[SiteManager] Shutdown complete for {len(seen)} device server(s).")

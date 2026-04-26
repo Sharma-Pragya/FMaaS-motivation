@@ -1,4 +1,5 @@
 import argparse
+import hashlib
 import os
 from collections import defaultdict
 from typing import Dict, List, Optional, Union
@@ -66,15 +67,25 @@ def generate_requests(
 ) -> tuple:
     """Replay the Alibaba GenTD26 per-model interarrival shape for each task.
 
-    Mapping: user task names are mapped positionally (round-robin) to Alibaba
-    models sorted by request count. If there are more user tasks than Alibaba
-    models, assignment wraps. Each user task gets an independent random start
-    offset into its assigned model's interarrival sequence, so replicas that
-    share an underlying Alibaba model do not burst in lockstep.
+    Mapping (Clockwork-style K-streams): each user task is assigned a block of
+    K_STREAMS=9 consecutive Alibaba models from the pool (ranked by request
+    count).  App at pool position P gets models [P*K, P*K+1, ..., P*K+K-1]
+    (wrapping).  Each stream fires at rate/K and their arrivals merge under the
+    same task label, superposing into one arrival process per task.
 
-    Time-axis rescaling: the real interarrival sequence for each assigned
-    model is scaled by (real_mean_ia * target_rps) so the rescaled mean RPS
-    equals the target. Burst shape and autocorrelation are preserved.
+    Stability across N: because pool position is derived from the __appN suffix
+    (or original rank) rather than sorted task name order, every task's model
+    block is fixed regardless of how many other tasks exist.  Adding __appX
+    clones never shifts the models assigned to the original tasks.
+
+    CoV stability: by Palm-Khintchine, superposing K independent renewal
+    processes reduces CoV compared to any single bursty stream.  Since every
+    task always gets the same K-stream block, the merged CoV is identical for
+    all N — eliminating the spurious latency decrease as N grows.
+
+    Time-axis rescaling: each stream's interarrival sequence is scaled by
+    (real_mean_ia * rate_k) so the mean RPS across K streams equals the target.
+    Burst shape and autocorrelation are preserved.
 
     Args:
         req_rate:      Total req/s (float, split equally) or per-task list.
@@ -115,42 +126,75 @@ def generate_requests(
             ia_cache[model_id] = _interarrivals_for_task(df, model_id, group_by)
         return ia_cache[model_id]
 
-    rng = np.random.default_rng(seed)
+    # K alibaba streams are merged per app (Clockwork-style).  Each stream fires
+    # at rate/K and they share the same user task label, so their arrivals merge
+    # into one superposed process.  The superposition of K independent renewal
+    # streams converges toward Poisson (Palm-Khintchine), reducing CoV compared
+    # to any single bursty stream.  Crucially, every app always gets the *same*
+    # K consecutive models from the pool regardless of N, so the merged CoV is
+    # identical for all N — fixing the spurious latency decrease across N.
+    K_STREAMS = 9  # streams merged per app; covers the 74-model pool evenly
 
     events: List[tuple] = []
     counts: Dict[str, int] = defaultdict(int)
     bins: Dict[str, Dict[int, int]] = defaultdict(lambda: defaultdict(int))
     assignment: Dict[str, str] = {}
 
+    # Assign pool positions by stable index, not sorted alphabetical order.
+    # Clone tasks carry their pool index in the __appN suffix; original tasks
+    # are ranked by their position among the sorted originals.  This keeps the
+    # assignment stable across N: adding __appX clones never shifts the models
+    # assigned to any original task, and each clone gets its own distinct block.
+    originals_sorted = sorted(t for t in per_task_rate if "__app" not in t)
+    orig_rank = {t: i for i, t in enumerate(originals_sorted)}
+
+    def _pool_idx(task: str) -> int:
+        if "__app" in task:
+            return int(task.split("__app")[1])
+        return orig_rank[task]
+
+    def _stream_rng(task: str, k: int) -> np.random.Generator:
+        # Deterministic per-(task, stream-index) seed so start offsets are
+        # independent of how many other tasks or streams exist.
+        key = f"{task}__stream{k}"
+        digest = hashlib.sha256(key.encode()).hexdigest()
+        task_seed = (seed + int(digest[:8], 16)) % (2 ** 32)
+        return np.random.default_rng(task_seed)
+
     sorted_tasks = sorted(per_task_rate.keys())
-    for i, user_task in enumerate(sorted_tasks):
+    for user_task in sorted_tasks:
         rate = per_task_rate[user_task]
         if rate <= 0:
             continue
-        model_id = models_by_rank[i % len(models_by_rank)]
-        assignment[user_task] = model_id
 
-        ia = _ia(model_id)
-        if ia.size == 0:
-            raise ValueError(
-                f"model {model_id!r} has <2 requests in trace "
-                f"(user task={user_task!r}, group_by={group_by!r})"
-            )
-        scale = ia.mean() * rate
-        if scale <= 0:
-            continue
-        scaled_ia = ia / scale  # mean becomes 1/rate
-        n_ia = len(scaled_ia)
-        start = int(rng.integers(0, n_ia))
+        base_idx = _pool_idx(user_task) * K_STREAMS
+        # Record which model block this task is assigned to (first stream).
+        assignment[user_task] = models_by_rank[base_idx % len(models_by_rank)]
 
-        t = 0.0
-        idx = 0
-        while t < duration:
-            events.append((t, user_task))
-            counts[user_task] += 1
-            bins[user_task][int(t)] += 1
-            t += float(scaled_ia[(start + idx) % n_ia])
-            idx += 1
+        rate_k = rate / K_STREAMS
+        for k in range(K_STREAMS):
+            model_id = models_by_rank[(base_idx + k) % len(models_by_rank)]
+            ia = _ia(model_id)
+            if ia.size == 0:
+                raise ValueError(
+                    f"model {model_id!r} has <2 requests in trace "
+                    f"(user task={user_task!r}, stream={k}, group_by={group_by!r})"
+                )
+            scale = ia.mean() * rate_k
+            if scale <= 0:
+                continue
+            scaled_ia = ia / scale  # mean inter-arrival = 1/rate_k
+            n_ia = len(scaled_ia)
+            start = int(_stream_rng(user_task, k).integers(0, n_ia))
+
+            t = 0.0
+            idx = 0
+            while t < duration:
+                events.append((t, user_task))
+                counts[user_task] += 1
+                bins[user_task][int(t)] += 1
+                t += float(scaled_ia[(start + idx) % n_ia])
+                idx += 1
 
     events.sort(key=lambda x: x[0])
     requests = [
