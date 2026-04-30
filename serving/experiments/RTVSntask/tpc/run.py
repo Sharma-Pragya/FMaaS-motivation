@@ -43,7 +43,7 @@ if str(SERVING_DIR) not in sys.path:
 import numpy as np
 from torch.utils.data import DataLoader
 
-from serving.site_manager.grpc_client import EdgeRuntimeClient
+from serving.site_manager.grpc_client import EdgeRuntimeClient, encode_infer_request
 from serving.site_manager.config import DATASET_DIR as _DATASET_DIR
 
 # ---------------------------------------------------------------------------
@@ -225,27 +225,16 @@ def build_data(task_set: str, tasks: List[str]) -> Dict[str, Dict]:
 # ---------------------------------------------------------------------------
 
 def generate_traces(tasks: List[str], seeds: Dict[str, int],
-                    rps: float, duration: float,
-                    slot_keys: Optional[List[str]] = None) -> Dict[str, List[float]]:
-    """Generate one Poisson trace per entry in tasks (or slot_keys if provided).
-
-    When slot_keys is given (e.g. ["slot_0:ecgclass", "slot_10:ecgclass"]) each
-    slot gets a unique seed derived from its index so repeated tasks produce
-    independent arrival streams.  The returned dict is keyed by slot_key.
-    When slot_keys is None the dict is keyed by task name (legacy behaviour).
-    """
+                    rps: float, duration: float) -> Dict[str, List[float]]:
     send_times: Dict[str, List[float]] = {}
-    keys = slot_keys if slot_keys is not None else tasks
-    for i, (key, task) in enumerate(zip(keys, tasks)):
-        # Unique seed: base task seed offset by slot index so repeats differ
-        base_seed = seeds.get(task, 42)
-        seed = base_seed + i * 1000
+    for i, task in enumerate(tasks):
+        seed = seeds.get(task, 42 + i)
         rng = np.random.default_rng(seed)
         times, t = [], 0.0
         while t < duration:
             times.append(t)
             t += rng.exponential(1.0 / rps)
-        send_times[key] = times
+        send_times[task] = times
     return send_times
 
 
@@ -290,7 +279,7 @@ async def deploy(device_url: str, backbone: str, tasks: List[str],
 # Open-loop Poisson sender (gRPC)
 # ---------------------------------------------------------------------------
 
-Record = Tuple[float, float, float, float, float, float, float, int]
+Record = Tuple[float, float, float, float, float, float, float, float, int]
 # (
 #   send_time_relative_s,
 #   client_latency_ms,
@@ -298,7 +287,8 @@ Record = Tuple[float, float, float, float, float, float, float, int]
 #   server_proc_ms,
 #   server_swap_ms,
 #   server_decoder_ms,
-#   queue_wait_plus_rpc_ms,
+#   queue_wait_plus_rpc_ms,   # starts at actual gRPC stub call, not client tensor/protobuf encoding
+#   client_pre_rpc_ms,        # client wrapper work before the gRPC stub call
 #   server_start_ns,
 # )
 
@@ -306,49 +296,71 @@ Record = Tuple[float, float, float, float, float, float, float, int]
 async def run_warmup_burst(
     task_urls: Dict[str, str],
     data: Dict[str, Dict],
-    slot_task: Dict[str, str],
     duration_s: float = 15.0,
-) -> None:
+) -> Dict[str, "EdgeRuntimeClient"]:
     """Send closed-loop requests for duration_s seconds to heat up GPU clocks/caches.
 
-    Each slot gets its own concurrent closed-loop sender — next request fires
-    immediately after the previous one completes, keeping every TPC partition
-    maximally busy.
+    Each (slot,url) pair gets its own concurrent closed-loop sender — next
+    request fires immediately after the previous one completes, keeping every
+    server (and TPC partition) maximally busy.
+
+    Returns the warm clients (keyed by URL) so run_open_loop can reuse the
+    same gRPC connections and avoid cold-connection RPC overhead.
     """
-    unique_urls = list(set(task_urls.values()))
+    # Resolve slot -> (task, url), matching the keying convention used in
+    # run_open_loop: "slot_N:task" (when tasks repeat) or plain task name.
+    slot_task: Dict[str, str] = {}
+    slot_url:  Dict[str, str] = {}
+    for slot, url in task_urls.items():
+        if slot.startswith("slot_") and ":" in slot:
+            idx_str, task = slot.split(":", 1)
+            slot_key = idx_str
+        else:
+            task = slot
+            slot_key = slot
+        slot_task[slot_key] = task
+        slot_url[slot_key]  = url
+
+    unique_urls = list(set(slot_url.values()))
     clients: Dict[str, EdgeRuntimeClient] = {}
     for url in unique_urls:
         c = EdgeRuntimeClient(url)
         await c.wait_ready()
         clients[url] = c
 
+    # Pre-encode once — warmup just hammers the server, no need to re-encode each call.
+    slot_proto = {
+        sk: encode_infer_request(
+            task=slot_task[sk],
+            x=data[slot_task[sk]]["x"],
+            mask=data[slot_task[sk]].get("mask"),
+        )
+        for sk in slot_task
+    }
+    slot_stub = {sk: clients[slot_url[sk]]._stub for sk in slot_task}
+
     print(f"[Warmup] Closed-loop burst for {duration_s}s to heat up GPU ...")
     t_end = time.time() + duration_s
     total_reqs = 0
 
-    async def _slot_loop(slot: str, url: str) -> None:
+    async def _slot_loop(slot_key: str) -> None:
         nonlocal total_reqs
-        task = slot_task[slot]
-        d = data[task]
+        proto = slot_proto[slot_key]
         req_id = 0
         while time.time() < t_end:
             try:
-                await asyncio.wait_for(clients[url].infer({
-                    "req_id": req_id,
-                    "task":   task,
-                    "x":      d["x"],
-                    "mask":   d.get("mask"),
-                }), timeout=10.0)
+                proto.req_id = req_id
+                await asyncio.wait_for(
+                    slot_stub[slot_key].Infer(proto), timeout=10.0
+                )
                 total_reqs += 1
             except Exception:
                 pass
             req_id += 1
 
-    await asyncio.gather(*[_slot_loop(slot, url) for slot, url in task_urls.items()])
-
-    for c in clients.values():
-        await c.close()
+    await asyncio.gather(*[_slot_loop(sk) for sk in slot_task])
     print(f"[Warmup] Done ({total_reqs} requests sent).")
+    return clients
 
 
 async def run_open_loop(
@@ -356,6 +368,7 @@ async def run_open_loop(
     data: Dict[str, Dict],
     send_times: Dict[str, List[float]],
     req_timeout: float = 60.0,
+    warm_clients: Optional[Dict[str, "EdgeRuntimeClient"]] = None,
 ) -> Dict[str, List[Record]]:
     # task_urls is keyed by slot key (e.g. "slot_0", "slot_1") when tasks repeat,
     # or by task name when all tasks are unique. The slot_task map carries the
@@ -368,51 +381,74 @@ async def run_open_loop(
     for slot, url in task_urls.items():
         # slot is either "slot_N:task" (new) or plain task name (legacy)
         if slot.startswith("slot_") and ":" in slot:
-            task = slot.split(":", 1)[1]
+            idx_str, task = slot.split(":", 1)
+            slot_key = idx_str
         else:
             task = slot
-        # Use the full slot string as the key so records stay per-slot.
-        slot_task[slot] = task
-        slot_url[slot]  = url
-        # Use per-slot trace keyed by full slot string; fall back to task-level.
-        slot_times[slot] = send_times.get(slot, send_times.get(task, []))
+            slot_key = slot
+        slot_task[slot_key] = task
+        slot_url[slot_key]  = url
+        # Reuse the task's trace for this slot (same arrival process)
+        slot_times[slot_key] = send_times[task]
 
     unique_urls = list(set(slot_url.values()))
+    # Reuse warm clients from warmup burst to avoid cold gRPC connection overhead.
     clients: Dict[str, EdgeRuntimeClient] = {}
     for url in unique_urls:
-        c = EdgeRuntimeClient(url)
-        await c.wait_ready()
-        clients[url] = c
+        if warm_clients and url in warm_clients:
+            clients[url] = warm_clients[url]
+        else:
+            c = EdgeRuntimeClient(url)
+            await c.wait_ready()
+            clients[url] = c
+
+    # Pre-encode one InferRequest proto per slot (task + tensors serialized once).
+    # Only req_id changes per request; everything else is fixed for the whole run.
+    # Each slot gets its own proto object — safe because one coroutine owns each slot.
+    slot_proto = {
+        sk: encode_infer_request(
+            task=slot_task[sk],
+            x=data[slot_task[sk]]["x"],
+            mask=data[slot_task[sk]].get("mask"),
+        )
+        for sk in slot_task
+    }
+    # Extract the raw stub per URL so _fire can call stub.Infer() directly,
+    # skipping the encoding work inside EdgeRuntimeClient.infer().
+    slot_stub = {sk: clients[slot_url[sk]]._stub for sk in slot_task}
 
     records: Dict[str, List[Record]] = {sk: [] for sk in slot_task}
 
-    async def _fire(slot_key: str, req_id: int, t_send_abs: float, t_start: float) -> None:
-        task = slot_task[slot_key]
-        d = data[task]
+    async def _fire(slot_key: str, req_id: int, t_scheduled: float, t_start: float) -> None:
+        proto = slot_proto[slot_key]
+        proto.req_id = req_id  # only field that varies; set before timing starts
         try:
-            resp = await asyncio.wait_for(clients[slot_url[slot_key]].infer({
-                "req_id": req_id,
-                "task":   task,
-                "x":      d["x"],
-                "mask":   d.get("mask"),
-            }), timeout=req_timeout)
+            t_send_abs = time.time()
+            response = await asyncio.wait_for(
+                slot_stub[slot_key].Infer(proto), timeout=req_timeout
+            )
             t_done_abs = time.time()
-            client_lat_ms = (t_done_abs - t_send_abs) * 1000
-            server_start_s = resp["start_time_ns"] / 1e9
-            server_exec_ms = (resp["end_time_ns"] - resp["start_time_ns"]) / 1e6
-            server_proc_ms = resp.get("proc_time_ns", 0) / 1e6
-            server_swap_ms = resp.get("swap_time_ns", 0) / 1e6
-            server_decoder_ms = resp.get("decoder_time_ns", 0) / 1e6
-            queue_wait_plus_rpc_ms = max(0.0, (server_start_s - t_send_abs) * 1000)
+            if response.status and response.status != "ok":
+                return
+            client_lat_ms  = (t_done_abs - t_send_abs) * 1000
+            server_exec_ms = (response.end_time_ns - response.start_time_ns) / 1e6
+            server_proc_ms = response.proc_time_ns / 1e6
+            server_swap_ms = response.swap_time_ns / 1e6
+            server_decoder_ms = response.decoder_time_ns / 1e6
+            # queue_wait: purely server-side — from client stub call to GPU start.
+            # Both t_send_abs and server_start are on the same host wall clock,
+            # so this captures loopback + server asyncio dispatch + batcher delay.
+            queue_wait_plus_rpc_ms = max(0.0, (response.start_time_ns / 1e9 - t_send_abs) * 1000)
             records[slot_key].append((
-                t_send_abs - t_start,
+                t_scheduled - t_start,
                 client_lat_ms,
                 server_exec_ms,
                 server_proc_ms,
                 server_swap_ms,
                 server_decoder_ms,
                 queue_wait_plus_rpc_ms,
-                resp["start_time_ns"],
+                0.0,  # client_pre_rpc_ms is now 0 — encoding is pre-done
+                response.start_time_ns,
             ))
         except Exception:
             pass
@@ -426,9 +462,9 @@ async def run_open_loop(
             wait = target - time.time()
             if wait > 0:
                 await asyncio.sleep(wait)
-            t_send = time.time()
+            t_scheduled = time.time()
             in_flight.append(asyncio.create_task(
-                _fire(slot_key, req_id_offset + req_id, t_send, t_start)
+                _fire(slot_key, req_id_offset + req_id, t_scheduled, t_start)
             ))
         if in_flight:
             await asyncio.gather(*in_flight, return_exceptions=True)
@@ -442,10 +478,12 @@ async def run_open_loop(
     for c in clients.values():
         await c.close()
 
-    # Return records keyed by slot key (e.g. "slot_0" or plain task name).
-    # save_results uses slot_task to write the task name into the CSV rows,
-    # so each slot appears as a separate row but with its real task name.
-    return records
+    # Merge records back to task-level (combine all slots for the same task)
+    merged: Dict[str, List[Record]] = {}
+    for sk, recs in records.items():
+        task = slot_task[sk]
+        merged.setdefault(task, []).extend(recs)
+    return merged
 
 
 # ---------------------------------------------------------------------------
@@ -453,54 +491,39 @@ async def run_open_loop(
 # ---------------------------------------------------------------------------
 
 def save_results(records: Dict[str, List[Record]], out_dir: Path, condition: str,
-                 duration: float, warmup_secs: float = 10.0,
-                 slot_task: Optional[Dict[str, str]] = None) -> None:
-    """Save per-slot records to CSV.
-
-    slot_task maps slot key -> real task name.  When provided, the task name
-    written to the CSV is the real task name (e.g. "ecgclass"), but each slot
-    is a separate row so repeated tasks remain distinguishable.
-    """
+                 duration: float, warmup_secs: float = 10.0) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
-
-    def _task_name(key: str) -> str:
-        if slot_task and key in slot_task:
-            return slot_task[key]
-        # Legacy: key is already the task name
-        return key
 
     with (out_dir / "latencies.csv").open("w", newline="") as f:
         w = csv.writer(f)
         w.writerow([
-            "task", "slot", "condition", "elapsed_sec", "latency_ms",
+            "task", "condition", "elapsed_sec", "latency_ms",
             "server_exec_ms", "server_proc_ms", "server_swap_ms",
             "server_decoder_ms", "queue_wait_plus_rpc_ms",
-            "non_server_exec_overhead_ms", "server_start_ns",
+            "client_pre_rpc_ms", "non_server_exec_overhead_ms", "server_start_ns",
         ])
-        for slot_key, recs in records.items():
-            task = _task_name(slot_key)
-            for rel_t, lat, exec_ms, proc_ms, swap_ms, dec_ms, queue_ms, start_ns in recs:
+        for task, recs in records.items():
+            for rel_t, lat, exec_ms, proc_ms, swap_ms, dec_ms, queue_ms, pre_rpc_ms, start_ns in recs:
                 w.writerow([
-                    task, slot_key, condition,
+                    task, condition,
                     round(rel_t, 4), round(lat, 4),
                     round(exec_ms, 4), round(proc_ms, 4), round(swap_ms, 4),
-                    round(dec_ms, 4), round(queue_ms, 4),
+                    round(dec_ms, 4), round(queue_ms, 4), round(pre_rpc_ms, 4),
                     round(max(0.0, lat - exec_ms), 4),
                     start_ns,
                 ])
 
     with (out_dir / "task_results.csv").open("w", newline="") as f:
         fields = [
-            "task", "slot", "condition", "n_requests", "throughput_rps",
+            "task", "condition", "n_requests", "throughput_rps",
             "avg_latency_ms", "p50_latency_ms", "p95_latency_ms", "p99_latency_ms",
             "avg_server_exec_ms", "avg_server_proc_ms", "avg_server_swap_ms",
             "avg_server_decoder_ms", "avg_queue_wait_plus_rpc_ms",
-            "avg_non_server_exec_overhead_ms",
+            "avg_client_pre_rpc_ms", "avg_non_server_exec_overhead_ms",
         ]
         w = csv.DictWriter(f, fieldnames=fields)
         w.writeheader()
-        for slot_key, recs in records.items():
-            task = _task_name(slot_key)
+        for task, recs in records.items():
             trimmed = [rec for rec in recs if rec[0] > warmup_secs]
             lats = [rec[1] for rec in trimmed]
             n = len(lats)
@@ -508,7 +531,6 @@ def save_results(records: Dict[str, List[Record]], out_dir: Path, condition: str
                 continue
             w.writerow({
                 "task":           task,
-                "slot":           slot_key,
                 "condition":      condition,
                 "n_requests":     n,
                 "throughput_rps": round(n / (duration - warmup_secs), 4),
@@ -521,13 +543,13 @@ def save_results(records: Dict[str, List[Record]], out_dir: Path, condition: str
                 "avg_server_swap_ms":    round(float(np.mean([rec[4] for rec in trimmed])), 3),
                 "avg_server_decoder_ms": round(float(np.mean([rec[5] for rec in trimmed])), 3),
                 "avg_queue_wait_plus_rpc_ms": round(float(np.mean([rec[6] for rec in trimmed])), 3),
+                "avg_client_pre_rpc_ms": round(float(np.mean([rec[7] for rec in trimmed])), 3),
                 "avg_non_server_exec_overhead_ms": round(
                     float(np.mean([max(0.0, rec[1] - rec[2]) for rec in trimmed])), 3),
             })
 
-    for slot_key, recs in records.items():
-        task = _task_name(slot_key)
-        print(f"[Save] {task} (slot={slot_key}): {len(recs)} total requests -> {out_dir}")
+    for task, recs in records.items():
+        print(f"[Save] {task}: {len(recs)} total requests -> {out_dir}")
 
 
 # ---------------------------------------------------------------------------
@@ -554,8 +576,9 @@ def main() -> int:
     parser.add_argument("--backbone",     default=os.environ.get("BACKBONE", "momentbase"))
     parser.add_argument("--rps",          type=float, default=float(os.environ.get("RPS", "20")))
     parser.add_argument("--duration",     type=float, default=float(os.environ.get("PHASE_DURATION", "180")))
-    parser.add_argument("--warmup-secs",       type=float, default=10.0)
-    parser.add_argument("--warmup-burst-secs", type=float, default=15.0,
+    parser.add_argument("--warmup-secs",  type=float, default=10.0)
+    parser.add_argument("--warmup-burst-secs", type=float,
+                        default=float(os.environ.get("WARMUP_BURST_SECS", "15.0")),
                         help="Closed-loop warmup duration before open-loop trace (0 to disable)")
     parser.add_argument("--exp-dir",      default=os.environ.get("EXP_DIR", "experiments/sharing_benefit/tpc/results"))
     parser.add_argument("--trace-file",   default=None)
@@ -585,7 +608,7 @@ def main() -> int:
     print(f"  Task set  : {args.task_set}  ({all_tasks})")
     print(f"  Backbone  : {args.backbone}")
     print(f"  RPS/task  : {args.rps}")
-    print(f"  Duration  : {args.duration}s")
+    print(f"  Duration  : {args.duration}s  (warmup={args.warmup_secs}s)")
     print(f"  Results   : {out_dir}")
     print("=" * 65)
 
@@ -623,14 +646,13 @@ def main() -> int:
             save_trace(send_times, auto_path)
 
     # Determine active tasks and URL mapping per condition.
-    # Always use "slot_N:task" keys so each slot gets its own independent trace
-    # and records — even when the same task appears multiple times.
-    def _slot_key(i: int, task: str) -> str:
+    # When tasks repeat (ntasks > pool size), use "slot_N:task" keys so each
+    # slot gets its own send stream and records independently.
+    def _slot_key(i: int, task: str, tasks: list) -> str:
+        """Return plain task name if unique, else slot_N:task for deduplication."""
+        if tasks.count(task) == 1:
+            return task
         return f"slot_{i}:{task}"
-
-    # _task_from_slot extracts the real task name from a slot key.
-    def _task_from_slot(slot: str) -> str:
-        return slot.split(":", 1)[1] if ":" in slot else slot
 
     if args.condition.startswith("single_"):
         single_task = args.condition[len("single_"):]
@@ -638,36 +660,28 @@ def main() -> int:
             print(f"ERROR: task '{single_task}' not in active task list {all_tasks}", file=sys.stderr)
             return 1
         tasks = [single_task]
-        task_urls = {_slot_key(0, single_task): device_urls[0]}
+        task_urls = {single_task: device_urls[0]}
     elif args.condition in ("no_sharing_tpc", "no_sharing", "no_sharing_mps"):
         tasks = all_tasks
         if len(device_urls) < len(all_tasks):
             print(f"ERROR: need {len(all_tasks)} device URLs for {args.condition}, got {len(device_urls)}",
                   file=sys.stderr)
             return 1
-        task_urls = {_slot_key(i, t): device_urls[i] for i, t in enumerate(all_tasks)}
+        task_urls = {_slot_key(i, t, all_tasks): device_urls[i] for i, t in enumerate(all_tasks)}
     elif args.condition == "sharing":
         tasks = all_tasks
-        task_urls = {_slot_key(i, t): device_urls[0] for i, t in enumerate(all_tasks)}
+        task_urls = {_slot_key(i, t, all_tasks): device_urls[0] for i, t in enumerate(all_tasks)}
     else:
         print(f"ERROR: unknown condition '{args.condition}'", file=sys.stderr)
         return 1
 
-    # Build slot_task map (slot_key -> real task name) for use in saving results.
-    slot_task_map: Dict[str, str] = {sk: _task_from_slot(sk) for sk in task_urls}
-
-    # Build per-slot traces: each slot gets a unique arrival stream even when
-    # the underlying task is the same (different seed = different inter-arrivals).
-    slot_keys = list(task_urls.keys())
-    slot_task_names = [_task_from_slot(sk) for sk in slot_keys]
-    slot_send_times = generate_traces(
-        slot_task_names, task_seeds, args.rps, args.duration, slot_keys=slot_keys
-    )
-
     print(f"[INFO] Loading data for: {tasks}")
     data = build_data(args.task_set, tasks)
 
-    # Deploy
+    # Deploy — extract actual task name from slot key (slot_N:task or plain task)
+    def _task_from_slot(slot: str) -> str:
+        return slot.split(":", 1)[1] if ":" in slot else slot
+
     if args.condition in ("no_sharing_tpc", "no_sharing", "no_sharing_mps"):
         for slot, url in task_urls.items():
             task_name = _task_from_slot(slot)
@@ -677,23 +691,25 @@ def main() -> int:
 
     asyncio.run(asyncio.sleep(1))
 
-    if args.warmup_burst_secs > 0:
-        asyncio.run(run_warmup_burst(
+    async def _warmup_then_run() -> Dict[str, List[Record]]:
+        warm_clients = None
+        if args.warmup_burst_secs > 0:
+            warm_clients = await run_warmup_burst(
+                task_urls=task_urls,
+                data=data,
+                duration_s=args.warmup_burst_secs,
+            )
+        print(f"\n[Run] Starting open-loop send ({args.duration}s) ...")
+        return await run_open_loop(
             task_urls=task_urls,
             data=data,
-            slot_task=slot_task_map,
-            duration_s=args.warmup_burst_secs,
-        ))
+            send_times={t: send_times[t] for t in tasks},
+            warm_clients=warm_clients,
+        )
 
-    print(f"\n[Run] Starting open-loop send ({args.duration}s) ...")
-    records = asyncio.run(run_open_loop(
-        task_urls=task_urls,
-        data=data,
-        send_times=slot_send_times,
-    ))
+    records = asyncio.run(_warmup_then_run())
 
-    save_results(records, out_dir, args.condition, args.duration, args.warmup_secs,
-                 slot_task=slot_task_map)
+    save_results(records, out_dir, args.condition, args.duration, args.warmup_secs)
     return 0
 
 

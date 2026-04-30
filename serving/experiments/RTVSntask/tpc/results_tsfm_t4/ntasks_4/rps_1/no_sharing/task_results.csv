@@ -1,0 +1,5 @@
+task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_client_pre_rpc_ms,avg_non_server_exec_overhead_ms
+ecgclass,no_sharing,589,0.9983,26.53,25.307,35.717,42.201,24.95,23.825,0.002,0.535,1.037,0.0,1.58
+gestureclass,no_sharing,621,1.0525,27.001,25.375,39.434,47.103,25.138,24.01,0.002,0.549,1.309,0.0,1.863
+heartrate,no_sharing,593,1.0051,26.636,25.213,38.188,48.718,24.865,23.842,0.002,0.521,1.228,0.0,1.77
+diasbp,no_sharing,631,1.0695,26.937,25.543,38.284,44.995,25.207,24.167,0.002,0.538,1.188,0.0,1.729

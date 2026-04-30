@@ -1,7 +1,7 @@
-task,slot,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_non_server_exec_overhead_ms
-ecgclass,slot_0:ecgclass,no_sharing_tpc,877,1.4864,35702.334,36467.821,56521.21,59388.167,8322.222,8295.38,0.004,0.665,27373.754,27380.112
-gestureclass,slot_1:gestureclass,no_sharing_tpc,768,1.3017,34557.612,33671.346,57172.173,59458.174,8280.885,8254.742,0.004,0.661,26271.148,26276.727
-heartrate,slot_2:heartrate,no_sharing_tpc,776,1.3153,33933.395,35414.658,57360.871,59405.648,8218.614,8192.002,0.005,0.8,25701.037,25714.781
-diasbp,slot_3:diasbp,no_sharing_tpc,866,1.4678,31796.092,32200.835,56518.267,59485.814,8096.796,8084.75,0.189,0.357,23694.456,23699.297
-sysbp,slot_4:sysbp,no_sharing_tpc,1055,1.7881,36708.702,37421.903,56525.224,59099.249,8283.034,8270.94,0.006,0.347,28420.287,28425.668
-etth1fore,slot_5:etth1fore,no_sharing_tpc,842,1.4271,34101.868,36798.312,56339.584,59048.373,8147.506,8134.306,0.005,0.39,25947.39,25954.362
+task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_client_pre_rpc_ms,avg_non_server_exec_overhead_ms
+ecgclass,no_sharing_tpc,910,1.5424,35520.481,36186.312,57090.179,59340.264,8251.827,8228.972,0.003,0.329,27264.951,0.0,27268.654
+gestureclass,no_sharing_tpc,830,1.4068,37822.379,38622.374,57501.198,59399.567,8237.653,8222.081,0.003,0.326,29580.531,0.0,29584.726
+heartrate,no_sharing_tpc,854,1.4475,31981.553,30787.78,57082.16,59665.592,8009.169,7997.483,0.003,0.348,23954.575,0.0,23972.384
+diasbp,no_sharing_tpc,727,1.2322,33800.913,33470.123,57411.744,59587.251,8146.186,8134.489,0.004,0.342,25651.282,0.0,25654.727
+sysbp,no_sharing_tpc,938,1.5898,34988.404,34005.642,58132.584,59434.78,8220.297,8209.013,0.003,0.324,26764.106,0.0,26768.108
+etth1fore,no_sharing_tpc,1281,2.1712,34281.74,36575.468,56251.837,58765.669,8082.645,8070.014,0.003,0.377,26195.069,0.0,26199.095

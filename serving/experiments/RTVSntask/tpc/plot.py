@@ -1650,7 +1650,7 @@ def main() -> int:
     parser.add_argument("--task-set",        default=os.environ.get("TASK_SET", "tsfm"),
                         choices=["tsfm", "vision"])
     parser.add_argument("--exp-dir",         default=os.environ.get("EXP_DIR",
-                        "experiments/RTVSntask/tpc/results_tsfm_a2"))
+                        "experiments/RTVSntask/tpc/results_tsfm"))
     parser.add_argument("--rps-sweep",       default=None,
                         help="Comma-separated RPS values (auto-detected if omitted)")
     parser.add_argument("--num-tasks-sweep", default=None,
