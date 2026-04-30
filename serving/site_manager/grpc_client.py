@@ -1,5 +1,7 @@
 """gRPC client wrapper for the custom device runtime."""
 
+import time
+
 import numpy as np
 import grpc
 
@@ -15,6 +17,27 @@ def _encode_tensor(array: np.ndarray | None) -> edge_runtime_pb2.TensorPayload |
         dtype=str(data.dtype),
         data=data.tobytes(),
     )
+
+
+def encode_infer_request(task: str, x: np.ndarray | None, mask: np.ndarray | None = None,
+                         question: str | None = None) -> edge_runtime_pb2.InferRequest:
+    """Pre-encode a reusable InferRequest with all fixed fields (task, x, mask).
+
+    The returned object has req_id=0; callers must set req_id before each send.
+    Since proto objects are mutable and not thread-safe, each concurrent sender
+    should call this once and reuse the same object (one per coroutine is safe
+    because coroutines don't run truly concurrently).
+    """
+    rpc_request = edge_runtime_pb2.InferRequest(task=task, req_id=0)
+    x_tensor = _encode_tensor(x)
+    if x_tensor is not None:
+        rpc_request.x.CopyFrom(x_tensor)
+    mask_tensor = _encode_tensor(mask)
+    if mask_tensor is not None:
+        rpc_request.mask.CopyFrom(mask_tensor)
+    if question is not None:
+        rpc_request.question = str(question)
+    return rpc_request
 
 
 def _decode_output(response: edge_runtime_pb2.InferResponse) -> np.ndarray:
@@ -63,12 +86,16 @@ class EdgeRuntimeClient:
                     question = question.reshape(-1)[0]
             rpc_request.question = str(question)
 
+        rpc_start_time_ns = time.time_ns()
         response = await self._stub.Infer(rpc_request)
+        rpc_end_time_ns = time.time_ns()
         if response.status and response.status != "ok":
             raise RuntimeError(response.status)
         return {
             "output": _decode_output(response),
             "text_output": response.text_output or "",
+            "rpc_start_time_ns": rpc_start_time_ns,
+            "rpc_end_time_ns": rpc_end_time_ns,
             "start_time_ns": response.start_time_ns,
             "end_time_ns": response.end_time_ns,
             "proc_time_ns": response.proc_time_ns,

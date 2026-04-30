@@ -32,7 +32,7 @@ from typing import List, Optional
 import numpy as np
 from torch.utils.data import DataLoader
 
-from site_manager.grpc_client import EdgeRuntimeClient
+from site_manager.grpc_client import EdgeRuntimeClient, encode_infer_request
 from orchestrator.router import parse_plan
 
 _rng = np.random.default_rng(42)
@@ -235,53 +235,36 @@ async def _close_clients():
 
 # ── Per-request send ───────────────────────────────────────────────────────
 
-async def _send_request(req_id, device_url, inputs_dict, outputs_dict, client_key: str = "default"):
-    """Send one inference request and return a result tuple."""
-    send_time = time.time()
-    client = await _get_client(device_url, client_key=client_key)
-    if client is None:
-        return None
+async def _send_request(req_id, device_url, proto, stub):
+    """Send one pre-encoded inference request and return a result tuple.
 
-    submit_time = time.time()
+    proto must already be encoded (encode_infer_request); only req_id is mutated
+    here. Timing wraps only the stub.Infer() RPC — encoding is excluded.
+    stub is the raw gRPC stub (client._stub) obtained during warmup.
+    """
+    proto.req_id = req_id
+    send_time = time.time()
     try:
-        response = await client.infer({
-            "req_id": req_id,
-            "task": inputs_dict["task"],
-            "x": inputs_dict.get("x",None),
-            "mask": inputs_dict.get("mask",None),
-            "question": inputs_dict.get("question",None),
-        })
+        response = await stub.Infer(proto)
     except Exception as e:
         print(f"[TraceRunner] Inference error req {req_id}: {e}")
         return None
-
     recv_time = time.time()
-    dev_start = response["start_time_ns"] / 1e9
-    dev_end   = response["end_time_ns"]   / 1e9
-    proc_time = response["proc_time_ns"]  / 1e9
-    swap_time = response["swap_time_ns"]  / 1e9
-    dec_time  = response["decoder_time_ns"] / 1e9
-    gpu_peak_mb = float(response.get("gpu_alloc_peak_mb", 0.0) or 0.0)
-    # Output tensors (pred/true_val) are not written to CSV — skipped to avoid
-    # accumulating GBs of vision output arrays (224x224) across 20k+ requests.
-    # result = response["output"]
-    # text_out = response.get("text_output", "")
-    # if text_out:
-    #     pred = text_out
-    # elif getattr(result, "size", 1) == 1:
-    #     pred = result.item()
-    # else:
-    #     pred = result.flatten().tolist()
-    # true_val = outputs_dict.get("y")
-    # if isinstance(true_val, (list, str)):
-    #     true_val = true_val[0] if isinstance(true_val, list) else true_val
-    # elif true_val is not None:
-    #     true_val = true_val.item() if true_val.size == 1 else true_val.flatten().tolist()
+
+    if response.status and response.status != "ok":
+        return None
+
+    dev_start   = response.start_time_ns   / 1e9
+    dev_end     = response.end_time_ns     / 1e9
+    proc_time   = response.proc_time_ns    / 1e9
+    swap_time   = response.swap_time_ns    / 1e9
+    dec_time    = response.decoder_time_ns / 1e9
+    gpu_peak_mb = float(response.gpu_alloc_peak_mb or 0.0)
 
     return (
         req_id, device_url,
-        send_time, submit_time, dev_start, dev_end, recv_time,
-        recv_time - send_time,   # e2e
+        send_time, send_time, dev_start, dev_end, recv_time,
+        recv_time - send_time,   # e2e (pure RPC round-trip)
         proc_time, swap_time, dec_time,
         None, None,
         gpu_peak_mb,
@@ -300,10 +283,12 @@ class TraceRunner:
         output_dir: Where to write request_latency_results.csv and serving_timing_summary.json.
     """
 
-    def __init__(self, live_plan: dict, trace: list, output_dir: str, pretrace_warmup_secs: float = 0.0):
+    def __init__(self, live_plan: dict, trace: list, output_dir: str,
+                 pretrace_warmup_secs: float = 0.0, warmup_burst_secs: float = 0.0):
         self.live_plan = live_plan
         self.output_dir = output_dir
         self._pretrace_warmup_secs = max(0.0, float(pretrace_warmup_secs))
+        self._warmup_burst_secs    = max(0.0, float(warmup_burst_secs))
 
         # Normalise trace to plain dicts
         self._trace = [
@@ -318,7 +303,8 @@ class TraceRunner:
         self._req_metadata: dict = {}   # req_id → enriched req dict
         self._plan_version: int = 0          # bump when live_plan changes
         self._plan_cache: tuple = (-1, None, None) # (version, task_routes, route_table)
-        self._input_cache: dict = {}         # task → (inputs_dict, outputs_dict), pre-built
+        self._proto_cache: dict = {}         # (task, device_url) → pre-encoded InferRequest proto
+        self._stub_cache: dict = {}          # (task, device_url) → raw gRPC stub
         self._dispatch_lag_ms: list = []     # scheduling delay vs target send timestamp
 
     def _refresh_route_cache_if_needed(self):
@@ -377,16 +363,17 @@ class TraceRunner:
             idx = int(routed_rng.choice(len(routes), p=probs))
             _, device_url, _, _ = routes[idx]
 
-            cached = self._input_cache.get(req["task"])
-            if cached is None:
+            key = (req["task"], device_url)
+            proto = self._proto_cache.get(key)
+            stub  = self._stub_cache.get(key)
+            if proto is None or stub is None:
                 continue
-            inputs, outputs = cached
 
             while len(inflight) >= max_inflight:
                 await asyncio.wait(inflight, return_when=asyncio.FIRST_COMPLETED)
 
             t = asyncio.create_task(
-                _send_request(warmup_req_id, device_url, inputs, outputs, client_key=req["task"])
+                _send_request(warmup_req_id, device_url, proto, stub)
             )
             warmup_req_id -= 1
             t.add_done_callback(_collect_done)
@@ -420,6 +407,42 @@ class TraceRunner:
         self._trace.extend(new_reqs)
         self._trace.sort(key=lambda r: r["req_time"])
         print(f"[TraceRunner] Added {len(new_reqs)} requests. Total trace: {len(self._trace)}")
+
+    # ── burst warmup ──────────────────────────────────────────────────────
+
+    async def _run_burst_warmup(self):
+        """Closed-loop burst to heat GPU clocks and CUDA caches before the trace.
+
+        Runs one concurrent closed-loop sender per (task, device) pair for
+        _warmup_burst_secs seconds. Each sender fires the next request immediately
+        after the previous one returns, keeping every device maximally busy.
+
+        Uses the same _proto_cache / _stub_cache built in warmup(), so the open-loop
+        dispatch reuses the exact same warm gRPC connections — no reconnect overhead.
+        """
+        if self._warmup_burst_secs <= 0:
+            return
+
+        print(f"[TraceRunner] Closed-loop burst warmup for {self._warmup_burst_secs:.1f}s ...")
+        t_end = time.time() + self._warmup_burst_secs
+        total_reqs = 0
+
+        async def _slot_loop(key: tuple) -> None:
+            nonlocal total_reqs
+            proto = self._proto_cache[key]
+            stub  = self._stub_cache[key]
+            req_id = -2_000_000
+            while time.time() < t_end:
+                try:
+                    proto.req_id = req_id
+                    await stub.Infer(proto)
+                    total_reqs += 1
+                except Exception:
+                    pass
+                req_id -= 1
+
+        await asyncio.gather(*[_slot_loop(k) for k in self._stub_cache], return_exceptions=True)
+        print(f"[TraceRunner] Burst warmup done ({total_reqs} requests sent).")
 
     # ── warmup ────────────────────────────────────────────────────────────
 
@@ -472,56 +495,46 @@ class TraceRunner:
             )
         print("[TraceRunner] All gRPC connections ready.")
 
-        # Model warmup — send one dummy inference per (task, device) for only the
-        # tasks actually present in the trace, triggering GPU kernel JIT compilation
-        # and warming CUDA caches before the clock starts.
+        # Build proto + stub caches — one encoded InferRequest proto per (task, device).
+        # Each (task, device) pair gets its own proto object so concurrent coroutines
+        # can safely mutate req_id without sharing state.
+        self._proto_cache = {}
+        self._stub_cache = {}
         trace_tasks = {req["task"] for req in self._trace}
         task_routes, _ = parse_plan(self.live_plan)
-        warmup_jobs = []
-        warmup_id = -1
         for task, routes in task_routes.items():
             if task not in trace_tasks:
                 continue
             batch = _DATA.get(_resolve_data_task(task))
             if batch is None:
                 continue
-            inputs = {"task": task}
-            if 'x' in batch:
-                inputs["x"] = batch["x"] if isinstance(batch["x"], (list, str)) else batch["x"].numpy().astype(np.float32)
-            if "mask" in batch:
-                inputs["mask"] = batch["mask"].numpy().astype(np.float32)
-            if "question" in batch:
-                inputs["question"] = batch["question"]
-            outputs = {"y":  batch["y"] if isinstance(batch["y"], (list, str)) else batch["y"].numpy().astype(np.float32)}
+            x    = None if "x" not in batch else (batch["x"] if isinstance(batch["x"], (list, str)) else batch["x"].numpy().astype(np.float32))
+            mask = None if "mask" not in batch else batch["mask"].numpy().astype(np.float32)
+            q    = batch.get("question")
             for _, dev, _, _ in routes:
-                warmup_jobs.append(
-                    _send_request(warmup_id, dev, inputs, outputs, client_key=task)
-                )
-                warmup_id -= 1
+                key = (task, dev)
+                self._proto_cache[key] = encode_infer_request(task=task, x=x, mask=mask, question=q)
+                client = _CLIENT_CACHE.get((dev, task))
+                if client is not None:
+                    self._stub_cache[key] = client._stub
+
+        # Model warmup — send one dummy inference per (task, device) to trigger
+        # GPU kernel JIT compilation and warm CUDA caches before the clock starts.
+        warmup_jobs = []
+        warmup_id = -1
+        for key, proto in self._proto_cache.items():
+            stub = self._stub_cache.get(key)
+            if stub is None:
+                continue
+            warmup_jobs.append(_send_request(warmup_id, key[1], proto, stub))
+            warmup_id -= 1
 
         if warmup_jobs:
             print(f"[TraceRunner] Running model warmup ({len(warmup_jobs)} inferences)...")
             await asyncio.gather(*warmup_jobs, return_exceptions=True)
             print("[TraceRunner] Model warmup complete.")
 
-        # Pre-build numpy input arrays once per task — reused for every request.
-        # Avoids repeated .numpy().astype() allocations in the hot dispatch loop.
-        self._input_cache = {}
-        for task in {req["task"] for req in self._trace}:
-            batch = _DATA.get(_resolve_data_task(task))
-            if batch is None:
-                continue
-            inp = {"task": task}
-            if "x" in batch:
-                inp["x"] = batch["x"] if isinstance(batch["x"], (list, str)) else batch["x"].numpy().astype(np.float32)
-            if "mask" in batch:
-                inp["mask"] = batch["mask"].numpy().astype(np.float32)
-            if "question" in batch:
-                inp["question"] = batch["question"]
-            out = {"y":  batch["y"] if isinstance(batch["y"], (list, str)) else batch["y"].numpy().astype(np.float32)}
-            self._input_cache[task] = (inp, out)
-
-        await self._run_pretrace_warmup()
+        await self._run_burst_warmup()
 
     # ── run ───────────────────────────────────────────────────────────────
 
@@ -611,20 +624,21 @@ class TraceRunner:
                         "site_manager": site_mgr,
                     }
 
-                    cached = self._input_cache.get(req["task"])
-                    if cached is None:
-                        print(f"[TraceRunner] WARNING: no dataloader for '{req['task']}', skipping.")
+                    key = (req["task"], device_url)
+                    proto = self._proto_cache.get(key)
+                    stub  = self._stub_cache.get(key)
+                    if proto is None or stub is None:
+                        print(f"[TraceRunner] WARNING: no proto/stub for '{req['task']}' @ {device_url}, skipping.")
                         continue
-                    inputs, outputs = cached
-                    to_fire.append((req["req_id"], device_url, inputs, outputs, req["task"]))
+                    to_fire.append((req["req_id"], device_url, proto, stub))
 
                 # Fire all due requests at once (no event-loop yields between them)
-                for req_id, device_url, inputs, outputs, task_key in to_fire:
+                for req_id, device_url, proto, stub in to_fire:
                     while len(inflight) >= max_inflight:
                         await asyncio.wait(inflight, return_when=asyncio.FIRST_COMPLETED)
 
                     t = asyncio.create_task(
-                        _send_request(req_id, device_url, inputs, outputs, client_key=task_key)
+                        _send_request(req_id, device_url, proto, stub)
                     )
                     t.add_done_callback(_collect_done)
                     inflight.add(t)
