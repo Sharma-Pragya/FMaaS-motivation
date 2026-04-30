@@ -1,0 +1,78 @@
+{
+  "sites": [
+    {
+      "id": "site2",
+      "deployments": [
+        {
+          "device": "192.168.245.191:8000",
+          "device_name": "device1",
+          "device_type": "NVIDIA A2",
+          "backbone": "momentlarge",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "trafficfore",
+              "base_task": "trafficfore",
+              "type": "forecasting",
+              "path": "trafficfore_momentlarge_mlp"
+            },
+            {
+              "task": "exchangefore",
+              "base_task": "exchangefore",
+              "type": "forecasting",
+              "path": "exchangefore_momentlarge_mlp"
+            }
+          ],
+          "tasks": {
+            "trafficfore": {
+              "type": "forecasting",
+              "request_per_sec": 5.0,
+              "total_requested_workload": 5.0
+            },
+            "exchangefore": {
+              "type": "forecasting",
+              "request_per_sec": 5.0,
+              "total_requested_workload": 5.0
+            }
+          },
+          "max_batch_size": 32,
+          "max_batch_wait_ms": 0,
+          "isolation_mode": "shared",
+          "max_model_len": 256,
+          "gpu_memory_utilization": 0.85
+        },
+        {
+          "device": "192.168.245.194:8000",
+          "device_name": "device2",
+          "device_type": "NVIDIA A2",
+          "backbone": "momentlarge",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "heartrate",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentlarge_mlp"
+            }
+          ],
+          "tasks": {
+            "heartrate": {
+              "type": "regression",
+              "request_per_sec": 5.0,
+              "total_requested_workload": 5.0
+            }
+          },
+          "max_batch_size": 32,
+          "max_batch_wait_ms": 0,
+          "isolation_mode": "shared",
+          "max_model_len": 256,
+          "gpu_memory_utilization": 0.85
+        }
+      ]
+    }
+  ]
+}

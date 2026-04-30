@@ -1,0 +1,32 @@
+{
+  "sites": [
+    {
+      "id": "site2",
+      "deployments": [
+        {
+          "device": "192.168.245.191:8000",
+          "device_name": "device1",
+          "device_type": "NVIDIA A2",
+          "backbone": "momentlarge",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "trafficfore",
+              "base_task": "trafficfore",
+              "type": "forecasting",
+              "path": "trafficfore_momentlarge_mlp"
+            }
+          ],
+          "tasks": {
+            "trafficfore": {
+              "type": "forecasting",
+              "request_per_sec": 5.0
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

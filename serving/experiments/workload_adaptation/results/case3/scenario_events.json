@@ -1,0 +1,50 @@
+[
+  {
+    "epoch": 1777391996.807575,
+    "label": "trace_start",
+    "params": {
+      "start_epoch": 1777391996.8053606
+    }
+  },
+  {
+    "epoch": 1777392056.8065932,
+    "label": "bump_rps",
+    "params": {
+      "task": "trafficfore",
+      "new_rps": 70.0
+    }
+  },
+  {
+    "epoch": 1777392056.8066294,
+    "label": "attach_decoder",
+    "params": {
+      "device": "device2",
+      "task": "trafficfore"
+    }
+  },
+  {
+    "epoch": 1777392056.99416,
+    "label": "attach_decoder_done",
+    "params": {
+      "device": "device2",
+      "task": "trafficfore",
+      "attach_e2e_ms": 187.47210502624512,
+      "device_logger_summary": "{'add_decoder_trafficfore_momentlarge_mlp': {'wall time': 62.04602122306824, 'gpu time': 62.17817687988281, 'gpu peak': 50.332672, 'gpu energy': 2.136, 'avg gpu util pct': 26.0, 'cpu dRSS': -50.335744}}",
+      "result_status": "added_1_decoders"
+    }
+  },
+  {
+    "epoch": 1777392056.9942107,
+    "label": "split_traffic",
+    "params": {
+      "task": "trafficfore",
+      "device1_rps": 35.0,
+      "device2_rps": 35.0
+    }
+  },
+  {
+    "epoch": 1777392176.9282606,
+    "label": "trace_end",
+    "params": {}
+  }
+]

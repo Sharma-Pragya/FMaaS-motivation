@@ -1,0 +1,37 @@
+{
+  "n_apps": 3,
+  "gpus": [
+    "device1",
+    "device2"
+  ],
+  "apps_per_gpu": [
+    [
+      {
+        "task": "trafficfore",
+        "backbone": "momentlarge",
+        "logical_task": "trafficfore",
+        "base_task": "trafficfore",
+        "decoder_path": "trafficfore_momentlarge_mlp",
+        "app_idx": 0
+      },
+      {
+        "task": "nyudepth",
+        "backbone": "dinosmall",
+        "logical_task": "nyudepth",
+        "base_task": "nyudepth",
+        "decoder_path": "nyudepth_dinosmall_monocular",
+        "app_idx": 1
+      }
+    ],
+    [
+      {
+        "task": "vocseg",
+        "backbone": "dinosmall",
+        "logical_task": "vocseg",
+        "base_task": "vocseg",
+        "decoder_path": null,
+        "app_idx": 2
+      }
+    ]
+  ]
+}

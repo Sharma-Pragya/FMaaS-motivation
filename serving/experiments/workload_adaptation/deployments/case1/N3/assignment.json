@@ -1,0 +1,37 @@
+{
+  "n_apps": 3,
+  "gpus": [
+    "device1",
+    "device2"
+  ],
+  "apps_per_gpu": [
+    [
+      {
+        "task": "trafficfore",
+        "backbone": "momentlarge",
+        "logical_task": "trafficfore",
+        "base_task": "trafficfore",
+        "decoder_path": "trafficfore_momentlarge_mlp",
+        "app_idx": 0
+      },
+      {
+        "task": "exchangefore",
+        "backbone": "momentlarge",
+        "logical_task": "exchangefore",
+        "base_task": "exchangefore",
+        "decoder_path": "exchangefore_momentlarge_mlp",
+        "app_idx": 1
+      }
+    ],
+    [
+      {
+        "task": "heartrate",
+        "backbone": "momentlarge",
+        "logical_task": "heartrate",
+        "base_task": "heartrate",
+        "decoder_path": "heartrate_momentlarge_mlp",
+        "app_idx": 2
+      }
+    ]
+  ]
+}

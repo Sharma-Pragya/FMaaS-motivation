@@ -1,0 +1,7 @@
+{
+  "name": "case1_decoder_offload",
+  "case": "case1",
+  "base_plan": "deployments/case1/N3/sharing.json",
+  "config_module": "experiments.workload_adaptation.configs.case1",
+  "description": "Hot-attach mirror decoder on device2's existing momentlarge to absorb a workload spike on device1's trafficfore."
+}

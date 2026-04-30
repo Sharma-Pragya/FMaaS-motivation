@@ -1,0 +1,18 @@
+{
+  "n_apps": 1,
+  "gpus": [
+    "device1"
+  ],
+  "apps_per_gpu": [
+    [
+      {
+        "task": "trafficfore",
+        "backbone": "momentlarge",
+        "logical_task": "trafficfore",
+        "base_task": "trafficfore",
+        "decoder_path": "trafficfore_momentlarge_mlp",
+        "app_idx": 0
+      }
+    ]
+  ]
+}

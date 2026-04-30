@@ -1,0 +1,39 @@
+{
+  "scenario": {
+    "name": "case3_single_task_decoder_attach",
+    "case": "case3",
+    "mode": "hot_attach",
+    "base_plan": "deployments/case3/N2/sharing.json",
+    "config_module": "experiments.workload_adaptation.configs.case3",
+    "description": "Single victim task. device2 already runs momentlarge with a placeholder task. Adaptation: hot-attach trafficfore decoder to device2 and split routing."
+  },
+  "adaptation": {
+    "victim_task": "trafficfore",
+    "victim_base_task": "trafficfore",
+    "victim_decoder_path": "trafficfore_momentlarge_mlp",
+    "victim_decoder_type": "forecasting",
+    "victim_origin_device": "device1",
+    "offload_target_device": "device2",
+    "offload_target_backbone": "momentlarge",
+    "offload_target_port": 8000,
+    "mirror_task_name": "trafficfore",
+    "bump_at_s": 60.0,
+    "attach_at_s": 60.0,
+    "stop_at_s": 180.0,
+    "baseline_rps": 15.0,
+    "bumped_rps": 70.0,
+    "mirror_share_post_attach": 0.5
+  },
+  "experiment": {
+    "trace": "poisson_per_task",
+    "duration": 60,
+    "max_batch_wait_ms": 0,
+    "max_batch_size": 32,
+    "isolation_mode": "shared",
+    "warmup_gap": 2.0,
+    "pretrace_warmup_secs": 15.0,
+    "max_model_len": 256,
+    "batch_mode": "fixedpoint"
+  },
+  "seed": 42
+}

@@ -1,0 +1,7 @@
+{
+  "name": "case2_backbone_spinup",
+  "case": "case2",
+  "base_plan": "deployments/case2/N3/sharing.json",
+  "config_module": "experiments.workload_adaptation.configs.case2",
+  "description": "Cold-start a momentlarge backbone on device2:8010 (TPCs 10-19) and hot-attach a mirror decoder to absorb the workload spike on device1's trafficfore."
+}

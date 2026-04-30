@@ -1,0 +1,8 @@
+{
+  "name": "case4_single_task_backbone_coldstart",
+  "case": "case4",
+  "mode": "cold_start_then_attach",
+  "base_plan": "deployments/case4/N1/sharing.json",
+  "config_module": "experiments.workload_adaptation.configs.case4",
+  "description": "Single victim task. device2 has no backbone initially. Adaptation: cold-start momentlarge on device2, attach trafficfore decoder, split routing."
+}

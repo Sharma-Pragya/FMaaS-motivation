@@ -1,0 +1,6 @@
+[
+    {
+        "status": "loaded_momentlarge",
+        "logger_summary": "{'load_backbone': {'wall time': 5842.0399595052, 'gpu time': 5842.17822265625, 'gpu peak': 1461.95456, 'gpu energy': 114.306, 'avg gpu util pct': 63.0, 'cpu dRSS': 422.89152}, 'add_decoder_trafficfore_momentlarge_mlp': {'wall time': 80.53731173276901, 'gpu time': 80.6635513305664, 'gpu peak': 50.332672, 'gpu energy': 1.976, 'avg gpu util pct': 62.0, 'cpu dRSS': -49.967104}}"
+    }
+]

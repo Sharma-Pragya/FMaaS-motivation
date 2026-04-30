@@ -1,0 +1,26 @@
+{
+  "devices": {
+    "192.168.245.194:8000": {
+      "request_count": 841,
+      "avg_client_prep_ms": 0.003044727157610917,
+      "avg_client_submit_to_backend_start_ms": 5.263418419891249,
+      "avg_backend_exec_ms": 49.475094651212025,
+      "avg_backend_to_client_return_ms": 12.390210710722824,
+      "avg_end_to_end_ms": 67.13176850898371,
+      "avg_backend_start_to_start_ms": 71.45538386844453,
+      "avg_backend_idle_gap_ms": 37.15214246795291,
+      "backend_overlap_pairs": 541
+    },
+    "192.168.245.191:8000": {
+      "request_count": 1069,
+      "avg_client_prep_ms": 0.0025021684180920765,
+      "avg_client_submit_to_backend_start_ms": 3.897777776834115,
+      "avg_backend_exec_ms": 55.559739540178604,
+      "avg_backend_to_client_return_ms": 16.67480473210591,
+      "avg_end_to_end_ms": 76.13482421753672,
+      "avg_backend_start_to_start_ms": 56.176399023791824,
+      "avg_backend_idle_gap_ms": 21.395826830846094,
+      "backend_overlap_pairs": 748
+    }
+  }
+}

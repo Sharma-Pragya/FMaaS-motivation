@@ -1,0 +1,8 @@
+{
+  "name": "case3_single_task_decoder_attach",
+  "case": "case3",
+  "mode": "hot_attach",
+  "base_plan": "deployments/case3/N2/sharing.json",
+  "config_module": "experiments.workload_adaptation.configs.case3",
+  "description": "Single victim task. device2 already runs momentlarge with a placeholder task. Adaptation: hot-attach trafficfore decoder to device2 and split routing."
+}
