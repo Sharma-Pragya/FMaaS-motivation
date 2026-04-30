@@ -28,13 +28,13 @@ the client runner reuses the base task's dataset, e.g. {"ecgclass*": "ecgclass"}
 
 # ── Runtime knobs ────────────────────────────────────────────────────
 experiment = {
-    'trace':                 'alibaba_gentd26', #alibaba_gentd26,poisson_per_task
+    'trace':                 'poisson_per_task', #alibaba_gentd26,poisson_per_task
     'duration':              600,
     'max_batch_wait_ms':     0,
     'max_batch_size':        32,
     'isolation_mode':        'shared',
     'warmup_gap':            2.0,
-    'pretrace_warmup_secs':  15.0,
+    'warmup_burst_secs':     15.0,
     'max_model_len':         256,
     'batch_mode':            'fixedpoint',
 }
@@ -50,14 +50,34 @@ devices = {
     #             'site_manager': 'site2', 'cuda': 'cuda:0', 'tpcs': 5},
     # 'device4': {'type': 'NVIDIA A2', 'mem': 15356, 'ip': '192.168.245.195',
     #             'site_manager': 'site2', 'cuda': 'cuda:0', 'tpcs': 5},
+
+    # 'device1': {'type': 'NVIDIA T4', 'mem': 15360, 'ip': '172.31.40.38',
+    #             'site_manager': 'site2', 'cuda': 'cuda:0', 'tpcs': 20},
+    # 'device2': {'type': 'NVIDIA T4', 'mem': 15360, 'ip': '172.31.34.115',
+    #             'site_manager': 'site2', 'cuda': 'cuda:0', 'tpcs': 20},
+    # 'device3': {'type': 'NVIDIA T4', 'mem': 15360, 'ip': '172.31.39.15',
+    #             'site_manager': 'site2', 'cuda': 'cuda:0', 'tpcs': 20},
+    # 'device4': {'type': 'NVIDIA T4', 'mem': 15360, 'ip': '172.31.46.11',
+    #             'site_manager': 'site2', 'cuda': 'cuda:0', 'tpcs': 20},
+
     'device1': {'type': 'NVIDIA T4', 'mem': 15360, 'ip': '172.31.40.38',
                 'site_manager': 'site2', 'cuda': 'cuda:0', 'tpcs': 20},
-    'device2': {'type': 'NVIDIA T4', 'mem': 15360, 'ip': '172.31.34.115',
+    'device2': {'type': 'NVIDIA T4', 'mem': 15360, 'ip': '172.31.46.11',
                 'site_manager': 'site2', 'cuda': 'cuda:0', 'tpcs': 20},
-    'device3': {'type': 'NVIDIA T4', 'mem': 15360, 'ip': '172.31.39.15',
+    'device3': {'type': 'NVIDIA T4', 'mem': 15360, 'ip': '172.31.35.65',
                 'site_manager': 'site2', 'cuda': 'cuda:0', 'tpcs': 20},
-    'device4': {'type': 'NVIDIA T4', 'mem': 15360, 'ip': '172.31.46.11',
+    'device4': {'type': 'NVIDIA T4', 'mem': 15360, 'ip': '172.31.32.69',
                 'site_manager': 'site2', 'cuda': 'cuda:0', 'tpcs': 20},
+
+    # 'device1': {'type': 'NVIDIA T4', 'mem': 15360, 'ip': '172.31.34.115',
+    #             'site_manager': 'site2', 'cuda': 'cuda:0', 'tpcs': 20},
+    # 'device2': {'type': 'NVIDIA T4', 'mem': 15360, 'ip': '172.31.39.15',
+    #             'site_manager': 'site2', 'cuda': 'cuda:0', 'tpcs': 20},
+    # 'device3': {'type': 'NVIDIA T4', 'mem': 15360, 'ip': '172.31.34.179',
+    #             'site_manager': 'site2', 'cuda': 'cuda:0', 'tpcs': 20},
+    # 'device4': {'type': 'NVIDIA T4', 'mem': 15360, 'ip': '172.31.36.225',
+    #             'site_manager': 'site2', 'cuda': 'cuda:0', 'tpcs': 20},
+
 }
 
 # ── Canonical task metadata ──────────────────────────────────────────
@@ -84,7 +104,7 @@ tasks = {
 # Subset of devices to use. Defaults to all GPUs.
 gpus = list(devices.keys())
 
-n_apps_list = [8,16,32]
+n_apps_list = [8,16,32,64,128]
 
 # Ordered pool. Cycled when N > len(pool). One entry = one app.
 # Repeated entries are auto-renamed to "<task>__app<app_idx>" at generation time.
@@ -94,10 +114,10 @@ task_pool = [
     {"task": "heartrate",    "backbone": "momentbase"},
     {"task": "imgclass10",       "backbone": "swinsmall",  "decoder_path": None},
     {"task": "diasbp",       "backbone": "papageissvri"},
-    {"task": "etth1fore", "backbone": "momentlarge"},
-    {"task": "eurosatclass",  "backbone": "swinbase","decoder_path": None},
-    {"task": "sysbp", "backbone": "papageip"},
-    {"task": "vocseg",    "backbone": "dinobase", "decoder_path": None},
+    {"task": "vocseg", "backbone": "dinosmall",        "decoder_path": None},
+    {"task": "sysbp",        "backbone": "momentbase"},
+    {"task": "eurosatclass", "backbone": "swinsmall",        "decoder_path": None},
+    {"task": "etth1fore",    "backbone": "papageissvri"},
 ]
 
 per_app_rps = 2.0
@@ -127,36 +147,12 @@ tpc_per_app_split = {24: {"device1": [3,3,3,3,4,4],"device2": [3,3,3,3,4,4],"dev
 # Omit a GPU key when only one backbone lands there (full GPU, no TPC field).
 sharing_tpc_split: dict = {
     # # N=16: each GPU hosts 4 distinct backbones on 5 TPCs (one backbone gets 2).
-    8: {
-        "device1": [10, 10],
-        "device2": [10, 10],
-        "device3": [10, 10],
-        "device4": [10, 10],
-    },
-    16: {
-        "device1": [10,10],
-        "device2": [10,10],
-        "device3": [10,10],
-        "device4": [10, 10],        
-    },
-    32: {
-        "device1": [10,10],
-        "device2": [10,10],
-        "device3": [10,10],
-        "device4": [10, 10],        
-    },
-    64: {
-        "device1": [10,10],
-        "device2": [10,10],
-        "device3": [10,10],
-        "device4": [10, 10],        
-    },
-    128: {
-        "device1": [10,10],
-        "device2": [10,10],
-        "device3": [10,10],
-        "device4": [10, 10],        
-    },
+    # 16: {
+    #     "device1": [2, 1, 1, 1],
+    #     "device2": [2, 1, 1, 1],
+    #     "device3": [2, 2, 1],
+    #     "device4": [2, 1, 1, 1],
+    # },
 }
 
 conditions = ["no_sharing", "sharing", "no_sharing_tpc"]

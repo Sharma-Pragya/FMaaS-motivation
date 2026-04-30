@@ -25,7 +25,7 @@ cd "$SERVING_DIR"
 N_APPS_LIST="${N_APPS_LIST:-}"
 CONDITIONS="${CONDITIONS:-}"
 DURATION="${DURATION:-}"
-RESULTS_DIR="${RESULTS_DIR:-experiments/cluster_sharing_benefit/results}"
+RESULTS_DIR="${RESULTS_DIR:-experiments/cluster_sharing_benefit/results_poisson}"
 SKIP_GEN="${SKIP_GEN:-0}"
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[0;33m'; CYAN='\033[0;36m'; NC='\033[0m'

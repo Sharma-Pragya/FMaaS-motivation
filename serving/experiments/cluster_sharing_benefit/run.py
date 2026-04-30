@@ -98,7 +98,7 @@ def main() -> int:
     duration = float(args.duration if args.duration is not None else exp["duration"])
     trace_type = exp["trace"]
     warmup_gap = float(exp.get("warmup_gap", 2.0))
-    pretrace_warmup_secs = float(exp.get("pretrace_warmup_secs", 0.0))
+    warmup_burst_secs = float(exp.get("warmup_burst_secs", 0.0))
 
     plan = _load_plan(args.condition, args.n_apps)
 
@@ -157,7 +157,7 @@ def main() -> int:
         site_mgr.deploy(plan, output_dir)
 
         runner = TraceRunner(site_mgr.live_plan, trace, output_dir,
-                             pretrace_warmup_secs=pretrace_warmup_secs)
+                             warmup_burst_secs=warmup_burst_secs)
 
         async def _go():
             await runner.warmup()

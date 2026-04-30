@@ -1,0 +1,83 @@
+{
+  "n_apps": 8,
+  "gpus": [
+    "device1",
+    "device2",
+    "device3",
+    "device4"
+  ],
+  "apps_per_gpu": [
+    [
+      {
+        "task": "nyudepth",
+        "backbone": "dinosmall",
+        "logical_task": "nyudepth",
+        "base_task": "nyudepth",
+        "decoder_path": "nyudepth_dinosmall_monocular",
+        "app_idx": 0
+      },
+      {
+        "task": "etth1fore",
+        "backbone": "momentlarge",
+        "logical_task": "etth1fore",
+        "base_task": "etth1fore",
+        "decoder_path": "etth1fore_momentlarge_mlp",
+        "app_idx": 4
+      }
+    ],
+    [
+      {
+        "task": "heartrate",
+        "backbone": "momentbase",
+        "logical_task": "heartrate",
+        "base_task": "heartrate",
+        "decoder_path": "heartrate_momentbase_mlp",
+        "app_idx": 1
+      },
+      {
+        "task": "eurosatclass",
+        "backbone": "swinbase",
+        "logical_task": "eurosatclass",
+        "base_task": "eurosatclass",
+        "decoder_path": null,
+        "app_idx": 5
+      }
+    ],
+    [
+      {
+        "task": "imgclass10",
+        "backbone": "swinsmall",
+        "logical_task": "imgclass10",
+        "base_task": "imgclass10",
+        "decoder_path": null,
+        "app_idx": 2
+      },
+      {
+        "task": "sysbp",
+        "backbone": "papageip",
+        "logical_task": "sysbp",
+        "base_task": "sysbp",
+        "decoder_path": "sysbp_papageip_mlp",
+        "app_idx": 6
+      }
+    ],
+    [
+      {
+        "task": "diasbp",
+        "backbone": "papageissvri",
+        "logical_task": "diasbp",
+        "base_task": "diasbp",
+        "decoder_path": "diasbp_papageissvri_mlp",
+        "app_idx": 3
+      },
+      {
+        "task": "vocseg",
+        "backbone": "dinobase",
+        "logical_task": "vocseg",
+        "base_task": "vocseg",
+        "decoder_path": null,
+        "app_idx": 7
+      }
+    ]
+  ]
+}

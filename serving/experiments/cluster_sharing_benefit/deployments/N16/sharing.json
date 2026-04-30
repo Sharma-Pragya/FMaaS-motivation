@@ -19,10 +19,22 @@
               "path": "nyudepth_dinosmall_monocular"
             },
             {
+              "task": "vocseg",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
               "task": "nyudepth__app8",
               "base_task": "nyudepth",
               "type": "monocular",
               "path": "nyudepth_dinosmall_monocular"
+            },
+            {
+              "task": "vocseg__app12",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
             }
           ],
           "tasks": {
@@ -30,73 +42,22 @@
               "type": "monocular",
               "request_per_sec": 2.0
             },
+            "vocseg": {
+              "type": "linear_seg",
+              "request_per_sec": 2.0
+            },
             "nyudepth__app8": {
               "type": "monocular",
               "request_per_sec": 2.0
-            }
-          },
-          "tpc_mode": "libsmctrl",
-          "tpc_partition": [
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            7,
-            8,
-            9
-          ]
-        },
-        {
-          "device": "172.31.40.38:8010",
-          "device_name": "device1",
-          "device_type": "NVIDIA T4",
-          "backbone": "momentlarge",
-          "cuda": "cuda:0",
-          "scheduler_policy": "stfq",
-          "worker_mode": "threaded",
-          "decoders": [
-            {
-              "task": "etth1fore",
-              "base_task": "etth1fore",
-              "type": "forecasting",
-              "path": "etth1fore_momentlarge_mlp"
             },
-            {
-              "task": "etth1fore__app12",
-              "base_task": "etth1fore",
-              "type": "forecasting",
-              "path": "etth1fore_momentlarge_mlp"
-            }
-          ],
-          "tasks": {
-            "etth1fore": {
-              "type": "forecasting",
-              "request_per_sec": 2.0
-            },
-            "etth1fore__app12": {
-              "type": "forecasting",
+            "vocseg__app12": {
+              "type": "linear_seg",
               "request_per_sec": 2.0
             }
-          },
-          "tpc_mode": "libsmctrl",
-          "tpc_partition": [
-            10,
-            11,
-            12,
-            13,
-            14,
-            15,
-            16,
-            17,
-            18,
-            19
-          ]
+          }
         },
         {
-          "device": "172.31.34.115:8000",
+          "device": "172.31.46.11:8000",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -111,10 +72,22 @@
               "path": "heartrate_momentbase_mlp"
             },
             {
+              "task": "sysbp",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_momentbase_mlp"
+            },
+            {
               "task": "heartrate__app9",
               "base_task": "heartrate",
               "type": "regression",
               "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "sysbp__app13",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_momentbase_mlp"
             }
           ],
           "tasks": {
@@ -122,73 +95,22 @@
               "type": "regression",
               "request_per_sec": 2.0
             },
+            "sysbp": {
+              "type": "regression",
+              "request_per_sec": 2.0
+            },
             "heartrate__app9": {
               "type": "regression",
               "request_per_sec": 2.0
-            }
-          },
-          "tpc_mode": "libsmctrl",
-          "tpc_partition": [
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            7,
-            8,
-            9
-          ]
-        },
-        {
-          "device": "172.31.34.115:8010",
-          "device_name": "device2",
-          "device_type": "NVIDIA T4",
-          "backbone": "swinbase",
-          "cuda": "cuda:0",
-          "scheduler_policy": "stfq",
-          "worker_mode": "threaded",
-          "decoders": [
-            {
-              "task": "eurosatclass",
-              "base_task": "eurosatclass",
-              "type": "linear_classification",
-              "path": null
             },
-            {
-              "task": "eurosatclass__app13",
-              "base_task": "eurosatclass",
-              "type": "linear_classification",
-              "path": null
-            }
-          ],
-          "tasks": {
-            "eurosatclass": {
-              "type": "linear_classification",
-              "request_per_sec": 2.0
-            },
-            "eurosatclass__app13": {
-              "type": "linear_classification",
+            "sysbp__app13": {
+              "type": "regression",
               "request_per_sec": 2.0
             }
-          },
-          "tpc_mode": "libsmctrl",
-          "tpc_partition": [
-            10,
-            11,
-            12,
-            13,
-            14,
-            15,
-            16,
-            17,
-            18,
-            19
-          ]
+          }
         },
         {
-          "device": "172.31.39.15:8000",
+          "device": "172.31.35.65:8000",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -203,8 +125,20 @@
               "path": null
             },
             {
+              "task": "eurosatclass",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
               "task": "imgclass10__app10",
               "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app14",
+              "base_task": "eurosatclass",
               "type": "linear_classification",
               "path": null
             }
@@ -214,73 +148,22 @@
               "type": "linear_classification",
               "request_per_sec": 2.0
             },
+            "eurosatclass": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0
+            },
             "imgclass10__app10": {
               "type": "linear_classification",
               "request_per_sec": 2.0
-            }
-          },
-          "tpc_mode": "libsmctrl",
-          "tpc_partition": [
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            7,
-            8,
-            9
-          ]
-        },
-        {
-          "device": "172.31.39.15:8010",
-          "device_name": "device3",
-          "device_type": "NVIDIA T4",
-          "backbone": "papageip",
-          "cuda": "cuda:0",
-          "scheduler_policy": "stfq",
-          "worker_mode": "threaded",
-          "decoders": [
-            {
-              "task": "sysbp",
-              "base_task": "sysbp",
-              "type": "regression",
-              "path": "sysbp_papageip_mlp"
             },
-            {
-              "task": "sysbp__app14",
-              "base_task": "sysbp",
-              "type": "regression",
-              "path": "sysbp_papageip_mlp"
-            }
-          ],
-          "tasks": {
-            "sysbp": {
-              "type": "regression",
-              "request_per_sec": 2.0
-            },
-            "sysbp__app14": {
-              "type": "regression",
+            "eurosatclass__app14": {
+              "type": "linear_classification",
               "request_per_sec": 2.0
             }
-          },
-          "tpc_mode": "libsmctrl",
-          "tpc_partition": [
-            10,
-            11,
-            12,
-            13,
-            14,
-            15,
-            16,
-            17,
-            18,
-            19
-          ]
+          }
         },
         {
-          "device": "172.31.46.11:8000",
+          "device": "172.31.32.69:8000",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
@@ -295,10 +178,22 @@
               "path": "diasbp_papageissvri_mlp"
             },
             {
+              "task": "etth1fore",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
               "task": "diasbp__app11",
               "base_task": "diasbp",
               "type": "regression",
               "path": "diasbp_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app15",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
             }
           ],
           "tasks": {
@@ -306,70 +201,19 @@
               "type": "regression",
               "request_per_sec": 2.0
             },
+            "etth1fore": {
+              "type": "forecasting",
+              "request_per_sec": 2.0
+            },
             "diasbp__app11": {
               "type": "regression",
               "request_per_sec": 2.0
-            }
-          },
-          "tpc_mode": "libsmctrl",
-          "tpc_partition": [
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            7,
-            8,
-            9
-          ]
-        },
-        {
-          "device": "172.31.46.11:8010",
-          "device_name": "device4",
-          "device_type": "NVIDIA T4",
-          "backbone": "dinobase",
-          "cuda": "cuda:0",
-          "scheduler_policy": "stfq",
-          "worker_mode": "threaded",
-          "decoders": [
-            {
-              "task": "vocseg",
-              "base_task": "vocseg",
-              "type": "linear_seg",
-              "path": null
             },
-            {
-              "task": "vocseg__app15",
-              "base_task": "vocseg",
-              "type": "linear_seg",
-              "path": null
-            }
-          ],
-          "tasks": {
-            "vocseg": {
-              "type": "linear_seg",
-              "request_per_sec": 2.0
-            },
-            "vocseg__app15": {
-              "type": "linear_seg",
+            "etth1fore__app15": {
+              "type": "forecasting",
               "request_per_sec": 2.0
             }
-          },
-          "tpc_mode": "libsmctrl",
-          "tpc_partition": [
-            10,
-            11,
-            12,
-            13,
-            14,
-            15,
-            16,
-            17,
-            18,
-            19
-          ]
+          }
         }
       ]
     }

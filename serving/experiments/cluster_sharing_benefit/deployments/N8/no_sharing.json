@@ -30,27 +30,27 @@
           "device": "172.31.40.38:8010",
           "device_name": "device1",
           "device_type": "NVIDIA T4",
-          "backbone": "momentlarge",
+          "backbone": "dinosmall",
           "cuda": "cuda:0",
           "scheduler_policy": "fifo",
           "worker_mode": "inline",
           "decoders": [
             {
-              "task": "etth1fore",
-              "base_task": "etth1fore",
-              "type": "forecasting",
-              "path": "etth1fore_momentlarge_mlp"
+              "task": "vocseg",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
             }
           ],
           "tasks": {
-            "etth1fore": {
-              "type": "forecasting",
+            "vocseg": {
+              "type": "linear_seg",
               "request_per_sec": 2.0
             }
           }
         },
         {
-          "device": "172.31.34.115:8000",
+          "device": "172.31.46.11:8000",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -73,30 +73,30 @@
           }
         },
         {
-          "device": "172.31.34.115:8010",
+          "device": "172.31.46.11:8010",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
-          "backbone": "swinbase",
+          "backbone": "momentbase",
           "cuda": "cuda:0",
           "scheduler_policy": "fifo",
           "worker_mode": "inline",
           "decoders": [
             {
-              "task": "eurosatclass",
-              "base_task": "eurosatclass",
-              "type": "linear_classification",
-              "path": null
+              "task": "sysbp",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_momentbase_mlp"
             }
           ],
           "tasks": {
-            "eurosatclass": {
-              "type": "linear_classification",
+            "sysbp": {
+              "type": "regression",
               "request_per_sec": 2.0
             }
           }
         },
         {
-          "device": "172.31.39.15:8000",
+          "device": "172.31.35.65:8000",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -119,30 +119,30 @@
           }
         },
         {
-          "device": "172.31.39.15:8010",
+          "device": "172.31.35.65:8010",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
-          "backbone": "papageip",
+          "backbone": "swinsmall",
           "cuda": "cuda:0",
           "scheduler_policy": "fifo",
           "worker_mode": "inline",
           "decoders": [
             {
-              "task": "sysbp",
-              "base_task": "sysbp",
-              "type": "regression",
-              "path": "sysbp_papageip_mlp"
+              "task": "eurosatclass",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
             }
           ],
           "tasks": {
-            "sysbp": {
-              "type": "regression",
+            "eurosatclass": {
+              "type": "linear_classification",
               "request_per_sec": 2.0
             }
           }
         },
         {
-          "device": "172.31.46.11:8000",
+          "device": "172.31.32.69:8000",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
@@ -165,24 +165,24 @@
           }
         },
         {
-          "device": "172.31.46.11:8010",
+          "device": "172.31.32.69:8010",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
-          "backbone": "dinobase",
+          "backbone": "papageissvri",
           "cuda": "cuda:0",
           "scheduler_policy": "fifo",
           "worker_mode": "inline",
           "decoders": [
             {
-              "task": "vocseg",
-              "base_task": "vocseg",
-              "type": "linear_seg",
-              "path": null
+              "task": "etth1fore",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
             }
           ],
           "tasks": {
-            "vocseg": {
-              "type": "linear_seg",
+            "etth1fore": {
+              "type": "forecasting",
               "request_per_sec": 2.0
             }
           }

@@ -34,7 +34,7 @@ experiment = {
     'max_batch_size':        32,
     'isolation_mode':        'shared',
     'warmup_gap':            2.0,
-    'pretrace_warmup_secs':  15.0,
+    'warmup_burst_secs':     15.0,
     'max_model_len':         256,
     'batch_mode':            'fixedpoint',
 }
