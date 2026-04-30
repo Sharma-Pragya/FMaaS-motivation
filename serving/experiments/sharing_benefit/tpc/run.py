@@ -43,7 +43,7 @@ if str(SERVING_DIR) not in sys.path:
 import numpy as np
 from torch.utils.data import DataLoader
 
-from serving.site_manager.grpc_client import EdgeRuntimeClient
+from serving.site_manager.grpc_client import EdgeRuntimeClient, encode_infer_request
 from serving.site_manager.config import DATASET_DIR as _DATASET_DIR
 
 # ---------------------------------------------------------------------------
@@ -279,7 +279,7 @@ async def deploy(device_url: str, backbone: str, tasks: List[str],
 # Open-loop Poisson sender (gRPC)
 # ---------------------------------------------------------------------------
 
-Record = Tuple[float, float, float, float, float, float, float, int]
+Record = Tuple[float, float, float, float, float, float, float, float, int]
 # (
 #   send_time_relative_s,
 #   client_latency_ms,
@@ -287,7 +287,8 @@ Record = Tuple[float, float, float, float, float, float, float, int]
 #   server_proc_ms,
 #   server_swap_ms,
 #   server_decoder_ms,
-#   queue_wait_plus_rpc_ms,
+#   queue_wait_plus_rpc_ms,   # starts at actual gRPC stub call, not client tensor/protobuf encoding
+#   client_pre_rpc_ms,        # client wrapper work before the gRPC stub call
 #   server_start_ns,
 # )
 
@@ -296,12 +297,15 @@ async def run_warmup_burst(
     task_urls: Dict[str, str],
     data: Dict[str, Dict],
     duration_s: float = 15.0,
-) -> None:
+) -> Dict[str, "EdgeRuntimeClient"]:
     """Send closed-loop requests for duration_s seconds to heat up GPU clocks/caches.
 
     Each (slot,url) pair gets its own concurrent closed-loop sender — next
     request fires immediately after the previous one completes, keeping every
     server (and TPC partition) maximally busy.
+
+    Returns the warm clients (keyed by URL) so run_open_loop can reuse the
+    same gRPC connections and avoid cold-connection RPC overhead.
     """
     # Resolve slot -> (task, url), matching the keying convention used in
     # run_open_loop: "slot_N:task" (when tasks repeat) or plain task name.
@@ -324,34 +328,39 @@ async def run_warmup_burst(
         await c.wait_ready()
         clients[url] = c
 
+    # Pre-encode once — warmup just hammers the server, no need to re-encode each call.
+    slot_proto = {
+        sk: encode_infer_request(
+            task=slot_task[sk],
+            x=data[slot_task[sk]]["x"],
+            mask=data[slot_task[sk]].get("mask"),
+        )
+        for sk in slot_task
+    }
+    slot_stub = {sk: clients[slot_url[sk]]._stub for sk in slot_task}
+
     print(f"[Warmup] Closed-loop burst for {duration_s}s to heat up GPU ...")
     t_end = time.time() + duration_s
     total_reqs = 0
 
     async def _slot_loop(slot_key: str) -> None:
         nonlocal total_reqs
-        task = slot_task[slot_key]
-        url  = slot_url[slot_key]
-        d = data[task]
+        proto = slot_proto[slot_key]
         req_id = 0
         while time.time() < t_end:
             try:
-                await asyncio.wait_for(clients[url].infer({
-                    "req_id": req_id,
-                    "task":   task,
-                    "x":      d["x"],
-                    "mask":   d.get("mask"),
-                }), timeout=10.0)
+                proto.req_id = req_id
+                await asyncio.wait_for(
+                    slot_stub[slot_key].Infer(proto), timeout=10.0
+                )
                 total_reqs += 1
             except Exception:
                 pass
             req_id += 1
 
     await asyncio.gather(*[_slot_loop(sk) for sk in slot_task])
-
-    for c in clients.values():
-        await c.close()
     print(f"[Warmup] Done ({total_reqs} requests sent).")
+    return clients
 
 
 async def run_open_loop(
@@ -359,6 +368,7 @@ async def run_open_loop(
     data: Dict[str, Dict],
     send_times: Dict[str, List[float]],
     req_timeout: float = 60.0,
+    warm_clients: Optional[Dict[str, "EdgeRuntimeClient"]] = None,
 ) -> Dict[str, List[Record]]:
     # task_urls is keyed by slot key (e.g. "slot_0", "slot_1") when tasks repeat,
     # or by task name when all tasks are unique. The slot_task map carries the
@@ -382,41 +392,63 @@ async def run_open_loop(
         slot_times[slot_key] = send_times[task]
 
     unique_urls = list(set(slot_url.values()))
+    # Reuse warm clients from warmup burst to avoid cold gRPC connection overhead.
     clients: Dict[str, EdgeRuntimeClient] = {}
     for url in unique_urls:
-        c = EdgeRuntimeClient(url)
-        await c.wait_ready()
-        clients[url] = c
+        if warm_clients and url in warm_clients:
+            clients[url] = warm_clients[url]
+        else:
+            c = EdgeRuntimeClient(url)
+            await c.wait_ready()
+            clients[url] = c
+
+    # Pre-encode one InferRequest proto per slot (task + tensors serialized once).
+    # Only req_id changes per request; everything else is fixed for the whole run.
+    # Each slot gets its own proto object — safe because one coroutine owns each slot.
+    slot_proto = {
+        sk: encode_infer_request(
+            task=slot_task[sk],
+            x=data[slot_task[sk]]["x"],
+            mask=data[slot_task[sk]].get("mask"),
+        )
+        for sk in slot_task
+    }
+    # Extract the raw stub per URL so _fire can call stub.Infer() directly,
+    # skipping the encoding work inside EdgeRuntimeClient.infer().
+    slot_stub = {sk: clients[slot_url[sk]]._stub for sk in slot_task}
 
     records: Dict[str, List[Record]] = {sk: [] for sk in slot_task}
 
-    async def _fire(slot_key: str, req_id: int, t_send_abs: float, t_start: float) -> None:
-        task = slot_task[slot_key]
-        d = data[task]
+    async def _fire(slot_key: str, req_id: int, t_scheduled: float, t_start: float) -> None:
+        proto = slot_proto[slot_key]
+        proto.req_id = req_id  # only field that varies; set before timing starts
         try:
-            resp = await asyncio.wait_for(clients[slot_url[slot_key]].infer({
-                "req_id": req_id,
-                "task":   task,
-                "x":      d["x"],
-                "mask":   d.get("mask"),
-            }), timeout=req_timeout)
+            t_send_abs = time.time()
+            response = await asyncio.wait_for(
+                slot_stub[slot_key].Infer(proto), timeout=req_timeout
+            )
             t_done_abs = time.time()
-            client_lat_ms = (t_done_abs - t_send_abs) * 1000
-            server_start_s = resp["start_time_ns"] / 1e9
-            server_exec_ms = (resp["end_time_ns"] - resp["start_time_ns"]) / 1e6
-            server_proc_ms = resp.get("proc_time_ns", 0) / 1e6
-            server_swap_ms = resp.get("swap_time_ns", 0) / 1e6
-            server_decoder_ms = resp.get("decoder_time_ns", 0) / 1e6
-            queue_wait_plus_rpc_ms = max(0.0, (server_start_s - t_send_abs) * 1000)
+            if response.status and response.status != "ok":
+                return
+            client_lat_ms  = (t_done_abs - t_send_abs) * 1000
+            server_exec_ms = (response.end_time_ns - response.start_time_ns) / 1e6
+            server_proc_ms = response.proc_time_ns / 1e6
+            server_swap_ms = response.swap_time_ns / 1e6
+            server_decoder_ms = response.decoder_time_ns / 1e6
+            # queue_wait: purely server-side — from client stub call to GPU start.
+            # Both t_send_abs and server_start are on the same host wall clock,
+            # so this captures loopback + server asyncio dispatch + batcher delay.
+            queue_wait_plus_rpc_ms = max(0.0, (response.start_time_ns / 1e9 - t_send_abs) * 1000)
             records[slot_key].append((
-                t_send_abs - t_start,
+                t_scheduled - t_start,
                 client_lat_ms,
                 server_exec_ms,
                 server_proc_ms,
                 server_swap_ms,
                 server_decoder_ms,
                 queue_wait_plus_rpc_ms,
-                resp["start_time_ns"],
+                0.0,  # client_pre_rpc_ms is now 0 — encoding is pre-done
+                response.start_time_ns,
             ))
         except Exception:
             pass
@@ -430,9 +462,9 @@ async def run_open_loop(
             wait = target - time.time()
             if wait > 0:
                 await asyncio.sleep(wait)
-            t_send = time.time()
+            t_scheduled = time.time()
             in_flight.append(asyncio.create_task(
-                _fire(slot_key, req_id_offset + req_id, t_send, t_start)
+                _fire(slot_key, req_id_offset + req_id, t_scheduled, t_start)
             ))
         if in_flight:
             await asyncio.gather(*in_flight, return_exceptions=True)
@@ -468,15 +500,15 @@ def save_results(records: Dict[str, List[Record]], out_dir: Path, condition: str
             "task", "condition", "elapsed_sec", "latency_ms",
             "server_exec_ms", "server_proc_ms", "server_swap_ms",
             "server_decoder_ms", "queue_wait_plus_rpc_ms",
-            "non_server_exec_overhead_ms", "server_start_ns",
+            "client_pre_rpc_ms", "non_server_exec_overhead_ms", "server_start_ns",
         ])
         for task, recs in records.items():
-            for rel_t, lat, exec_ms, proc_ms, swap_ms, dec_ms, queue_ms, start_ns in recs:
+            for rel_t, lat, exec_ms, proc_ms, swap_ms, dec_ms, queue_ms, pre_rpc_ms, start_ns in recs:
                 w.writerow([
                     task, condition,
                     round(rel_t, 4), round(lat, 4),
                     round(exec_ms, 4), round(proc_ms, 4), round(swap_ms, 4),
-                    round(dec_ms, 4), round(queue_ms, 4),
+                    round(dec_ms, 4), round(queue_ms, 4), round(pre_rpc_ms, 4),
                     round(max(0.0, lat - exec_ms), 4),
                     start_ns,
                 ])
@@ -487,7 +519,7 @@ def save_results(records: Dict[str, List[Record]], out_dir: Path, condition: str
             "avg_latency_ms", "p50_latency_ms", "p95_latency_ms", "p99_latency_ms",
             "avg_server_exec_ms", "avg_server_proc_ms", "avg_server_swap_ms",
             "avg_server_decoder_ms", "avg_queue_wait_plus_rpc_ms",
-            "avg_non_server_exec_overhead_ms",
+            "avg_client_pre_rpc_ms", "avg_non_server_exec_overhead_ms",
         ]
         w = csv.DictWriter(f, fieldnames=fields)
         w.writeheader()
@@ -511,6 +543,7 @@ def save_results(records: Dict[str, List[Record]], out_dir: Path, condition: str
                 "avg_server_swap_ms":    round(float(np.mean([rec[4] for rec in trimmed])), 3),
                 "avg_server_decoder_ms": round(float(np.mean([rec[5] for rec in trimmed])), 3),
                 "avg_queue_wait_plus_rpc_ms": round(float(np.mean([rec[6] for rec in trimmed])), 3),
+                "avg_client_pre_rpc_ms": round(float(np.mean([rec[7] for rec in trimmed])), 3),
                 "avg_non_server_exec_overhead_ms": round(
                     float(np.mean([max(0.0, rec[1] - rec[2]) for rec in trimmed])), 3),
             })
@@ -658,19 +691,23 @@ def main() -> int:
 
     asyncio.run(asyncio.sleep(1))
 
-    if args.warmup_burst_secs > 0:
-        asyncio.run(run_warmup_burst(
+    async def _warmup_then_run() -> Dict[str, List[Record]]:
+        warm_clients = None
+        if args.warmup_burst_secs > 0:
+            warm_clients = await run_warmup_burst(
+                task_urls=task_urls,
+                data=data,
+                duration_s=args.warmup_burst_secs,
+            )
+        print(f"\n[Run] Starting open-loop send ({args.duration}s) ...")
+        return await run_open_loop(
             task_urls=task_urls,
             data=data,
-            duration_s=args.warmup_burst_secs,
-        ))
+            send_times={t: send_times[t] for t in tasks},
+            warm_clients=warm_clients,
+        )
 
-    print(f"\n[Run] Starting open-loop send ({args.duration}s) ...")
-    records = asyncio.run(run_open_loop(
-        task_urls=task_urls,
-        data=data,
-        send_times={t: send_times[t] for t in tasks},
-    ))
+    records = asyncio.run(_warmup_then_run())
 
     save_results(records, out_dir, args.condition, args.duration, args.warmup_secs)
     return 0

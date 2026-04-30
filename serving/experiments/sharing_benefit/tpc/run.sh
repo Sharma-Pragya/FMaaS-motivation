@@ -84,7 +84,7 @@ fi
 # ---------------------------------------------------------------------------
 CUDA_DEVICE="${CUDA_DEVICE:-cuda:0}"
 TASK_SET="${TASK_SET:-tsfm}"  # vision or tsfm
-RPS_SWEEP="${RPS_SWEEP:-1,5,10}"
+RPS_SWEEP="${RPS_SWEEP:-1,5,10,15,20}"
 NUM_TASKS_SWEEP="${NUM_TASKS_SWEEP:-2}"   
 PHASE_DURATION="${PHASE_DURATION:-600}"
 DEVICE_PORT="${DEVICE_PORT:-8000}"
@@ -445,11 +445,18 @@ print(sm // 2)  # TPCs ~ SMs/2
             ;;
     esac
 
+    local run_tasks_json
+    run_tasks_json=$(printf '%s\n' "$run_tasks_csv" | awk -F, '{
+        for (i = 1; i <= NF; i++) {
+            printf "%s\"%s\"", (i > 1 ? "," : ""), $i
+        }
+    }')
+
     cat > "${out_dir}/run_config.json" <<EOF
 {
   "condition": "${condition}",
   "task_set": "${TASK_SET}",
-  "tasks": [$(printf '"%s",' "${TASKS[@]}" | sed 's/,$//') ],
+  "tasks": [${run_tasks_json}],
   "num_tasks": ${ntasks},
   "backbone": "${BACKBONE}",
   "cuda_device": "${CUDA_DEVICE}",

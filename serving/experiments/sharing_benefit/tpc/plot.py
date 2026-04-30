@@ -766,6 +766,247 @@ def plot_mean_batch_size_bars(batch_sizes: Dict[str, float], out_path: Path) -> 
 
 
 # ---------------------------------------------------------------------------
+# Latency Overhead loader + CDF plots
+#   overhead = (L_colocated - L_isolated_mean) / L_isolated_mean
+#   L_isolated_mean is the mean latency of the matching single_* baseline.
+# ---------------------------------------------------------------------------
+
+def _read_per_task_latencies(
+    result_root: Path,
+    cond: str,
+    warmup_secs: float,
+    warmup_requests: int,
+) -> Dict[str, List[float]]:
+    """Read latencies.csv for cond, return {task: [latency_ms, ...]} after warmup."""
+    lat_file = result_root / cond / "latencies.csv"
+    if not lat_file.exists() and cond.startswith("single_"):
+        lat_file = _singles_fallback(result_root, cond)
+    if not lat_file.exists():
+        return {}
+    per_task: Dict[str, List[float]] = defaultdict(list)
+    with lat_file.open() as f:
+        reader = csv.DictReader(f)
+        has_elapsed = "elapsed_sec" in (reader.fieldnames or [])
+        task_counts: Dict[str, int] = defaultdict(int)
+        for row in reader:
+            task = row.get("task", "")
+            elapsed = float(row.get("elapsed_sec", 0)) if has_elapsed else None
+            lat = float(row["latency_ms"])
+            if has_elapsed:
+                if elapsed > warmup_secs:
+                    per_task[task].append(lat)
+            else:
+                task_counts[task] += 1
+                if task_counts[task] > warmup_requests:
+                    per_task[task].append(lat)
+    return dict(per_task)
+
+
+def load_latency_overhead_series(
+    result_root: Path,
+    warmup_secs: float = 10.0,
+    warmup_requests: int = 180,
+) -> Dict[str, List[float]]:
+    """Return {condition: [overhead_ratio, ...]} for each multi-task condition.
+
+    Each colocated request k (per task) is paired with isolated request k:
+        overhead_k = (L_colocated_k - L_isolated_k) / L_isolated_k
+    Requests are matched by position (index) within each task after warmup,
+    which is valid because experiments replay the same arrival-time trace.
+    Pairs are truncated to the shorter of the two lists per task.
+    """
+    single_conds = detect_single_conditions(result_root) or SINGLE_CONDITIONS
+
+    # Build per-task isolated latencies: {task: [lat_ms, ...]}
+    iso_by_task: Dict[str, List[float]] = {}
+    for cond in single_conds:
+        task_name = cond[len("single_"):]
+        per_task = _read_per_task_latencies(result_root, cond, warmup_secs, warmup_requests)
+        for task, lats in per_task.items():
+            iso_by_task.setdefault(task, []).extend(lats)
+    if not iso_by_task:
+        return {}
+
+    result: Dict[str, List[float]] = {}
+    for cond in ("no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing"):
+        per_task = _read_per_task_latencies(result_root, cond, warmup_secs, warmup_requests)
+        if not per_task:
+            continue
+        overheads: List[float] = []
+        for task, col_lats in per_task.items():
+            iso_lats = iso_by_task.get(task)
+            if not iso_lats:
+                continue
+            n = min(len(col_lats), len(iso_lats))
+            for col, iso in zip(col_lats[:n], iso_lats[:n]):
+                overheads.append((col - iso) / iso)
+        if overheads:
+            result[cond] = overheads
+    return result
+
+
+def _plot_overhead_cdf_on_ax(
+    ax: plt.Axes,
+    series: Dict[str, List[float]],
+    x_lower: float,
+    x_upper: float,
+) -> None:
+    for s in SERIES_ORDER:
+        vals = series.get(s)
+        if not vals:
+            continue
+        arr = np.sort(np.array(vals))
+        cdf = np.arange(1, len(arr) + 1) / len(arr)
+        ax.plot(arr, cdf,
+                color=SERIES_COLORS[s],
+                linestyle=SERIES_LINESTYLE[s],
+                linewidth=1.0,
+                label=SERIES_LABELS[s])
+    _set_linear_axis_with_endpoint(ax, axis="x", lower=x_lower, upper=x_upper,
+                                   target_ticks=5, decimals=1)
+    _set_linear_axis_with_endpoint(ax, axis="y", lower=0.0, upper=1.0,
+                                   target_ticks=5, decimals=2)
+    ax.axvline(0.0, color="black", linewidth=0.5, linestyle=":")
+    ax.grid(axis="both", zorder=0)
+    ax.set_axisbelow(True)
+
+
+def plot_sweep_latency_overhead_cdf(
+    all_overhead: Dict[int, Dict[str, List[float]]],
+    rps_list: List[int],
+    out_path: Path,
+) -> None:
+    """Sweep CDF of latency overhead — one panel per RPS, mirroring plot_sweep_cdf layout."""
+    rps_with_data = [r for r in rps_list if all_overhead.get(r)]
+    if not rps_with_data:
+        print("[Warn] No latency overhead data, skipping overhead CDF plot")
+        return
+
+    # Global x-axis bounds (symmetric around 0, rounded to 1 decimal)
+    all_vals: List[float] = []
+    for rps in rps_with_data:
+        for vals in all_overhead[rps].values():
+            all_vals.extend(vals)
+    abs_max = max(abs(float(np.percentile(all_vals, 1))),
+                  abs(float(np.percentile(all_vals, 99))))
+    x_upper = _nice_upper(abs_max * 1.1)
+    x_lower = -x_upper
+
+    n = len(rps_with_data)
+    fig, axes = plt.subplots(1, n, figsize=(1.1 * n, 1.3), sharey=True, sharex=False)
+    if n == 1:
+        axes = [axes]
+    fig.subplots_adjust(wspace=0.10)
+
+    for ax, rps in zip(axes, rps_with_data):
+        _plot_overhead_cdf_on_ax(ax, all_overhead.get(rps, {}), x_lower, x_upper)
+        ax.set_title(f"{rps} req/s", pad=2)
+        ax.set_xlabel("Latency Overhead")
+        if ax is not axes[0]:
+            ax.tick_params(axis="y", left=False)
+    axes[0].set_ylabel("CDF")
+
+    legend_series = [s for s in SERIES_ORDER
+                     if any(all_overhead.get(r, {}).get(s) for r in rps_with_data)]
+    fig.legend(
+        handles=_legend_handles(legend_series),
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.10),
+        ncol=max(1, len(legend_series)),
+        frameon=False,
+        handlelength=1.5,
+        columnspacing=0.8,
+        handletextpad=0.3,
+    )
+    fig.tight_layout(rect=(0, 0, 1, 1.0))
+    save_figure(fig, out_path)
+    plt.close(fig)
+
+
+def _plot_overhead_stat_sweep(
+    all_overhead: Dict[int, Dict[str, List[float]]],
+    rps_list: List[int],
+    out_path: Path,
+    stat_fn,
+    ylabel: str,
+    warn_label: str,
+) -> None:
+    """Generic bar plot: one subplot per RPS, one bar per condition, stat given by stat_fn."""
+    rps_with_data = [r for r in rps_list if all_overhead.get(r)]
+    if not rps_with_data:
+        print(f"[Warn] No latency overhead data, skipping {warn_label} bar plot")
+        return
+
+    present = [s for s in SERIES_ORDER
+               if any(all_overhead.get(r, {}).get(s) for r in rps_with_data)]
+    if not present:
+        return
+
+    n = len(rps_with_data)
+    fig, axes = plt.subplots(1, n, figsize=(max(1.6 * n, 2.4), 1.5), sharey=True, squeeze=False)
+    axes = axes[0]
+
+    for ax, rps in zip(axes, rps_with_data):
+        overhead = all_overhead.get(rps, {})
+        vals = [stat_fn(overhead[s]) if overhead.get(s) else float("nan") for s in present]
+        x = np.arange(len(present))
+        bars = ax.bar(x, vals, width=0.7,
+                      color=[SERIES_COLORS[s] for s in present],
+                      edgecolor="black", linewidth=0.4, zorder=2)
+        for bar, v in zip(bars, vals):
+            if not np.isnan(v):
+                ax.text(bar.get_x() + bar.get_width() / 2,
+                        v + 0.005 * (1 if v >= 0 else -1),
+                        f"{v:.2f}", ha="center",
+                        va="bottom" if v >= 0 else "top", fontsize=4.5)
+        ax.axhline(0.0, color="black", linewidth=0.5, linestyle=":")
+        ax.set_title(f"{rps} req/s", pad=2)
+        ax.set_xticks(x)
+        ax.set_xticklabels([SERIES_LABELS[s] for s in present], rotation=15, ha="right")
+        ax.grid(axis="y", zorder=0)
+        ax.set_axisbelow(True)
+        if ax is axes[0]:
+            ax.set_ylabel(ylabel)
+
+    fig.tight_layout(pad=0.3)
+    save_figure(fig, out_path)
+    plt.close(fig)
+
+
+def plot_mean_latency_overhead_sweep(
+    all_overhead: Dict[int, Dict[str, List[float]]],
+    rps_list: List[int],
+    out_path: Path,
+) -> None:
+    _plot_overhead_stat_sweep(all_overhead, rps_list, out_path,
+                              stat_fn=lambda a: float(np.mean(a)),
+                              ylabel="Mean Latency Overhead",
+                              warn_label="mean overhead")
+
+
+def plot_p95_latency_overhead_sweep(
+    all_overhead: Dict[int, Dict[str, List[float]]],
+    rps_list: List[int],
+    out_path: Path,
+) -> None:
+    _plot_overhead_stat_sweep(all_overhead, rps_list, out_path,
+                              stat_fn=lambda a: float(np.percentile(a, 95)),
+                              ylabel="P95 Latency Overhead",
+                              warn_label="p95 overhead")
+
+
+def plot_p99_latency_overhead_sweep(
+    all_overhead: Dict[int, Dict[str, List[float]]],
+    rps_list: List[int],
+    out_path: Path,
+) -> None:
+    _plot_overhead_stat_sweep(all_overhead, rps_list, out_path,
+                              stat_fn=lambda a: float(np.percentile(a, 99)),
+                              ylabel="P99 Latency Overhead",
+                              warn_label="p99 overhead")
+
+
+# ---------------------------------------------------------------------------
 # Plot 6: Sweep CDF — multi-panel (RPS sweep)
 # ---------------------------------------------------------------------------
 
@@ -1487,6 +1728,8 @@ def main() -> int:
         ntasks_sweep_data: Dict[int, Dict[int, Dict[str, float]]] = {}
         # p99 data per ntasks: {ntasks: {rps: {series: p99_ms}}}
         p99_by_ntasks: Dict[int, Dict[int, Dict[str, float]]] = {}
+        # latency overhead: {rps: {condition: [overhead_ratio, ...]}}
+        all_overhead_by_rps: Dict[int, Dict[str, List[float]]] = {}
 
         for n in ntasks_list:
             for rps in rps_list:
@@ -1520,6 +1763,12 @@ def main() -> int:
                 if p99:
                     p99_by_ntasks.setdefault(n, {})[rps] = p99
 
+                # latency overhead
+                overhead = load_latency_overhead_series(rps_root, args.warmup_secs,
+                                                        args.warmup_requests)
+                for cond, vals in overhead.items():
+                    all_overhead_by_rps.setdefault(rps, {}).setdefault(cond, []).extend(vals)
+
         # RPS sweep CDFs (if multiple rps)
         rps_with_series = [r for r in rps_list if r in all_series_by_rps]
         if len(rps_with_series) > 1:
@@ -1528,6 +1777,24 @@ def main() -> int:
             plot_sweep_cdf(all_throughput_by_rps, rps_with_series,
                            out_dir / "tpc_sharing_sweep_throughput_cdf.pdf",
                            metric="throughput")
+
+        # Latency overhead sweep CDF
+        plot_sweep_latency_overhead_cdf(
+            all_overhead_by_rps, rps_list,
+            out_dir / "tpc_sharing_sweep_latency_overhead_cdf.pdf",
+        )
+        plot_mean_latency_overhead_sweep(
+            all_overhead_by_rps, rps_list,
+            out_dir / "tpc_sharing_mean_latency_overhead.pdf",
+        )
+        plot_p95_latency_overhead_sweep(
+            all_overhead_by_rps, rps_list,
+            out_dir / "tpc_sharing_p95_latency_overhead.pdf",
+        )
+        plot_p99_latency_overhead_sweep(
+            all_overhead_by_rps, rps_list,
+            out_dir / "tpc_sharing_p99_latency_overhead.pdf",
+        )
 
         # NEW: ntasks sweep plot
         if len(ntasks_list) > 0:
@@ -1562,6 +1829,7 @@ def main() -> int:
 
         all_series:     Dict[int, Dict[str, List[float]]] = {}
         all_throughput: Dict[int, Dict[str, List[float]]] = {}
+        old_overhead_by_rps: Dict[int, Dict[str, List[float]]] = {}
 
         old_p99_by_rps: Dict[int, Dict[str, float]] = {}
         for rps in rps_list:
@@ -1578,6 +1846,10 @@ def main() -> int:
             p99 = load_p99_for_dir(rps_root)
             if p99:
                 old_p99_by_rps[rps] = p99
+            overhead = load_latency_overhead_series(rps_root, args.warmup_secs,
+                                                    args.warmup_requests)
+            if overhead:
+                old_overhead_by_rps[rps] = overhead
 
         rps_with_data = [r for r in rps_list if r in all_series]
         if len(rps_with_data) > 1:
@@ -1586,6 +1858,24 @@ def main() -> int:
             plot_sweep_cdf(all_throughput, rps_with_data,
                            out_dir / "tpc_sharing_sweep_throughput_cdf.pdf",
                            metric="throughput")
+
+        if old_overhead_by_rps:
+            plot_sweep_latency_overhead_cdf(
+                old_overhead_by_rps, rps_list,
+                out_dir / "tpc_sharing_sweep_latency_overhead_cdf.pdf",
+            )
+            plot_mean_latency_overhead_sweep(
+                old_overhead_by_rps, rps_list,
+                out_dir / "tpc_sharing_mean_latency_overhead.pdf",
+            )
+            plot_p95_latency_overhead_sweep(
+                old_overhead_by_rps, rps_list,
+                out_dir / "tpc_sharing_p95_latency_overhead.pdf",
+            )
+            plot_p99_latency_overhead_sweep(
+                old_overhead_by_rps, rps_list,
+                out_dir / "tpc_sharing_p99_latency_overhead.pdf",
+            )
 
         if old_p99_by_rps:
             plot_p99_vs_rps(old_p99_by_rps, rps_list,
