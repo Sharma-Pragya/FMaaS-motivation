@@ -165,19 +165,23 @@ def main() -> int:
 
     asyncio.run(asyncio.sleep(1))
 
-    if args.warmup_burst_secs > 0:
-        asyncio.run(run_warmup_burst(
+    async def _warmup_then_run():
+        warm_clients = None
+        if args.warmup_burst_secs > 0:
+            warm_clients = await run_warmup_burst(
+                task_urls=task_urls,
+                data=data,
+                duration_s=args.warmup_burst_secs,
+            )
+        print(f"\n[Run] Starting open-loop send ({args.duration}s) ...")
+        return await run_open_loop(
             task_urls=task_urls,
             data=data,
-            duration_s=args.warmup_burst_secs,
-        ))
+            send_times={t: send_times[t] for t in tasks},
+            warm_clients=warm_clients,
+        )
 
-    print(f"\n[Run] Starting open-loop send ({args.duration}s) ...")
-    records = asyncio.run(run_open_loop(
-        task_urls=task_urls,
-        data=data,
-        send_times={t: send_times[t] for t in tasks},
-    ))
+    records = asyncio.run(_warmup_then_run())
 
     save_results(records, out_dir, args.condition, args.duration, args.warmup_secs)
     return 0
