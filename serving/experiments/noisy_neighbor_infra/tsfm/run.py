@@ -37,7 +37,7 @@ if str(SERVING_DIR) not in sys.path:
 import numpy as np
 from torch.utils.data import DataLoader
 
-from site_manager.grpc_client import EdgeRuntimeClient
+from site_manager.grpc_client import EdgeRuntimeClient, encode_infer_request
 from site_manager.config import DATASET_DIR as _DATASET_DIR
 
 # ---------------------------------------------------------------------------
@@ -199,18 +199,21 @@ async def run_timeseries(
         print(f"[Run] Waiting for {t} server ({task_urls[t]}) ...")
         await c.wait_ready()
 
+    task_proto = {
+        task: encode_infer_request(task=task, x=data[task]["x"], mask=data[task].get("mask"))
+        for task in schedules
+    }
+    task_stub = {task: clients[task]._stub for task in schedules}
+
     records: Dict[str, List[Record]] = {t: [] for t in schedules}
 
     async def _fire(task: str, req_id: int, t_send_abs: float,
                     t_start: float) -> None:
-        d = data[task]
+        proto = task_proto[task]
+        proto.req_id = req_id
         try:
-            await asyncio.wait_for(clients[task].infer({
-                "req_id": req_id,
-                "task":   task,
-                "x":      d["x"],
-                "mask":   d.get("mask"),
-            }), timeout=req_timeout)
+            t_send_abs = time.time()
+            await asyncio.wait_for(task_stub[task].Infer(proto), timeout=req_timeout)
             lat_ms = (time.time() - t_send_abs) * 1000
             records[task].append((t_send_abs - t_start, lat_ms))
         except Exception:
