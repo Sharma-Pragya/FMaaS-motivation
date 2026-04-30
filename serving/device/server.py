@@ -54,6 +54,7 @@ class RuntimeServerConfig:
     tpc_mode: str = "none"               # "none" | "libsmctrl" | "green"
     tpc_partition: list = None           # list of TPC IDs to pin this server to
     worker_mode: str = "threaded"        # "threaded" | "inline" — per-task pipeline worker mode
+    verbose_batch_logs: bool = False      # high-frequency per-batch request logging
 
 
 class EdgeRuntimeApplication:
@@ -111,6 +112,7 @@ class EdgeRuntimeApplication:
                     queue_capacity=config.queue_capacity,
                     policy=policy,
                     worker_mode=config.worker_mode,
+                    verbose_batch_logs=config.verbose_batch_logs,
                 )
         self._batch_task: asyncio.Task | None = None
         self._green_partition = None  # held for cleanup

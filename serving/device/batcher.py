@@ -59,6 +59,7 @@ class DeviceBatcher:
         queue_capacity: int = 1024,
         policy: "FifoPolicy | RoundRobinPolicy | WFQPolicy | TokenBucketPolicy | None" = None,
         worker_mode: str = "threaded",   # "threaded" | "inline"
+        verbose_batch_logs: bool = False,
     ):
         self._runtime = runtime
         self._batch_former = BatchFormer(
@@ -66,8 +67,10 @@ class DeviceBatcher:
             max_batch_wait_ms=max_batch_wait_ms,
             queue_capacity=queue_capacity,
             policy=policy,
+            verbose_batch_logs=verbose_batch_logs,
         )
         self._worker_mode = worker_mode
+        self._verbose_batch_logs = verbose_batch_logs
 
         # Persistent worker thread state
         self._work_ready = threading.Event()   # async → worker: batch is ready
@@ -161,11 +164,12 @@ class DeviceBatcher:
             loop.call_soon_threadsafe(self._work_done.set)
 
     def _execute_prepared(self, prepared: PreparedBatch):
-        batch_ids = [request.req_id for request in prepared.requests]
-        print(
-            f"[DeviceBatcher] Executing batch_size={len(prepared.requests)} "
-            f"req_ids={batch_ids} tasks={prepared.task_names}"
-        )
+        if self._verbose_batch_logs:
+            batch_ids = [request.req_id for request in prepared.requests]
+            print(
+                f"[DeviceBatcher] Executing batch_size={len(prepared.requests)} "
+                f"req_ids={batch_ids} tasks={prepared.task_names}"
+            )
         # Stage 1: backbone on this worker thread.
         bb = self._runtime.run_backbone(
             prepared.x, prepared.task_names, prepared.mask, prepared.questions
@@ -203,11 +207,12 @@ class DeviceBatcher:
             )
             self._task_worker.submit(task_name, job)
 
-        print(
-            f"[DeviceBatcher] Dispatched batch_size={len(prepared.requests)} "
-            f"backbone_end={bb.backbone_end_time_ns} "
-            f"dispatched_tasks={list(task_groups.keys())}"
-        )
+        if self._verbose_batch_logs:
+            print(
+                f"[DeviceBatcher] Dispatched batch_size={len(prepared.requests)} "
+                f"backbone_end={bb.backbone_end_time_ns} "
+                f"dispatched_tasks={list(task_groups.keys())}"
+            )
 
     def _run_task_pipeline(self, task_name: str, job: _DecoderJob, stream) -> None:
         # Today: one step (decoder). Later this same function will run

@@ -38,12 +38,14 @@ class BatchFormer:
         max_batch_wait_ms: float = 1.0,
         queue_capacity: int = 1024,
         policy: "FifoPolicy | RoundRobinPolicy | WFQPolicy | TokenBucketPolicy | None" = None,
+        verbose_batch_logs: bool = False,
     ):
         self._queues = TenantQueues()
         self._policy = policy if policy is not None else FifoPolicy()
         self._max_batch_size = max_batch_size
         self._max_batch_wait_s = max_batch_wait_ms / 1000.0
         self._queue_capacity = queue_capacity
+        self._verbose_batch_logs = verbose_batch_logs
         self._condition = asyncio.Condition()
         self._stopped = False
 
@@ -109,12 +111,13 @@ class BatchFormer:
         return self._prepare_batch(requests)
 
     def _prepare_batch(self, requests: list[RequestEnvelope]) -> PreparedBatch:
-        batch_ids = [request.req_id for request in requests]
         task_names = [request.task for request in requests]
-        print(
-            f"[BatchFormer] Prepared batch_size={len(requests)} "
-            f"req_ids={batch_ids} tasks={task_names}"
-        )
+        if self._verbose_batch_logs:
+            batch_ids = [request.req_id for request in requests]
+            print(
+                f"[BatchFormer] Prepared batch_size={len(requests)} "
+                f"req_ids={batch_ids} tasks={task_names}"
+            )
         xs = [request.x for request in requests]
         x = None if xs[0] is None else np.concatenate(xs, axis=0)
         masks = [request.mask for request in requests if request.mask is not None]

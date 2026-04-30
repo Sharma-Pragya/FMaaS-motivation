@@ -60,6 +60,7 @@ def main():
     parser.add_argument("--tpc-partition", type=int, nargs="+", default=None, help="TPC IDs to pin this server to (e.g. --tpc-partition 0 1 2 3).")
     parser.add_argument("--mps-thread-pct", type=int, default=None, help="CUDA MPS active thread percentage (0-100). Requires MPS daemon running. Set via pre-parser so it takes effect before CUDA init.")
     parser.add_argument("--worker-mode", choices=["threaded", "inline"], default="threaded", help="Per-task pipeline worker mode. threaded: each task gets its own thread + CUDA stream. inline: synchronous on the backbone worker thread, no per-task thread/stream.")
+    parser.add_argument("--verbose-batch-logs", action="store_true", help="Enable high-frequency per-batch request logs. Disabled by default for benchmark stability.")
     args = parser.parse_args()
     # Parse task rates: "ecgclass:10,gestureclass:100" -> {"ecgclass": 10.0, ...}
     task_rates: dict[str, float] = {}
@@ -85,6 +86,7 @@ def main():
                 tpc_mode=args.tpc_mode,
                 tpc_partition=args.tpc_partition,
                 worker_mode=args.worker_mode,
+                verbose_batch_logs=args.verbose_batch_logs,
             ),
             bootstrap_json=_resolve_bootstrap_json(args),
         )
