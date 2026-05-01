@@ -323,7 +323,14 @@ def plot_latency_vs_n(data, out_dir: Path) -> None:
                     ylim=(0.0, 300.0))
 
 
-def _bars_vs_n(data, value_fn, ylabel: str, out_path: Path) -> None:
+def _bars_vs_n(data, value_fn, ylabel: str, out_path: Path,
+               break_at: float | None = 200.0) -> None:
+    """Grouped bar chart across N values.
+
+    break_at: fixed y value where the axis is broken (e.g. 200).  Pass None
+    to disable and use a plain single-axis plot.  The break is skipped when
+    all values fall below it.
+    """
     if not data:
         return
     all_ns = sorted({n for d in data.values() for n in d.keys()})
@@ -331,37 +338,112 @@ def _bars_vs_n(data, value_fn, ylabel: str, out_path: Path) -> None:
     if not all_ns or not keys:
         return
 
-    fig, ax = plt.subplots(figsize=(1.8, 1.2))
     x = np.arange(len(all_ns), dtype=float)
     width = 0.8 / len(keys)
+
+    all_ys: Dict[str, List[float]] = {}
     vmax = 0.0
-    for i, key in enumerate(keys):
-        ys = [
-            value_fn(data[key][n]) if n in data[key] else 0.0
-            for n in all_ns
-        ]
+    for key in keys:
+        ys = [value_fn(data[key][n]) if n in data[key] else 0.0 for n in all_ns]
         if _series_is_all_zero_or_nan(ys):
             continue
-        bars = ax.bar(
-            x + (i - (len(keys) - 1) / 2) * width, ys, width,
-            color=SERIES_COLORS[key], edgecolor="black", linewidth=0.4,
-            label=SERIES_LABELS[key],
-        )
-        for b, v in zip(bars, ys):
-            if v > 0 and np.isfinite(v):
-                ax.text(b.get_x() + b.get_width() / 2, b.get_height(),
-                        f"{v:.0f}", ha="center", va="bottom", fontsize=5.0)
+        all_ys[key] = ys
         vmax = max(vmax, max((v for v in ys if np.isfinite(v)), default=0.0))
-    ax.set_xticks(x)
-    ax.set_xticklabels([str(n) for n in all_ns])
-    ax.set_xlabel("N (apps)")
-    ax.set_ylabel(ylabel)
-    ax.set_ylim(0, _nice_upper(vmax * 1.12))
-    ax.grid(True, axis="y")
-    ax.legend(frameon=False, ncol=min(3, len(keys)),
-              handlelength=1.0, handletextpad=0.3, columnspacing=0.7,
-              loc="lower center", bbox_to_anchor=(0.5, 1.02),
-              borderaxespad=0.0)
+
+    if not all_ys:
+        return
+
+    use_break = (break_at is not None) and (vmax > break_at * 1.3)
+    low_top  = break_at if use_break else vmax
+    high_bot = break_at if use_break else vmax
+
+    def _draw_bars(ax_obj: plt.Axes, top_panel: bool) -> None:
+        ylim_lo, ylim_hi = ax_obj.get_ylim()
+        for i, key in enumerate(keys):
+            ys = all_ys.get(key)
+            if ys is None:
+                continue
+            bars = ax_obj.bar(
+                x + (i - (len(keys) - 1) / 2) * width, ys, width,
+                color=SERIES_COLORS[key], edgecolor="black", linewidth=0.4,
+                label=SERIES_LABELS[key],
+            )
+            for b, v in zip(bars, ys):
+                if not (v > 0 and np.isfinite(v)):
+                    continue
+                bar_top = b.get_height()
+                # Draw the label only on the panel that owns this bar's tip.
+                if use_break:
+                    if top_panel and bar_top < high_bot:
+                        continue
+                    if not top_panel and bar_top >= high_bot:
+                        continue
+                label_y = bar_top + (ylim_hi - ylim_lo) * 0.015
+                ax_obj.text(
+                    b.get_x() + b.get_width() / 2, label_y,
+                    f"{v:.0f}",
+                    ha="center", va="bottom",
+                    fontsize=4.5, rotation=90, color="black",
+                )
+
+    def _break_marks(ax_obj: plt.Axes, bottom: bool) -> None:
+        d = 0.018
+        y0 = 0 if bottom else 1
+        kw = dict(transform=ax_obj.transAxes, color="black",
+                  linewidth=0.8, clip_on=False)
+        for xc in (0.0, 1.0):
+            ax_obj.plot([xc - d, xc + d], [y0 - d, y0 + d], **kw)
+
+    if use_break:
+        fig, (ax_top, ax_bot) = plt.subplots(
+            2, 1, figsize=(2.2, 1.2), sharex=True,
+            gridspec_kw={"height_ratios": [1, 2], "hspace": 0.05},
+        )
+
+        ax_top.set_ylim(high_bot, _nice_upper(vmax * 1.12))
+        ax_bot.set_ylim(0, low_top)
+
+        _draw_bars(ax_top, top_panel=True)
+        _draw_bars(ax_bot, top_panel=False)
+
+        ax_top.spines["bottom"].set_visible(False)
+        ax_bot.spines["top"].set_visible(False)
+        ax_top.tick_params(bottom=False, labelsize=6)
+        ax_bot.tick_params(labelsize=6)
+
+        _break_marks(ax_top, bottom=True)
+        _break_marks(ax_bot, bottom=False)
+
+        ax_top.grid(True, axis="y", linewidth=0.3)
+        ax_bot.grid(True, axis="y", linewidth=0.3)
+        ax_bot.set_xticks(x)
+        ax_bot.set_xticklabels([str(n) for n in all_ns], fontsize=6)
+        ax_bot.set_xlabel("N (apps)", fontsize=7)
+
+        fig.text(0.01, 0.5, ylabel, va="center", ha="left",
+                 rotation="vertical", fontsize=7)
+        fig.subplots_adjust(left=0.20)
+
+        handles, labels = ax_bot.get_legend_handles_labels()
+        ax_top.legend(handles, labels, frameon=False, ncol=min(3, len(keys)),
+                      handlelength=0.8, handletextpad=0.3, columnspacing=0.6,
+                      loc="lower center", bbox_to_anchor=(0.5, 1.02),
+                      borderaxespad=0.0, fontsize=5.5)
+    else:
+        fig, ax = plt.subplots(figsize=(1.8, 0.9))
+        ax.set_ylim(0, _nice_upper(vmax * 1.20))
+        _draw_bars(ax, top_panel=False)
+        ax.set_xticks(x)
+        ax.set_xticklabels([str(n) for n in all_ns], fontsize=6)
+        ax.set_xlabel("N (apps)", fontsize=7)
+        ax.set_ylabel(ylabel, fontsize=7)
+        ax.tick_params(labelsize=6)
+        ax.grid(True, axis="y", linewidth=0.3)
+        ax.legend(frameon=False, ncol=min(3, len(keys)),
+                  handlelength=0.8, handletextpad=0.3, columnspacing=0.6,
+                  loc="lower center", bbox_to_anchor=(0.5, 1.02),
+                  borderaxespad=0.0, fontsize=5.5)
+
     save_figure(fig, out_path)
     plt.close(fig)
 
@@ -1530,7 +1612,7 @@ def plot_backbone_decoder_breakdown(data: Dict[str, Dict[int, pd.DataFrame]],
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--exp-dir", type=str,
-                        default=str(SERVING_DIR / "experiments/cluster_sharing_benefit/results_alibaba"))
+                        default=str(SERVING_DIR / "experiments/cluster_sharing_benefit/results_poisson"))
     parser.add_argument("--warmup-secs", type=float, default=10.0)
     parser.add_argument("--ns", type=str, default="8,16,32,64,128,20,40,80,160",
                         help="Comma-separated list of N values to include "

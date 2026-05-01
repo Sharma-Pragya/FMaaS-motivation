@@ -1,0 +1,18 @@
+[
+    {
+        "status": "loaded_dinosmall",
+        "logger_summary": "{'load_backbone': {'wall time': 1086.321467999369, 'gpu time': 1086.4453125, 'gpu peak': 88.226304, 'gpu energy': 34.555, 'avg gpu util pct': 0.0, 'cpu dRSS': 22.839296}, 'add_decoder_nyudepth_dinosmall_monocular': {'wall time': 2.4299923124999623, 'gpu time': 2.475292019546032, 'gpu peak': 0.002048, 'gpu energy': 0.2191875, 'avg gpu util pct': 5.25, 'cpu dRSS': 0.036864}, 'add_decoder_None': {'wall time': 0.14049849960429128, 'gpu time': 0.17853800114244223, 'gpu peak': 0.032768, 'gpu energy': 0.0, 'avg gpu util pct': 5.6875, 'cpu dRSS': 0.008704}}"
+    },
+    {
+        "status": "loaded_momentbase",
+        "logger_summary": "{'load_backbone': {'wall time': 1987.7268790005473, 'gpu time': 1987.849365234375, 'gpu peak': 455.474688, 'gpu energy': 66.869, 'avg gpu util pct': 9.0, 'cpu dRSS': 356.12672}, 'add_decoder_heartrate_momentbase_mlp': {'wall time': 3.2898409995141265, 'gpu time': 3.344879999756813, 'gpu peak': 0.394752, 'gpu energy': 0.2255, 'avg gpu util pct': 20.0, 'cpu dRSS': 0.04864}, 'add_decoder_sysbp_momentbase_mlp': {'wall time': 3.0540393759110884, 'gpu time': 3.108574017882347, 'gpu peak': 0.394752, 'gpu energy': 0.227875, 'avg gpu util pct': 18.375, 'cpu dRSS': 0.009728}}"
+    },
+    {
+        "status": "loaded_swinsmall",
+        "logger_summary": "{'load_backbone': {'wall time': 1046.9269330005773, 'gpu time': 1047.0482177734375, 'gpu peak': 196.742656, 'gpu energy': 32.374, 'avg gpu util pct': 0.0, 'cpu dRSS': 32.13312}, 'add_decoder_None': {'wall time': 0.16455490600719713, 'gpu time': 0.20191299822181463, 'gpu peak': 0.031232, 'gpu energy': 0.11125, 'avg gpu util pct': 13.5, 'cpu dRSS': 0.000384}}"
+    },
+    {
+        "status": "loaded_papageissvri",
+        "logger_summary": "{'load_backbone': {'wall time': 142.85068300159764, 'gpu time': 142.94419860839844, 'gpu peak': 20.068352, 'gpu energy': 3.235, 'avg gpu util pct': 0.0, 'cpu dRSS': 26.68544}, 'add_decoder_diasbp_papageissvri_mlp': {'wall time': 2.860748749526465, 'gpu time': 2.9089939892292023, 'gpu peak': 0.26368, 'gpu energy': 0.0, 'avg gpu util pct': 3.75, 'cpu dRSS': 0.018944}, 'add_decoder_etth1fore_papageissvri_mlp': {'wall time': 2.5635924372409136, 'gpu time': 2.6141699999570847, 'gpu peak': 0.39424, 'gpu energy': 0.2060625, 'avg gpu util pct': 3.75, 'cpu dRSS': 0.007168}}"
+    }
+]
