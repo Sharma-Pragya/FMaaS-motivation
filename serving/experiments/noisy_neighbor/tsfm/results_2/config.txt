@@ -1,0 +1,16 @@
+Experiment config - Sat May  2 17:57:38 UTC 2026
+Backbone: momentbase
+Victim: ecgclass @ 20 rps (constant)
+Aggressor: gestureclass
+Number of phases: 3
+  Phase 1 (10s): aggressor @ 20 rps
+  Phase 2 (10s): aggressor @ 300 rps
+  Phase 3 (10s): aggressor @ 30 rps
+Total duration: 30s
+Sharing runs:
+  fcfs: scheduler=fifo batch_size=3 batch_wait_ms=0
+  stfq: scheduler=stfq batch_size=1 batch_wait_ms=0
+  bfq: scheduler=stfq batch_size=3 batch_wait_ms=0
+No-sharing TPC runs: 3  0  no_sharing_tpc (tpc_mode=libsmctrl)
+No-sharing runs: 3  0  no_sharing
+Results base: experiments/noisy_neighbor/tsfm/results

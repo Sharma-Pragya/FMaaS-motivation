@@ -14,8 +14,9 @@ Run from serving/:
         --results-base experiments/noisy_neighbor/tsfm_inaction/results \
         --plot-dir     experiments/noisy_neighbor/tsfm_inaction/plots
 
-Select which schedulers to plot:
-    --schedulers fifo,wfq,stfq
+Select which methods to plot:
+    --methods fcfs,stfq,bfq
+    --methods fcfs,bfq,no_sharing,no_sharing_tpc
 
 Limit to a subset of phases:
     --num-phases 3
@@ -45,13 +46,15 @@ PALETTE = {
 }
 
 POLICIES: Dict[str, Dict] = {
-    "fcfs":  {"color": "#6B9AC4", "label": "FCFS",  "ls": "-"},
-    "stfq":  {"color": "#E8B298", "label": "STFQ",  "ls": (0, (4, 1, 1, 1))},
-    "bfq":   {"color": "#E06C75", "label": "BFQ",   "ls": "--"},
+    "fcfs":           {"color": "#6B9AC4", "label": "FCFS",            "ls": "-"},
+    "stfq":           {"color": "#E8B298", "label": "STFQ",            "ls": (0, (4, 1, 1, 1))},
+    "bfq":            {"color": "#E06C75", "label": "BFQ",             "ls": "--"},
+    "no_sharing":     {"color": "#7BA591", "label": "No-Sharing",      "ls": (0, (3, 1, 1, 1, 1, 1))},
+    "no_sharing_tpc": {"color": "#9B7BB8", "label": "No-Sharing (TPC)", "ls": (0, (5, 2))},
 }
 
-# Draw order: FCFS first (bottom) → STFQ → BFQ last (top)
-POLICY_ORDER = ["fcfs", "stfq", "bfq"]
+# Draw order (bottom → top)
+POLICY_ORDER = ["fcfs", "stfq", "bfq", "no_sharing", "no_sharing_tpc"]
 
 _FALLBACK_COLORS = ["#C7BEDF", "#E7C98B", "#D9A6B3", "#A9C7B5", "#8FB7CF"]
 _FALLBACK_LS     = [(0, (2, 1)), (0, (6, 2)), (0, (3, 2, 1, 2)), "-.", "--"]
@@ -682,12 +685,160 @@ def plot_throughput(
 
     axes[1].set_xlabel("Time (s)")
     # Single shared legend above the figure with 4 columns
-    # handles, labels = axes[0].get_legend_handles_labels()
+    handles, labels = axes[0].get_legend_handles_labels()
     fig.tight_layout(pad=0.4)
-    # leg = fig.legend(handles, labels, loc="upper center", bbox_to_anchor=(0.5, 1.0),
-    #                  ncol=4, frameon=False, handlelength=1.2, columnspacing=0.8)
+    leg = fig.legend(handles, labels, loc="upper center", bbox_to_anchor=(0.5, 1.0),
+                     ncol=4, frameon=False, handlelength=1.2, columnspacing=0.8)
     # fig.subplots_adjust(top=1.0 - (leg.get_window_extent(fig.canvas.get_renderer()).height
     #                                / fig.get_window_extent().height) - 0.04)
+    save_figure(fig, out_path)
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
+# Throughput attainment bar chart: served / offered, per task, per method
+# ---------------------------------------------------------------------------
+
+VICTIM_BAR_COLOR    = "#6B9AC4"
+AGGRESSOR_BAR_COLOR = "#E06C75"
+
+
+def _offered_send_times(
+    policy_dirs: Dict[str, Path],
+    task: str,
+    max_time: Optional[float],
+) -> Optional[np.ndarray]:
+    """Return absolute send times for `task` from trace.json (shared across methods)."""
+    base = next((d.parent for d in policy_dirs.values() if d.exists()), None)
+    if base is None:
+        return None
+    trace_path = base / "trace.json"
+    if not trace_path.exists():
+        return None
+    trace = json.loads(trace_path.read_text())
+    sends = trace.get(task, [])
+    if max_time is not None:
+        sends = [t for t in sends if t <= max_time]
+    return np.array(sends, dtype=float)
+
+
+def _bin_attainment(
+    sends: np.ndarray,
+    completions: np.ndarray,
+    max_time: float,
+) -> float:
+    """Mean per-second attainment: average over bins of min(served_b/offered_b, 1).
+
+    Same 1s binning as the timeseries throughput plot. Per-bin ratio is capped
+    at 1.0 so a bin where the system catches up on backlog from earlier bins
+    can't pull the average above 100%. Bins with zero offered load are skipped.
+    """
+    n_bins = int(np.ceil(max_time))
+    if n_bins <= 0:
+        return 0.0
+    offered = np.zeros(n_bins, dtype=float)
+    served  = np.zeros(n_bins, dtype=float)
+    for t in sends:
+        idx = int(t)
+        if 0 <= idx < n_bins:
+            offered[idx] += 1.0
+    for t in completions:
+        idx = int(t)
+        if 0 <= idx < n_bins:
+            served[idx] += 1.0
+    mask = offered > 0
+    if not mask.any():
+        return 0.0
+    ratio = np.minimum(served[mask] / offered[mask], 1.0)
+    return float(ratio.mean())
+
+
+def plot_throughput_attainment(
+    policy_dirs: Dict[str, Path],
+    victim_task: str,
+    aggressor_task: str,
+    out_path: Path,
+    max_time: Optional[float] = None,
+) -> None:
+    """Grouped bar chart: per-second attainment (served vs offered, capped per bin).
+
+    For each 1s bin the served count is capped at the offered count, so a bin
+    where the system catches up on backlog from earlier bins doesn't count
+    above 100%. The bar is the sum over bins of min(served_b, offered_b)
+    divided by total offered. This matches the per-second view of the
+    timeseries throughput plot.
+
+    X-axis: methods (one group per method, in POLICY_ORDER).
+    Bars per group: victim, aggressor.
+    """
+    methods = [m for m, d in policy_dirs.items() if d.exists()]
+    if not methods:
+        print("[Plot] No methods available for attainment plot — skipping")
+        return
+
+    v_sends = _offered_send_times(policy_dirs, victim_task,    max_time)
+    a_sends = _offered_send_times(policy_dirs, aggressor_task, max_time)
+    if v_sends is None or a_sends is None or len(v_sends) == 0 or len(a_sends) == 0:
+        print("[Plot] Cannot determine offered load (trace.json missing) — skipping attainment plot")
+        return
+
+    # Window for binning: cover all offered sends (and any completions that may
+    # land just past the last send).
+    horizon = max_time if max_time is not None else float(
+        max(v_sends.max() if len(v_sends) else 0.0,
+            a_sends.max() if len(a_sends) else 0.0) + 1.0
+    )
+
+    v_attain: List[float] = []
+    a_attain: List[float] = []
+    for m in methods:
+        d = policy_dirs[m]
+        v_recs, _ = load_task(d, victim_task,    max_time)
+        a_recs, _ = load_task(d, aggressor_task, max_time)
+        # Completion time = send_time + latency
+        v_done = np.array([t + lat / 1000.0 for t, lat in v_recs], dtype=float)
+        a_done = np.array([t + lat / 1000.0 for t, lat in a_recs], dtype=float)
+        v_attain.append(_bin_attainment(v_sends, v_done, horizon))
+        a_attain.append(_bin_attainment(a_sends, a_done, horizon))
+
+    n           = len(methods)
+    x           = np.arange(n)
+    total_width = 0.7
+    w           = total_width / 2
+
+    fig, ax = plt.subplots(figsize=(3.4, 1.8))
+
+    b_v = ax.bar(x - w/2, v_attain, width=w,
+                 color=VICTIM_BAR_COLOR, alpha=0.9,
+                 edgecolor="black", linewidth=0.5,
+                 label="Victim")
+    b_a = ax.bar(x + w/2, a_attain, width=w,
+                 color=AGGRESSOR_BAR_COLOR, alpha=0.9,
+                 edgecolor="black", linewidth=0.5,
+                 label="Aggressor")
+
+    for bars, vals in [(b_v, v_attain), (b_a, a_attain)]:
+        for bar, v in zip(bars, vals):
+            if v > 0.02:
+                ax.text(bar.get_x() + bar.get_width() / 2,
+                        bar.get_height() + 0.015,
+                        f"{v:.0%}", ha="center", va="bottom",
+                        fontsize=5.5, color=PALETTE["charcoal"])
+
+    # Reference line at 100% attainment
+    ax.axhline(1.0, color=PALETTE["charcoal"], linewidth=0.6,
+               linestyle=":", zorder=1)
+
+    ax.set_xticks(x)
+    ax.set_xticklabels([_policy_cfg(m).get("label", m) for m in methods],
+                       rotation=20, ha="right")
+    ax.set_ylabel("Throughput Attainment")
+    ax.set_ylim(0, 1.15)
+    ax.set_yticks([0.0, 0.25, 0.5, 0.75, 1.0])
+    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"{v:.0%}"))
+    ax.legend(frameon=False, handlelength=1.2, loc="upper right",
+              ncol=2, columnspacing=0.8)
+    fig.tight_layout(pad=0.4)
     save_figure(fig, out_path)
     plt.close(fig)
 
@@ -739,12 +890,21 @@ def main() -> int:
                         help="Output plot directory (default: <results-base>/plots)")
     parser.add_argument("--victim-task",    default="ecgclass")
     parser.add_argument("--aggressor-task", default="gestureclass")
-    parser.add_argument("--schedulers",     default=None,
-                        help="Comma-separated list of schedulers to plot "
+    parser.add_argument("--methods",        default=None,
+                        help="Comma-separated list of methods to plot "
                              "(default: auto-discover from results-base). "
-                             "Example: fifo,wfq,stfq")
+                             "Examples: fcfs,stfq,bfq  or  fcfs,bfq,no_sharing,no_sharing_tpc")
+    parser.add_argument("--schedulers",     default=None,
+                        help="Alias for --methods (kept for backward compatibility)")
     parser.add_argument("--num-phases",     type=int, default=None,
                         help="Limit plot to the first N phases")
+    parser.add_argument("--throughput-methods", default="bfq,no_sharing,no_sharing_tpc",
+                        help="Comma-separated methods to include in the timeseries "
+                             "throughput plot (default: no_sharing,no_sharing_tpc). "
+                             "Use 'all' to include every method from --methods.")
+    parser.add_argument("--attainment-methods", default=None,
+                        help="Comma-separated methods to include in the throughput "
+                             "attainment bar chart (default: all from --methods).")
     args = parser.parse_args()
 
     apply_paper_style()
@@ -756,20 +916,21 @@ def main() -> int:
         else base / "plots"
     )
 
-    # Resolve scheduler list
-    if args.schedulers:
-        scheduler_list = [s.strip() for s in args.schedulers.split(",") if s.strip()]
+    # Resolve method list (--methods preferred, --schedulers kept as alias)
+    methods_arg = args.methods or args.schedulers
+    if methods_arg:
+        method_list = [s.strip() for s in methods_arg.split(",") if s.strip()]
     else:
-        scheduler_list = _discover_schedulers(base)
-        if not scheduler_list:
-            print(f"[Error] No scheduler result directories found under {base}")
+        method_list = _discover_schedulers(base)
+        if not method_list:
+            print(f"[Error] No method result directories found under {base}")
             return 1
-        print(f"[Plot] Auto-discovered schedulers: {scheduler_list}")
+        print(f"[Plot] Auto-discovered methods: {method_list}")
 
-    # Build policy_dirs — sort by POLICY_ORDER so plots layer FCFS→STFQ→BFQ
-    scheduler_list = sorted(scheduler_list,
-                            key=lambda s: POLICY_ORDER.index(s) if s in POLICY_ORDER else 999)
-    policy_dirs: Dict[str, Path] = {s: base / s for s in scheduler_list}
+    # Sort by POLICY_ORDER so plots layer in canonical order
+    method_list = sorted(method_list,
+                         key=lambda s: POLICY_ORDER.index(s) if s in POLICY_ORDER else 999)
+    policy_dirs: Dict[str, Path] = {s: base / s for s in method_list}
 
     # Read meta from the first available scheduler to get phase info
     meta = _read_meta(policy_dirs)
@@ -799,12 +960,38 @@ def main() -> int:
         max_time=max_time,
     )
 
-    # 3. Throughput plot
-    plot_throughput(
-        policy_dirs, args.victim_task, args.aggressor_task,
-        plot_dir / "throughput.png",
-        max_time=max_time,
-    )
+    # 3. Throughput timeseries plot — restricted to a subset of methods
+    if args.throughput_methods.strip().lower() == "all":
+        tput_methods = list(method_list)
+    else:
+        requested = [s.strip() for s in args.throughput_methods.split(",") if s.strip()]
+        tput_methods = [m for m in requested if m in policy_dirs]
+        missing = [m for m in requested if m not in policy_dirs]
+        if missing:
+            print(f"[Plot] throughput-methods skipped (not in --methods): {missing}")
+    if tput_methods:
+        tput_dirs = {m: policy_dirs[m] for m in tput_methods}
+        plot_throughput(
+            tput_dirs, args.victim_task, args.aggressor_task,
+            plot_dir / "throughput.png",
+            max_time=max_time,
+        )
+    else:
+        print("[Plot] No methods selected for throughput timeseries — skipping")
+
+    # 3b. Throughput attainment bar chart — across all (or selected) methods
+    if args.attainment_methods:
+        requested = [s.strip() for s in args.attainment_methods.split(",") if s.strip()]
+        attain_methods = [m for m in requested if m in policy_dirs]
+    else:
+        attain_methods = list(method_list)
+    if attain_methods:
+        attain_dirs = {m: policy_dirs[m] for m in attain_methods}
+        plot_throughput_attainment(
+            attain_dirs, args.victim_task, args.aggressor_task,
+            plot_dir / "throughput_attainment.png",
+            max_time=max_time,
+        )
 
     # 4 & 5 — need aggressor_rps_phases + phase_boundaries from meta
     agg_phases   = meta.get("aggressor_rps_phases", [])

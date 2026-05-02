@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""noisy_neighbor/tsfm_inaction — Time-series interference experiment.
+"""noisy_neighbor/tsfm — Time-series interference experiment.
 
 Shows the noisy-neighbor effect "in action" across N phases:
   Phase 1 (0 → p1_end):            both tasks at their phase-1 RPS
@@ -8,15 +8,8 @@ Shows the noisy-neighbor effect "in action" across N phases:
 Records per-request (send_time_s, latency_ms) for each task so we can plot
 latency vs wall-clock time and see the victim degrade as aggressor ramps.
 
-Usage (from serving/):
-    python experiments/noisy_neighbor/tsfm_inaction/run.py \
-        --device-url localhost:8000 \
-        --backbone momentbase \
-        --victim-task ecgclass   --victim-rps 20 \
-        --aggressor-task gestureclass \
-        --aggressor-rps-phases 20,30,60,90 \
-        --phase-durations 30 \
-        --exp-dir experiments/noisy_neighbor/tsfm_inaction/results/fifo
+Supports both sharing (single device URL) and no-sharing (separate URLs per
+task) configurations via --device-url / --victim-url / --aggressor-url.
 """
 from __future__ import annotations
 
@@ -129,14 +122,9 @@ async def deploy_backbone_async(device_url: str, backbone: str,
 # ---------------------------------------------------------------------------
 
 def generate_trace(
-    schedules: Dict[str, List[Tuple[float, float]]],  # {task: [(end_t, rps), ...]}
+    schedules: Dict[str, List[Tuple[float, float]]],
     seed: int = 42,
 ) -> Dict[str, List[float]]:
-    """Generate absolute send times for each task from a Poisson process.
-
-    Returns {task: [send_time_s, ...]} relative to t=0.
-    Using a fixed seed guarantees identical traces across scheduler runs.
-    """
     rng = np.random.default_rng(seed)
     trace: Dict[str, List[float]] = {}
     for task, schedule in schedules.items():
@@ -169,34 +157,30 @@ def load_trace(path: Path) -> Dict[str, List[float]]:
 
 # ---------------------------------------------------------------------------
 # Time-series open-loop sender
-# Each task follows a phase schedule: [(phase_end_seconds, rps), ...]
 # ---------------------------------------------------------------------------
 
-Record = Tuple[float, float]  # (send_time_relative_to_start_s, latency_ms)
+Record = Tuple[float, float]
 
 
 async def run_timeseries(
-    device_url: str,
-    schedules: Dict[str, List[Tuple[float, float]]],  # {task: [(end_t, rps), ...]}
+    task_urls: Dict[str, str],
+    schedules: Dict[str, List[Tuple[float, float]]],
     data: Dict[str, Dict],
     req_timeout: float = 60.0,
-    trace: Optional[Dict[str, List[float]]] = None,   # pre-generated send times
+    trace: Optional[Dict[str, List[float]]] = None,
 ) -> Dict[str, List[Record]]:
-    """Runs all tasks concurrently, each following its phase schedule.
-
-    If trace is provided, send times are replayed from it (deterministic).
-    Otherwise a fresh Poisson process is generated on the fly.
-
-    Returns {task: [(rel_send_time_s, latency_ms), ...]}
-    """
-    client = EdgeRuntimeClient(device_url)
-    await client.wait_ready()
-    stub = client._stub
+    clients: Dict[str, EdgeRuntimeClient] = {
+        t: EdgeRuntimeClient(url) for t, url in task_urls.items()
+    }
+    for t, c in clients.items():
+        print(f"[Run] Waiting for {t} server ({task_urls[t]}) ...")
+        await c.wait_ready()
 
     task_proto = {
         task: encode_infer_request(task=task, x=data[task]["x"], mask=data[task].get("mask"))
         for task in schedules
     }
+    task_stub = {task: clients[task]._stub for task in schedules}
 
     records: Dict[str, List[Record]] = {t: [] for t in schedules}
 
@@ -206,17 +190,16 @@ async def run_timeseries(
         proto.req_id = req_id
         try:
             t_send_abs = time.time()
-            await asyncio.wait_for(stub.Infer(proto), timeout=req_timeout)
+            await asyncio.wait_for(task_stub[task].Infer(proto), timeout=req_timeout)
             lat_ms = (time.time() - t_send_abs) * 1000
             records[task].append((t_send_abs - t_start, lat_ms))
         except Exception:
-            pass  # drop errors — don't pollute time-series
+            pass
 
     async def _task_sender_trace(task: str,
                                  send_times: List[float],
                                  req_id_offset: int,
                                  t_start: float) -> None:
-        """Replay pre-generated send times."""
         in_flight = []
         for req_id, rel_t in enumerate(send_times):
             target = t_start + rel_t
@@ -234,7 +217,6 @@ async def run_timeseries(
                                 schedule: List[Tuple[float, float]],
                                 req_id_offset: int,
                                 t_start: float) -> None:
-        """Generate Poisson arrivals on the fly (original behaviour)."""
         req_id    = req_id_offset
         in_flight = []
         phase_idx = 0
@@ -281,7 +263,8 @@ async def run_timeseries(
             for i, (t, sched) in enumerate(schedules.items())
         ]
     await asyncio.gather(*senders, return_exceptions=True)
-    await client.close()
+    for c in clients.values():
+        await c.close()
     return records
 
 
@@ -299,8 +282,7 @@ def save_records(records: Dict[str, List[Record]], out_dir: Path,
             w = csv.writer(f)
             w.writerow(["task", "send_time_s", "latency_ms", "phase"])
             for rel_t, lat in recs:
-                # determine which phase this request falls in
-                phase = len(phase_boundaries)  # last phase by default
+                phase = len(phase_boundaries)
                 for i, boundary in enumerate(phase_boundaries):
                     if rel_t < boundary:
                         phase = i + 1
@@ -330,25 +312,32 @@ def _parse_float_list(s: str) -> List[float]:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--device-url",           default="localhost:8000")
+    parser.add_argument("--device-url",           default="localhost:8000",
+                        help="Default device URL for both tasks (sharing / single-server runs)")
+    parser.add_argument("--victim-url",           default=None,
+                        help="Device URL for the victim task. Overrides --device-url for that task.")
+    parser.add_argument("--aggressor-url",        default=None,
+                        help="Device URL for the aggressor task. Overrides --device-url for that task.")
     parser.add_argument("--backbone",             default="momentbase")
     parser.add_argument("--victim-task",          default="ecgclass")
     parser.add_argument("--aggressor-task",       default="gestureclass")
     parser.add_argument("--victim-rps",           type=float, default=20.0)
-    parser.add_argument("--aggressor-rps-phases", default="20,30,60,90",
-                        help="Comma-separated aggressor RPS per phase, e.g. '20,30,50,150'")
-    parser.add_argument("--phase-durations",      default="30",
-                        help="Comma-separated phase durations (s). Single value = same for all phases.")
+    parser.add_argument("--aggressor-rps-phases", default="20,30,60,90")
+    parser.add_argument("--phase-durations",      default="30")
     parser.add_argument("--scheduler-policy",     default="fifo",
                         choices=["fifo", "round_robin", "wfq", "token_bucket", "saba",
                                  "deadline_split", "stfq"])
     parser.add_argument("--exp-dir",              default=os.environ.get(
-                        "EXP_DIR", "experiments/noisy_neighbor/tsfm_inaction/results/fifo"))
-    parser.add_argument("--trace-file",           default=None,
-                        help="Path to pre-generated trace JSON. If provided, replays "
-                             "identical send times across runs. If not provided, generates "
-                             "a fresh Poisson trace and saves it to <exp-dir>/../trace.json.")
+                        "EXP_DIR", "experiments/noisy_neighbor/tsfm/results/fcfs"))
+    parser.add_argument("--trace-file",           default=None)
     args = parser.parse_args()
+
+    victim_url    = args.victim_url    or args.device_url
+    aggressor_url = args.aggressor_url or args.device_url
+    task_urls = {
+        args.victim_task:    victim_url,
+        args.aggressor_task: aggressor_url,
+    }
 
     aggressor_rps_list = _parse_float_list(args.aggressor_rps_phases)
     num_phases = len(aggressor_rps_list)
@@ -364,7 +353,6 @@ def main() -> int:
             f"--aggressor-rps-phases has {num_phases}."
         )
 
-    # Build cumulative phase boundaries
     phase_boundaries: List[float] = []
     t = 0.0
     for d in phase_durations:
@@ -373,7 +361,7 @@ def main() -> int:
     total_duration = phase_boundaries[-1]
 
     print("=" * 65)
-    print(f"  tsfm_inaction — {num_phases}-phase experiment")
+    print(f"  noisy_neighbor/tsfm — {num_phases}-phase experiment")
     print(f"  Backbone   : {args.backbone}")
     print(f"  Victim     : {args.victim_task} @ {args.victim_rps} rps (constant)")
     print(f"  Aggressor  : {args.aggressor_task}")
@@ -386,22 +374,30 @@ def main() -> int:
     print(f"\n[INFO] Loading data for: {tasks}")
     data = build_data(tasks)
 
-    decoders = [
-        {"task": t, "type": TASK_TYPES[t], "path": f"{t}_{args.backbone}_mlp"}
-        for t in tasks
-    ]
-    resp = asyncio.run(deploy_backbone_async(args.device_url, args.backbone, decoders))
-    if "error" in resp.get("status", "").lower():
-        print(f"[Error] Deploy failed: {resp}")
-        return 1
+    if victim_url == aggressor_url:
+        decoders = [
+            {"task": t, "type": TASK_TYPES[t], "path": f"{t}_{args.backbone}_mlp"}
+            for t in tasks
+        ]
+        resp = asyncio.run(deploy_backbone_async(victim_url, args.backbone, decoders))
+        if "error" in resp.get("status", "").lower():
+            print(f"[Error] Deploy failed: {resp}")
+            return 1
+    else:
+        for task, url in task_urls.items():
+            decoder = [{"task": task, "type": TASK_TYPES[task],
+                        "path": f"{task}_{args.backbone}_mlp"}]
+            resp = asyncio.run(deploy_backbone_async(url, args.backbone, decoder))
+            if "error" in resp.get("status", "").lower():
+                print(f"[Error] Deploy failed for {task} on {url}: {resp}")
+                return 1
 
-    # For token_bucket: register per-task rates
     if args.scheduler_policy == "token_bucket":
         async def _set_rates():
-            client = EdgeRuntimeClient(args.device_url)
+            client = EdgeRuntimeClient(victim_url)
             rates = {
                 args.victim_task:    args.victim_rps,
-                args.aggressor_task: aggressor_rps_list[-1],  # use peak rate
+                args.aggressor_task: aggressor_rps_list[-1],
             }
             payload = json.dumps({"rates": rates})
             resp = await client.control("set_rates", payload)
@@ -411,10 +407,7 @@ def main() -> int:
 
     asyncio.run(asyncio.sleep(1))
 
-    # Victim runs at constant RPS for the full duration
     victim_schedule = [(total_duration, args.victim_rps)]
-
-    # Aggressor follows phase schedule
     aggressor_schedule = list(zip(phase_boundaries, aggressor_rps_list))
 
     schedules = {
@@ -422,7 +415,6 @@ def main() -> int:
         args.aggressor_task: aggressor_schedule,
     }
 
-    # Load or generate trace
     trace: Optional[Dict[str, List[float]]] = None
     if args.trace_file:
         trace_path = (SERVING_DIR / args.trace_file).resolve()
@@ -433,7 +425,6 @@ def main() -> int:
             trace = generate_trace(schedules)
             save_trace(trace, trace_path)
     else:
-        # Auto-save trace alongside results so it can be reused
         out_dir   = (SERVING_DIR / args.exp_dir).resolve()
         auto_path = out_dir.parent / "trace.json"
         if auto_path.exists():
@@ -444,9 +435,11 @@ def main() -> int:
             save_trace(trace, auto_path)
 
     print(f"\n[Run] Starting ({total_duration:.0f}s total) ...")
+    print(f"  {args.victim_task}    → {victim_url}")
+    print(f"  {args.aggressor_task} → {aggressor_url}")
     req_timeout = max(60.0, total_duration * 2)
     records = asyncio.run(run_timeseries(
-        args.device_url, schedules, data, req_timeout=req_timeout, trace=trace,
+        task_urls, schedules, data, req_timeout=req_timeout, trace=trace,
     ))
 
     out_dir = (SERVING_DIR / args.exp_dir).resolve()
