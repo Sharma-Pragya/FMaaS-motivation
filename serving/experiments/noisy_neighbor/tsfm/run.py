@@ -159,7 +159,10 @@ def load_trace(path: Path) -> Dict[str, List[float]]:
 # Time-series open-loop sender
 # ---------------------------------------------------------------------------
 
-Record = Tuple[float, float]
+Record = Tuple[float, float, float, float, float, float, float, float, int]
+# (send_time_relative_s, client_latency_ms, server_exec_ms, server_proc_ms,
+#  server_swap_ms, server_decoder_ms, queue_wait_plus_rpc_ms,
+#  client_pre_rpc_ms, server_start_ns)
 
 
 async def run_timeseries(
@@ -190,9 +193,27 @@ async def run_timeseries(
         proto.req_id = req_id
         try:
             t_send_abs = time.time()
-            await asyncio.wait_for(task_stub[task].Infer(proto), timeout=req_timeout)
-            lat_ms = (time.time() - t_send_abs) * 1000
-            records[task].append((t_send_abs - t_start, lat_ms))
+            response = await asyncio.wait_for(task_stub[task].Infer(proto), timeout=req_timeout)
+            t_done_abs = time.time()
+            if response.status and response.status != "ok":
+                return
+            client_lat_ms     = (t_done_abs - t_send_abs) * 1000
+            server_exec_ms    = (response.end_time_ns - response.start_time_ns) / 1e6
+            server_proc_ms    = response.proc_time_ns / 1e6
+            server_swap_ms    = response.swap_time_ns / 1e6
+            server_decoder_ms = response.decoder_time_ns / 1e6
+            queue_wait_plus_rpc_ms = max(0.0, (response.start_time_ns / 1e9 - t_send_abs) * 1000)
+            records[task].append((
+                t_send_abs - t_start,
+                client_lat_ms,
+                server_exec_ms,
+                server_proc_ms,
+                server_swap_ms,
+                server_decoder_ms,
+                queue_wait_plus_rpc_ms,
+                0.0,
+                response.start_time_ns,
+            ))
         except Exception:
             pass
 
@@ -274,14 +295,19 @@ async def run_timeseries(
 
 def save_records(records: Dict[str, List[Record]], out_dir: Path,
                  phase_boundaries: List[float],
-                 aggressor_rps_phases: List[float]) -> None:
+                 aggressor_rps_phases: List[float],
+                 scheduler_policy: str = "",
+                 warmup_secs: float = 10.0) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
+
+    # --- timeseries CSV (existing format, kept for plot.py compatibility) ---
     for task, recs in records.items():
         path = out_dir / f"{task}_timeseries.csv"
         with path.open("w", newline="") as f:
             w = csv.writer(f)
             w.writerow(["task", "send_time_s", "latency_ms", "phase"])
-            for rel_t, lat in recs:
+            for rec in recs:
+                rel_t, lat = rec[0], rec[1]
                 phase = len(phase_boundaries)
                 for i, boundary in enumerate(phase_boundaries):
                     if rel_t < boundary:
@@ -289,6 +315,70 @@ def save_records(records: Dict[str, List[Record]], out_dir: Path,
                         break
                 w.writerow([task, f"{rel_t:.4f}", f"{lat:.3f}", phase])
         print(f"[Save] {path}  ({len(recs)} records)")
+
+    # --- latencies.csv (rich per-request breakdown, same schema as sharing_benefit) ---
+    with (out_dir / "latencies.csv").open("w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow([
+            "task", "condition", "elapsed_sec", "latency_ms",
+            "server_exec_ms", "server_proc_ms", "server_swap_ms",
+            "server_decoder_ms", "queue_wait_plus_rpc_ms",
+            "client_pre_rpc_ms", "non_server_exec_overhead_ms", "server_start_ns",
+            "phase",
+        ])
+        for task, recs in records.items():
+            for rec in recs:
+                rel_t, lat, exec_ms, proc_ms, swap_ms, dec_ms, queue_ms, pre_rpc_ms, start_ns = rec
+                phase = len(phase_boundaries)
+                for i, boundary in enumerate(phase_boundaries):
+                    if rel_t < boundary:
+                        phase = i + 1
+                        break
+                w.writerow([
+                    task, scheduler_policy,
+                    round(rel_t, 4), round(lat, 4),
+                    round(exec_ms, 4), round(proc_ms, 4), round(swap_ms, 4),
+                    round(dec_ms, 4), round(queue_ms, 4), round(pre_rpc_ms, 4),
+                    round(max(0.0, lat - exec_ms), 4),
+                    start_ns, phase,
+                ])
+
+    # --- task_results.csv (per-task aggregates, same schema as sharing_benefit) ---
+    total_duration = phase_boundaries[-1] if phase_boundaries else 0.0
+    with (out_dir / "task_results.csv").open("w", newline="") as f:
+        fields = [
+            "task", "condition", "n_requests", "throughput_rps",
+            "avg_latency_ms", "p50_latency_ms", "p95_latency_ms", "p99_latency_ms",
+            "avg_server_exec_ms", "avg_server_proc_ms", "avg_server_swap_ms",
+            "avg_server_decoder_ms", "avg_queue_wait_plus_rpc_ms",
+            "avg_client_pre_rpc_ms", "avg_non_server_exec_overhead_ms",
+        ]
+        dw = csv.DictWriter(f, fieldnames=fields)
+        dw.writeheader()
+        for task, recs in records.items():
+            trimmed = [rec for rec in recs if rec[0] > warmup_secs]
+            lats = [rec[1] for rec in trimmed]
+            n = len(lats)
+            if n == 0:
+                continue
+            effective_duration = max(total_duration - warmup_secs, 1.0)
+            dw.writerow({
+                "task":           task,
+                "condition":      scheduler_policy,
+                "n_requests":     n,
+                "throughput_rps": round(n / effective_duration, 4),
+                "avg_latency_ms": round(float(np.mean(lats)), 3),
+                "p50_latency_ms": round(float(np.percentile(lats, 50)), 3),
+                "p95_latency_ms": round(float(np.percentile(lats, 95)), 3),
+                "p99_latency_ms": round(float(np.percentile(lats, 99)), 3),
+                "avg_server_exec_ms":              round(float(np.mean([rec[2] for rec in trimmed])), 3),
+                "avg_server_proc_ms":              round(float(np.mean([rec[3] for rec in trimmed])), 3),
+                "avg_server_swap_ms":              round(float(np.mean([rec[4] for rec in trimmed])), 3),
+                "avg_server_decoder_ms":           round(float(np.mean([rec[5] for rec in trimmed])), 3),
+                "avg_queue_wait_plus_rpc_ms":      round(float(np.mean([rec[6] for rec in trimmed])), 3),
+                "avg_client_pre_rpc_ms":           round(float(np.mean([rec[7] for rec in trimmed])), 3),
+                "avg_non_server_exec_overhead_ms": round(float(np.mean([max(0.0, rec[1] - rec[2]) for rec in trimmed])), 3),
+            })
 
     meta = {
         "phase_boundaries_s": phase_boundaries,
@@ -443,7 +533,8 @@ def main() -> int:
     ))
 
     out_dir = (SERVING_DIR / args.exp_dir).resolve()
-    save_records(records, out_dir, phase_boundaries, aggressor_rps_list)
+    save_records(records, out_dir, phase_boundaries, aggressor_rps_list,
+                 scheduler_policy=args.scheduler_policy)
 
     for task, recs in records.items():
         print(f"  [{task}] {len(recs)} requests recorded")

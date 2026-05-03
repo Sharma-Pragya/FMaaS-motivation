@@ -533,17 +533,17 @@ def plot_phase_summary(
 def _bin_rate(
     times: np.ndarray,
     max_time: float,
+    bin_size_s: float = 1.0,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """Count events in exact 1s bins [0,1), [1,2), ..., returning (bin_centers, req/s).
-    Each bin covers exactly 1 second so count == req/s directly."""
-    n_bins  = int(np.ceil(max_time))
+    """Count events in fixed-width bins, returning (bin_centers, req/s)."""
+    n_bins  = int(np.ceil(max_time / bin_size_s))
     counts  = np.zeros(n_bins, dtype=float)
     for t in times:
-        idx = int(t)
+        idx = int(t / bin_size_s)
         if 0 <= idx < n_bins:
             counts[idx] += 1.0
-    centers = np.arange(n_bins) + 0.5
-    return centers, counts
+    centers = (np.arange(n_bins) + 0.5) * bin_size_s
+    return centers, counts / bin_size_s
 
 
 def _bin_latency(
@@ -569,25 +569,27 @@ def _bin_latency(
 def _compute_throughput(
     recs: List[Record],
     max_time: Optional[float] = None,
+    bin_size_s: float = 1.0,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """Completed req/s in 1s bins — uses completion time (send + latency)."""
+    """Completed req/s in fixed-width bins — uses completion time (send + latency)."""
     if not recs:
         return np.array([]), np.array([])
     times = np.array([r[0] + r[1] / 1000.0 for r in recs])
     end   = max_time if max_time is not None else float(times.max())
-    return _bin_rate(times, end)
+    return _bin_rate(times, end, bin_size_s)
 
 
 def _compute_offered_load(
     recs: List[Record],
     max_time: Optional[float] = None,
+    bin_size_s: float = 1.0,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """Offered load from send times in 1s bins."""
+    """Offered load from send times in fixed-width bins."""
     if not recs:
         return np.array([]), np.array([])
     times = np.array([r[0] for r in recs])
     end   = max_time if max_time is not None else float(times.max())
-    return _bin_rate(times, end)
+    return _bin_rate(times, end, bin_size_s)
 
 
 def plot_throughput(
@@ -596,6 +598,7 @@ def plot_throughput(
     aggressor_task: str,
     out_path: Path,
     max_time: Optional[float] = None,
+    bin_size_s: float = 1.0,
 ) -> None:
     """Two-panel throughput plot: victim (top) and aggressor (bottom)."""
     victim_data:    Dict[str, Tuple[np.ndarray, np.ndarray]] = {}
@@ -608,10 +611,10 @@ def plot_throughput(
         v_recs, meta = load_task(d, victim_task, max_time)
         a_recs, _    = load_task(d, aggressor_task, max_time)
         if v_recs:
-            victim_data[policy]    = _compute_throughput(v_recs, max_time)
+            victim_data[policy]    = _compute_throughput(v_recs, max_time, bin_size_s)
             meta_ref = meta
         if a_recs:
-            aggressor_data[policy] = _compute_throughput(a_recs, max_time)
+            aggressor_data[policy] = _compute_throughput(a_recs, max_time, bin_size_s)
 
     if not victim_data and not aggressor_data:
         print("[Plot] No throughput data found — skipping")
@@ -638,10 +641,10 @@ def plot_throughput(
         end = max_time if max_time is not None else xlim_max
         if victim_task in trace:
             sends = [t for t in trace[victim_task] if max_time is None or t <= max_time]
-            vic_offered = _compute_offered_load([(t, 0.0) for t in sends], end)
+            vic_offered = _compute_offered_load([(t, 0.0) for t in sends], end, bin_size_s)
         if aggressor_task in trace:
             sends = [t for t in trace[aggressor_task] if max_time is None or t <= max_time]
-            agg_offered = _compute_offered_load([(t, 0.0) for t in sends], end)
+            agg_offered = _compute_offered_load([(t, 0.0) for t in sends], end, bin_size_s)
     else:
         # Fallback: use send times from first available policy's CSV
         for _, d in policy_dirs.items():
@@ -650,9 +653,9 @@ def plot_throughput(
             v_recs_raw, _ = load_task(d, victim_task, max_time)
             a_recs_raw, _ = load_task(d, aggressor_task, max_time)
             if v_recs_raw:
-                vic_offered = _compute_offered_load(v_recs_raw, max_time)
+                vic_offered = _compute_offered_load(v_recs_raw, max_time, bin_size_s)
             if a_recs_raw:
-                agg_offered = _compute_offered_load(a_recs_raw, max_time)
+                agg_offered = _compute_offered_load(a_recs_raw, max_time, bin_size_s)
             break
 
     fig, axes = plt.subplots(2, 1, figsize=(2.8, 2.4), sharex=True)
@@ -726,31 +729,32 @@ def _bin_attainment(
     sends: np.ndarray,
     completions: np.ndarray,
     max_time: float,
+    bin_size_s: float = 1.0,
 ) -> float:
-    """Mean per-second attainment: average over bins of min(served_b/offered_b, 1).
+    """Capped throughput attainment over fixed-width bins.
 
-    Same 1s binning as the timeseries throughput plot. Per-bin ratio is capped
+    Same binning as the timeseries throughput plot. Per-bin ratio is capped
     at 1.0 so a bin where the system catches up on backlog from earlier bins
-    can't pull the average above 100%. Bins with zero offered load are skipped.
+    can't pull the average above 100%. The final value is the sum of capped
+    served requests divided by total offered requests.
     """
-    n_bins = int(np.ceil(max_time))
+    n_bins = int(np.ceil(max_time / bin_size_s))
     if n_bins <= 0:
         return 0.0
     offered = np.zeros(n_bins, dtype=float)
     served  = np.zeros(n_bins, dtype=float)
     for t in sends:
-        idx = int(t)
+        idx = int(t / bin_size_s)
         if 0 <= idx < n_bins:
             offered[idx] += 1.0
     for t in completions:
-        idx = int(t)
+        idx = int(t / bin_size_s)
         if 0 <= idx < n_bins:
             served[idx] += 1.0
-    mask = offered > 0
-    if not mask.any():
+    total_offered = float(offered.sum())
+    if total_offered <= 0:
         return 0.0
-    ratio = np.minimum(served[mask] / offered[mask], 1.0)
-    return float(ratio.mean())
+    return float(np.minimum(served, offered).sum() / total_offered)
 
 
 def plot_throughput_attainment(
@@ -759,13 +763,14 @@ def plot_throughput_attainment(
     aggressor_task: str,
     out_path: Path,
     max_time: Optional[float] = None,
+    bin_size_s: float = 1.0,
 ) -> None:
-    """Grouped bar chart: per-second attainment (served vs offered, capped per bin).
+    """Grouped bar chart: per-bin attainment (served vs offered, capped per bin).
 
-    For each 1s bin the served count is capped at the offered count, so a bin
+    For each fixed-width bin the served count is capped at the offered count, so a bin
     where the system catches up on backlog from earlier bins doesn't count
-    above 100%. The bar is the sum over bins of min(served_b, offered_b)
-    divided by total offered. This matches the per-second view of the
+    above 100%. The bar is sum_b min(served_b, offered_b) / sum_b offered_b.
+    This matches the binned view of the
     timeseries throughput plot.
 
     X-axis: methods (one group per method, in POLICY_ORDER).
@@ -798,8 +803,8 @@ def plot_throughput_attainment(
         # Completion time = send_time + latency
         v_done = np.array([t + lat / 1000.0 for t, lat in v_recs], dtype=float)
         a_done = np.array([t + lat / 1000.0 for t, lat in a_recs], dtype=float)
-        v_attain.append(_bin_attainment(v_sends, v_done, horizon))
-        a_attain.append(_bin_attainment(a_sends, a_done, horizon))
+        v_attain.append(_bin_attainment(v_sends, v_done, horizon, bin_size_s))
+        a_attain.append(_bin_attainment(a_sends, a_done, horizon, bin_size_s))
 
     n           = len(methods)
     x           = np.arange(n)
@@ -838,6 +843,317 @@ def plot_throughput_attainment(
     ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"{v:.0%}"))
     ax.legend(frameon=False, handlelength=1.2, loc="upper right",
               ncol=2, columnspacing=0.8)
+    fig.tight_layout(pad=0.4)
+    save_figure(fig, out_path)
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
+# Rich-metrics plots (use latencies.csv / task_results.csv from new schema)
+# ---------------------------------------------------------------------------
+
+def _load_latencies_csv(results_dir: Path, task: str,
+                        max_time: Optional[float] = None) -> List[dict]:
+    """Read latencies.csv and return rows for the given task as dicts."""
+    path = results_dir / "latencies.csv"
+    if not path.exists():
+        return []
+    rows = []
+    with path.open() as f:
+        for row in csv.DictReader(f):
+            if row["task"] != task:
+                continue
+            t = float(row["elapsed_sec"])
+            if max_time is not None and t > max_time:
+                continue
+            rows.append({k: (int(v) if k == "phase" else
+                             float(v) if k not in ("task", "condition") else v)
+                         for k, v in row.items()})
+    return rows
+
+
+def plot_latency_components_by_phase(
+    policy_dirs: Dict[str, Path],
+    victim_task: str,
+    aggressor_rps_phases: List[float],
+    out_path: Path,
+    max_time: Optional[float] = None,
+) -> None:
+    """Stacked bar: mean exec / queue / overhead per phase for the victim task.
+
+    One group of bars per policy, one bar per phase. Stacks: server_exec_ms
+    (GPU time), queue_wait_plus_rpc_ms (queueing), non_server_exec_overhead_ms
+    (everything else). Shows how each cost component changes as aggressor ramps.
+    """
+    phase_labels = [f"agg={int(r)}rps" for r in aggressor_rps_phases]
+    n_phases = len(phase_labels)
+    if n_phases == 0:
+        return
+
+    COMPONENTS = [
+        ("server_exec_ms",              "#6B9AC4", "GPU exec"),
+        ("queue_wait_plus_rpc_ms",      "#E06C75", "Queue wait"),
+        ("non_server_exec_overhead_ms", "#C7BEDF", "Other overhead"),
+    ]
+
+    # policy → phase → {component: mean_ms}
+    data: Dict[str, List[Dict[str, float]]] = {}
+    for policy, d in policy_dirs.items():
+        if not d.exists():
+            continue
+        rows = _load_latencies_csv(d, victim_task, max_time)
+        if not rows:
+            continue
+        by_phase: Dict[int, List[dict]] = {}
+        for row in rows:
+            p = int(row["phase"])
+            by_phase.setdefault(p, []).append(row)
+        phase_means = []
+        for p in range(1, n_phases + 1):
+            recs = by_phase.get(p, [])
+            if recs:
+                phase_means.append({c: float(np.mean([r[c] for r in recs])) for c, _, _ in COMPONENTS})
+            else:
+                phase_means.append({c: 0.0 for c, _, _ in COMPONENTS})
+        data[policy] = phase_means
+
+    if not data:
+        print("[Plot] No latencies.csv found — skipping component plot")
+        return
+
+    n_policies  = len(data)
+    x           = np.arange(n_phases)
+    total_width = 0.7
+    w           = total_width / n_policies
+
+    fig, ax = plt.subplots(figsize=(max(3.0, 1.5 * n_phases), 2.0))
+
+    for i, (policy, phase_means) in enumerate(data.items()):
+        cfg    = _policy_cfg(policy, i)
+        offset = (i - n_policies / 2 + 0.5) * w
+        bottoms = np.zeros(n_phases)
+        for comp_key, comp_color, comp_label in COMPONENTS:
+            heights = np.array([pm[comp_key] for pm in phase_means])
+            label = f"{cfg['label']} – {comp_label}" if i == 0 else None
+            ax.bar(x + offset, heights, width=w * 0.9,
+                   bottom=bottoms, color=comp_color, alpha=0.85,
+                   edgecolor="black", linewidth=0.3, label=label)
+            bottoms += heights
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(phase_labels)
+    ax.set_xlabel("Aggressor Load Phase")
+    ax.set_ylabel("Victim Latency (ms)")
+    ax.legend(frameon=False, handlelength=1.0, fontsize=7,
+              loc="upper left", ncol=1)
+    fig.tight_layout(pad=0.4)
+    save_figure(fig, out_path)
+    plt.close(fig)
+
+
+def plot_p99_phase_summary(
+    policy_dirs: Dict[str, Path],
+    victim_task: str,
+    aggressor_rps_phases: List[float],
+    out_path: Path,
+    max_time: Optional[float] = None,
+) -> None:
+    """Grouped bar chart: victim P99 latency per phase per policy (from latencies.csv)."""
+    phase_labels = [f"agg={int(r)}rps" for r in aggressor_rps_phases]
+    n_phases = len(phase_labels)
+    if n_phases == 0:
+        return
+
+    p99s: Dict[str, List[float]] = {}
+    for policy, d in policy_dirs.items():
+        if not d.exists():
+            continue
+        rows = _load_latencies_csv(d, victim_task, max_time)
+        if not rows:
+            continue
+        by_phase: Dict[int, List[float]] = {}
+        for row in rows:
+            by_phase.setdefault(int(row["phase"]), []).append(row["latency_ms"])
+        vals = [float(np.percentile(by_phase.get(p, [0.0]), 99))
+                for p in range(1, n_phases + 1)]
+        p99s[policy] = vals
+
+    if not p99s:
+        print("[Plot] No latencies.csv found — skipping P99 phase summary")
+        return
+
+    all_vals = [v for vals in p99s.values() for v in vals]
+    scale    = 1 / 1000 if max(all_vals) > 2000 else 1.0
+    unit     = "s" if scale < 1 else "ms"
+
+    n_policies  = len(p99s)
+    x           = np.arange(n_phases)
+    total_width = 0.7
+    w           = total_width / n_policies
+
+    fig, ax = plt.subplots(figsize=(max(3.0, 1.5 * n_phases), 1.8))
+
+    for i, (policy, vals) in enumerate(p99s.items()):
+        cfg    = _policy_cfg(policy, i)
+        offset = (i - n_policies / 2 + 0.5) * w
+        ax.bar(x + offset, [v * scale for v in vals], width=w,
+               color=cfg["color"], alpha=0.85,
+               edgecolor="black", linewidth=0.4, label=cfg["label"])
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(phase_labels)
+    ax.set_xlabel("Aggressor Load Phase")
+    ax.set_ylabel(f"P99 Latency ({unit})")
+    ax.legend(frameon=False, handlelength=1.2)
+    fig.tight_layout(pad=0.4)
+    save_figure(fig, out_path)
+    plt.close(fig)
+
+
+def plot_queue_wait_timeseries(
+    policy_dirs: Dict[str, Path],
+    victim_task: str,
+    out_path: Path,
+    max_time: Optional[float] = None,
+) -> None:
+    """Mean queue_wait_plus_rpc_ms over time for the victim task, all policies overlaid."""
+    meta_ref: dict = {}
+    binned_data: Dict[str, Tuple[np.ndarray, np.ndarray]] = {}
+
+    for policy, d in policy_dirs.items():
+        if not d.exists():
+            continue
+        rows = _load_latencies_csv(d, victim_task, max_time)
+        if not rows:
+            continue
+        # Also grab meta for phase annotations
+        meta_path = d / "meta.json"
+        if meta_path.exists() and not meta_ref:
+            meta_ref = json.loads(meta_path.read_text())
+        times = np.array([r["elapsed_sec"] for r in rows])
+        waits = np.array([r["queue_wait_plus_rpc_ms"] for r in rows])
+        xlim  = max_time if max_time is not None else float(times.max())
+        binned_data[policy] = _bin_latency(times, waits, xlim)
+
+    if not binned_data:
+        print("[Plot] No latencies.csv found — skipping queue wait plot")
+        return
+
+    phase_boundaries     = meta_ref.get("phase_boundaries_s", [])
+    aggressor_rps_phases = meta_ref.get("aggressor_rps_phases", [])
+    if max_time is not None:
+        phase_boundaries     = [b for b in phase_boundaries if b <= max_time]
+        aggressor_rps_phases = aggressor_rps_phases[:len(phase_boundaries)]
+
+    xlim_max = max_time if max_time is not None else (
+        phase_boundaries[-1] if phase_boundaries else
+        max(float(c.max()) for c, _ in binned_data.values())
+    )
+
+    fig, ax = plt.subplots(figsize=(2.8, 1.6))
+
+    for idx, (policy, (centers, means)) in enumerate(binned_data.items()):
+        cfg = _policy_cfg(policy, idx)
+        ax.plot(centers, means, color=cfg["color"],
+                linestyle=cfg["ls"], linewidth=1.2, label=cfg["label"], zorder=3)
+
+    ylim_max = max(float(np.nanmax(m)) for _, m in binned_data.values())
+    _set_clean_ticks(ax, xlim_max, ylim_max, n_y=4)
+    if phase_boundaries:
+        _add_phase_annotations(ax, phase_boundaries, aggressor_rps_phases, xlim_max, ylim_max)
+
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel("Queue wait (ms)")
+    ax.legend(frameon=False, handlelength=1.2, fontsize=8)
+    fig.tight_layout(pad=0.4)
+    save_figure(fig, out_path)
+    plt.close(fig)
+
+
+def plot_system_throughput_vs_victim_p95(
+    policy_dirs: Dict[str, Path],
+    victim_task: str,
+    aggressor_task: str,
+    out_path: Path,
+    max_time: Optional[float] = None,
+    bin_size_s: float = 1.0,
+) -> None:
+    """Scatter: system throughput attainment vs victim P95 latency.
+
+    X-axis uses the same capped binned throughput-attainment definition as
+    throughput_attainment.png, weighted by each task's offered request count.
+    Y-axis is victim P95 latency over the same time window.
+    """
+    methods = [m for m, d in policy_dirs.items() if d.exists()]
+    if not methods:
+        print("[Plot] No methods available for tradeoff plot — skipping")
+        return
+
+    v_sends = _offered_send_times(policy_dirs, victim_task,    max_time)
+    a_sends = _offered_send_times(policy_dirs, aggressor_task, max_time)
+    if v_sends is None or a_sends is None or len(v_sends) == 0 or len(a_sends) == 0:
+        print("[Plot] Cannot determine offered load (trace.json missing) — skipping tradeoff plot")
+        return
+
+    horizon = max_time if max_time is not None else float(
+        max(v_sends.max() if len(v_sends) else 0.0,
+            a_sends.max() if len(a_sends) else 0.0) + 1.0
+    )
+
+    points = []
+    for idx, method in enumerate(methods):
+        d = policy_dirs[method]
+        v_recs, _ = load_task(d, victim_task,    max_time)
+        a_recs, _ = load_task(d, aggressor_task, max_time)
+        if not v_recs or not a_recs:
+            continue
+
+        v_done = np.array([t + lat / 1000.0 for t, lat in v_recs], dtype=float)
+        a_done = np.array([t + lat / 1000.0 for t, lat in a_recs], dtype=float)
+        v_attain = _bin_attainment(v_sends, v_done, horizon, bin_size_s)
+        a_attain = _bin_attainment(a_sends, a_done, horizon, bin_size_s)
+        system_attain = (
+            v_attain * len(v_sends) + a_attain * len(a_sends)
+        ) / (len(v_sends) + len(a_sends))
+
+        victim_lats = [lat for _, lat in v_recs]
+        victim_p95 = float(np.percentile(victim_lats, 95))
+        points.append((method, system_attain, victim_p95, idx))
+
+    if not points:
+        print("[Plot] No complete data for tradeoff plot — skipping")
+        return
+
+    y_vals = [p[2] for p in points]
+    scale = 1 / 1000 if max(y_vals) > 2000 else 1.0
+    unit = "s" if scale < 1 else "ms"
+
+    fig, ax = plt.subplots(figsize=(2.8, 2.0))
+
+    for method, system_attain, victim_p95, idx in points:
+        cfg = _policy_cfg(method, idx)
+        x = system_attain * 100
+        y = victim_p95 * scale
+        ax.scatter(x, y, s=32, color=cfg["color"], edgecolor="black",
+                   linewidth=0.5, zorder=3)
+        ax.annotate(
+            cfg["label"],
+            (x, y),
+            xytext=(4, 3),
+            textcoords="offset points",
+            fontsize=6.5,
+            color=PALETTE["charcoal"],
+        )
+
+    x_min = min(p[1] for p in points) * 100
+    x_max = max(p[1] for p in points) * 100
+    y_max = max(p[2] for p in points) * scale
+    x_pad = max(1.0, (x_max - x_min) * 0.12)
+    ax.set_xlim(max(0, x_min - x_pad), min(102, x_max + x_pad))
+    _set_clean_ticks(ax, ax.get_xlim()[1], y_max, n_y=4)
+    ax.set_xlim(max(0, x_min - x_pad), min(102, x_max + x_pad))
+    ax.set_xlabel("System Throughput Attainment (%)")
+    ax.set_ylabel(f"Victim P95 Latency ({unit})")
     fig.tight_layout(pad=0.4)
     save_figure(fig, out_path)
     plt.close(fig)
@@ -905,7 +1221,12 @@ def main() -> int:
     parser.add_argument("--attainment-methods", default=None,
                         help="Comma-separated methods to include in the throughput "
                              "attainment bar chart (default: all from --methods).")
+    parser.add_argument("--bin-size-s", type=float, default=1.0,
+                        help="Bin width in seconds for throughput and attainment "
+                             "plots (default: 1.0; use 0.1 for 100ms bins).")
     args = parser.parse_args()
+    if args.bin_size_s <= 0:
+        parser.error("--bin-size-s must be positive")
 
     apply_paper_style()
 
@@ -975,6 +1296,7 @@ def main() -> int:
             tput_dirs, args.victim_task, args.aggressor_task,
             plot_dir / "throughput.png",
             max_time=max_time,
+            bin_size_s=args.bin_size_s,
         )
     else:
         print("[Plot] No methods selected for throughput timeseries — skipping")
@@ -991,6 +1313,13 @@ def main() -> int:
             attain_dirs, args.victim_task, args.aggressor_task,
             plot_dir / "throughput_attainment.png",
             max_time=max_time,
+            bin_size_s=args.bin_size_s,
+        )
+        plot_system_throughput_vs_victim_p95(
+            attain_dirs, args.victim_task, args.aggressor_task,
+            plot_dir / "throughput_vs_victim_p95.png",
+            max_time=max_time,
+            bin_size_s=args.bin_size_s,
         )
 
     # 4 & 5 — need aggressor_rps_phases + phase_boundaries from meta
@@ -1016,6 +1345,32 @@ def main() -> int:
             args.victim_task, agg_phases,
             plot_dir / "phase_summary.png",
         )
+
+    # 6. Latency component stacked bars per phase (uses latencies.csv)
+    if agg_phases:
+        plot_latency_components_by_phase(
+            {p: d for p, d in policy_dirs.items() if d.exists()},
+            args.victim_task, agg_phases,
+            plot_dir / "latency_components_by_phase.png",
+            max_time=max_time,
+        )
+
+    # 7. P99 per phase per policy (uses latencies.csv)
+    if agg_phases:
+        plot_p99_phase_summary(
+            {p: d for p, d in policy_dirs.items() if d.exists()},
+            args.victim_task, agg_phases,
+            plot_dir / "p99_phase_summary.png",
+            max_time=max_time,
+        )
+
+    # 8. Queue wait over time (uses latencies.csv)
+    plot_queue_wait_timeseries(
+        {p: d for p, d in policy_dirs.items() if d.exists()},
+        args.victim_task,
+        plot_dir / "queue_wait_timeseries.png",
+        max_time=max_time,
+    )
 
     return 0
 
