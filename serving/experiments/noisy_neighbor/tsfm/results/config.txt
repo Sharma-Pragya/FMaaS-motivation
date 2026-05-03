@@ -1,11 +1,11 @@
-Experiment config - Sun May  3 03:58:43 UTC 2026
+Experiment config - Sun May  3 18:27:11 UTC 2026
 Backbone: momentlarge
-Victim: ecgclass @ 20 rps (constant)
+Victim: ecgclass @ 8 rps (constant)
 Aggressor: gestureclass
 Number of phases: 3
-  Phase 1 (10s): aggressor @ 20 rps
-  Phase 2 (10s): aggressor @ 80 rps
-  Phase 3 (10s): aggressor @ 20 rps
+  Phase 1 (10s): aggressor @ 8 rps
+  Phase 2 (10s): aggressor @ 90 rps
+  Phase 3 (10s): aggressor @ 8 rps
 Total duration: 30s
 Sharing runs:
   fcfs: scheduler=fifo batch_size=3 batch_wait_ms=0

@@ -1163,6 +1163,155 @@ def plot_system_throughput_vs_victim_p95(
 # Helpers
 # ---------------------------------------------------------------------------
 
+def _load_latencies_with_phase(results_dir: Path, task: str,
+                                max_time: Optional[float] = None
+                                ) -> List[Tuple[float, float, int]]:
+    """Returns list of (send_time_s, latency_ms, phase) tuples."""
+    path = results_dir / "latencies.csv"
+    if not path.exists():
+        return []
+    out: List[Tuple[float, float, int]] = []
+    with path.open() as f:
+        reader = csv.DictReader(f)
+        for r in reader:
+            if r.get("task") != task:
+                continue
+            t = float(r["elapsed_sec"])
+            if max_time is not None and t > max_time:
+                continue
+            out.append((t, float(r["latency_ms"]), int(r["phase"])))
+    return out
+
+
+def _violation_pct(lats: List[float], slo_ms: float) -> float:
+    if not lats:
+        return 0.0
+    return 100.0 * sum(1 for l in lats if l > slo_ms) / len(lats)
+
+
+def plot_slo_violations_by_phase(
+    policy_dirs: Dict[str, Path],
+    victim_task: str,
+    phase_bounds: List[float],
+    out_path: Path,
+    slo_ms: float = 100.0,
+    max_time: Optional[float] = None,
+) -> None:
+    """Grouped bar: victim SLO violation rate per phase, one group per method."""
+    if not policy_dirs or not phase_bounds:
+        return
+    methods = list(policy_dirs.keys())
+    num_phases = len(phase_bounds)
+    rates_by_method: Dict[str, List[float]] = {}
+    for m, d in policy_dirs.items():
+        recs = _load_latencies_with_phase(d, victim_task, max_time=max_time)
+        per_phase: Dict[int, List[float]] = {p: [] for p in range(1, num_phases + 1)}
+        for _, lat, ph in recs:
+            if ph in per_phase:
+                per_phase[ph].append(lat)
+        rates_by_method[m] = [_violation_pct(per_phase[p], slo_ms)
+                              for p in range(1, num_phases + 1)]
+
+    fig, ax = plt.subplots(figsize=(7, 3.2))
+    x = np.arange(num_phases)
+    width = 0.8 / max(len(methods), 1)
+    for i, m in enumerate(methods):
+        cfg = _policy_cfg(m, i)
+        ax.bar(x + i * width, rates_by_method[m], width,
+               label=cfg.get("label", m),
+               color=cfg.get("color", "#888"),
+               edgecolor="black", linewidth=0.4)
+    ax.set_xticks(x + width * (len(methods) - 1) / 2)
+    ax.set_xticklabels([f"Phase {p+1}" for p in range(num_phases)])
+    ax.set_ylabel(f"Victim SLO violations (%)\nSLO = {slo_ms:.0f} ms")
+    ax.set_ylim(0, 105)
+    ax.legend(loc="upper left", ncol=2, fontsize=8, frameon=False)
+    ax.grid(axis="y", alpha=0.3, linewidth=0.4)
+    fig.tight_layout()
+    save_figure(fig, out_path)
+    plt.close(fig)
+
+
+def plot_slo_burst_summary(
+    policy_dirs: Dict[str, Path],
+    victim_task: str,
+    aggressor_task: str,
+    phase_bounds: List[float],
+    out_path: Path,
+    slo_ms: float = 100.0,
+    burst_phase: Optional[int] = None,
+    max_time: Optional[float] = None,
+) -> None:
+    """Two-panel burst-phase summary:
+      Left:  victim SLO violation rate (lower is better — isolation).
+      Right: aggressor goodput (completed req/s) during burst (higher is
+             better — efficiency at protecting the victim).
+    Aggressor goodput surfaces variation that a 100%-violation SLO bar hides.
+    """
+    if not policy_dirs or not phase_bounds:
+        return
+    num_phases = len(phase_bounds)
+    if burst_phase is None:
+        burst_phase = (num_phases // 2) + 1 if num_phases >= 3 else num_phases
+    phase_start = 0.0 if burst_phase == 1 else phase_bounds[burst_phase - 2]
+    phase_end   = phase_bounds[burst_phase - 1]
+    phase_dur   = max(phase_end - phase_start, 1e-6)
+
+    methods = list(policy_dirs.keys())
+    victim_viol: List[float] = []
+    aggr_goodput: List[float] = []
+    for m, d in policy_dirs.items():
+        v_lats = [lat for _, lat, ph in _load_latencies_with_phase(d, victim_task, max_time=max_time)
+                  if ph == burst_phase]
+        victim_viol.append(_violation_pct(v_lats, slo_ms))
+        # Aggressor goodput = requests *completed* (send_t + latency) within
+        # the burst window, regardless of when they were sent. This captures
+        # how much aggressor work the system actually delivered during the
+        # burst — varies across schedulers even when offered load is fixed.
+        path = d / "latencies.csv"
+        completed = 0
+        if path.exists():
+            with path.open() as f:
+                for r in csv.DictReader(f):
+                    if r.get("task") != aggressor_task:
+                        continue
+                    send_t = float(r["elapsed_sec"])
+                    lat_s = float(r["latency_ms"]) / 1000.0
+                    done_t = send_t + lat_s
+                    if phase_start <= done_t < phase_end:
+                        completed += 1
+        aggr_goodput.append(completed / phase_dur)
+
+    fig, axes = plt.subplots(1, 2, figsize=(9, 3.4))
+    x = np.arange(len(methods))
+    colors = [_policy_cfg(m, i).get("color", "#888") for i, m in enumerate(methods)]
+    labels = [_policy_cfg(m, i).get("label", m) for i, m in enumerate(methods)]
+
+    axes[0].bar(x, victim_viol, color=colors, edgecolor="black", linewidth=0.4)
+    axes[0].set_xticks(x)
+    axes[0].set_xticklabels(labels, rotation=20, ha="right")
+    axes[0].set_ylabel(f"Victim SLO violations (%)\nSLO = {slo_ms:.0f} ms")
+    axes[0].set_title(f"Isolation — phase {burst_phase} (burst)")
+    axes[0].set_ylim(0, 105)
+    axes[0].grid(axis="y", alpha=0.3, linewidth=0.4)
+    for xi, v in zip(x, victim_viol):
+        axes[0].text(xi, v + 2, f"{v:.0f}%", ha="center", fontsize=8)
+
+    axes[1].bar(x, aggr_goodput, color=colors, edgecolor="black", linewidth=0.4)
+    axes[1].set_xticks(x)
+    axes[1].set_xticklabels(labels, rotation=20, ha="right")
+    axes[1].set_ylabel("Aggressor goodput (req/s)")
+    axes[1].set_title(f"Aggressor work — phase {burst_phase}")
+    axes[1].grid(axis="y", alpha=0.3, linewidth=0.4)
+    for xi, v in zip(x, aggr_goodput):
+        axes[1].text(xi, v + max(aggr_goodput) * 0.01, f"{v:.1f}",
+                     ha="center", fontsize=8)
+
+    fig.tight_layout()
+    save_figure(fig, out_path)
+    plt.close(fig)
+
+
 def _discover_schedulers(base: Path) -> List[str]:
     """Return scheduler names found as subdirectories of base (each has meta.json)."""
     found = []
@@ -1224,6 +1373,12 @@ def main() -> int:
     parser.add_argument("--bin-size-s", type=float, default=1.0,
                         help="Bin width in seconds for throughput and attainment "
                              "plots (default: 1.0; use 0.1 for 100ms bins).")
+    parser.add_argument("--slo-ms", type=float, default=100.0,
+                        help="SLO threshold (ms) for SLO-violation plots. "
+                             "Default 100ms ≈ 2× isolated p99 for tsfm tasks.")
+    parser.add_argument("--burst-phase", type=int, default=None,
+                        help="1-indexed phase to treat as burst for the SLO "
+                             "summary plot (default: middle phase).")
     args = parser.parse_args()
     if args.bin_size_s <= 0:
         parser.error("--bin-size-s must be positive")
@@ -1371,6 +1526,23 @@ def main() -> int:
         plot_dir / "queue_wait_timeseries.png",
         max_time=max_time,
     )
+
+    # 9. Victim SLO violation rate per phase (isolation story)
+    if phase_bounds:
+        slo_tag = f"slo{int(args.slo_ms)}ms"
+        plot_slo_violations_by_phase(
+            {p: d for p, d in policy_dirs.items() if d.exists()},
+            args.victim_task, phase_bounds,
+            plot_dir / f"slo_violations_by_phase_{slo_tag}.png",
+            slo_ms=args.slo_ms, max_time=max_time,
+        )
+        plot_slo_burst_summary(
+            {p: d for p, d in policy_dirs.items() if d.exists()},
+            args.victim_task, args.aggressor_task, phase_bounds,
+            plot_dir / f"slo_burst_summary_{slo_tag}.png",
+            slo_ms=args.slo_ms, burst_phase=args.burst_phase,
+            max_time=max_time,
+        )
 
     return 0
 
