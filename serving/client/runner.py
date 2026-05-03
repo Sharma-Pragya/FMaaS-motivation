@@ -307,6 +307,32 @@ class TraceRunner:
         self._stub_cache: dict = {}          # (task, device_url) → raw gRPC stub
         self._dispatch_lag_ms: list = []     # scheduling delay vs target send timestamp
 
+    async def _ensure_proto_stub(self, task: str, device_url: str) -> bool:
+        """Build (proto, stub) for a (task, device) pair if missing. Returns True on success.
+
+        Used both in warmup() (eager, all known pairs) and in run() (lazy, when a new
+        backbone is added at runtime via add_task and dispatch encounters an unknown pair).
+        """
+        key = (task, device_url)
+        if key in self._proto_cache and key in self._stub_cache:
+            return True
+        batch = _DATA.get(_resolve_data_task(task))
+        if batch is None:
+            return False
+        if key not in self._proto_cache:
+            x    = None if "x" not in batch else (batch["x"] if isinstance(batch["x"], (list, str)) else batch["x"].numpy().astype(np.float32))
+            mask = None if "mask" not in batch else batch["mask"].numpy().astype(np.float32)
+            q    = batch.get("question")
+            self._proto_cache[key] = encode_infer_request(task=task, x=x, mask=mask, question=q)
+        if key not in self._stub_cache:
+            client = _CLIENT_CACHE.get((device_url, task))
+            if client is None:
+                client = await _get_client(device_url, client_key=task)
+            if client is None:
+                return False
+            self._stub_cache[key] = client._stub
+        return True
+
     def _refresh_route_cache_if_needed(self):
         if self._plan_version != self._plan_cache[0]:
             task_routes, task_totals = parse_plan(self.live_plan)
@@ -505,18 +531,8 @@ class TraceRunner:
         for task, routes in task_routes.items():
             if task not in trace_tasks:
                 continue
-            batch = _DATA.get(_resolve_data_task(task))
-            if batch is None:
-                continue
-            x    = None if "x" not in batch else (batch["x"] if isinstance(batch["x"], (list, str)) else batch["x"].numpy().astype(np.float32))
-            mask = None if "mask" not in batch else batch["mask"].numpy().astype(np.float32)
-            q    = batch.get("question")
             for _, dev, _, _ in routes:
-                key = (task, dev)
-                self._proto_cache[key] = encode_infer_request(task=task, x=x, mask=mask, question=q)
-                client = _CLIENT_CACHE.get((dev, task))
-                if client is not None:
-                    self._stub_cache[key] = client._stub
+                await self._ensure_proto_stub(task, dev)
 
         # Model warmup — send one dummy inference per (task, device) to trigger
         # GPU kernel JIT compilation and warm CUDA caches before the clock starts.
@@ -628,8 +644,13 @@ class TraceRunner:
                     proto = self._proto_cache.get(key)
                     stub  = self._stub_cache.get(key)
                     if proto is None or stub is None:
-                        print(f"[TraceRunner] WARNING: no proto/stub for '{req['task']}' @ {device_url}, skipping.")
-                        continue
+                        ok = await self._ensure_proto_stub(req["task"], device_url)
+                        if not ok:
+                            print(f"[TraceRunner] WARNING: no proto/stub for '{req['task']}' @ {device_url}, skipping.")
+                            continue
+                        proto = self._proto_cache[key]
+                        stub  = self._stub_cache[key]
+                        print(f"[TraceRunner] Lazy-bound proto/stub for '{req['task']}' @ {device_url}.")
                     to_fire.append((req["req_id"], device_url, proto, stub))
 
                 # Fire all due requests at once (no event-loop yields between them)
