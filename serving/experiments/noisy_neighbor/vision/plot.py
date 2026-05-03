@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""noisy_neighbor/tsfm_inaction — Time-series plots.
+"""noisy_neighbor/vision — Time-series plots.
 
 Produces:
   1. One plot per scheduler — victim + aggressor latency over time,
@@ -10,9 +10,9 @@ Produces:
   5. Per-phase p50 summary bar chart.
 
 Run from serving/:
-    python experiments/noisy_neighbor/tsfm_inaction/plot.py \
-        --results-base experiments/noisy_neighbor/tsfm_inaction/results \
-        --plot-dir     experiments/noisy_neighbor/tsfm_inaction/plots
+    python experiments/noisy_neighbor/vision/plot.py \
+        --results-base experiments/noisy_neighbor/vision/results \
+        --plot-dir     experiments/noisy_neighbor/vision/plots
 
 Select which methods to plot:
     --methods fcfs,stfq,bfq
@@ -1189,6 +1189,118 @@ def _violation_pct(lats: List[float], slo_ms: float) -> float:
     return 100.0 * sum(1 for l in lats if l > slo_ms) / len(lats)
 
 
+def _load_lat_and_exec_with_phase(results_dir: Path, task: str,
+                                   max_time: Optional[float] = None
+                                   ) -> List[Tuple[float, float, float, int]]:
+    """Returns (send_t, lat_ms, server_exec_ms, phase) tuples."""
+    path = results_dir / "latencies.csv"
+    if not path.exists():
+        return []
+    out = []
+    with path.open() as f:
+        for r in csv.DictReader(f):
+            if r.get("task") != task:
+                continue
+            t = float(r["elapsed_sec"])
+            if max_time is not None and t > max_time:
+                continue
+            out.append((t, float(r["latency_ms"]), float(r["server_exec_ms"]),
+                        int(r["phase"])))
+    return out
+
+
+def plot_victim_exec_by_phase(
+    policy_dirs: Dict[str, Path],
+    victim_task: str,
+    phase_bounds: List[float],
+    out_path: Path,
+    max_time: Optional[float] = None,
+) -> None:
+    """Grouped bar: victim avg server_exec_ms per phase, one group per method.
+    Surfaces kernel-level contention: in no_sharing the victim's own kernel
+    runs longer in burst phases because the GPU's SMs are occupied by aggressor
+    kernels from the co-located process. SLO-independent."""
+    if not policy_dirs or not phase_bounds:
+        return
+    methods = list(policy_dirs.keys())
+    num_phases = len(phase_bounds)
+    exec_by_method: Dict[str, List[float]] = {}
+    for m, d in policy_dirs.items():
+        recs = _load_lat_and_exec_with_phase(d, victim_task, max_time=max_time)
+        per_phase: Dict[int, List[float]] = {p: [] for p in range(1, num_phases + 1)}
+        for _, _, ex, ph in recs:
+            if ph in per_phase:
+                per_phase[ph].append(ex)
+        exec_by_method[m] = [
+            float(np.mean(per_phase[p])) if per_phase[p] else 0.0
+            for p in range(1, num_phases + 1)
+        ]
+
+    fig, ax = plt.subplots(figsize=(7, 3.2))
+    x = np.arange(num_phases)
+    width = 0.8 / max(len(methods), 1)
+    for i, m in enumerate(methods):
+        cfg = _policy_cfg(m, i)
+        ax.bar(x + i * width, exec_by_method[m], width,
+               label=cfg.get("label", m),
+               color=cfg.get("color", "#888"),
+               edgecolor="black", linewidth=0.4)
+    ax.set_xticks(x + width * (len(methods) - 1) / 2)
+    ax.set_xticklabels([f"Phase {p+1}" for p in range(num_phases)])
+    ax.set_ylabel("Victim avg server_exec (ms)")
+    ax.legend(loc="upper left", ncol=2, fontsize=8, frameon=False)
+    ax.grid(axis="y", alpha=0.3, linewidth=0.4)
+    fig.tight_layout()
+    save_figure(fig, out_path)
+    plt.close(fig)
+
+
+def plot_victim_latency_quantiles_by_phase(
+    policy_dirs: Dict[str, Path],
+    victim_task: str,
+    phase_bounds: List[float],
+    out_path: Path,
+    quantile: float = 0.95,
+    max_time: Optional[float] = None,
+) -> None:
+    """Grouped bar: victim p95 (or chosen quantile) latency per phase.
+    SLO-independent — captures distribution shift directly."""
+    if not policy_dirs or not phase_bounds:
+        return
+    methods = list(policy_dirs.keys())
+    num_phases = len(phase_bounds)
+    q_by_method: Dict[str, List[float]] = {}
+    for m, d in policy_dirs.items():
+        recs = _load_lat_and_exec_with_phase(d, victim_task, max_time=max_time)
+        per_phase: Dict[int, List[float]] = {p: [] for p in range(1, num_phases + 1)}
+        for _, lat, _, ph in recs:
+            if ph in per_phase:
+                per_phase[ph].append(lat)
+        q_by_method[m] = [
+            float(np.percentile(per_phase[p], quantile * 100)) if per_phase[p] else 0.0
+            for p in range(1, num_phases + 1)
+        ]
+
+    fig, ax = plt.subplots(figsize=(7, 3.2))
+    x = np.arange(num_phases)
+    width = 0.8 / max(len(methods), 1)
+    for i, m in enumerate(methods):
+        cfg = _policy_cfg(m, i)
+        ax.bar(x + i * width, q_by_method[m], width,
+               label=cfg.get("label", m),
+               color=cfg.get("color", "#888"),
+               edgecolor="black", linewidth=0.4)
+    ax.set_xticks(x + width * (len(methods) - 1) / 2)
+    ax.set_xticklabels([f"Phase {p+1}" for p in range(num_phases)])
+    qlabel = f"p{int(quantile*100)}"
+    ax.set_ylabel(f"Victim {qlabel} latency (ms)")
+    ax.legend(loc="upper left", ncol=2, fontsize=8, frameon=False)
+    ax.grid(axis="y", alpha=0.3, linewidth=0.4)
+    fig.tight_layout()
+    save_figure(fig, out_path)
+    plt.close(fig)
+
+
 def plot_slo_violations_by_phase(
     policy_dirs: Dict[str, Path],
     victim_task: str,
@@ -1353,8 +1465,8 @@ def main() -> int:
                         help="Directory containing per-scheduler subdirectories")
     parser.add_argument("--plot-dir",       default=None,
                         help="Output plot directory (default: <results-base>/plots)")
-    parser.add_argument("--victim-task",    default="ecgclass")
-    parser.add_argument("--aggressor-task", default="gestureclass")
+    parser.add_argument("--victim-task",    default="vocseg")
+    parser.add_argument("--aggressor-task", default="nyudepth")
     parser.add_argument("--methods",        default=None,
                         help="Comma-separated list of methods to plot "
                              "(default: auto-discover from results-base). "
@@ -1363,7 +1475,7 @@ def main() -> int:
                         help="Alias for --methods (kept for backward compatibility)")
     parser.add_argument("--num-phases",     type=int, default=None,
                         help="Limit plot to the first N phases")
-    parser.add_argument("--throughput-methods", default="bfq,no_sharing,no_sharing_tpc",
+    parser.add_argument("--throughput-methods", default="all",
                         help="Comma-separated methods to include in the timeseries "
                              "throughput plot (default: no_sharing,no_sharing_tpc). "
                              "Use 'all' to include every method from --methods.")
@@ -1375,7 +1487,7 @@ def main() -> int:
                              "plots (default: 1.0; use 0.1 for 100ms bins).")
     parser.add_argument("--slo-ms", type=float, default=100.0,
                         help="SLO threshold (ms) for SLO-violation plots. "
-                             "Default 100ms ≈ 2× isolated p99 for tsfm tasks.")
+                             "Default 100ms; for vision/dinolarge use 200–300ms.")
     parser.add_argument("--burst-phase", type=int, default=None,
                         help="1-indexed phase to treat as burst for the SLO "
                              "summary plot (default: middle phase).")
@@ -1527,7 +1639,23 @@ def main() -> int:
         max_time=max_time,
     )
 
-    # 9. Victim SLO violation rate per phase (isolation story)
+    # 9a. Victim avg server_exec per phase — kernel-contention story (SLO-free)
+    if phase_bounds:
+        plot_victim_exec_by_phase(
+            {p: d for p, d in policy_dirs.items() if d.exists()},
+            args.victim_task, phase_bounds,
+            plot_dir / "victim_exec_by_phase.png",
+            max_time=max_time,
+        )
+        # 9b. Victim p95 per phase — distribution-shift story (SLO-free)
+        plot_victim_latency_quantiles_by_phase(
+            {p: d for p, d in policy_dirs.items() if d.exists()},
+            args.victim_task, phase_bounds,
+            plot_dir / "victim_p95_by_phase.png",
+            quantile=0.95, max_time=max_time,
+        )
+
+    # 9c. Victim SLO violation rate per phase (isolation story)
     if phase_bounds:
         slo_tag = f"slo{int(args.slo_ms)}ms"
         plot_slo_violations_by_phase(

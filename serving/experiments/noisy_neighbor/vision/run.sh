@@ -62,9 +62,9 @@ AGGRESSOR_TASK="${AGGRESSOR_TASK:-nyudepth}"
 # dinolarge service rate ~10–15 rps/task: phase 1 well under capacity for all
 # methods, phase 2 exceeds it so kernel-level contention shows up in no_sharing.
 VICTIM_RPS="${VICTIM_RPS:-3}"
-AGGRESSOR_RPS_PHASES="${AGGRESSOR_RPS_PHASES:-3,20,3}"
+AGGRESSOR_RPS_PHASES="${AGGRESSOR_RPS_PHASES:-3,50,3}"
 # Longer phases — vision kernels (~60–120ms) need time for queues to settle.
-PHASE_DURATIONS="${PHASE_DURATIONS:-30,30,30}"
+PHASE_DURATIONS="${PHASE_DURATIONS:-30,10,10}"
 
 # Sharing runs: "scheduler  batch_size  batch_wait_ms  run_name"
 RUNS=(

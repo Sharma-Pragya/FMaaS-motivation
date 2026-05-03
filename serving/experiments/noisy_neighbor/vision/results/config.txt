@@ -1,12 +1,12 @@
-Experiment config - Sun May  3 19:02:16 UTC 2026
+Experiment config - Sun May  3 21:43:20 UTC 2026
 Backbone: dinolarge-patch
 Victim: vocseg @ 3 rps (constant)
 Aggressor: nyudepth
 Number of phases: 3
   Phase 1 (30s): aggressor @ 3 rps
-  Phase 2 (30s): aggressor @ 20 rps
-  Phase 3 (30s): aggressor @ 3 rps
-Total duration: 90s
+  Phase 2 (10s): aggressor @ 50 rps
+  Phase 3 (10s): aggressor @ 3 rps
+Total duration: 50s
 Sharing runs:
   fcfs: scheduler=fifo batch_size=3 batch_wait_ms=0
   stfq: scheduler=stfq batch_size=1 batch_wait_ms=0

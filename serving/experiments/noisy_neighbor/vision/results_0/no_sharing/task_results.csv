@@ -1,0 +1,3 @@
+task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_client_pre_rpc_ms,avg_non_server_exec_overhead_ms
+vocseg,fifo,253,3.1625,121.876,123.147,270.689,393.796,100.839,97.873,0.002,1.86,17.969,0.0,21.038
+nyudepth,fifo,717,8.9625,3075.242,2817.694,7127.038,7616.613,164.884,163.171,0.003,0.478,2905.885,0.0,2910.358

@@ -1,0 +1,16 @@
+Experiment config - Sun May  3 19:02:16 UTC 2026
+Backbone: dinolarge-patch
+Victim: vocseg @ 3 rps (constant)
+Aggressor: nyudepth
+Number of phases: 3
+  Phase 1 (30s): aggressor @ 3 rps
+  Phase 2 (30s): aggressor @ 20 rps
+  Phase 3 (30s): aggressor @ 3 rps
+Total duration: 90s
+Sharing runs:
+  fcfs: scheduler=fifo batch_size=3 batch_wait_ms=0
+  stfq: scheduler=stfq batch_size=1 batch_wait_ms=0
+  bfq: scheduler=stfq batch_size=3 batch_wait_ms=0
+No-sharing TPC runs: 3  0  no_sharing_tpc (tpc_mode=libsmctrl)
+No-sharing runs: 3  0  no_sharing
+Results base: experiments/noisy_neighbor/vision/results
