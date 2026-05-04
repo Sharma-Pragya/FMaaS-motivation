@@ -66,11 +66,27 @@ AGGRESSOR_RPS_PHASES="${AGGRESSOR_RPS_PHASES:-3,50,3}"
 # Longer phases — vision kernels (~60–120ms) need time for queues to settle.
 PHASE_DURATIONS="${PHASE_DURATIONS:-30,10,10}"
 
-# Sharing runs: "scheduler  batch_size  batch_wait_ms  run_name"
+# Sharing runs: "scheduler  batch_size  batch_wait_ms  run_name  [task_rates_override]"
+#
+# task_rates_override is passed verbatim to --task-rates. Note the *inverted*
+# convention: scheduler weight = 1/rps, and STFQ advances virtual finish time
+# by 1/weight per pick. Net effect: a HIGH rps value in task_rates means the
+# task is treated as "already heavily loaded" → low weight → served less.
+#
+# For bfq_aggr we want aggressor (nyudepth) served MORE than victim, so we
+# set aggressor rps LOW (high weight, served more) and victim rps HIGH (low
+# weight, served less). This tests dynamic capacity reallocation: BFQ steals
+# capacity from a quiet victim to clear the aggressor's burst — something
+# process-level no_sharing physically cannot do.
+#
+# Verification: with vocseg:50,nyudepth:5 → STFQ F-advances are 1/(1/50)=50
+# for vocseg and 1/(1/5)=5 for nyudepth. Smaller F-advance = picked sooner,
+# so nyudepth (aggressor) is picked ~10× more often than vocseg.
 RUNS=(
-    "fifo  3  0  fcfs"
-    "stfq  1  0  stfq"
-    "stfq  3  0  bfq"
+    "fifo  3  0  fcfs       "
+    "stfq  1  0  stfq       "
+    "stfq  3  0  bfq        "
+    "stfq  3  0  bfq_aggr   ${VICTIM_TASK}:50,${AGGRESSOR_TASK}:5"
 )
 
 # No-sharing TPC runs: victim and aggressor each get their own TPC-partitioned server.
@@ -141,8 +157,8 @@ mkdir -p "$(dirname "$CONFIG_FILE")"
     echo "Total duration: ${TOTAL_DURATION}s"
     echo "Sharing runs:"
     for run in "${RUNS[@]}"; do
-        read -r sched bsize bwait rname <<< "$run"
-        echo "  $rname: scheduler=$sched batch_size=$bsize batch_wait_ms=$bwait"
+        read -r sched bsize bwait rname rates <<< "$run"
+        echo "  $rname: scheduler=$sched batch_size=$bsize batch_wait_ms=$bwait${rates:+ rates=$rates}"
     done
     echo "No-sharing TPC runs: ${NO_SHARING_TPC_RUNS[*]} (tpc_mode=$TPC_MODE)"
     echo "No-sharing runs: ${NO_SHARING_RUNS[*]}"
@@ -160,8 +176,8 @@ done
 echo "  Total        : ${TOTAL_DURATION}s"
 echo "  Sharing runs :"
 for run in "${RUNS[@]}"; do
-    read -r sched bsize bwait rname <<< "$run"
-    echo "    $rname: scheduler=$sched batch_size=$bsize batch_wait_ms=$bwait"
+    read -r sched bsize bwait rname rates <<< "$run"
+    echo "    $rname: scheduler=$sched batch_size=$bsize batch_wait_ms=$bwait${rates:+ rates=$rates}"
 done
 echo "  No-sharing TPC runs: ${NO_SHARING_TPC_RUNS[*]} (tpc_mode=$TPC_MODE)"
 echo "  No-sharing runs    : ${NO_SHARING_RUNS[*]}"
@@ -204,10 +220,19 @@ stop_devices() {
 }
 trap 'stop_devices' EXIT
 
-# start_shared_device SCHEDULER BATCH_SIZE BATCH_WAIT LOG
+# start_shared_device SCHEDULER BATCH_SIZE BATCH_WAIT LOG [RATES_OVERRIDE]
+# RATES_OVERRIDE (optional): full --task-rates string. If empty, defaults to
+# equal weights (both tasks at VICTIM_RPS). The scheduler uses 1/rps as the
+# task weight, so passing skewed rates lets us bias scheduling priority.
 start_shared_device() {
     local scheduler="$1" batch_size="$2" batch_wait="$3" log="$4"
-    local task_rates="${VICTIM_TASK}:${VICTIM_RPS},${AGGRESSOR_TASK}:${VICTIM_RPS}"
+    local rates_override="${5:-}"
+    local task_rates
+    if [[ -n "$rates_override" ]]; then
+        task_rates="$rates_override"
+    else
+        task_rates="${VICTIM_TASK}:${VICTIM_RPS},${AGGRESSOR_TASK}:${VICTIM_RPS}"
+    fi
     pkill -f "device/main.py.*--port ${DEVICE_PORT}" 2>/dev/null || true
     pkill -f "vision/run.py" 2>/dev/null || true
     sleep 1
@@ -286,18 +311,18 @@ TOTAL=${#RUNS[@]}
 IDX=0
 
 for run in "${RUNS[@]}"; do
-    read -r SCHEDULER BATCH_SIZE BATCH_WAIT RUN_NAME <<< "$run"
+    read -r SCHEDULER BATCH_SIZE BATCH_WAIT RUN_NAME RATES_OVERRIDE <<< "$run"
     IDX=$(( IDX + 1 ))
     EXP_DIR="${RESULTS_BASE}/${RUN_NAME}"
     DEVICE_LOG="$LOG_DIR/device_${RUN_NAME}.log"
 
     echo ""
     echo "================================================================"
-    echo "  [$IDX/$TOTAL] $RUN_NAME  (scheduler=$SCHEDULER, bsize=$BATCH_SIZE, bwait=${BATCH_WAIT}ms)"
+    echo "  [$IDX/$TOTAL] $RUN_NAME  (scheduler=$SCHEDULER, bsize=$BATCH_SIZE, bwait=${BATCH_WAIT}ms${RATES_OVERRIDE:+, rates=$RATES_OVERRIDE})"
     echo "  Results: $EXP_DIR"
     echo "================================================================"
 
-    start_shared_device "$SCHEDULER" "$BATCH_SIZE" "$BATCH_WAIT" "$DEVICE_LOG"
+    start_shared_device "$SCHEDULER" "$BATCH_SIZE" "$BATCH_WAIT" "$DEVICE_LOG" "$RATES_OVERRIDE"
 
     $PYTHON -u experiments/noisy_neighbor/vision/run.py \
         --device-url            "localhost:${DEVICE_PORT}"   \

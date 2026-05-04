@@ -1,4 +1,4 @@
-Experiment config - Sun May  3 21:43:20 UTC 2026
+Experiment config - Mon May  4 01:09:15 UTC 2026
 Backbone: dinolarge-patch
 Victim: vocseg @ 3 rps (constant)
 Aggressor: nyudepth
@@ -11,6 +11,7 @@ Sharing runs:
   fcfs: scheduler=fifo batch_size=3 batch_wait_ms=0
   stfq: scheduler=stfq batch_size=1 batch_wait_ms=0
   bfq: scheduler=stfq batch_size=3 batch_wait_ms=0
+  bfq_aggr: scheduler=stfq batch_size=3 batch_wait_ms=0 rates=vocseg:50,nyudepth:5
 No-sharing TPC runs: 3  0  no_sharing_tpc (tpc_mode=libsmctrl)
 No-sharing runs: 3  0  no_sharing
 Results base: experiments/noisy_neighbor/vision/results

@@ -49,12 +49,13 @@ POLICIES: Dict[str, Dict] = {
     "fcfs":           {"color": "#6B9AC4", "label": "FCFS",            "ls": "-"},
     "stfq":           {"color": "#E8B298", "label": "STFQ",            "ls": (0, (4, 1, 1, 1))},
     "bfq":            {"color": "#E06C75", "label": "BFQ",             "ls": "--"},
+    "bfq_aggr":       {"color": "#B0455A", "label": "BFQ (aggr-priority)", "ls": (0, (1, 1))},
     "no_sharing":     {"color": "#7BA591", "label": "No-Sharing",      "ls": (0, (3, 1, 1, 1, 1, 1))},
     "no_sharing_tpc": {"color": "#9B7BB8", "label": "No-Sharing (TPC)", "ls": (0, (5, 2))},
 }
 
 # Draw order (bottom → top)
-POLICY_ORDER = ["fcfs", "stfq", "bfq", "no_sharing", "no_sharing_tpc"]
+POLICY_ORDER = ["fcfs", "stfq", "bfq", "bfq_aggr", "no_sharing", "no_sharing_tpc"]
 
 _FALLBACK_COLORS = ["#C7BEDF", "#E7C98B", "#D9A6B3", "#A9C7B5", "#8FB7CF"]
 _FALLBACK_LS     = [(0, (2, 1)), (0, (6, 2)), (0, (3, 2, 1, 2)), "-.", "--"]
