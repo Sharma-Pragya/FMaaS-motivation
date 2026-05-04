@@ -1,6 +1,6 @@
-task,slot,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_non_server_exec_overhead_ms
-ecgclass,slot_0:ecgclass,no_sharing_tpc,159,0.2695,41588.604,42394.824,57540.2,59719.917,13860.239,13850.188,0.018,0.229,27723.204,27728.365
-gestureclass,slot_1:gestureclass,no_sharing_tpc,157,0.2661,40282.554,39919.425,56277.998,59729.591,13851.304,13841.616,0.02,0.216,26425.441,26431.251
-heartrate,slot_2:heartrate,no_sharing_tpc,170,0.2881,40782.897,41663.86,57928.89,59474.698,13836.45,13826.984,0.005,0.225,26941.551,26946.447
-diasbp,slot_3:diasbp,no_sharing_tpc,180,0.3051,38955.619,39274.352,56346.422,59150.79,13845.817,13836.404,0.019,0.226,25105.4,25109.802
-sysbp,slot_4:sysbp,no_sharing_tpc,150,0.2542,41073.536,41127.867,57148.731,58097.25,13843.563,13834.149,0.01,0.238,27225.239,27229.972
+task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_client_pre_rpc_ms,avg_non_server_exec_overhead_ms
+ecgclass,no_sharing_tpc,165,0.2797,41515.815,41447.222,58081.087,59207.694,13673.113,13662.623,0.009,0.253,27837.988,0.0,27842.701
+gestureclass,no_sharing_tpc,133,0.2254,41161.14,41728.549,57711.577,59782.737,13653.849,13643.658,0.02,0.237,27503.023,0.0,27507.291
+heartrate,no_sharing_tpc,192,0.3254,39353.067,39009.32,58244.014,59233.031,13642.051,13632.769,0.008,0.254,25706.574,0.0,25711.016
+diasbp,no_sharing_tpc,173,0.2932,39261.475,39118.675,58735.816,59731.845,13637.587,13628.342,0.007,0.255,25620.052,0.0,25623.888
+sysbp,no_sharing_tpc,169,0.2864,40847.289,41072.098,58095.02,59891.077,13635.651,13626.384,0.006,0.253,27207.824,0.0,27211.638

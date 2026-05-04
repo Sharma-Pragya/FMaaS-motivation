@@ -932,7 +932,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.34.115:8000",
+          "device": "172.31.46.11:8000",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -961,7 +961,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.34.115:8010",
+          "device": "172.31.46.11:8010",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -990,7 +990,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.34.115:8020",
+          "device": "172.31.46.11:8020",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -1019,7 +1019,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.34.115:8030",
+          "device": "172.31.46.11:8030",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -1048,7 +1048,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.34.115:8040",
+          "device": "172.31.46.11:8040",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -1077,7 +1077,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.34.115:8050",
+          "device": "172.31.46.11:8050",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -1106,7 +1106,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.34.115:8060",
+          "device": "172.31.46.11:8060",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -1135,7 +1135,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.34.115:8070",
+          "device": "172.31.46.11:8070",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -1164,7 +1164,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.34.115:8080",
+          "device": "172.31.46.11:8080",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -1193,7 +1193,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.34.115:8090",
+          "device": "172.31.46.11:8090",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -1222,7 +1222,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.34.115:8100",
+          "device": "172.31.46.11:8100",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -1251,7 +1251,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.34.115:8110",
+          "device": "172.31.46.11:8110",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -1280,7 +1280,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.34.115:8120",
+          "device": "172.31.46.11:8120",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -1309,7 +1309,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.34.115:8130",
+          "device": "172.31.46.11:8130",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -1338,7 +1338,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.34.115:8140",
+          "device": "172.31.46.11:8140",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -1367,7 +1367,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.34.115:8150",
+          "device": "172.31.46.11:8150",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -1396,7 +1396,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.34.115:8160",
+          "device": "172.31.46.11:8160",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -1425,7 +1425,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.34.115:8170",
+          "device": "172.31.46.11:8170",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -1454,7 +1454,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.34.115:8180",
+          "device": "172.31.46.11:8180",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -1483,7 +1483,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.34.115:8190",
+          "device": "172.31.46.11:8190",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -1512,7 +1512,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.34.115:8200",
+          "device": "172.31.46.11:8200",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -1541,7 +1541,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.34.115:8210",
+          "device": "172.31.46.11:8210",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -1570,7 +1570,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.34.115:8220",
+          "device": "172.31.46.11:8220",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -1599,7 +1599,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.34.115:8230",
+          "device": "172.31.46.11:8230",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -1628,7 +1628,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.34.115:8240",
+          "device": "172.31.46.11:8240",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -1657,7 +1657,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.34.115:8250",
+          "device": "172.31.46.11:8250",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -1686,7 +1686,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.34.115:8260",
+          "device": "172.31.46.11:8260",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -1715,7 +1715,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.34.115:8270",
+          "device": "172.31.46.11:8270",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -1744,7 +1744,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.34.115:8280",
+          "device": "172.31.46.11:8280",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -1773,7 +1773,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.34.115:8290",
+          "device": "172.31.46.11:8290",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -1802,7 +1802,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.34.115:8300",
+          "device": "172.31.46.11:8300",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -1831,7 +1831,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.34.115:8310",
+          "device": "172.31.46.11:8310",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -1860,7 +1860,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.39.15:8000",
+          "device": "172.31.35.65:8000",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -1889,7 +1889,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.39.15:8010",
+          "device": "172.31.35.65:8010",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -1918,7 +1918,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.39.15:8020",
+          "device": "172.31.35.65:8020",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -1947,7 +1947,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.39.15:8030",
+          "device": "172.31.35.65:8030",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -1976,7 +1976,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.39.15:8040",
+          "device": "172.31.35.65:8040",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -2005,7 +2005,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.39.15:8050",
+          "device": "172.31.35.65:8050",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -2034,7 +2034,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.39.15:8060",
+          "device": "172.31.35.65:8060",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -2063,7 +2063,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.39.15:8070",
+          "device": "172.31.35.65:8070",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -2092,7 +2092,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.39.15:8080",
+          "device": "172.31.35.65:8080",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -2121,7 +2121,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.39.15:8090",
+          "device": "172.31.35.65:8090",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -2150,7 +2150,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.39.15:8100",
+          "device": "172.31.35.65:8100",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -2179,7 +2179,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.39.15:8110",
+          "device": "172.31.35.65:8110",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -2208,7 +2208,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.39.15:8120",
+          "device": "172.31.35.65:8120",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -2237,7 +2237,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.39.15:8130",
+          "device": "172.31.35.65:8130",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -2266,7 +2266,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.39.15:8140",
+          "device": "172.31.35.65:8140",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -2295,7 +2295,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.39.15:8150",
+          "device": "172.31.35.65:8150",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -2324,7 +2324,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.39.15:8160",
+          "device": "172.31.35.65:8160",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -2353,7 +2353,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.39.15:8170",
+          "device": "172.31.35.65:8170",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -2382,7 +2382,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.39.15:8180",
+          "device": "172.31.35.65:8180",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -2411,7 +2411,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.39.15:8190",
+          "device": "172.31.35.65:8190",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -2440,7 +2440,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.39.15:8200",
+          "device": "172.31.35.65:8200",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -2469,7 +2469,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.39.15:8210",
+          "device": "172.31.35.65:8210",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -2498,7 +2498,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.39.15:8220",
+          "device": "172.31.35.65:8220",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -2527,7 +2527,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.39.15:8230",
+          "device": "172.31.35.65:8230",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -2556,7 +2556,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.39.15:8240",
+          "device": "172.31.35.65:8240",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -2585,7 +2585,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.39.15:8250",
+          "device": "172.31.35.65:8250",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -2614,7 +2614,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.39.15:8260",
+          "device": "172.31.35.65:8260",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -2643,7 +2643,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.39.15:8270",
+          "device": "172.31.35.65:8270",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -2672,7 +2672,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.39.15:8280",
+          "device": "172.31.35.65:8280",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -2701,7 +2701,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.39.15:8290",
+          "device": "172.31.35.65:8290",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -2730,7 +2730,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.39.15:8300",
+          "device": "172.31.35.65:8300",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -2759,7 +2759,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.39.15:8310",
+          "device": "172.31.35.65:8310",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -2788,7 +2788,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.46.11:8000",
+          "device": "172.31.32.69:8000",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
@@ -2817,7 +2817,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.46.11:8010",
+          "device": "172.31.32.69:8010",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
@@ -2846,7 +2846,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.46.11:8020",
+          "device": "172.31.32.69:8020",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
@@ -2875,7 +2875,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.46.11:8030",
+          "device": "172.31.32.69:8030",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
@@ -2904,7 +2904,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.46.11:8040",
+          "device": "172.31.32.69:8040",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
@@ -2933,7 +2933,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.46.11:8050",
+          "device": "172.31.32.69:8050",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
@@ -2962,7 +2962,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.46.11:8060",
+          "device": "172.31.32.69:8060",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
@@ -2991,7 +2991,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.46.11:8070",
+          "device": "172.31.32.69:8070",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
@@ -3020,7 +3020,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.46.11:8080",
+          "device": "172.31.32.69:8080",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
@@ -3049,7 +3049,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.46.11:8090",
+          "device": "172.31.32.69:8090",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
@@ -3078,7 +3078,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.46.11:8100",
+          "device": "172.31.32.69:8100",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
@@ -3107,7 +3107,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.46.11:8110",
+          "device": "172.31.32.69:8110",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
@@ -3136,7 +3136,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.46.11:8120",
+          "device": "172.31.32.69:8120",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
@@ -3165,7 +3165,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.46.11:8130",
+          "device": "172.31.32.69:8130",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
@@ -3194,7 +3194,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.46.11:8140",
+          "device": "172.31.32.69:8140",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
@@ -3223,7 +3223,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.46.11:8150",
+          "device": "172.31.32.69:8150",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
@@ -3252,7 +3252,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.46.11:8160",
+          "device": "172.31.32.69:8160",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
@@ -3281,7 +3281,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.46.11:8170",
+          "device": "172.31.32.69:8170",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
@@ -3310,7 +3310,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.46.11:8180",
+          "device": "172.31.32.69:8180",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
@@ -3339,7 +3339,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.46.11:8190",
+          "device": "172.31.32.69:8190",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
@@ -3368,7 +3368,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.46.11:8200",
+          "device": "172.31.32.69:8200",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
@@ -3397,7 +3397,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.46.11:8210",
+          "device": "172.31.32.69:8210",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
@@ -3426,7 +3426,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.46.11:8220",
+          "device": "172.31.32.69:8220",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
@@ -3455,7 +3455,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.46.11:8230",
+          "device": "172.31.32.69:8230",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
@@ -3484,7 +3484,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.46.11:8240",
+          "device": "172.31.32.69:8240",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
@@ -3513,7 +3513,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.46.11:8250",
+          "device": "172.31.32.69:8250",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
@@ -3542,7 +3542,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.46.11:8260",
+          "device": "172.31.32.69:8260",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
@@ -3571,7 +3571,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.46.11:8270",
+          "device": "172.31.32.69:8270",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
@@ -3600,7 +3600,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.46.11:8280",
+          "device": "172.31.32.69:8280",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
@@ -3629,7 +3629,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.46.11:8290",
+          "device": "172.31.32.69:8290",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
@@ -3658,7 +3658,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.46.11:8300",
+          "device": "172.31.32.69:8300",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
@@ -3687,7 +3687,7 @@
           "gpu_memory_utilization": 0.0266
         },
         {
-          "device": "172.31.46.11:8310",
+          "device": "172.31.32.69:8310",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",

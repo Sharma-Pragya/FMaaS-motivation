@@ -93,6 +93,7 @@ RESULTS_BASE="${RESULTS_BASE:-experiments/RTVSntask/tpc/results_tsfm}"
 DEVICE_STARTUP_WAIT="${DEVICE_STARTUP_WAIT:-5}"
 MAX_BATCH_WAIT_MS="${MAX_BATCH_WAIT_MS:-0}"
 TPC_MODE="${TPC_MODE:-libsmctrl}"
+WARMUP_BURST_SECS="${WARMUP_BURST_SECS:-15}"   # closed-loop GPU warmup before each open-loop run
 
 # Canonical ordered list of all tsfm tasks (NUM_TASKS_SWEEP selects the first N)
 ALL_TSFM_TASKS=(ecgclass gestureclass heartrate diasbp sysbp etth1fore weatherfore trafficfore eclfore exchangefore)
@@ -125,6 +126,7 @@ echo "  NUM_TASKS sweep: $NUM_TASKS_SWEEP"
 echo "  RPS sweep      : $RPS_SWEEP"
 echo "  Duration/run   : ${PHASE_DURATION}s"
 echo "  TPC mode       : $TPC_MODE"
+echo "  Warmup burst   : ${WARMUP_BURST_SECS}s"
 echo "  Base port      : $DEVICE_PORT"
 echo "  Results        : $RESULTS_BASE"
 echo "================================================================"
@@ -321,13 +323,14 @@ run_condition() {
     # Helper: call run.py with common args
     run_py() {
         $PYTHON -u experiments/RTVSntask/tpc/run.py \
-            --task-set   "$TASK_SET" \
-            --tasks      "$run_tasks_csv" \
-            --backbone   "$BACKBONE" \
-            --rps        "$rps" \
-            --duration   "$PHASE_DURATION" \
-            --exp-dir    "$out_dir" \
-            --trace-file "$trace_file" \
+            --task-set          "$TASK_SET" \
+            --tasks             "$run_tasks_csv" \
+            --backbone          "$BACKBONE" \
+            --rps               "$rps" \
+            --duration          "$PHASE_DURATION" \
+            --exp-dir           "$out_dir" \
+            --trace-file        "$trace_file" \
+            --warmup-burst-secs "$WARMUP_BURST_SECS" \
             "$@"
     }
 
@@ -511,15 +514,16 @@ print(sm // 2)
     DEVICE_PIDS+=("$pid")
 
     $PYTHON -u experiments/RTVSntask/tpc/run.py \
-        --task-set   "$TASK_SET" \
-        --tasks      "$task" \
-        --backbone   "$BACKBONE" \
-        --rps        "$rps" \
-        --duration   "$PHASE_DURATION" \
-        --exp-dir    "$out_dir" \
-        --trace-file "$trace_file" \
-        --condition  "single_${task}" \
-        --device-urls "localhost:${DEVICE_PORT}"
+        --task-set          "$TASK_SET" \
+        --tasks             "$task" \
+        --backbone          "$BACKBONE" \
+        --rps               "$rps" \
+        --duration          "$PHASE_DURATION" \
+        --exp-dir           "$out_dir" \
+        --trace-file        "$trace_file" \
+        --warmup-burst-secs "$WARMUP_BURST_SECS" \
+        --condition         "single_${task}" \
+        --device-urls       "localhost:${DEVICE_PORT}"
 
     cat > "${out_dir}/run_config.json" <<EOF
 {

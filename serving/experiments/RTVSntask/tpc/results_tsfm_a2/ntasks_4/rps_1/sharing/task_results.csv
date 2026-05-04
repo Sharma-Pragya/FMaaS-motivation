@@ -1,5 +1,5 @@
-task,slot,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_non_server_exec_overhead_ms
-ecgclass,slot_0:ecgclass,sharing,589,0.9983,65.978,55.987,95.769,135.036,57.303,55.283,0.004,1.053,7.748,8.675
-gestureclass,slot_1:gestureclass,sharing,617,1.0458,66.194,55.996,103.281,138.208,56.096,54.07,0.004,1.042,9.17,10.098
-heartrate,slot_2:heartrate,sharing,587,0.9949,65.652,55.747,100.973,137.367,56.139,54.168,0.004,1.057,8.374,9.512
-diasbp,slot_3:diasbp,sharing,575,0.9746,66.714,56.028,100.115,136.419,57.836,55.836,0.004,1.083,7.958,8.879
+task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_client_pre_rpc_ms,avg_non_server_exec_overhead_ms
+ecgclass,sharing,589,0.9983,62.827,53.217,94.173,133.718,53.765,51.67,0.003,1.061,7.809,0.0,9.063
+gestureclass,sharing,621,1.0525,63.75,53.47,94.063,130.745,54.905,52.772,0.004,1.07,7.994,0.0,8.845
+heartrate,sharing,593,1.0051,62.08,52.97,92.294,123.667,53.445,51.691,0.003,0.93,7.8,0.0,8.634
+diasbp,sharing,631,1.0695,61.474,52.942,91.948,116.623,53.32,51.372,0.004,1.02,7.309,0.0,8.154

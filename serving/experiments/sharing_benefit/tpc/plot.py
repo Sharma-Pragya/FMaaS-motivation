@@ -68,8 +68,8 @@ SERIES_COLORS = {
 }
 SERIES_LABELS = {
     "single":         "ST",
-    "no_sharing":    "NS",
-    "no_sharing_tpc": "NS (TPC)",
+    "no_sharing":    "BE",
+    "no_sharing_tpc": "SP",
     "no_sharing_mps": "NS (MPS)",
     "sharing":        "FMVisor",
 }
@@ -1218,6 +1218,148 @@ def plot_p99_vs_rps(
 
 
 # ---------------------------------------------------------------------------
+# Line plots: latency-stat vs RPS (one line per condition)
+# ---------------------------------------------------------------------------
+
+def _tight_linear_upper(vmax: float) -> float:
+    """Pick a 'nice' upper y-bound just above vmax. Snaps to a 1/1.5/2/2.5/...
+    * 10^k step so the top tick is round but sits close to the data — avoids
+    the wasted-headroom problem of forcing a power-of-ten ceiling."""
+    if not np.isfinite(vmax) or vmax <= 0:
+        return 1.0
+    target = vmax * 1.12
+    exp  = np.floor(np.log10(target))
+    base = target / (10 ** exp)
+    for step in (1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0):
+        if step >= base:
+            return float(step * 10 ** exp)
+    return float(10 ** (exp + 1))
+
+
+def _plot_latency_stat_vs_rps_line(
+    stat_data: Dict[int, Dict[str, float]],
+    rps_list: List[int],
+    out_path: Path,
+    ylabel: str,
+    log_y: bool = False,
+    ntasks: Optional[int] = None,
+) -> None:
+    """Line plot: x=RPS/task, y=latency stat (ms), one line per condition.
+
+    Visual conventions match plot_p99_vs_rps (the bar version): compact
+    1.35x1.35 panel, 6.0pt tick labels, condensed legend above axes,
+    SERIES_COLORS/LINESTYLE/MARKER for series identity. Default y is linear
+    with a tight upper bound so the data fills the panel.
+    """
+    rps_with_data = [r for r in rps_list if stat_data.get(r)]
+    if not rps_with_data:
+        print(f"[Warn] No data for line plot, skipping {out_path.name}")
+        return
+
+    present = [s for s in SERIES_ORDER
+               if any(s in stat_data.get(r, {}) for r in rps_with_data)]
+    if not present:
+        return
+
+    fig, ax = plt.subplots(figsize=(1.35, 1.35))
+
+    all_vals: List[float] = []
+    for series in present:
+        ys = [stat_data.get(r, {}).get(series, float("nan")) for r in rps_with_data]
+        all_vals.extend(v for v in ys if np.isfinite(v))
+        ax.plot(
+            rps_with_data, ys,
+            color=SERIES_COLORS[series],
+            linestyle=SERIES_LINESTYLE[series],
+            marker=SERIES_MARKER[series],
+            markersize=2.6,
+            markeredgecolor="black",
+            markeredgewidth=0.25,
+            linewidth=0.9,
+            label=SERIES_LABELS[series],
+            zorder=3,
+            clip_on=False,
+        )
+
+    ax.set_xlabel("RPS/task")
+    ax.set_ylabel(ylabel)
+    ax.set_xticks(rps_with_data)
+    ax.set_xticklabels([str(r) for r in rps_with_data])
+    ax.set_xlim(rps_with_data[0], rps_with_data[-1])
+    ax.tick_params(axis="x", labelsize=6.0, pad=1)
+    ax.tick_params(axis="y", labelsize=6.0, pad=1)
+    ax.grid(axis="y", zorder=0)
+    ax.set_axisbelow(True)
+
+    pos_vals = [v for v in all_vals if v > 0]
+    if log_y and pos_vals:
+        _set_log_y_axis_with_endpoint(ax, pos_vals)
+    elif all_vals:
+        upper = _tight_linear_upper(max(all_vals))
+        _set_linear_axis_with_endpoint(ax, axis="y", lower=0.0, upper=upper,
+                                       target_ticks=5, decimals=0)
+
+    legend_handles = [
+        plt.Line2D([0], [0],
+                   color=SERIES_COLORS[s],
+                   linestyle=SERIES_LINESTYLE[s],
+                   marker=SERIES_MARKER[s],
+                   markersize=2.6,
+                   markeredgecolor="black",
+                   markeredgewidth=0.25,
+                   linewidth=0.9,
+                   label=SERIES_LABELS[s])
+        for s in present
+    ]
+    ax.legend(
+        handles=legend_handles,
+        loc="lower center",
+        bbox_to_anchor=(0.5, 1.02),
+        ncol=max(1, min(len(present), 3)),
+        fontsize=4.5,
+        frameon=False,
+        handlelength=1.6,
+        handletextpad=0.3,
+        labelspacing=0.1,
+        borderpad=0.1,
+        columnspacing=0.5,
+    )
+    fig.tight_layout(pad=0.1)
+    save_figure(fig, out_path)
+    plt.close(fig)
+
+
+def plot_p99_vs_rps_line(
+    p99_data: Dict[int, Dict[str, float]],
+    rps_list: List[int],
+    out_path: Path,
+    ntasks: Optional[int] = None,
+) -> None:
+    """Line plot: P99 latency (ms) vs RPS/task, one line per condition."""
+    _plot_latency_stat_vs_rps_line(
+        p99_data, rps_list, out_path,
+        ylabel="P99 Latency (ms)",
+        log_y=False,
+        ntasks=ntasks,
+    )
+
+
+def plot_mean_vs_rps_line(
+    mean_data: Dict[int, Dict[str, float]],
+    rps_list: List[int],
+    out_path: Path,
+    ntasks: Optional[int] = None,
+) -> None:
+    """Line plot: mean latency (ms) vs RPS/task, one line per condition."""
+    _plot_latency_stat_vs_rps_line(
+        mean_data, rps_list, out_path,
+        ylabel="Mean Latency (ms)",
+        log_y=False,
+        ntasks=ntasks,
+    )
+
+
+# ---------------------------------------------------------------------------
 # New loader: per-task mean latency broken out by condition
 # ---------------------------------------------------------------------------
 
@@ -1669,7 +1811,7 @@ def main() -> int:
     parser.add_argument("--task-set",        default=os.environ.get("TASK_SET", "tsfm"),
                         choices=["tsfm", "vision"])
     parser.add_argument("--exp-dir",         default=os.environ.get("EXP_DIR",
-                        "experiments/sharing_benefit/tpc/results_tsfm"))
+                        "experiments/sharing_benefit/tpc/t4/results_vision"))
     parser.add_argument("--rps-sweep",       default=None,
                         help="Comma-separated RPS values (auto-detected if omitted)")
     parser.add_argument("--num-tasks-sweep", default=None,
@@ -1728,6 +1870,8 @@ def main() -> int:
         ntasks_sweep_data: Dict[int, Dict[int, Dict[str, float]]] = {}
         # p99 data per ntasks: {ntasks: {rps: {series: p99_ms}}}
         p99_by_ntasks: Dict[int, Dict[int, Dict[str, float]]] = {}
+        # mean latency per ntasks: {ntasks: {rps: {series: mean_ms}}}
+        mean_by_ntasks: Dict[int, Dict[int, Dict[str, float]]] = {}
         # latency overhead: {rps: {condition: [overhead_ratio, ...]}}
         all_overhead_by_rps: Dict[int, Dict[str, List[float]]] = {}
 
@@ -1757,6 +1901,7 @@ def main() -> int:
                 mean_lats = load_mean_latency_for_dir(rps_root)
                 if mean_lats:
                     ntasks_sweep_data.setdefault(rps, {})[n] = mean_lats
+                    mean_by_ntasks.setdefault(n, {})[rps] = mean_lats
 
                 # p99 data
                 p99 = load_p99_for_dir(rps_root)
@@ -1810,6 +1955,19 @@ def main() -> int:
                 out_dir / f"ntasks_{n}" / f"tpc_p99_vs_rps_ntasks{n}.pdf",
                 ntasks=n,
             )
+            plot_p99_vs_rps_line(
+                p99_data, rps_list,
+                out_dir / f"ntasks_{n}" / f"tpc_p99_vs_rps_line_ntasks{n}.pdf",
+                ntasks=n,
+            )
+
+        # Mean latency vs RPS line chart — one plot per ntasks value
+        for n, mean_data in mean_by_ntasks.items():
+            plot_mean_vs_rps_line(
+                mean_data, rps_list,
+                out_dir / f"ntasks_{n}" / f"tpc_mean_vs_rps_line_ntasks{n}.pdf",
+                ntasks=n,
+            )
 
     else:
         # OLD: rps_*/ layout (no ntasks dimension)
@@ -1831,7 +1989,8 @@ def main() -> int:
         all_throughput: Dict[int, Dict[str, List[float]]] = {}
         old_overhead_by_rps: Dict[int, Dict[str, List[float]]] = {}
 
-        old_p99_by_rps: Dict[int, Dict[str, float]] = {}
+        old_p99_by_rps:  Dict[int, Dict[str, float]] = {}
+        old_mean_by_rps: Dict[int, Dict[str, float]] = {}
         for rps in rps_list:
             rps_root = result_root / f"rps_{rps}"
             if not rps_root.exists():
@@ -1846,6 +2005,9 @@ def main() -> int:
             p99 = load_p99_for_dir(rps_root)
             if p99:
                 old_p99_by_rps[rps] = p99
+            mean_lats = load_mean_latency_for_dir(rps_root)
+            if mean_lats:
+                old_mean_by_rps[rps] = mean_lats
             overhead = load_latency_overhead_series(rps_root, args.warmup_secs,
                                                     args.warmup_requests)
             if overhead:
@@ -1880,6 +2042,12 @@ def main() -> int:
         if old_p99_by_rps:
             plot_p99_vs_rps(old_p99_by_rps, rps_list,
                             out_dir / "tpc_p99_vs_rps.pdf")
+            plot_p99_vs_rps_line(old_p99_by_rps, rps_list,
+                                 out_dir / "tpc_p99_vs_rps_line.pdf")
+
+        if old_mean_by_rps:
+            plot_mean_vs_rps_line(old_mean_by_rps, rps_list,
+                                  out_dir / "tpc_mean_vs_rps_line.pdf")
 
         if not all_series and not has_tpc_sweep:
             print("[Error] No result data found. Run run.sh first.")

@@ -52,8 +52,8 @@ SERIES_COLORS = {
     "sharing":        "#E06C75",
 }
 SERIES_LABELS = {
-    "no_sharing":     "NS",
-    "no_sharing_tpc": "NS (TPC)",
+    "no_sharing":    "BE",
+    "no_sharing_tpc": "SP",
     "sharing":        "FMVisor",
 }
 SERIES_LINESTYLE = {
@@ -636,7 +636,8 @@ def plot_runtime_memory_bars_vs_n(exp_dir: Path, out_path: Path,
             if v > 0 and np.isfinite(v):
                 fmt = f"{v:.1f}" if use_gb else f"{v:.0f}"
                 ax.text(b.get_x() + b.get_width() / 2, b.get_height(),
-                        fmt, ha="center", va="bottom", fontsize=5.0)
+                        fmt, ha="center", va="bottom", fontsize=5.0,
+                        rotation=90)
         vmax = max(vmax, max(ys, default=0.0))
     ax.set_xticks(x)
     ax.set_xticklabels([str(n) for n in all_ns])
@@ -650,6 +651,141 @@ def plot_runtime_memory_bars_vs_n(exp_dir: Path, out_path: Path,
               borderaxespad=0.0)
     save_figure(fig, out_path)
     plt.close(fig)
+
+
+SERIES_MARKER = {
+    "no_sharing_tpc": "^",
+    "no_sharing":     "D",
+    "sharing":        "o",
+}
+
+
+def _paper_line_vs_n(
+    series_data: Dict[str, Dict[int, float]],
+    ylabel: str,
+    out_path: Path,
+    y_upper: float | None = None,
+    n_yticks: int = 5,
+    value_fmt: str = "{:.0f}",
+) -> None:
+    """Compact paper line plot: x=N (apps), y=value, one line per condition.
+
+    Matches the visual conventions of plot_runtime_memory_bars_vs_n: 1.8x1.2
+    figure, legend above axes, tight linear y-axis, SERIES_COLORS/LINESTYLE/
+    MARKER for series identity. `series_data` maps series_key -> {n: value}.
+
+    `y_upper`: hard cap for the y-axis. If None, snaps to a nice value above
+    max(data); the topmost tick is always labeled and equal to the upper bound.
+    """
+    if not series_data:
+        return
+    all_ns = sorted({n for d in series_data.values() for n in d.keys()})
+    keys = [k for k in SERIES_ORDER if k in series_data and series_data[k]]
+    if not all_ns or not keys:
+        return
+
+    fig, ax = plt.subplots(figsize=(1.8, 1.2))
+    all_vals: List[float] = []
+    for key in keys:
+        ys = [series_data[key].get(n, np.nan) for n in all_ns]
+        if _series_is_all_zero_or_nan(ys):
+            continue
+        all_vals.extend(v for v in ys if np.isfinite(v))
+        # Clip to y_upper for plotting so out-of-range points don't escape the panel
+        ys_plot = ys
+        if y_upper is not None:
+            ys_plot = [min(v, y_upper) if np.isfinite(v) else v for v in ys]
+        ax.plot(
+            all_ns, ys_plot,
+            color=SERIES_COLORS[key],
+            linestyle=SERIES_LINESTYLE[key],
+            marker=SERIES_MARKER[key],
+            markersize=3.0,
+            markeredgecolor="black",
+            markeredgewidth=0.3,
+            linewidth=1.0,
+            label=SERIES_LABELS[key],
+            clip_on=False,
+            zorder=3,
+        )
+
+    if not all_vals:
+        plt.close(fig)
+        return
+
+    upper = float(y_upper) if y_upper is not None else _nice_upper(max(all_vals) * 1.12)
+    ticks = np.linspace(0.0, upper, n_yticks)
+    ax.set_xticks(all_ns)
+    ax.set_xticklabels([str(n) for n in all_ns])
+    ax.set_xlim(all_ns[0], all_ns[-1])
+    ax.set_xlabel("N (apps)")
+    ax.set_ylabel(ylabel)
+    ax.set_ylim(0, upper)
+    ax.set_yticks(ticks)
+    ax.grid(True, axis="y")
+    _plain_number_axis(ax, "y")
+    ax.legend(
+        frameon=False, ncol=min(3, len(keys)),
+        handlelength=1.4, handletextpad=0.3, columnspacing=0.7,
+        loc="lower center", bbox_to_anchor=(0.5, 1.02),
+        borderaxespad=0.0,
+    )
+    save_figure(fig, out_path)
+    plt.close(fig)
+
+
+def _round_up_nice(v: float) -> float:
+    """Round v up to a clean number suitable as the topmost labeled y-tick.
+    Picks the next 1/2/2.5/5 * 10^k step at or above v."""
+    if not np.isfinite(v) or v <= 0:
+        return 1.0
+    exp  = np.floor(np.log10(v))
+    base = v / (10 ** exp)
+    for step in (1.0, 2.0, 2.5, 5.0, 10.0):
+        if step >= base - 1e-9:
+            return float(step * 10 ** exp)
+    return float(10 ** (exp + 1))
+
+
+def plot_runtime_memory_line_vs_n(exp_dir: Path, out_path: Path,
+                                   ns_filter: set[int] | None = None) -> None:
+    """Line plot version of plot_runtime_memory_bars_vs_n."""
+    mem = _scan_runtime_peak(exp_dir)
+    if not mem:
+        return
+    if ns_filter is not None:
+        mem = {k: {n: v for n, v in d.items() if n in ns_filter}
+               for k, d in mem.items()}
+        mem = {k: d for k, d in mem.items() if d}
+    if not mem:
+        return
+
+    max_mb = max((v for d in mem.values() for v in d.values()), default=0.0)
+    use_gb = max_mb >= 1024.0
+    unit  = "GB" if use_gb else "MB"
+    scale = 1.0 / 1024.0 if use_gb else 1.0
+    scaled = {k: {n: v * scale for n, v in d.items()} for k, d in mem.items()}
+
+    # Snap upper to a round value so the top tick is a clean label
+    scaled_max = max(v for d in scaled.values() for v in d.values())
+    upper = _round_up_nice(scaled_max * 1.05)
+
+    _paper_line_vs_n(scaled, f"Runtime memory ({unit})", out_path,
+                     y_upper=upper)
+
+
+def plot_mean_latency_line_vs_n(data, out_path: Path,
+                                y_upper: float = 400.0) -> None:
+    """Line plot of mean end-to-end latency (ms) vs N (apps).
+    Default y cap = 400 ms (paper-fixed; clips outliers visually)."""
+    series_data: Dict[str, Dict[int, float]] = {}
+    for key, by_n in data.items():
+        for n, df in by_n.items():
+            v = _stat_arr(_lat_arr(df), "mean")
+            if np.isfinite(v):
+                series_data.setdefault(key, {})[n] = float(v)
+    _paper_line_vs_n(series_data, "Mean RT (ms)", out_path,
+                     y_upper=y_upper)
 
 
 def plot_throughput_vs_n(data, out_path: Path, warmup_secs: float) -> None:
@@ -1612,7 +1748,7 @@ def plot_backbone_decoder_breakdown(data: Dict[str, Dict[int, pd.DataFrame]],
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--exp-dir", type=str,
-                        default=str(SERVING_DIR / "experiments/cluster_sharing_benefit/results_poisson"))
+                        default=str(SERVING_DIR / "experiments/cluster_sharing_benefit/t4/results_poisson"))
     parser.add_argument("--warmup-secs", type=float, default=10.0)
     parser.add_argument("--ns", type=str, default="8,16,32,64,128,20,40,80,160",
                         help="Comma-separated list of N values to include "
@@ -1657,6 +1793,10 @@ def main() -> None:
     plot_runtime_memory_bars_vs_n(exp_dir,
                                   out_dir / "runtime_memory_bars_vs_napps.pdf",
                                   ns_filter=ns_filter)
+    plot_runtime_memory_line_vs_n(exp_dir,
+                                  out_dir / "runtime_memory_line_vs_napps.pdf",
+                                  ns_filter=ns_filter)
+    plot_mean_latency_line_vs_n(data, out_dir / "mean_rt_line_vs_napps.pdf")
     plot_throughput_vs_n(data, out_dir / "throughput_vs_napps.pdf",
                          warmup_secs=args.warmup_secs)
     plot_backbone_latency_vs_n(data, out_dir / "backbone_latency_vs_n_mean.pdf", "mean")

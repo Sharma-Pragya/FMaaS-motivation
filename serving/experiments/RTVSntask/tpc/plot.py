@@ -72,8 +72,8 @@ SERIES_COLORS = {
 }
 SERIES_LABELS = {
     "single":         "ST",
-    "no_sharing":    "NS",
-    "no_sharing_tpc": "NS (TPC)",
+    "no_sharing":    "BE",
+    "no_sharing_tpc": "SP",
     "no_sharing_mps": "NS (MPS)",
     "sharing":        "FMVisor",
 }
@@ -1650,7 +1650,7 @@ def main() -> int:
     parser.add_argument("--task-set",        default=os.environ.get("TASK_SET", "tsfm"),
                         choices=["tsfm", "vision"])
     parser.add_argument("--exp-dir",         default=os.environ.get("EXP_DIR",
-                        "experiments/RTVSntask/tpc/results_tsfm"))
+                        "experiments/RTVSntask/tpc/results_tsfm_t4"))
     parser.add_argument("--rps-sweep",       default=None,
                         help="Comma-separated RPS values (auto-detected if omitted)")
     parser.add_argument("--num-tasks-sweep", default=None,

@@ -4,7 +4,7 @@
       "id": "site2",
       "deployments": [
         {
-          "device": "172.31.40.38:8000",
+          "device": "172.31.34.115:8000",
           "device_name": "device1",
           "device_type": "NVIDIA T4",
           "backbone": "dinosmall",
@@ -44,7 +44,7 @@
           "gpu_memory_utilization": 0.85
         },
         {
-          "device": "172.31.34.115:8000",
+          "device": "172.31.39.15:8000",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
           "backbone": "momentbase",
@@ -84,7 +84,7 @@
           "gpu_memory_utilization": 0.85
         },
         {
-          "device": "172.31.39.15:8000",
+          "device": "172.31.34.179:8000",
           "device_name": "device3",
           "device_type": "NVIDIA T4",
           "backbone": "swinsmall",
@@ -124,7 +124,7 @@
           "gpu_memory_utilization": 0.85
         },
         {
-          "device": "172.31.46.11:8000",
+          "device": "172.31.36.225:8000",
           "device_name": "device4",
           "device_type": "NVIDIA T4",
           "backbone": "papageissvri",
