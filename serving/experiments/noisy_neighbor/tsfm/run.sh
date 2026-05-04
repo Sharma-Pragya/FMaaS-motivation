@@ -57,19 +57,19 @@ AGGRESSOR_TASK="${AGGRESSOR_TASK:-gestureclass}"
 
 VICTIM_RPS="${VICTIM_RPS:-8}"
 AGGRESSOR_RPS_PHASES="${AGGRESSOR_RPS_PHASES:-8,90,8}"
-PHASE_DURATIONS="${PHASE_DURATIONS:-10,10,10}"
+PHASE_DURATIONS="${PHASE_DURATIONS:-10,600,10}"
 
 # Sharing runs: "scheduler  batch_size  batch_wait_ms  run_name"
 RUNS=(
-    "fifo  3  0  fcfs"
-    "stfq  1  0  stfq"
-    "stfq  3  0  bfq"
+    # "fifo  3  0  fcfs"
+    # "stfq  1  0  stfq"
+    # "stfq  3  0  bfq"
 )
 
 # No-sharing TPC runs: victim and aggressor each get their own TPC-partitioned server.
 # Format: "batch_size  batch_wait_ms  run_name"
 NO_SHARING_TPC_RUNS=(
-    "3  0  no_sharing_tpc"
+    # "3  0  no_sharing_tpc"
 )
 TPC_MODE="${TPC_MODE:-libsmctrl}"
 

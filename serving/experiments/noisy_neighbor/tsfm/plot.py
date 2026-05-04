@@ -1312,6 +1312,105 @@ def plot_slo_burst_summary(
     plt.close(fig)
 
 
+def plot_system_throughput_boxplot(
+    policy_dirs: Dict[str, Path],
+    victim_task: str,
+    aggressor_task: str,
+    out_path: Path,
+    max_time: Optional[float] = None,
+    bin_size_s: float = 1.0,
+) -> None:
+    """Box plot: distribution of per-second system throughput (victim + aggressor) per method."""
+    methods_data: Dict[str, np.ndarray] = {}
+
+    for policy, d in policy_dirs.items():
+        if not d.exists():
+            continue
+        v_recs, _ = load_task(d, victim_task,    max_time)
+        a_recs, _ = load_task(d, aggressor_task, max_time)
+        all_completions = [t + lat / 1000.0 for t, lat in v_recs + a_recs]
+        if not all_completions:
+            continue
+        times = np.array(all_completions)
+        end   = max_time if max_time is not None else float(times.max())
+        _, rps = _bin_rate(times, end, bin_size_s)
+        methods_data[policy] = rps
+
+    if not methods_data:
+        print("[Plot] No data for system throughput box plot — skipping")
+        return
+
+    methods = list(methods_data.keys())
+    data    = [methods_data[m] for m in methods]
+    labels  = [_policy_cfg(m, i).get("label", m) for i, m in enumerate(methods)]
+    colors  = [_policy_cfg(m, i).get("color", "#888") for i, m in enumerate(methods)]
+
+    fig, ax = plt.subplots(figsize=(max(2.8, 1.4 * len(methods)), 2.2))
+    bp = ax.boxplot(data, patch_artist=True,
+                    medianprops=dict(color="black", linewidth=1.2),
+                    whiskerprops=dict(linewidth=0.8),
+                    capprops=dict(linewidth=0.8),
+                    flierprops=dict(marker="o", markersize=2, alpha=0.5))
+    for patch, color in zip(bp["boxes"], colors):
+        patch.set_facecolor(color)
+        patch.set_alpha(0.85)
+    ax.set_xticks(range(1, len(methods) + 1))
+    ax.set_xticklabels(labels, rotation=20, ha="right")
+    ax.set_ylabel("System Throughput (req/s)")
+    fig.tight_layout(pad=0.4)
+    save_figure(fig, out_path)
+    plt.close(fig)
+
+
+def plot_victim_throughput_boxplot(
+    policy_dirs: Dict[str, Path],
+    victim_task: str,
+    out_path: Path,
+    max_time: Optional[float] = None,
+    bin_size_s: float = 1.0,
+    cap_rps: float = 8.0,
+) -> None:
+    """Box plot: per-second victim throughput per method, capped at cap_rps."""
+    methods_data: Dict[str, np.ndarray] = {}
+
+    for policy, d in policy_dirs.items():
+        if not d.exists():
+            continue
+        v_recs, _ = load_task(d, victim_task, max_time)
+        if not v_recs:
+            continue
+        times = np.array([t + lat / 1000.0 for t, lat in v_recs])
+        end   = max_time if max_time is not None else float(times.max())
+        _, rps = _bin_rate(times, end, bin_size_s)
+        methods_data[policy] = np.minimum(rps, cap_rps)
+
+    if not methods_data:
+        print("[Plot] No data for victim throughput box plot — skipping")
+        return
+
+    methods = list(methods_data.keys())
+    data    = [methods_data[m] for m in methods]
+    labels  = [_policy_cfg(m, i).get("label", m) for i, m in enumerate(methods)]
+    colors  = [_policy_cfg(m, i).get("color", "#888") for i, m in enumerate(methods)]
+
+    fig, ax = plt.subplots(figsize=(max(2.8, 1.4 * len(methods)), 2.2))
+    bp = ax.boxplot(data, patch_artist=True,
+                    medianprops=dict(color="black", linewidth=1.2),
+                    whiskerprops=dict(linewidth=0.8),
+                    capprops=dict(linewidth=0.8),
+                    flierprops=dict(marker="o", markersize=2, alpha=0.5))
+    for patch, color in zip(bp["boxes"], colors):
+        patch.set_facecolor(color)
+        patch.set_alpha(0.85)
+    ax.set_xticks(range(1, len(methods) + 1))
+    ax.set_xticklabels(labels, rotation=20, ha="right")
+    ax.set_ylabel(f"Victim Throughput (req/s, cap={cap_rps:.0f})")
+    ax.set_ylim(0, cap_rps * 1.1)
+    fig.tight_layout(pad=0.4)
+    save_figure(fig, out_path)
+    plt.close(fig)
+
+
 def _discover_schedulers(base: Path) -> List[str]:
     """Return scheduler names found as subdirectories of base (each has meta.json)."""
     found = []
@@ -1527,7 +1626,23 @@ def main() -> int:
         max_time=max_time,
     )
 
-    # 9. Victim SLO violation rate per phase (isolation story)
+    # 9. Throughput box plots — all discovered methods
+    plot_system_throughput_boxplot(
+        {p: d for p, d in policy_dirs.items() if d.exists()},
+        args.victim_task, args.aggressor_task,
+        plot_dir / "system_throughput_boxplot.png",
+        max_time=max_time,
+        bin_size_s=args.bin_size_s,
+    )
+    plot_victim_throughput_boxplot(
+        {p: d for p, d in policy_dirs.items() if d.exists()},
+        args.victim_task,
+        plot_dir / "victim_throughput_boxplot.png",
+        max_time=max_time,
+        bin_size_s=args.bin_size_s,
+    )
+
+    # 10. Victim SLO violation rate per phase (isolation story)
     if phase_bounds:
         slo_tag = f"slo{int(args.slo_ms)}ms"
         plot_slo_violations_by_phase(
