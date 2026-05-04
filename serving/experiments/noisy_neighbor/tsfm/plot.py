@@ -1368,9 +1368,8 @@ def plot_victim_throughput_boxplot(
     out_path: Path,
     max_time: Optional[float] = None,
     bin_size_s: float = 1.0,
-    cap_rps: float = 8.0,
 ) -> None:
-    """Box plot: per-second victim throughput per method, capped at cap_rps."""
+    """Box plot: distribution of per-second victim throughput per method."""
     methods_data: Dict[str, np.ndarray] = {}
 
     for policy, d in policy_dirs.items():
@@ -1382,7 +1381,7 @@ def plot_victim_throughput_boxplot(
         times = np.array([t + lat / 1000.0 for t, lat in v_recs])
         end   = max_time if max_time is not None else float(times.max())
         _, rps = _bin_rate(times, end, bin_size_s)
-        methods_data[policy] = np.minimum(rps, cap_rps)
+        methods_data[policy] = rps
 
     if not methods_data:
         print("[Plot] No data for victim throughput box plot — skipping")
@@ -1404,8 +1403,7 @@ def plot_victim_throughput_boxplot(
         patch.set_alpha(0.85)
     ax.set_xticks(range(1, len(methods) + 1))
     ax.set_xticklabels(labels, rotation=20, ha="right")
-    ax.set_ylabel(f"Victim Throughput (req/s, cap={cap_rps:.0f})")
-    ax.set_ylim(0, cap_rps * 1.1)
+    ax.set_ylabel("Victim Throughput (req/s)")
     fig.tight_layout(pad=0.4)
     save_figure(fig, out_path)
     plt.close(fig)
@@ -1641,6 +1639,7 @@ def main() -> int:
         max_time=max_time,
         bin_size_s=args.bin_size_s,
     )
+
 
     # 10. Victim SLO violation rate per phase (isolation story)
     if phase_bounds:
