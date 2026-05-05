@@ -1,0 +1,3 @@
+task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_client_pre_rpc_ms,avg_non_server_exec_overhead_ms
+ecgclass,stfq,344,17.2,8247.075,8335.499,15304.905,15832.443,40.412,38.17,0.004,1.113,8204.885,0.0,8206.663
+gestureclass,stfq,647,32.35,14922.554,17345.445,22204.41,22477.955,44.348,42.158,0.003,1.034,14876.67,0.0,14878.206

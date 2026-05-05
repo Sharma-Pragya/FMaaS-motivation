@@ -1,0 +1,19 @@
+Experiment config - Tue May  5 02:31:02 UTC 2026
+Backbone: momentlarge
+Client A (priority/victim): ecgclass
+Client B (other/aggressor): gestureclass
+Number of phases: 3
+  Phase 1 (10s): A @ 2 rps, B @ 32 rps
+  Phase 2 (10s): A @ 32 rps, B @ 32 rps
+  Phase 3 (10s): A @ 2 rps, B @ 32 rps
+Total duration: 30s
+Sharing runs:
+  fcfs: scheduler=fifo batch_size=3 batch_wait_ms=0
+  fcfs_nobatch: scheduler=fifo batch_size=1 batch_wait_ms=0
+  stfq: scheduler=stfq batch_size=1 batch_wait_ms=0
+  bfq_1_1: scheduler=stfq batch_size=3 batch_wait_ms=0 rates=ecgclass:1,gestureclass:1
+  bfq_2_1: scheduler=stfq batch_size=3 batch_wait_ms=0 rates=ecgclass:1,gestureclass:2
+  bfq_3_1: scheduler=stfq batch_size=3 batch_wait_ms=0 rates=ecgclass:1,gestureclass:3
+No-sharing TPC runs: 3  0  no_sharing_tpc (tpc_mode=libsmctrl)
+No-sharing runs: 3  0  no_sharing
+Results base: experiments/fair_share/tsfm/results
