@@ -18,7 +18,7 @@ experiment = {
     'trace':                 'poisson_per_task',
     'duration':              420,
     'max_batch_wait_ms':     0,
-    'max_batch_size':        32,
+    'max_batch_size':        3,
     'isolation_mode':        'shared',
     'warmup_gap':            2.0,
     'pretrace_warmup_secs':  15.0,
@@ -28,7 +28,7 @@ experiment = {
 
 # ── Hardware inventory ───────────────────────────────────────────────
 devices = {
-    'device1': {'type': 'NVIDIA A2', 'mem': 15360, 'ip': '192.168.245.191',
+    'device1': {'type': 'NVIDIA A2', 'mem': 15360, 'ip': '192.168.245.193',
                 'site_manager': 'site2', 'cuda': 'cuda:0', 'tpcs': 5},
     'device2': {'type': 'NVIDIA A2', 'mem': 15360, 'ip': '192.168.245.194',
                 'site_manager': 'site2', 'cuda': 'cuda:0', 'tpcs': 5},
@@ -87,11 +87,11 @@ adaptation = {
     # Timeline
     "bump_at_s":      30.0,
     "attach_at_s":    30.0,
-    "stop_at_s":      60.0,
+    "stop_at_s":      120.0,
 
     # RPS profile
     "baseline_rps":   5.0,                             # pre-bump victim RPS
-    "bumped_rps":     40.0,                            # post-bump victim RPS
+    "bumped_rps":     50.0,                            # post-bump victim RPS
     # Of the bumped_rps, fraction routed to the mirror on device2.
     "mirror_share_post_attach": 0.50,
     # Pre-attach (between bump_at and attach_at) all bumped traffic still hits

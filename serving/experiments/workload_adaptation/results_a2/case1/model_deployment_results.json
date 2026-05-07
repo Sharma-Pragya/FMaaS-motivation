@@ -1,0 +1,10 @@
+[
+    {
+        "status": "loaded_momentlarge",
+        "logger_summary": "{'load_backbone': {'wall time': 6014.270879328251, 'gpu time': 6014.47900390625, 'gpu peak': 1461.95456, 'gpu energy': 133.703, 'avg gpu util pct': 65.0, 'cpu dRSS': 370.376704}, 'add_decoder_trafficfore_momentlarge_mlp': {'wall time': 68.68847832083702, 'gpu time': 68.8015365600586, 'gpu peak': 50.332672, 'gpu energy': 2.23, 'avg gpu util pct': 20.0, 'cpu dRSS': -49.9712}, 'add_decoder_exchangefore_momentlarge_mlp': {'wall time': 66.33727997541428, 'gpu time': 66.4791030883789, 'gpu peak': 50.332672, 'gpu energy': 2.227, 'avg gpu util pct': 20.0, 'cpu dRSS': -50.270208}}"
+    },
+    {
+        "status": "loaded_momentlarge",
+        "logger_summary": "{'load_backbone': {'wall time': 6318.831868469715, 'gpu time': 6319.0625, 'gpu peak': 1461.95456, 'gpu energy': 138.95, 'avg gpu util pct': 69.0, 'cpu dRSS': 378.015744}, 'add_decoder_heartrate_momentlarge_mlp': {'wall time': 5.344744771718979, 'gpu time': 5.395711898803711, 'gpu peak': 0.525824, 'gpu energy': 0.0, 'avg gpu util pct': 69.0, 'cpu dRSS': 0.110592}}"
+    }
+]

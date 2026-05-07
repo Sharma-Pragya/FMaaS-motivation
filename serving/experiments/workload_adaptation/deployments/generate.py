@@ -59,7 +59,8 @@ def generate_case(case: str) -> Path:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--case", required=True,
-                    choices=["case1", "case2", "case3", "case4"])
+                    choices=["case1", "case2", "case3", "case4","case5"],
+                    help="which case config to load for plan generation")
     args = ap.parse_args()
     generate_case(args.case)
     return 0

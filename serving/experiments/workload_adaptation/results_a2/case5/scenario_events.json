@@ -1,0 +1,55 @@
+[
+  {
+    "epoch": 1777666458.7243407,
+    "label": "trace_start",
+    "params": {
+      "start_epoch": 1777666458.7223916
+    }
+  },
+  {
+    "epoch": 1777666488.7229629,
+    "label": "bump_rps",
+    "params": {
+      "task": "trafficfore",
+      "new_rps": 50.0
+    }
+  },
+  {
+    "epoch": 1777666488.7229993,
+    "label": "start_backbone_begin",
+    "params": {
+      "device": "device2",
+      "backbone": "momentlarge",
+      "port": 8010
+    }
+  },
+  {
+    "epoch": 1777666508.6985273,
+    "label": "start_backbone_done",
+    "params": {
+      "device": "device2"
+    }
+  },
+  {
+    "epoch": 1777666508.69854,
+    "label": "attach_decoder",
+    "params": {
+      "device": "device2",
+      "task": "trafficfore"
+    }
+  },
+  {
+    "epoch": 1777666508.889861,
+    "label": "split_traffic",
+    "params": {
+      "task": "trafficfore",
+      "device1_rps": 25.0,
+      "device2_rps": 25.0
+    }
+  },
+  {
+    "epoch": 1777666579.125137,
+    "label": "trace_end",
+    "params": {}
+  }
+]
