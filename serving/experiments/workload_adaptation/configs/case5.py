@@ -31,12 +31,11 @@ experiment = {
 
 # ── Hardware inventory ───────────────────────────────────────────────
 devices = {
-    'device1': {'type': 'NVIDIA A2', 'mem': 15360, 'ip': '192.168.245.193',
-                'site_manager': 'site2', 'cuda': 'cuda:0', 'tpcs': 5},
-    'device2': {'type': 'NVIDIA A2', 'mem': 15360, 'ip': '192.168.245.194',
-                'site_manager': 'site2', 'cuda': 'cuda:0', 'tpcs': 5},
+    'device1': {'type': 'NVIDIA T4', 'mem': 15360, 'ip': '172.31.40.38',
+                'site_manager': 'site2', 'cuda': 'cuda:0', 'tpcs': 20},
+    'device2': {'type': 'NVIDIA T4', 'mem': 15360, 'ip': '172.31.34.115',
+                'site_manager': 'site2', 'cuda': 'cuda:0', 'tpcs': 20},
 }
-
 # ── Canonical task metadata ──────────────────────────────────────────
 factor = 1.5
 tasks = {
@@ -72,7 +71,7 @@ tpc_per_app = {}
 tpc_per_app_split = {}
 sharing_tpc_split = {
     3: {
-        "device2": [2,3],   # dinosmall on 0..9, reserved 10..19 for cold-start momentlarge
+        "device2": [10,10],   # dinosmall on 0..9, reserved 10..19 for cold-start momentlarge
     },
 }
 
@@ -96,9 +95,9 @@ adaptation = {
     "offload_target_device": "device2",
     "offload_target_backbone": "momentlarge",
     "offload_target_port": 8010,                  # second port on device2 host
-    # device2 dinosmall sits on TPCs [0,1] (first chunk of [2,3] split),
-    # so the cold-started momentlarge takes the remaining [2,3,4].
-    "offload_target_tpc_partition": [2, 3, 4],
+    # device2 dinosmall sits on TPCs [0,1,2,3,4,5,6,7,8,9] (first chunk of [10,10] split),
+    # so the cold-started momentlarge takes the remaining.
+    "offload_target_tpc_partition": [10,11,12,13,14,15,16,17,18,19],
     # Same task name as on device1 → router weighted-splits by request_per_sec.
     "mirror_task_name": "trafficfore",
 
@@ -110,7 +109,7 @@ adaptation = {
 
     # RPS profile
     "baseline_rps":   5.0,
-    "bumped_rps":     50.0,
+    "bumped_rps":     80.0,
     "mirror_share_post_attach": 0.5,
 }
 

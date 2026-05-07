@@ -28,10 +28,10 @@ experiment = {
 
 # ── Hardware inventory ───────────────────────────────────────────────
 devices = {
-    'device1': {'type': 'NVIDIA A2', 'mem': 15360, 'ip': '192.168.245.193',
-                'site_manager': 'site2', 'cuda': 'cuda:0', 'tpcs': 5},
-    'device2': {'type': 'NVIDIA A2', 'mem': 15360, 'ip': '192.168.245.194',
-                'site_manager': 'site2', 'cuda': 'cuda:0', 'tpcs': 5},
+    'device1': {'type': 'NVIDIA T4', 'mem': 15360, 'ip': '172.31.40.38',
+                'site_manager': 'site2', 'cuda': 'cuda:0', 'tpcs': 20},
+    'device2': {'type': 'NVIDIA T4', 'mem': 15360, 'ip': '172.31.34.115',
+                'site_manager': 'site2', 'cuda': 'cuda:0', 'tpcs': 20},
 }
 
 # ── Canonical task metadata ──────────────────────────────────────────

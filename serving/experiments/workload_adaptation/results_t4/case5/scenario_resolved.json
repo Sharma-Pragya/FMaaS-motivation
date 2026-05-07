@@ -1,0 +1,52 @@
+{
+  "scenario": {
+    "name": "case5_single_task_backbone_coldstart",
+    "case": "case5",
+    "mode": "cold_start_then_attach",
+    "base_plan": "deployments/case5/N3/sharing.json",
+    "config_module": "experiments.workload_adaptation.configs.case5",
+    "description": "Single victim task. device2 has no backbone initially. Adaptation: cold-start momentlarge on device2, attach trafficfore decoder, split routing."
+  },
+  "adaptation": {
+    "victim_task": "trafficfore",
+    "victim_base_task": "trafficfore",
+    "victim_decoder_path": "trafficfore_momentlarge_mlp",
+    "victim_decoder_type": "forecasting",
+    "victim_origin_device": "device1",
+    "offload_target_device": "device2",
+    "offload_target_backbone": "momentlarge",
+    "offload_target_port": 8010,
+    "offload_target_tpc_partition": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19
+    ],
+    "mirror_task_name": "trafficfore",
+    "bump_at_s": 30,
+    "spinup_at_s": 30,
+    "attach_at_s": 30,
+    "stop_at_s": 120,
+    "baseline_rps": 5.0,
+    "bumped_rps": 80.0,
+    "mirror_share_post_attach": 0.5
+  },
+  "experiment": {
+    "trace": "poisson_per_task",
+    "duration": 480,
+    "max_batch_wait_ms": 0,
+    "max_batch_size": 3,
+    "isolation_mode": "shared",
+    "warmup_gap": 2.0,
+    "pretrace_warmup_secs": 15.0,
+    "max_model_len": 256,
+    "batch_mode": "fixedpoint"
+  },
+  "seed": 42
+}

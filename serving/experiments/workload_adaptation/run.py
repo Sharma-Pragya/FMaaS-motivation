@@ -12,9 +12,7 @@ device1 and device2 is achieved by setting both deployments' tasks[victim]
 .request_per_sec to the desired share.
 
 Usage:
-    python -u -m experiments.workload_adaptation.run \\
-        --scenario experiments/workload_adaptation/scenarios/case1.json \\
-        --output-dir experiments/workload_adaptation/results/case1
+    python -u -m experiments.workload_adaptation.run --scenario experiments/workload_adaptation/scenarios/case1.json --output-dir experiments/workload_adaptation/results/case1
 """
 from __future__ import annotations
 

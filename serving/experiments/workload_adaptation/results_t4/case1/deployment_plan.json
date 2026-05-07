@@ -28,13 +28,20 @@
           "tasks": {
             "trafficfore": {
               "type": "forecasting",
-              "request_per_sec": 5.0
+              "request_per_sec": 5.0,
+              "total_requested_workload": 5.0
             },
             "exchangefore": {
               "type": "forecasting",
-              "request_per_sec": 5.0
+              "request_per_sec": 5.0,
+              "total_requested_workload": 5.0
             }
-          }
+          },
+          "max_batch_size": 3,
+          "max_batch_wait_ms": 0,
+          "isolation_mode": "shared",
+          "max_model_len": 256,
+          "gpu_memory_utilization": 0.85
         },
         {
           "device": "172.31.34.115:8000",
@@ -55,9 +62,15 @@
           "tasks": {
             "heartrate": {
               "type": "regression",
-              "request_per_sec": 5.0
+              "request_per_sec": 5.0,
+              "total_requested_workload": 5.0
             }
-          }
+          },
+          "max_batch_size": 3,
+          "max_batch_wait_ms": 0,
+          "isolation_mode": "shared",
+          "max_model_len": 256,
+          "gpu_memory_utilization": 0.85
         }
       ]
     }

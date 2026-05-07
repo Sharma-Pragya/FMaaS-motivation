@@ -31,8 +31,52 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import numpy as np
 import pandas as pd
+
+
+def apply_paper_style() -> None:
+    plt.rcParams.update({
+        "figure.facecolor":   "white",
+        "axes.facecolor":     "white",
+        "axes.edgecolor":     "black",
+        "axes.labelcolor":    "black",
+        "axes.linewidth":     0.6,
+        "axes.spines.top":    False,
+        "axes.spines.right":  False,
+        "grid.color":         "#cccccc",
+        "grid.linestyle":     ":",
+        "grid.linewidth":     0.4,
+        "grid.alpha":         1.0,
+        "xtick.color":        "black",
+        "ytick.color":        "black",
+        "xtick.major.width":  0.5,
+        "ytick.major.width":  0.5,
+        "xtick.major.size":   2.5,
+        "ytick.major.size":   2.5,
+        "text.color":         "black",
+        "font.family":        "sans-serif",
+        "font.size":          7,
+        "axes.titlesize":     7.5,
+        "axes.labelsize":     7,
+        "xtick.labelsize":    6.5,
+        "ytick.labelsize":    6.5,
+        "legend.fontsize":    6.5,
+        "lines.linewidth":    1.2,
+        "pdf.fonttype":       42,
+        "ps.fonttype":        42,
+        "figure.dpi":         300,
+        "savefig.dpi":        300,
+        "savefig.facecolor":  "white",
+        "savefig.bbox":       "tight",
+    })
+
+
+def save_figure(fig: plt.Figure, out_path: Path) -> None:
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path, dpi=300, bbox_inches="tight")
+    print(f"[plot] wrote {out_path}")
 
 
 # ────────────────────────────────────────────────────────────────────
@@ -92,6 +136,15 @@ def _event_offsets(events: list[dict], trace_start_epoch: float) -> list[tuple[f
             annot = f" (+{float(params['attach_e2e_ms']):.0f} ms)"
         out.append((t, e["label"], annot))
     return out
+
+
+def _bumped_task(events: list[dict]) -> str | None:
+    for e in events:
+        if e.get("label") == "bump_rps":
+            task = (e.get("params") or {}).get("task")
+            if task:
+                return str(task)
+    return None
 
 
 # ────────────────────────────────────────────────────────────────────
@@ -225,6 +278,44 @@ def _color_cycle(n: int):
     return [cmap(i % cmap.N) for i in range(n)]
 
 
+CASE_STYLES = {
+    "case1": {"label": "Case 1", "color": "#6B9AC4", "linestyle": "--", "marker": "^"},
+    "case5": {"label": "Case 5", "color": "#E06C75", "linestyle": "-",  "marker": "o"},
+}
+
+
+def _nice_axis_limit(value: float) -> float:
+    """Round up so the top of the y-axis is a clean printed number."""
+    if value <= 0:
+        return 1.0
+    exponent = np.floor(np.log10(value))
+    fraction = value / (10 ** exponent)
+    if fraction <= 1:
+        nice_fraction = 1
+    elif fraction <= 2:
+        nice_fraction = 2
+    elif fraction <= 5:
+        nice_fraction = 5
+    else:
+        nice_fraction = 10
+    return float(nice_fraction * (10 ** exponent))
+
+
+def _nice_time_limit(value: float) -> float:
+    if value <= 0:
+        return 1.0
+    step = 10.0 if value <= 60 else 20.0
+    return float(np.ceil(value / step) * step)
+
+
+def _time_tick_step(x_max: float) -> float:
+    return 10.0 if x_max <= 60 else 20.0
+
+
+def _event_time(event_offsets, label: str) -> float | None:
+    return next((t for t, event_label, _ in event_offsets if event_label == label), None)
+
+
 # ────────────────────────────────────────────────────────────────────
 # Plots
 # ────────────────────────────────────────────────────────────────────
@@ -264,6 +355,217 @@ def plot_response_time(ts: pd.DataFrame, event_offsets, out_path: Path,
     fig.savefig(out_path, bbox_inches="tight")
     plt.close(fig)
     print(f"[plot] wrote {out_path}")
+
+
+def plot_bumped_task_mean_response_time_case(
+    case: dict,
+    out_path: Path,
+    bin_s: float,
+    y_max: float,
+    x_max: float,
+) -> None:
+    """Paper plot: mean response time for the task whose workload increases."""
+    ts = case["ts"]
+    if ts.empty:
+        print(f"[plot] {case['name']}: no rows for bumped task {case['task']}; skipping plot.")
+        return
+
+    with plt.rc_context({
+        "font.size": 8.5,
+        "axes.labelsize": 9,
+        "xtick.labelsize": 8,
+        "ytick.labelsize": 8,
+        "legend.fontsize": 7.5,
+        "lines.linewidth": 1.35,
+    }):
+        fig, ax = plt.subplots(figsize=(2.75, 1.65))
+        _plot_bumped_task_mean_response_time_case_ax(
+            ax=ax,
+            case=case,
+            y_max=y_max,
+            x_max=x_max,
+        )
+        _paper_top_legend(ax, ncol=2)
+        fig.tight_layout(rect=(0, 0, 1, 0.86), pad=0.2)
+        save_figure(fig, out_path)
+        plt.close(fig)
+
+
+def _plot_bumped_task_mean_response_time_case_ax(
+    ax,
+    case: dict,
+    y_max: float,
+    x_max: float,
+) -> None:
+    ts = case["ts"]
+    ax.plot(
+        ts["t_center"],
+        ts["mean_ms"],
+        label="_nolegend_",
+        color="#222222",
+        linestyle="-",
+        marker="o",
+        markersize=2.8,
+        markevery=max(1, len(ts) // 9),
+        linewidth=1.4,
+    )
+
+    bump_t = _event_time(case["events"], "bump_rps")
+    done_t = _event_time(case["events"], "split_traffic")
+    if done_t is None:
+        done_t = _event_time(case["events"], "attach_decoder_done")
+    if done_t is None:
+        done_t = _event_time(case["events"], "start_backbone_done")
+
+    if bump_t is not None:
+        ax.axvline(
+            bump_t, color="#6B9AC4", linestyle="--", linewidth=1.0,
+            label="Workload change", zorder=0,
+        )
+    if done_t is not None:
+        ax.axvline(
+            done_t, color="#E06C75", linestyle=":", linewidth=1.1,
+            label="Adaptation complete", zorder=0,
+        )
+
+    ax.set_xlabel("Time (sec)")
+    ax.set_ylabel("Mean RT (ms)")
+    ax.set_xlim(0, x_max)
+    ax.set_ylim(0, y_max)
+    ax.xaxis.set_major_locator(ticker.MultipleLocator(_time_tick_step(x_max)))
+    ax.yaxis.set_major_locator(ticker.MaxNLocator(nbins=5, integer=True, steps=[1, 2, 5, 10]))
+    ax.margins(x=0.01)
+    ax.grid(True, axis="y")
+
+
+def _paper_top_legend(ax, ncol: int) -> None:
+    ax.legend(
+        loc="lower center",
+        bbox_to_anchor=(0.5, 1.02),
+        ncol=ncol,
+        frameon=False,
+        handlelength=1.8,
+        columnspacing=0.9,
+        borderaxespad=0.0,
+        labelspacing=0.25,
+    )
+
+
+def plot_bumped_task_throughput_case(
+    case: dict,
+    out_path: Path,
+    y_max: float,
+    x_max: float,
+) -> None:
+    av = case["arrival_vs_served"]
+    if av.empty:
+        print(f"[plot] {case['name']}: no throughput rows for bumped task {case['task']}; skipping plot.")
+        return
+
+    with plt.rc_context({
+        "font.size": 8.5,
+        "axes.labelsize": 9,
+        "xtick.labelsize": 8,
+        "ytick.labelsize": 8,
+        "legend.fontsize": 7.5,
+        "lines.linewidth": 1.35,
+    }):
+        fig, ax = plt.subplots(figsize=(2.75, 1.65))
+        _plot_bumped_task_throughput_case_ax(
+            ax=ax,
+            case=case,
+            y_max=y_max,
+            x_max=x_max,
+        )
+        _paper_top_legend(ax, ncol=2)
+        fig.tight_layout(rect=(0, 0, 1, 0.78), pad=0.2)
+        save_figure(fig, out_path)
+        plt.close(fig)
+
+
+def _plot_bumped_task_throughput_case_ax(
+    ax,
+    case: dict,
+    y_max: float,
+    x_max: float,
+) -> None:
+    av = case["arrival_vs_served"]
+    ax.plot(
+        av["t_center"],
+        av["arrival_rps"],
+        color="#4C956C",
+        linestyle="--",
+        linewidth=1.35,
+        label="Arrival",
+    )
+    ax.plot(
+        av["t_center"],
+        av["served_rps"],
+        color="#444444",
+        linestyle="-",
+        linewidth=1.35,
+        label="Served",
+    )
+    ax.fill_between(
+        av["t_center"],
+        av["served_rps"],
+        av["arrival_rps"],
+        where=(av["arrival_rps"] > av["served_rps"]),
+        color="#4C956C",
+        alpha=0.18,
+        interpolate=True,
+        linewidth=0,
+    )
+
+    bump_t = _event_time(case["events"], "bump_rps")
+    done_t = _event_time(case["events"], "split_traffic")
+    if done_t is None:
+        done_t = _event_time(case["events"], "attach_decoder_done")
+    if done_t is None:
+        done_t = _event_time(case["events"], "start_backbone_done")
+
+    if bump_t is not None:
+        ax.axvline(
+            bump_t, color="#6B9AC4", linestyle="--", linewidth=1.0,
+            label="Workload change", zorder=0,
+        )
+    if done_t is not None:
+        ax.axvline(
+            done_t, color="#E06C75", linestyle=":", linewidth=1.1,
+            label="Adaptation complete", zorder=0,
+        )
+
+    ax.set_xlabel("Time (sec)")
+    ax.set_ylabel("Throughput (req/s)")
+    ax.set_xlim(0, x_max)
+    ax.set_ylim(0, y_max)
+    ax.xaxis.set_major_locator(ticker.MultipleLocator(_time_tick_step(x_max)))
+    ax.yaxis.set_major_locator(ticker.MaxNLocator(nbins=5, integer=True, steps=[1, 2, 5, 10]))
+    ax.margins(x=0.01)
+    ax.grid(True, axis="y")
+
+
+def _load_bumped_task_case(case_dir: Path, bin_s: float) -> dict | None:
+    try:
+        df, events, trace_start_epoch = _load_results(case_dir)
+    except FileNotFoundError:
+        return None
+
+    task = _bumped_task(events)
+    if task is None:
+        print(f"[plot] {case_dir.name}: no bump_rps task found; skipping case comparison.")
+        return None
+
+    task_df = df[df["task"] == task].copy()
+    ts = _per_task_timeseries(task_df, bin_s=bin_s)
+    arrival_vs_served = _arrival_vs_served(task_df, bin_s=bin_s)
+    return {
+        "name": case_dir.name,
+        "task": task,
+        "ts": ts,
+        "arrival_vs_served": arrival_vs_served,
+        "events": _event_offsets(events, trace_start_epoch),
+    }
 
 
 def plot_throughput(ts: pd.DataFrame, event_offsets, out_path: Path,
@@ -788,30 +1090,29 @@ def plot_deployment_timeline(plan: dict, events: list[dict],
     task_abbrev = {t: f"T{i+1}" for i, t in enumerate(all_tasks)}
 
     n_phases = len(phases)
-    panel_w = max(1.6, 0.7 * len(gpu_order) + 0.6)
-    fig_w = panel_w * n_phases + 0.4 * (n_phases - 1) + 0.5
-    fig_h = 2.4
+    panel_w = max(1.15, 0.48 * len(gpu_order) + 0.35)
+    fig_w = panel_w * n_phases + 0.22 * (n_phases - 1) + 0.25
+    fig_h = 1.25
 
-    fig = plt.figure(figsize=(fig_w, fig_h))
-    # Reserve a small strip on top for arrows/event labels.
-    gs = fig.add_gridspec(2, n_phases, height_ratios=[1.0, 4.0],
-                          hspace=0.05, wspace=0.25,
-                          left=0.02, right=0.98, top=0.94, bottom=0.06)
+    fig, axes = plt.subplots(
+        1, n_phases,
+        figsize=(fig_w, fig_h),
+        squeeze=False,
+        gridspec_kw={
+            "left": 0.025,
+            "right": 0.985,
+            "top": 0.78,
+            "bottom": 0.20,
+            "wspace": 0.14,
+        },
+    )
 
-    # Title row: phase labels with timestamps
-    for i, (label, _, t) in enumerate(phases):
-        ax_top = fig.add_subplot(gs[0, i])
-        ax_top.set_xlim(0, 1); ax_top.set_ylim(0, 1); ax_top.axis("off")
-        prefix = "t=0s" if i == 0 else f"t={t:.1f}s"
-        ax_top.text(0.5, 0.55, label, ha="center", va="center",
-                    fontsize=8, fontweight="bold")
-        ax_top.text(0.5, 0.10, prefix, ha="center", va="center",
-                    fontsize=7, color="#444444")
-
-    # Panel row: deployment diagrams
     panel_axes = []
-    for i, (_, pl, _) in enumerate(phases):
-        ax = fig.add_subplot(gs[1, i])
+    for i, (label, pl, t) in enumerate(phases):
+        ax = axes[0, i]
+        prefix = "0s" if i == 0 else f"{t:.1f}s"
+        ax.set_title(f"{label.replace(chr(10), ' ')}\n{prefix}",
+                     fontsize=6.5, fontweight="bold", pad=1.5)
         _draw_panel(ax, pl, gpu_order, task_color, task_abbrev)
         panel_axes.append(ax)
 
@@ -827,10 +1128,8 @@ def plot_deployment_timeline(plan: dict, events: list[dict],
             mutation_scale=10, linewidth=0.8, color="#444444")
         fig.patches.append(arrow)
 
-    # Legend (tasks + backbones)
+    # Legend (backbone abbreviations only; task names stay out of the paper figure).
     legend_bits = []
-    for t in all_tasks:
-        legend_bits.append(f"{task_abbrev[t]}={t}")
     backbones_seen = sorted({
         d.get("backbone", "")
         for _, pl, _ in phases
@@ -841,8 +1140,8 @@ def plot_deployment_timeline(plan: dict, events: list[dict],
     for bb in backbones_seen:
         legend_bits.append(f"{BACKBONE_ABBREV.get(bb, bb)}={bb}")
     if legend_bits:
-        fig.text(0.5, 0.005, "  |  ".join(legend_bits),
-                 ha="center", va="bottom", fontsize=7, color="#333333")
+        fig.text(0.5, 0.035, "  |  ".join(legend_bits),
+                 ha="center", va="bottom", fontsize=6.5, color="#333333")
 
     fig.savefig(out_path, bbox_inches="tight")
     plt.close(fig)
@@ -865,6 +1164,7 @@ def main() -> int:
                     help="Zoom window for spike plot, format 'A:B' in seconds "
                          "(default: auto, centered on bump_rps event)")
     args = ap.parse_args()
+    apply_paper_style()
 
     results_dir = Path(os.path.abspath(args.results_dir))
     out_dir = Path(os.path.abspath(args.out_dir)) if args.out_dir else Path(f"{results_dir}/plots") 
@@ -883,6 +1183,47 @@ def main() -> int:
     ts = _per_task_timeseries(df, bin_s=args.bin_s)
     ts.to_csv(out_dir / "per_task_timeseries.csv", index=False)
     print(f"[plot] wrote {out_dir / 'per_task_timeseries.csv'}")
+
+    case_dirs = [results_dir.parent / "case1", results_dir.parent / "case5"]
+    case_data = [
+        case for case in
+        (_load_bumped_task_case(case_dir, args.bin_s) for case_dir in case_dirs)
+        if case is not None
+    ]
+    if len(case_data) == 2:
+        raw_y_max = max(float(case["ts"]["mean_ms"].max())
+                        for case in case_data if not case["ts"].empty)
+        paper_y_max = _nice_axis_limit(raw_y_max)
+        raw_x_max = max(
+            float(max(
+                case["ts"]["t_center"].max() if not case["ts"].empty else 0.0,
+                case["arrival_vs_served"]["t_center"].max()
+                if not case["arrival_vs_served"].empty else 0.0,
+            ))
+            for case in case_data
+        )
+        paper_x_max = _nice_time_limit(raw_x_max)
+        raw_thr_y_max = max(
+            float(case["arrival_vs_served"][["arrival_rps", "served_rps"]].max().max())
+            for case in case_data if not case["arrival_vs_served"].empty
+        )
+        paper_thr_y_max = _nice_axis_limit(raw_thr_y_max)
+        for case in case_data:
+            plot_bumped_task_mean_response_time_case(
+                case,
+                out_dir / f"bumped_task_mean_response_time_{case['name']}.pdf",
+                bin_s=args.bin_s,
+                y_max=paper_y_max,
+                x_max=paper_x_max,
+            )
+            plot_bumped_task_throughput_case(
+                case,
+                out_dir / f"bumped_task_throughput_{case['name']}.pdf",
+                y_max=paper_thr_y_max,
+                x_max=paper_x_max,
+            )
+    else:
+        print("[plot] case1/case5 comparison unavailable; skipping bumped-task plot.")
 
     ts_dev = _per_task_device_timeseries(df, bin_s=args.bin_s)
     ts_dev.to_csv(out_dir / "per_task_device_timeseries.csv", index=False)

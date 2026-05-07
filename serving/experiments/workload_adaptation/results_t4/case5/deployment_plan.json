@@ -28,36 +28,62 @@
           "tasks": {
             "trafficfore": {
               "type": "forecasting",
-              "request_per_sec": 5.0
+              "request_per_sec": 5.0,
+              "total_requested_workload": 5.0
             },
             "exchangefore": {
               "type": "forecasting",
-              "request_per_sec": 5.0
+              "request_per_sec": 5.0,
+              "total_requested_workload": 5.0
             }
-          }
+          },
+          "max_batch_size": 3,
+          "max_batch_wait_ms": 0,
+          "isolation_mode": "shared",
+          "max_model_len": 256,
+          "gpu_memory_utilization": 0.85
         },
         {
           "device": "172.31.34.115:8000",
           "device_name": "device2",
           "device_type": "NVIDIA T4",
-          "backbone": "momentlarge",
+          "backbone": "dinosmall",
           "cuda": "cuda:0",
           "scheduler_policy": "stfq",
           "worker_mode": "threaded",
           "decoders": [
             {
-              "task": "heartrate",
-              "base_task": "heartrate",
-              "type": "regression",
-              "path": "heartrate_momentlarge_mlp"
+              "task": "nyudepth",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": "nyudepth_dinosmall_monocular"
             }
           ],
           "tasks": {
-            "heartrate": {
-              "type": "regression",
-              "request_per_sec": 5.0
+            "nyudepth": {
+              "type": "monocular",
+              "request_per_sec": 5.0,
+              "total_requested_workload": 5.0
             }
-          }
+          },
+          "tpc_mode": "libsmctrl",
+          "tpc_partition": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "max_batch_size": 3,
+          "max_batch_wait_ms": 0,
+          "isolation_mode": "shared",
+          "max_model_len": 256,
+          "gpu_memory_utilization": 0.85
         }
       ]
     }

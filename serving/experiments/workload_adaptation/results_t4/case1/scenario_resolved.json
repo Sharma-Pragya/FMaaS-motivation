@@ -1,0 +1,38 @@
+{
+  "scenario": {
+    "name": "case1_decoder_offload",
+    "case": "case1",
+    "base_plan": "deployments/case1/N3/sharing.json",
+    "config_module": "experiments.workload_adaptation.configs.case1",
+    "description": "Hot-attach mirror decoder on device2's existing momentlarge to absorb a workload spike on device1's trafficfore."
+  },
+  "adaptation": {
+    "victim_task": "trafficfore",
+    "victim_base_task": "trafficfore",
+    "victim_decoder_path": "trafficfore_momentlarge_mlp",
+    "victim_decoder_type": "forecasting",
+    "victim_origin_device": "device1",
+    "offload_target_device": "device2",
+    "offload_target_backbone": "momentlarge",
+    "offload_target_port": 8000,
+    "mirror_task_name": "trafficfore",
+    "bump_at_s": 30.0,
+    "attach_at_s": 30.0,
+    "stop_at_s": 120.0,
+    "baseline_rps": 5.0,
+    "bumped_rps": 50.0,
+    "mirror_share_post_attach": 0.5
+  },
+  "experiment": {
+    "trace": "poisson_per_task",
+    "duration": 420,
+    "max_batch_wait_ms": 0,
+    "max_batch_size": 3,
+    "isolation_mode": "shared",
+    "warmup_gap": 2.0,
+    "pretrace_warmup_secs": 15.0,
+    "max_model_len": 256,
+    "batch_mode": "fixedpoint"
+  },
+  "seed": 42
+}
