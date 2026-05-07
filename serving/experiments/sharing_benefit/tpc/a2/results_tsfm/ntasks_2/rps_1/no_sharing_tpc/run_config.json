@@ -1,7 +1,7 @@
 {
   "condition": "no_sharing_tpc",
   "task_set": "tsfm",
-  "tasks": ["ecgclass","gestureclass" ],
+  "tasks": ["ecgclass","gestureclass"],
   "num_tasks": 2,
   "backbone": "momentlarge",
   "cuda_device": "cuda:0",

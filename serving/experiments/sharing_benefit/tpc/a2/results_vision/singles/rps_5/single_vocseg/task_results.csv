@@ -1,2 +1,2 @@
-task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_non_server_exec_overhead_ms
-vocseg,single_vocseg,2990,5.0678,54.57,49.036,84.747,109.029,30.924,28.896,0.003,1.186,8.321,23.647
+task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_client_pre_rpc_ms,avg_non_server_exec_overhead_ms
+vocseg,single_vocseg,2990,5.0678,44.585,39.224,74.212,96.741,30.992,29.016,0.003,1.166,7.391,0.0,13.593

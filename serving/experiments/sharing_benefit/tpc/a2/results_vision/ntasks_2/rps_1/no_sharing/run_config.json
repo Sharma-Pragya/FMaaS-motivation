@@ -1,7 +1,7 @@
 {
   "condition": "no_sharing",
   "task_set": "vision",
-  "tasks": ["nyudepth","vocseg" ],
+  "tasks": ["nyudepth","vocseg"],
   "num_tasks": 2,
   "backbone": "dinobase-patch",
   "cuda_device": "cuda:0",

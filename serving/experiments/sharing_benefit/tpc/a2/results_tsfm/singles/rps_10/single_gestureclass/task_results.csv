@@ -1,2 +1,2 @@
-task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_non_server_exec_overhead_ms
-gestureclass,single_gestureclass,5951,10.0864,63.201,55.915,99.113,131.502,48.943,47.901,0.002,0.474,13.177,14.258
+task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_client_pre_rpc_ms,avg_non_server_exec_overhead_ms
+gestureclass,single_gestureclass,5951,10.0864,85.654,79.147,148.702,169.51,64.615,63.07,0.002,0.659,19.923,0.0,21.039

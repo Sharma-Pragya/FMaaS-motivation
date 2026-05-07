@@ -1,2 +1,2 @@
-task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_non_server_exec_overhead_ms
-nyudepth,single_nyudepth,589,0.9983,48.84,48.039,52.007,68.024,29.903,27.999,0.003,1.04,4.393,18.937
+task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_client_pre_rpc_ms,avg_non_server_exec_overhead_ms
+nyudepth,single_nyudepth,589,0.9983,39.545,38.874,41.038,58.349,29.917,27.931,0.003,1.08,3.599,0.0,9.628

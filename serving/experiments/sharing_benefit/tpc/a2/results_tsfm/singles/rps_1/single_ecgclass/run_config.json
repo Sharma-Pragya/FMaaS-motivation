@@ -1,7 +1,7 @@
 {
   "condition": "single_ecgclass",
   "task_set": "tsfm",
-  "tasks": ["ecgclass","gestureclass" ],
+  "tasks": ["ecgclass"],
   "num_tasks": 2,
   "backbone": "momentlarge",
   "cuda_device": "cuda:0",
