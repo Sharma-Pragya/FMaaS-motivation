@@ -1,0 +1,12 @@
+{
+  "phase_boundaries_s": [
+    60.0,
+    120.0,
+    180.0
+  ],
+  "aggressor_rps_phases": [
+    60.0,
+    60.0,
+    60.0
+  ]
+}

@@ -137,6 +137,90 @@ def _completions_in_window(recs: List[Tuple[float, float]],
     return n
 
 
+SATISFIED_TOL = 0.95  # T_i >= SATISFIED_TOL * offered_i counts as "fully satisfied"
+
+
+def _weighted_maxmin_ideal(d_a: float, d_b: float,
+                           w_a: float, w_b: float,
+                           capacity: float) -> Tuple[float, float]:
+    """Weighted max-min fair allocation for 2 flows.
+
+    Process the flow with smaller demand-per-weight first: if its demand fits
+    within its weighted share of capacity, give it full demand and let the
+    other flow reclaim the leftover. Otherwise both saturate at their
+    weighted shares.
+    """
+    if capacity <= 0:
+        return 0.0, 0.0
+    if d_a / max(w_a, 1e-12) <= d_b / max(w_b, 1e-12):
+        base_a = w_a * capacity / (w_a + w_b)
+        if d_a <= base_a:
+            ideal_a = d_a
+            ideal_b = min(d_b, capacity - d_a)
+        else:
+            ideal_a = base_a
+            ideal_b = capacity - base_a
+    else:
+        base_b = w_b * capacity / (w_a + w_b)
+        if d_b <= base_b:
+            ideal_b = d_b
+            ideal_a = min(d_a, capacity - d_b)
+        else:
+            ideal_b = base_b
+            ideal_a = capacity - base_b
+    return ideal_a, ideal_b
+
+
+def minmax_fairness(
+    a_recs: List[Tuple[float, float]],
+    b_recs: List[Tuple[float, float]],
+    offered_a: float, offered_b: float,
+    w_a: float, w_b: float,
+    t_start: float, t_end: float,
+    bin_s: float = 1.0,  # kept for API compat; unused
+) -> float:
+    """Hybrid fairness over the full post-warmup window.
+
+    Aggregate over [t_start, t_end):
+        T_i = completions / window_duration
+    Step 1 (satisfaction shortcut):
+        if T_a >= τ * offered_a AND T_b >= τ * offered_b:  → f = 1
+    Step 2 (weighted max-min ratio):
+        C = T_a + T_b   (observed capacity for this method/run)
+        (ideal_a, ideal_b) = weighted max-min(demands=(offered_a, offered_b),
+                                              weights=(w_a, w_b), capacity=C)
+        r_i = min(T_i / ideal_i, 1.0)   # over-delivery doesn't penalize
+        f   = min(r_a, r_b) / max(r_a, r_b)
+
+    Range [0, 1]; 1 = method delivered the operator's intended split.
+    Aggregating over the whole window (rather than per-bin) eliminates
+    Poisson-noise artifacts at low offered rates.
+    """
+    dur = t_end - t_start
+    if dur <= 0 or offered_a <= 0 or offered_b <= 0:
+        return float("nan")
+    n_a = sum(1 for s, l in a_recs if t_start <= (s + l / 1000.0) < t_end)
+    n_b = sum(1 for s, l in b_recs if t_start <= (s + l / 1000.0) < t_end)
+    T_a = n_a / dur
+    T_b = n_b / dur
+
+    if T_a >= SATISFIED_TOL * offered_a and T_b >= SATISFIED_TOL * offered_b:
+        return 1.0
+
+    cap = T_a + T_b
+    if cap <= 0 or w_a <= 0 or w_b <= 0:
+        return float("nan")
+    ideal_a, ideal_b = _weighted_maxmin_ideal(
+        offered_a, offered_b, w_a, w_b, cap)
+    if ideal_a <= 0 or ideal_b <= 0:
+        return float("nan")
+    r_a = min(T_a / ideal_a, 1.0)
+    r_b = min(T_b / ideal_b, 1.0)
+    if r_a <= 0 and r_b <= 0:
+        return float("nan")
+    return min(r_a, r_b) / max(r_a, r_b)
+
+
 def _bin_rate(times: np.ndarray, t_max: float, bin_s: float = 1.0
               ) -> Tuple[np.ndarray, np.ndarray]:
     """Counts/sec in fixed bins."""
@@ -211,6 +295,17 @@ def _set_axis_ylim_nice(ax: plt.Axes, data_max: float, headroom: float = 1.05) -
 # Plots
 # ---------------------------------------------------------------------------
 
+def _offered_rate_from_trace(trace_path: Path, task: str,
+                             t_start: float, t_end: float) -> float:
+    """Mean offered RPS for `task` over [t_start, t_end), from trace.json sends."""
+    if not trace_path.exists() or t_end <= t_start:
+        return 0.0
+    raw = json.loads(trace_path.read_text())
+    times = raw.get(task, [])
+    n = sum(1 for t in times if t_start <= float(t) < t_end)
+    return n / (t_end - t_start)
+
+
 def plot_fairness_summary(
     method_dirs: Dict[str, Path],
     victim_task: str,
@@ -219,8 +314,13 @@ def plot_fairness_summary(
     weight_b: float,
     meta: dict,
     out_path: Path,
+    bin_s: float = 1.0,
 ) -> None:
-    """Twin-axis bars over phase 2: left=fairness, right=system throughput."""
+    """Twin-axis bars over phase 2: left=fairness, right=system throughput.
+
+    Fairness = hybrid satisfaction + weighted max-min ratio (see
+    `minmax_fairness`); 1 = method delivered the operator's intended split.
+    """
     p_start, p_end = _phase2_window(meta)
     p_dur = max(p_end - p_start, 1e-6)
 
@@ -228,17 +328,24 @@ def plot_fairness_summary(
     if not methods:
         return
 
+    # Offered loads in phase 2 come from the shared trace.json.
+    base = next(iter(method_dirs.values())).parent
+    trace_path = base / "trace.json"
+    offered_a = _offered_rate_from_trace(trace_path, victim_task,    p_start, p_end)
+    offered_b = _offered_rate_from_trace(trace_path, aggressor_task, p_start, p_end)
+
     fairness: List[float] = []
     sys_rps:  List[float] = []
     for m in methods:
         a_recs = _load_records(method_dirs[m], victim_task)
         b_recs = _load_records(method_dirs[m], aggressor_task)
+        f = minmax_fairness(a_recs, b_recs,
+                            offered_a, offered_b,
+                            weight_a, weight_b,
+                            p_start, p_end, bin_s=bin_s)
+        fairness.append(f if np.isfinite(f) else 0.0)
         T_A = _completions_in_window(a_recs, p_start, p_end) / p_dur
         T_B = _completions_in_window(b_recs, p_start, p_end) / p_dur
-        if T_B > 0 and weight_a > 0 and weight_b > 0:
-            fairness.append((T_A / weight_a) / (T_B / weight_b))
-        else:
-            fairness.append(0.0)
         sys_rps.append(T_A + T_B)
 
     labels = [LABELS[m] for m in methods]
@@ -253,26 +360,19 @@ def plot_fairness_summary(
     FAIR_COLOR = "#3B7DC4"
     TPUT_COLOR = "#E8A24B"
 
-    # Fairness axis is capped at 1.0 (operator-target). Bars whose true value
-    # exceeds 1 are drawn at 1.0 and the over-cap label is rendered above.
-    fairness_clipped = [min(v, 1.0) for v in fairness]
-    b_fair = ax_left.bar(x - bar_w / 2, fairness_clipped, width=bar_w,
-                         color=FAIR_COLOR, edgecolor="black",
-                         linewidth=0.4, label="Fairness", zorder=3)
-    b_tput = ax_right.bar(x + bar_w / 2, sys_rps, width=bar_w,
-                          color=TPUT_COLOR, edgecolor="black",
-                          linewidth=0.4, label="System tput", zorder=3)
+    ax_left.bar(x - bar_w / 2, fairness, width=bar_w,
+                color=FAIR_COLOR, edgecolor="black",
+                linewidth=0.4, label="Fairness", zorder=3)
+    ax_right.bar(x + bar_w / 2, sys_rps, width=bar_w,
+                 color=TPUT_COLOR, edgecolor="black",
+                 linewidth=0.4, label="System tput", zorder=3)
 
-    # Color the y-axis labels to match their bars; saves us a legend.
-    ax_left.set_ylabel(r"Fairness  $(T_A/w_A) / (T_B/w_B)$", color=FAIR_COLOR)
+    ax_left.set_ylabel(r"Fairness", color=FAIR_COLOR)
     ax_right.set_ylabel("System throughput (req/s)", color=TPUT_COLOR)
     ax_left.tick_params(axis="y", colors=FAIR_COLOR)
     ax_right.tick_params(axis="y", colors=TPUT_COLOR)
 
-    # Fairness axis caps at 1.0 (operator-target). Any over-served point is
-    # plotted at the cap and labeled above with its actual value.
     ymax_fair = 1.0
-    # Throughput axis snapped just above the data — minimal headroom.
     ymax_tput = _nice_ceil(max(sys_rps, default=1.0) * 1.02)
     ax_left.set_ylim(0, ymax_fair)
     ax_right.set_ylim(0, ymax_tput)
@@ -281,12 +381,9 @@ def plot_fairness_summary(
     ax_left.grid(axis="y", linewidth=0.4)
 
     for xi, v in zip(x, fairness):
-        if v <= 0:
-            continue
-        # Cap visual bar height at ymax_fair; label with the actual value.
-        plotted = min(v, ymax_fair)
-        ax_left.text(xi - bar_w / 2, plotted + ymax_fair * 0.02, f"{v:.2f}",
-                     ha="center", va="bottom", fontsize=5.5)
+        if v > 0:
+            ax_left.text(xi - bar_w / 2, v + ymax_fair * 0.02, f"{v:.2f}",
+                         ha="center", va="bottom", fontsize=5.5)
     for xi, v in zip(x, sys_rps):
         if v > 0:
             ax_right.text(xi + bar_w / 2, v + ymax_tput * 0.02, f"{v:.0f}",
@@ -309,6 +406,7 @@ def plot_throughput_timeseries(
 ) -> None:
     """Two-panel throughput-vs-time: top=Client A, bottom=Client B.
     Throughput binned by completion time (req/s actually delivered).
+    Offered load from trace.json drawn as a thin black dotted line.
     """
     methods = [m for m in METHOD_ORDER if m in method_dirs]
     if not methods:
@@ -316,6 +414,27 @@ def plot_throughput_timeseries(
 
     bounds = meta.get("phase_boundaries_s", [])
     t_max  = float(bounds[-1]) if bounds else 30.0
+
+    # Load offered load from trace.json (shared across all methods).
+    # Fall back to send times from the first method's CSV if trace not found.
+    import json as _json
+    offered: Dict[str, Tuple[np.ndarray, np.ndarray]] = {}
+    base = next(iter(method_dirs.values())).parent
+    trace_path = base / "trace.json"
+    if trace_path.exists():
+        raw = _json.loads(trace_path.read_text())
+        for task, times in raw.items():
+            t_arr = np.array(times, dtype=float)
+            t_arr = t_arr[t_arr <= t_max]
+            if t_arr.size:
+                offered[task] = _bin_rate(t_arr, t_max, bin_s=bin_s)
+    else:
+        first_dir = next(iter(method_dirs.values()))
+        for task in (victim_task, aggressor_task):
+            recs = _load_records(first_dir, task)
+            if recs:
+                sends = np.array([s for s, _ in recs])
+                offered[task] = _bin_rate(sends, t_max, bin_s=bin_s)
 
     fig, (ax_a, ax_b) = plt.subplots(2, 1, figsize=(2.8, 2.4), sharex=True)
     panels = [(ax_a, victim_task,    f"Client A (w={weight_a:g})"),
@@ -334,6 +453,11 @@ def plot_throughput_timeseries(
                     linewidth=1.0, label=LABELS[m], zorder=3)
             if rps.size:
                 panel_max = max(panel_max, float(rps.max()))
+        if task in offered:
+            centers_o, rps_o = offered[task]
+            ax.plot(centers_o, rps_o, color="black", linestyle=":",
+                    linewidth=0.8, label="Offered load", zorder=2)
+            panel_max = max(panel_max, float(rps_o.max()))
         _add_phase_lines(ax, meta, t_max)
         ax.set_ylabel("Throughput (req/sec)")
         ax.text(0.02, 0.93, panel_label, transform=ax.transAxes,
@@ -348,11 +472,18 @@ def plot_throughput_timeseries(
         ax.set_ylim(0, y_nice)
 
     ax_b.set_xlabel("Time (s)")
+    # De-duplicate legend entries (both panels add "Offered load").
     handles, leg_labels = ax_a.get_legend_handles_labels()
-    # Place legend above the figure with explicit room reserved for it.
+    seen: Dict[str, int] = {}
+    dedup_h, dedup_l = [], []
+    for h, l in zip(handles, leg_labels):
+        if l not in seen:
+            seen[l] = 1
+            dedup_h.append(h)
+            dedup_l.append(l)
     fig.tight_layout(pad=0.3, rect=(0, 0, 1, 0.90))
-    fig.legend(handles, leg_labels, loc="upper center",
-               bbox_to_anchor=(0.5, 0.99), ncol=len(handles),
+    fig.legend(dedup_h, dedup_l, loc="upper center",
+               bbox_to_anchor=(0.5, 0.99), ncol=len(dedup_h),
                frameon=False, handlelength=1.6, columnspacing=0.9)
     save_figure(fig, out_path)
     plt.close(fig)
@@ -433,15 +564,17 @@ def plot_latency_timeseries(
 # Main
 # ---------------------------------------------------------------------------
 
-# Per-scenario: (BFQ result-dir name, w_A, w_B, filename tag)
+# Per-scenario: (BFQ dir, TPC dir, w_A, w_B, filename tag)
+# The TPC dir uses a proportional split matching the weight ratio.
 WEIGHT_SCENARIOS = [
-    ("bfq_1_1", 1.0, 1.0, "1to1"),
-    ("bfq_2_1", 2.0, 1.0, "2to1"),
-    ("bfq_3_1", 3.0, 1.0, "3to1"),
+    ("bfq_1_1", "no_sharing_tpc_1_1", 1.0, 1.0, "1to1"),
+    ("bfq_2_1", "no_sharing_tpc_2_1", 2.0, 1.0, "2to1"),
+    ("bfq_3_1", "no_sharing_tpc_3_1", 3.0, 1.0, "3to1"),
 ]
 
-# Weight-agnostic baselines that appear alongside the BFQ run in every scenario.
-BASELINES = ["fcfs", "no_sharing", "no_sharing_tpc"]
+# Weight-agnostic baselines shared across all scenarios.
+# no_sharing_tpc is resolved per-scenario via WEIGHT_SCENARIOS.
+BASELINES = ["fcfs", "no_sharing"]
 
 
 def main() -> int:
@@ -451,7 +584,7 @@ def main() -> int:
                     help="Output dir (default: <results-base>/plots)")
     ap.add_argument("--victim-task",    default="ecgclass")
     ap.add_argument("--aggressor-task", default="gestureclass")
-    ap.add_argument("--bin-size-s",     type=float, default=1.0)
+    ap.add_argument("--bin-size-s",     type=float, default=2.0)
     args = ap.parse_args()
 
     apply_paper_style()
@@ -474,7 +607,7 @@ def main() -> int:
         print(f"[Error] no meta.json found under {base}")
         return 1
 
-    for bfq_name, w_a, w_b, tag in WEIGHT_SCENARIOS:
+    for bfq_name, tpc_name, w_a, w_b, tag in WEIGHT_SCENARIOS:
         bfq_dir = base / bfq_name
         if not bfq_dir.exists():
             print(f"[Skip] {bfq_name}: dir not found")
@@ -485,11 +618,17 @@ def main() -> int:
             d = base / b
             if d.exists():
                 method_dirs[b] = d
+        tpc_dir = base / tpc_name
+        if tpc_dir.exists():
+            method_dirs["no_sharing_tpc"] = tpc_dir
+        else:
+            print(f"[Skip] {tpc_name}: dir not found — TPC bars omitted for {tag}")
 
         plot_fairness_summary(
             method_dirs, args.victim_task, args.aggressor_task,
             w_a, w_b, meta,
             plot_dir / f"fairness_{tag}.png",
+            bin_s=args.bin_size_s,
         )
         plot_throughput_timeseries(
             method_dirs, args.victim_task, args.aggressor_task,

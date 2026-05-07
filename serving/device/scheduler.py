@@ -277,7 +277,7 @@ class STFQPolicy:
             corrected_f = s_dispatched + actual_duration_s / w
             # Re-chain remaining queued requests for this task
             running_f = corrected_f
-            for req in queues.get(task, []):
+            for req in list(queues.get(task, [])):
                 s_i = max(self._v, running_f)
                 req.virtual_start = s_i
                 running_f = s_i + 1.0 / w

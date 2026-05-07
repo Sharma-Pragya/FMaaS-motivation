@@ -65,9 +65,14 @@ AGGRESSOR_TASK="${AGGRESSOR_TASK:-gestureclass}"
 #   Phase 3: victim drops back to low load.
 # Victim is the high-priority client throughout. Under BFQ, weights bias
 # scheduling toward victim; aggressor gets reclaimed capacity in phases 1 & 3.
-VICTIM_RPS_PHASES="${VICTIM_RPS_PHASES:-2,32,2}"
-AGGRESSOR_RPS_PHASES="${AGGRESSOR_RPS_PHASES:-32,32,32}"
-PHASE_DURATIONS="${PHASE_DURATIONS:-10,10,10}"
+# VICTIM_RPS_PHASES="${VICTIM_RPS_PHASES:-5,60,5}"
+# AGGRESSOR_RPS_PHASES="${AGGRESSOR_RPS_PHASES:-60,60,60}"
+# PHASE_DURATIONS="${PHASE_DURATIONS:-60,60,60}"
+
+VICTIM_RPS_PHASES="${VICTIM_RPS_PHASES:-5,500,5}"
+AGGRESSOR_RPS_PHASES="${AGGRESSOR_RPS_PHASES:-60,60,60}"
+PHASE_DURATIONS="${PHASE_DURATIONS:-60,60,60}"
+
 # VICTIM_RPS kept as a fallback constant for backward compat; ignored when
 # VICTIM_RPS_PHASES is set.
 VICTIM_RPS="${VICTIM_RPS:-5}"
@@ -81,18 +86,21 @@ VICTIM_RPS="${VICTIM_RPS:-5}"
 # fcfs_nobatch (FIFO scheduler, batch=1) is included to isolate the cost
 # of batching from the cost of scheduling in the throughput/latency plots.
 RUNS=(
-    "fifo  3  0  fcfs            "
+    "fifo  32  0  fcfs            "
     "fifo  1  0  fcfs_nobatch    "
-    "stfq  1  0  stfq            "
-    "stfq  3  0  bfq_1_1         ${VICTIM_TASK}:1,${AGGRESSOR_TASK}:1"
-    "stfq  3  0  bfq_2_1         ${VICTIM_TASK}:1,${AGGRESSOR_TASK}:2"
-    "stfq  3  0  bfq_3_1         ${VICTIM_TASK}:1,${AGGRESSOR_TASK}:3"
+    "stfq  1  0  stfq            ${VICTIM_TASK}:1,${AGGRESSOR_TASK}:2"
+    "stfq  32  0  bfq_1_1         ${VICTIM_TASK}:1,${AGGRESSOR_TASK}:1"
+    "stfq  32  0  bfq_2_1         ${VICTIM_TASK}:1,${AGGRESSOR_TASK}:2"
+    "stfq  32  0  bfq_3_1         ${VICTIM_TASK}:1,${AGGRESSOR_TASK}:3"
 )
 
 # No-sharing TPC runs: victim and aggressor each get their own TPC-partitioned server.
-# Format: "batch_size  batch_wait_ms  run_name"
+# TPCs are split proportionally to the weight ratio (weight_a : weight_b).
+# Format: "batch_size  batch_wait_ms  run_name  weight_a  weight_b"
 NO_SHARING_TPC_RUNS=(
-    "3  0  no_sharing_tpc"
+    "32  0  no_sharing_tpc_1_1  1  1"
+    "32  0  no_sharing_tpc_2_1  2  1"
+    "32  0  no_sharing_tpc_3_1  3  1"
 )
 TPC_MODE="${TPC_MODE:-libsmctrl}"
 
@@ -100,7 +108,7 @@ TPC_MODE="${TPC_MODE:-libsmctrl}"
 # the same GPU (no TPC partitioning — process-level isolation only).
 # Format: "batch_size  batch_wait_ms  run_name"
 NO_SHARING_RUNS=(
-    "3  0  no_sharing"
+    "32  0  no_sharing"
 )
 
 RESULTS_BASE="${RESULTS_BASE:-experiments/fair_share/tsfm/results}"
@@ -351,12 +359,12 @@ done
 # No-sharing TPC runs — each task gets its own TPC-partitioned device server
 # ---------------------------------------------------------------------------
 for run in "${NO_SHARING_TPC_RUNS[@]}"; do
-    read -r BATCH_SIZE BATCH_WAIT RUN_NAME <<< "$run"
+    read -r BATCH_SIZE BATCH_WAIT RUN_NAME WEIGHT_A WEIGHT_B <<< "$run"
     EXP_DIR="${RESULTS_BASE}/${RUN_NAME}"
 
     echo ""
     echo "================================================================"
-    echo "  $RUN_NAME  (TPC-isolated, 2 servers, tpc_mode=$TPC_MODE, bsize=$BATCH_SIZE, bwait=${BATCH_WAIT}ms)"
+    echo "  $RUN_NAME  (TPC-isolated, 2 servers, tpc_mode=$TPC_MODE, bsize=$BATCH_SIZE, bwait=${BATCH_WAIT}ms, weights=${WEIGHT_A}:${WEIGHT_B})"
     echo "  Results: $EXP_DIR"
     echo "================================================================"
 
@@ -371,9 +379,15 @@ print(sm // 2)
 ")
     echo "[run.sh] Total TPCs on GPU: $TOTAL_TPCS"
 
-    HALF=$((TOTAL_TPCS / 2))
-    VICTIM_TPCS=$(seq -s ' ' 0 $((HALF - 1)))
-    AGGRESSOR_TPCS=$(seq -s ' ' "$HALF" $((TOTAL_TPCS - 1)))
+    WEIGHT_TOTAL=$((WEIGHT_A + WEIGHT_B))
+    VICTIM_TPC_COUNT=$(( TOTAL_TPCS * WEIGHT_A / WEIGHT_TOTAL ))
+    # Guarantee each side gets at least 1 TPC.
+    if [[ $VICTIM_TPC_COUNT -le 0 ]]; then VICTIM_TPC_COUNT=1; fi
+    if [[ $VICTIM_TPC_COUNT -ge $TOTAL_TPCS ]]; then VICTIM_TPC_COUNT=$(( TOTAL_TPCS - 1 )); fi
+    AGGRESSOR_TPC_COUNT=$(( TOTAL_TPCS - VICTIM_TPC_COUNT ))
+
+    VICTIM_TPCS=$(seq -s ' ' 0 $((VICTIM_TPC_COUNT - 1)))
+    AGGRESSOR_TPCS=$(seq -s ' ' "$VICTIM_TPC_COUNT" $((TOTAL_TPCS - 1)))
 
     VICTIM_PORT="$DEVICE_PORT"
     AGGRESSOR_PORT=$((DEVICE_PORT + 1))
