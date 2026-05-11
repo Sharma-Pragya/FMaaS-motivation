@@ -301,6 +301,7 @@ class TraceRunner:
 
         self._results: list = []
         self._req_metadata: dict = {}   # req_id → enriched req dict
+        self.activation_ready: dict = {}  # task → {t_arrive, t_ready, latency_s}
         self._plan_version: int = 0          # bump when live_plan changes
         self._plan_cache: tuple = (-1, None, None) # (version, task_routes, route_table)
         self._proto_cache: dict = {}         # (task, device_url) → pre-encoded InferRequest proto
@@ -554,18 +555,23 @@ class TraceRunner:
 
     # ── run ───────────────────────────────────────────────────────────────
 
-    async def run(self, start_epoch: float = None) -> tuple:
+    async def run(self, start_epoch: float = None, duration: float = None) -> tuple:
         """Dispatch all trace requests at their scheduled times.
 
         Args:
             start_epoch: Wall-clock time for t=0. Defaults to now.
                          Pass a future time to allow a buffer after warmup.
+            duration:    Experiment length in seconds. When set, the run loop
+                         stays alive until start_epoch+duration even if the
+                         trace is temporarily empty (e.g. all tasks are dynamic
+                         and add_requests() has not fired yet).
 
         Returns:
             (results, req_metadata) — same format as runtime_executor.
         """
         if start_epoch is None:
             start_epoch = time.time()
+        t_end = (start_epoch + duration) if duration is not None else None
 
         inflight = set()
         completed: list = []
@@ -595,7 +601,11 @@ class TraceRunner:
             while True:
                 # Check if there are undispatched requests (add_requests may have added more)
                 if dispatched_idx >= len(self._trace):
-                    # Nothing left — but wait briefly in case add_requests() adds more
+                    # Nothing left — but wait briefly in case add_requests() adds more.
+                    # If duration was given, stay alive until the experiment clock expires.
+                    if t_end is not None and time.time() < t_end:
+                        await asyncio.sleep(0.05)
+                        continue
                     await asyncio.sleep(0.05)
                     if dispatched_idx >= len(self._trace):
                         break   # truly done
@@ -690,6 +700,13 @@ class TraceRunner:
 
     def save_results(self):
         """Write request_latency_results.csv and serving_timing_summary.json."""
+        if self.activation_ready:
+            import json as _json
+            ar_path = os.path.join(self.output_dir, "activation_ready.json")
+            with open(ar_path, "w") as f:
+                _json.dump(self.activation_ready, f, indent=2)
+            print(f"[TraceRunner] Saved activation_ready → {ar_path}")
+
         if not self._results:
             print("[TraceRunner] No results to save.")
             return
