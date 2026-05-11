@@ -1,0 +1,213 @@
+{
+  "devices": {
+    "172.31.39.15:8000": {
+      "request_count": 21437,
+      "avg_client_prep_ms": 0.0,
+      "avg_client_submit_to_backend_start_ms": 4.7376561799912205,
+      "avg_backend_exec_ms": 10.907928940408704,
+      "avg_backend_to_client_return_ms": 3.6312931980966394,
+      "avg_end_to_end_ms": 19.276878318496564,
+      "avg_backend_start_to_start_ms": 40.08006276557597,
+      "avg_backend_idle_gap_ms": 31.32611859042735,
+      "backend_overlap_pairs": 10759
+    },
+    "172.31.34.115:8000": {
+      "request_count": 13182,
+      "avg_client_prep_ms": 0.0,
+      "avg_client_submit_to_backend_start_ms": 30.404379182982527,
+      "avg_backend_exec_ms": 32.10344129729354,
+      "avg_backend_to_client_return_ms": 3.550159444651244,
+      "avg_end_to_end_ms": 66.05797992492731,
+      "avg_backend_start_to_start_ms": 65.18799646717764,
+      "avg_backend_idle_gap_ms": 52.82723984147826,
+      "backend_overlap_pairs": 5924
+    },
+    "172.31.40.38:8000": {
+      "request_count": 3078,
+      "avg_client_prep_ms": 0.0,
+      "avg_client_submit_to_backend_start_ms": 9.477581119599321,
+      "avg_backend_exec_ms": 34.20006128934547,
+      "avg_backend_to_client_return_ms": 3.3040687277225644,
+      "avg_end_to_end_ms": 46.98171113666735,
+      "avg_backend_start_to_start_ms": 279.2223215800506,
+      "avg_backend_idle_gap_ms": 252.54132354805753,
+      "backend_overlap_pairs": 1067
+    },
+    "172.31.32.69:8000": {
+      "request_count": 7664,
+      "avg_client_prep_ms": 0.0,
+      "avg_client_submit_to_backend_start_ms": 4.421623925326513,
+      "avg_backend_exec_ms": 14.006470775305603,
+      "avg_backend_to_client_return_ms": 2.931379015112222,
+      "avg_end_to_end_ms": 21.359473715744336,
+      "avg_backend_start_to_start_ms": 112.12026517540235,
+      "avg_backend_idle_gap_ms": 101.04203367301724,
+      "backend_overlap_pairs": 1916
+    },
+    "172.31.35.65:8000": {
+      "request_count": 7052,
+      "avg_client_prep_ms": 0.0,
+      "avg_client_submit_to_backend_start_ms": 17.14505448776825,
+      "avg_backend_exec_ms": 24.3886638215098,
+      "avg_backend_to_client_return_ms": 2.8701613927117413,
+      "avg_end_to_end_ms": 44.403879701989794,
+      "avg_backend_start_to_start_ms": 121.85257087445669,
+      "avg_backend_idle_gap_ms": 109.62065918667741,
+      "backend_overlap_pairs": 1724
+    },
+    "172.31.34.179:8010": {
+      "request_count": 11111,
+      "avg_client_prep_ms": 0.0,
+      "avg_client_submit_to_backend_start_ms": 92.24704084189509,
+      "avg_backend_exec_ms": 69.06502801113903,
+      "avg_backend_to_client_return_ms": 15.036978158134549,
+      "avg_end_to_end_ms": 176.34904701116866,
+      "avg_backend_start_to_start_ms": 76.62871474086649,
+      "avg_backend_idle_gap_ms": 55.3400298692856,
+      "backend_overlap_pairs": 7264
+    },
+    "172.31.34.179:8000": {
+      "request_count": 3422,
+      "avg_client_prep_ms": 0.0,
+      "avg_client_submit_to_backend_start_ms": 2.389791205499271,
+      "avg_backend_exec_ms": 17.768333001418256,
+      "avg_backend_to_client_return_ms": 4.588559174105691,
+      "avg_end_to_end_ms": 24.746683381023217,
+      "avg_backend_start_to_start_ms": 249.10674454767917,
+      "avg_backend_idle_gap_ms": 233.61447637313222,
+      "backend_overlap_pairs": 1020
+    },
+    "172.31.36.225:8000": {
+      "request_count": 3488,
+      "avg_client_prep_ms": 0.0,
+      "avg_client_submit_to_backend_start_ms": 6.888004207829817,
+      "avg_backend_exec_ms": 35.30255431702378,
+      "avg_backend_to_client_return_ms": 5.816695066767001,
+      "avg_end_to_end_ms": 48.0072535916206,
+      "avg_backend_start_to_start_ms": 244.16755002653287,
+      "avg_backend_idle_gap_ms": 214.8317994652965,
+      "backend_overlap_pairs": 1474
+    },
+    "172.31.46.11:8000": {
+      "request_count": 5306,
+      "avg_client_prep_ms": 0.0,
+      "avg_client_submit_to_backend_start_ms": 8.165705307357678,
+      "avg_backend_exec_ms": 17.940029080660892,
+      "avg_backend_to_client_return_ms": 2.6661840601323283,
+      "avg_end_to_end_ms": 28.7719184481509,
+      "avg_backend_start_to_start_ms": 154.81713696766528,
+      "avg_backend_idle_gap_ms": 143.80571066939976,
+      "backend_overlap_pairs": 1244
+    },
+    "172.31.32.69:8010": {
+      "request_count": 5294,
+      "avg_client_prep_ms": 0.0,
+      "avg_client_submit_to_backend_start_ms": 4.838190846142338,
+      "avg_backend_exec_ms": 22.40973888904498,
+      "avg_backend_to_client_return_ms": 8.217220446907623,
+      "avg_end_to_end_ms": 35.465150182094945,
+      "avg_backend_start_to_start_ms": 151.23582643032884,
+      "avg_backend_idle_gap_ms": 138.73710453048582,
+      "backend_overlap_pairs": 1777
+    },
+    "172.31.46.11:8010": {
+      "request_count": 15428,
+      "avg_client_prep_ms": 0.0,
+      "avg_client_submit_to_backend_start_ms": 466.2793415304228,
+      "avg_backend_exec_ms": 358.72364300719687,
+      "avg_backend_to_client_return_ms": 132.632639252339,
+      "avg_end_to_end_ms": 957.6356237899587,
+      "avg_backend_start_to_start_ms": 52.41081063526559,
+      "avg_backend_idle_gap_ms": 29.003015964394557,
+      "backend_overlap_pairs": 12869
+    },
+    "172.31.36.225:8010": {
+      "request_count": 7004,
+      "avg_client_prep_ms": 0.0,
+      "avg_client_submit_to_backend_start_ms": 355.3099504271485,
+      "avg_backend_exec_ms": 701.9497571775805,
+      "avg_backend_to_client_return_ms": 129.18514173280028,
+      "avg_end_to_end_ms": 1186.4448493375294,
+      "avg_backend_start_to_start_ms": 111.64140272324347,
+      "avg_backend_idle_gap_ms": 60.81315253302827,
+      "backend_overlap_pairs": 5898
+    },
+    "172.31.40.38:8010": {
+      "request_count": 7102,
+      "avg_client_prep_ms": 0.0,
+      "avg_client_submit_to_backend_start_ms": 8.019947696826518,
+      "avg_backend_exec_ms": 34.58875177679381,
+      "avg_backend_to_client_return_ms": 9.219333340637585,
+      "avg_end_to_end_ms": 51.82803281425792,
+      "avg_backend_start_to_start_ms": 108.29972895144275,
+      "avg_backend_idle_gap_ms": 88.90741376066994,
+      "backend_overlap_pairs": 3312
+    },
+    "172.31.35.65:8010": {
+      "request_count": 2112,
+      "avg_client_prep_ms": 0.0,
+      "avg_client_submit_to_backend_start_ms": 4070.4501267861237,
+      "avg_backend_exec_ms": 5031.888066706332,
+      "avg_backend_to_client_return_ms": 1528.4420746293936,
+      "avg_end_to_end_ms": 10630.780268121849,
+      "avg_backend_start_to_start_ms": 357.16488699052417,
+      "avg_backend_idle_gap_ms": 183.50234883252844,
+      "backend_overlap_pairs": 1955
+    },
+    "172.31.32.69:8020": {
+      "request_count": 9598,
+      "avg_client_prep_ms": 0.0,
+      "avg_client_submit_to_backend_start_ms": 459.45647692377304,
+      "avg_backend_exec_ms": 421.9178867280471,
+      "avg_backend_to_client_return_ms": 180.37493098748428,
+      "avg_end_to_end_ms": 1061.7492946393045,
+      "avg_backend_start_to_start_ms": 65.60215500850187,
+      "avg_backend_idle_gap_ms": 40.522320414379486,
+      "backend_overlap_pairs": 8221
+    },
+    "172.31.34.115:8010": {
+      "request_count": 550,
+      "avg_client_prep_ms": 0.0,
+      "avg_client_submit_to_backend_start_ms": 1277.5375288183038,
+      "avg_backend_exec_ms": 4523.494212844155,
+      "avg_backend_to_client_return_ms": 637.0071094686335,
+      "avg_end_to_end_ms": 6438.038851131092,
+      "avg_backend_start_to_start_ms": 905.6363687706341,
+      "avg_backend_idle_gap_ms": 690.3980785814574,
+      "backend_overlap_pairs": 485
+    },
+    "172.31.40.38:8020": {
+      "request_count": 78,
+      "avg_client_prep_ms": 0.0,
+      "avg_client_submit_to_backend_start_ms": 191.6588911643395,
+      "avg_backend_exec_ms": 1473.7123495493179,
+      "avg_backend_to_client_return_ms": 326.2891616576757,
+      "avg_end_to_end_ms": 1991.6604023713332,
+      "avg_backend_start_to_start_ms": 1032.0213057778099,
+      "avg_backend_idle_gap_ms": 792.496309651957,
+      "backend_overlap_pairs": 69
+    },
+    "172.31.39.15:8010": {
+      "request_count": 675,
+      "avg_client_prep_ms": 0.0,
+      "avg_client_submit_to_backend_start_ms": 1.201129842687536,
+      "avg_backend_exec_ms": 15.642295060334382,
+      "avg_backend_to_client_return_ms": 2.8473617412425853,
+      "avg_end_to_end_ms": 19.690786644264502,
+      "avg_backend_start_to_start_ms": 492.5124153539052,
+      "avg_backend_idle_gap_ms": 477.11227414162295,
+      "backend_overlap_pairs": 97
+    },
+    "172.31.39.15:8020": {
+      "request_count": 61,
+      "avg_client_prep_ms": 0.0,
+      "avg_client_submit_to_backend_start_ms": 40.843170197283634,
+      "avg_backend_exec_ms": 76.98018824467894,
+      "avg_backend_to_client_return_ms": 3.3249581446413132,
+      "avg_end_to_end_ms": 121.14831658660388,
+      "avg_backend_start_to_start_ms": 1103.101368745168,
+      "avg_backend_idle_gap_ms": 1070.2175060908,
+      "backend_overlap_pairs": 11
+    }
+  }
+}

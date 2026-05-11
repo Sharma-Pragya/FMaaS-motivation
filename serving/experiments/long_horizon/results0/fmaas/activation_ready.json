@@ -1,0 +1,302 @@
+{
+  "diasbp": {
+    "t_arrive": 9.32,
+    "t_ready": 27.323,
+    "latency_s": 18.003
+  },
+  "gestureclass": {
+    "t_arrive": 3.69,
+    "t_ready": 34.346,
+    "latency_s": 30.656
+  },
+  "heartrate": {
+    "t_arrive": 2.87,
+    "t_ready": 34.742,
+    "latency_s": 31.872
+  },
+  "sysbp": {
+    "t_arrive": 6.64,
+    "t_ready": 36.953,
+    "latency_s": 30.313
+  },
+  "ecgclass": {
+    "t_arrive": 0.0,
+    "t_ready": 37.552,
+    "latency_s": 37.552
+  },
+  "imgclass10__app1": {
+    "t_arrive": 14.36,
+    "t_ready": 37.612,
+    "latency_s": 23.252
+  },
+  "etth1fore": {
+    "t_arrive": 9.96,
+    "t_ready": 38.015,
+    "latency_s": 28.055
+  },
+  "imgclass10": {
+    "t_arrive": 14.34,
+    "t_ready": 39.267,
+    "latency_s": 24.927
+  },
+  "eurosatclass": {
+    "t_arrive": 16.71,
+    "t_ready": 39.456,
+    "latency_s": 22.746
+  },
+  "vocseg": {
+    "t_arrive": 61.03,
+    "t_ready": 82.443,
+    "latency_s": 21.413
+  },
+  "eurosatclass__app1": {
+    "t_arrive": 60.61,
+    "t_ready": 86.314,
+    "latency_s": 25.704
+  },
+  "nyudepth": {
+    "t_arrive": 92.49,
+    "t_ready": 111.526,
+    "latency_s": 19.036
+  },
+  "nyudepth__app1": {
+    "t_arrive": 101.21,
+    "t_ready": 121.558,
+    "latency_s": 20.348
+  },
+  "vocseg__app1": {
+    "t_arrive": 91.46,
+    "t_ready": 126.078,
+    "latency_s": 34.618
+  },
+  "ecgclass__app1": {
+    "t_arrive": 140.23,
+    "t_ready": 140.263,
+    "latency_s": 0.033
+  },
+  "heartrate__app1": {
+    "t_arrive": 166.34,
+    "t_ready": 166.378,
+    "latency_s": 0.038
+  },
+  "gestureclass__app1": {
+    "t_arrive": 166.41,
+    "t_ready": 166.447,
+    "latency_s": 0.037
+  },
+  "sysbp__app1": {
+    "t_arrive": 166.57,
+    "t_ready": 166.608,
+    "latency_s": 0.038
+  },
+  "diasbp__app1": {
+    "t_arrive": 167.95,
+    "t_ready": 167.979,
+    "latency_s": 0.029
+  },
+  "etth1fore__app1": {
+    "t_arrive": 169.26,
+    "t_ready": 169.295,
+    "latency_s": 0.035
+  },
+  "imgclass10__app2": {
+    "t_arrive": 169.38,
+    "t_ready": 169.406,
+    "latency_s": 0.026
+  },
+  "imgclass10__app3": {
+    "t_arrive": 173.97,
+    "t_ready": 173.994,
+    "latency_s": 0.024
+  },
+  "eurosatclass__app2": {
+    "t_arrive": 174.05,
+    "t_ready": 174.072,
+    "latency_s": 0.022
+  },
+  "eurosatclass__app3": {
+    "t_arrive": 176.3,
+    "t_ready": 176.558,
+    "latency_s": 0.258
+  },
+  "vocseg__app2": {
+    "t_arrive": 177.02,
+    "t_ready": 177.05,
+    "latency_s": 0.03
+  },
+  "vocseg__app3": {
+    "t_arrive": 177.21,
+    "t_ready": 177.236,
+    "latency_s": 0.026
+  },
+  "nyudepth__app2": {
+    "t_arrive": 177.91,
+    "t_ready": 177.938,
+    "latency_s": 0.028
+  },
+  "nyudepth__app3": {
+    "t_arrive": 178.47,
+    "t_ready": 178.504,
+    "latency_s": 0.034
+  },
+  "ecgclass__app2": {
+    "t_arrive": 210.36,
+    "t_ready": 210.398,
+    "latency_s": 0.038
+  },
+  "heartrate__app2": {
+    "t_arrive": 210.44,
+    "t_ready": 210.471,
+    "latency_s": 0.031
+  },
+  "gestureclass__app2": {
+    "t_arrive": 211.09,
+    "t_ready": 211.124,
+    "latency_s": 0.034
+  },
+  "sysbp__app2": {
+    "t_arrive": 211.59,
+    "t_ready": 211.619,
+    "latency_s": 0.029
+  },
+  "diasbp__app2": {
+    "t_arrive": 211.64,
+    "t_ready": 211.728,
+    "latency_s": 0.088
+  },
+  "etth1fore__app2": {
+    "t_arrive": 215.4,
+    "t_ready": 215.432,
+    "latency_s": 0.032
+  },
+  "imgclass10__app4": {
+    "t_arrive": 215.99,
+    "t_ready": 216.028,
+    "latency_s": 0.038
+  },
+  "imgclass10__app5": {
+    "t_arrive": 217.76,
+    "t_ready": 217.785,
+    "latency_s": 0.025
+  },
+  "eurosatclass__app4": {
+    "t_arrive": 218.01,
+    "t_ready": 218.036,
+    "latency_s": 0.026
+  },
+  "vocseg__app4": {
+    "t_arrive": 219.57,
+    "t_ready": 219.599,
+    "latency_s": 0.029
+  },
+  "vocseg__app5": {
+    "t_arrive": 220.58,
+    "t_ready": 220.611,
+    "latency_s": 0.031
+  },
+  "nyudepth__app4": {
+    "t_arrive": 220.7,
+    "t_ready": 220.727,
+    "latency_s": 0.027
+  },
+  "ecgclass__app3": {
+    "t_arrive": 221.32,
+    "t_ready": 221.37,
+    "latency_s": 0.05
+  },
+  "heartrate__app3": {
+    "t_arrive": 221.41,
+    "t_ready": 221.445,
+    "latency_s": 0.035
+  },
+  "gestureclass__app3": {
+    "t_arrive": 221.44,
+    "t_ready": 221.542,
+    "latency_s": 0.102
+  },
+  "sysbp__app3": {
+    "t_arrive": 222.35,
+    "t_ready": 222.378,
+    "latency_s": 0.028
+  },
+  "eurosatclass__app5": {
+    "t_arrive": 219.27,
+    "t_ready": 241.589,
+    "latency_s": 22.319
+  },
+  "nyudepth__app5": {
+    "t_arrive": 221.21,
+    "t_ready": 249.602,
+    "latency_s": 28.392
+  },
+  "diasbp__app3": {
+    "t_arrive": 251.3,
+    "t_ready": 251.35,
+    "latency_s": 0.05
+  },
+  "etth1fore__app3": {
+    "t_arrive": 252.55,
+    "t_ready": 252.597,
+    "latency_s": 0.047
+  },
+  "imgclass10__app6": {
+    "t_arrive": 257.09,
+    "t_ready": 257.114,
+    "latency_s": 0.024
+  },
+  "imgclass10__app7": {
+    "t_arrive": 257.45,
+    "t_ready": 257.488,
+    "latency_s": 0.038
+  },
+  "eurosatclass__app6": {
+    "t_arrive": 258.17,
+    "t_ready": 258.193,
+    "latency_s": 0.023
+  },
+  "eurosatclass__app7": {
+    "t_arrive": 262.4,
+    "t_ready": 262.85,
+    "latency_s": 0.45
+  },
+  "vocseg__app6": {
+    "t_arrive": 262.89,
+    "t_ready": 262.94,
+    "latency_s": 0.05
+  },
+  "vocseg__app7": {
+    "t_arrive": 263.31,
+    "t_ready": 263.336,
+    "latency_s": 0.026
+  },
+  "nyudepth__app6": {
+    "t_arrive": 378.4,
+    "t_ready": 379.778,
+    "latency_s": 1.378
+  },
+  "nyudepth__app7": {
+    "t_arrive": 384.23,
+    "t_ready": 422.199,
+    "latency_s": 37.969
+  },
+  "ecgclass__app4": {
+    "t_arrive": 465.88,
+    "t_ready": 465.915,
+    "latency_s": 0.035
+  },
+  "heartrate__app4": {
+    "t_arrive": 470.94,
+    "t_ready": 494.726,
+    "latency_s": 23.786
+  },
+  "gestureclass__app4": {
+    "t_arrive": 506.5,
+    "t_ready": 506.52,
+    "latency_s": 0.02
+  },
+  "sysbp__app4": {
+    "t_arrive": 510.17,
+    "t_ready": 527.815,
+    "latency_s": 17.645
+  }
+}

@@ -1,0 +1,372 @@
+{
+  "diasbp": {
+    "t_arrive": 5.73,
+    "t_ready": 29.486,
+    "latency_s": 23.756
+  },
+  "imgclass10": {
+    "t_arrive": 7.38,
+    "t_ready": 29.726,
+    "latency_s": 22.346
+  },
+  "etth1fore": {
+    "t_arrive": 4.36,
+    "t_ready": 30.08,
+    "latency_s": 25.72
+  },
+  "eurosatclass__app1": {
+    "t_arrive": 9.29,
+    "t_ready": 30.347,
+    "latency_s": 21.057
+  },
+  "sysbp": {
+    "t_arrive": 0.26,
+    "t_ready": 30.394,
+    "latency_s": 30.134
+  },
+  "gestureclass": {
+    "t_arrive": 4.54,
+    "t_ready": 31.143,
+    "latency_s": 26.603
+  },
+  "heartrate": {
+    "t_arrive": 0.0,
+    "t_ready": 32.216,
+    "latency_s": 32.216
+  },
+  "eurosatclass": {
+    "t_arrive": 13.28,
+    "t_ready": 35.817,
+    "latency_s": 22.537
+  },
+  "ecgclass": {
+    "t_arrive": 0.0,
+    "t_ready": 36.424,
+    "latency_s": 36.424
+  },
+  "vocseg__app1": {
+    "t_arrive": 12.01,
+    "t_ready": 36.912,
+    "latency_s": 24.902
+  },
+  "imgclass10__app1": {
+    "t_arrive": 12.69,
+    "t_ready": 37.711,
+    "latency_s": 25.021
+  },
+  "nyudepth__app1": {
+    "t_arrive": 16.63,
+    "t_ready": 38.817,
+    "latency_s": 22.187
+  },
+  "diasbp__app1": {
+    "t_arrive": 33.42,
+    "t_ready": 53.147,
+    "latency_s": 19.727
+  },
+  "etth1fore__app1": {
+    "t_arrive": 34.27,
+    "t_ready": 53.923,
+    "latency_s": 19.653
+  },
+  "sysbp__app1": {
+    "t_arrive": 31.14,
+    "t_ready": 54.928,
+    "latency_s": 23.788
+  },
+  "nyudepth": {
+    "t_arrive": 19.91,
+    "t_ready": 55.351,
+    "latency_s": 35.441
+  },
+  "gestureclass__app1": {
+    "t_arrive": 28.71,
+    "t_ready": 55.416,
+    "latency_s": 26.706
+  },
+  "vocseg": {
+    "t_arrive": 18.63,
+    "t_ready": 55.473,
+    "latency_s": 36.843
+  },
+  "heartrate__app1": {
+    "t_arrive": 25.58,
+    "t_ready": 55.631,
+    "latency_s": 30.051
+  },
+  "ecgclass__app1": {
+    "t_arrive": 28.68,
+    "t_ready": 60.587,
+    "latency_s": 31.907
+  },
+  "vocseg__app2": {
+    "t_arrive": 124.19,
+    "t_ready": 144.463,
+    "latency_s": 20.273
+  },
+  "eurosatclass__app2": {
+    "t_arrive": 122.06,
+    "t_ready": 144.55,
+    "latency_s": 22.49
+  },
+  "eurosatclass__app3": {
+    "t_arrive": 124.53,
+    "t_ready": 145.331,
+    "latency_s": 20.801
+  },
+  "imgclass10__app2": {
+    "t_arrive": 121.21,
+    "t_ready": 145.795,
+    "latency_s": 24.585
+  },
+  "imgclass10__app3": {
+    "t_arrive": 125.47,
+    "t_ready": 146.063,
+    "latency_s": 20.593
+  },
+  "vocseg__app3": {
+    "t_arrive": 122.79,
+    "t_ready": 151.155,
+    "latency_s": 28.365
+  },
+  "sysbp__app2": {
+    "t_arrive": 177.82,
+    "t_ready": 195.513,
+    "latency_s": 17.693
+  },
+  "nyudepth__app3": {
+    "t_arrive": 176.81,
+    "t_ready": 197.006,
+    "latency_s": 20.196
+  },
+  "heartrate__app2": {
+    "t_arrive": 177.93,
+    "t_ready": 197.567,
+    "latency_s": 19.637
+  },
+  "nyudepth__app2": {
+    "t_arrive": 172.1,
+    "t_ready": 197.617,
+    "latency_s": 25.517
+  },
+  "ecgclass__app2": {
+    "t_arrive": 182.92,
+    "t_ready": 206.103,
+    "latency_s": 23.183
+  },
+  "gestureclass__app2": {
+    "t_arrive": 184.97,
+    "t_ready": 209.624,
+    "latency_s": 24.654
+  },
+  "etth1fore__app2": {
+    "t_arrive": 196.26,
+    "t_ready": 215.912,
+    "latency_s": 19.652
+  },
+  "diasbp__app2": {
+    "t_arrive": 202.41,
+    "t_ready": 222.269,
+    "latency_s": 19.859
+  },
+  "imgclass10__app5": {
+    "t_arrive": 283.8,
+    "t_ready": 306.516,
+    "latency_s": 22.716
+  },
+  "imgclass10__app4": {
+    "t_arrive": 280.47,
+    "t_ready": 307.041,
+    "latency_s": 26.571
+  },
+  "vocseg__app5": {
+    "t_arrive": 327.75,
+    "t_ready": 346.348,
+    "latency_s": 18.598
+  },
+  "eurosatclass__app5": {
+    "t_arrive": 332.11,
+    "t_ready": 353.016,
+    "latency_s": 20.906
+  },
+  "vocseg__app4": {
+    "t_arrive": 332.83,
+    "t_ready": 353.175,
+    "latency_s": 20.345
+  },
+  "heartrate__app3": {
+    "t_arrive": 330.69,
+    "t_ready": 354.33,
+    "latency_s": 23.64
+  },
+  "eurosatclass__app4": {
+    "t_arrive": 332.68,
+    "t_ready": 355.86,
+    "latency_s": 23.18
+  },
+  "nyudepth__app4": {
+    "t_arrive": 333.13,
+    "t_ready": 356.149,
+    "latency_s": 23.019
+  },
+  "nyudepth__app5": {
+    "t_arrive": 333.15,
+    "t_ready": 357.237,
+    "latency_s": 24.087
+  },
+  "gestureclass__app3": {
+    "t_arrive": 338.53,
+    "t_ready": 358.825,
+    "latency_s": 20.295
+  },
+  "etth1fore__app3": {
+    "t_arrive": 337.96,
+    "t_ready": 359.611,
+    "latency_s": 21.651
+  },
+  "diasbp__app3": {
+    "t_arrive": 338.77,
+    "t_ready": 360.456,
+    "latency_s": 21.686
+  },
+  "sysbp__app3": {
+    "t_arrive": 341.47,
+    "t_ready": 361.165,
+    "latency_s": 19.695
+  },
+  "ecgclass__app3": {
+    "t_arrive": 335.9,
+    "t_ready": 365.704,
+    "latency_s": 29.804
+  },
+  "imgclass10__app6": {
+    "t_arrive": 347.95,
+    "t_ready": 366.53,
+    "latency_s": 18.58
+  },
+  "eurosatclass__app6": {
+    "t_arrive": 348.09,
+    "t_ready": 366.586,
+    "latency_s": 18.496
+  },
+  "imgclass10__app7": {
+    "t_arrive": 346.16,
+    "t_ready": 366.701,
+    "latency_s": 20.541
+  },
+  "eurosatclass__app7": {
+    "t_arrive": 345.11,
+    "t_ready": 367.905,
+    "latency_s": 22.795
+  },
+  "heartrate__app4": {
+    "t_arrive": 347.85,
+    "t_ready": 368.152,
+    "latency_s": 20.302
+  },
+  "sysbp__app4": {
+    "t_arrive": 348.68,
+    "t_ready": 376.659,
+    "latency_s": 27.979
+  },
+  "gestureclass__app4": {
+    "t_arrive": 354.41,
+    "t_ready": 376.844,
+    "latency_s": 22.434
+  },
+  "vocseg__app7": {
+    "t_arrive": 350.49,
+    "t_ready": 376.99,
+    "latency_s": 26.5
+  },
+  "vocseg__app6": {
+    "t_arrive": 348.54,
+    "t_ready": 377.241,
+    "latency_s": 28.701
+  },
+  "nyudepth__app6": {
+    "t_arrive": 352.6,
+    "t_ready": 377.419,
+    "latency_s": 24.819
+  },
+  "nyudepth__app7": {
+    "t_arrive": 350.52,
+    "t_ready": 379.129,
+    "latency_s": 28.609
+  },
+  "etth1fore__app4": {
+    "t_arrive": 362.75,
+    "t_ready": 380.593,
+    "latency_s": 17.843
+  },
+  "ecgclass__app4": {
+    "t_arrive": 354.04,
+    "t_ready": 381.484,
+    "latency_s": 27.444
+  },
+  "imgclass10__app9": {
+    "t_arrive": 363.08,
+    "t_ready": 381.601,
+    "latency_s": 18.521
+  },
+  "imgclass10__app8": {
+    "t_arrive": 356.95,
+    "t_ready": 381.656,
+    "latency_s": 24.706
+  },
+  "diasbp__app4": {
+    "t_arrive": 355.82,
+    "t_ready": 382.28,
+    "latency_s": 26.46
+  },
+  "vocseg__app8": {
+    "t_arrive": 420.88,
+    "t_ready": 441.308,
+    "latency_s": 20.428
+  },
+  "vocseg__app9": {
+    "t_arrive": 417.37,
+    "t_ready": 442.046,
+    "latency_s": 24.676
+  },
+  "nyudepth__app8": {
+    "t_arrive": 422.17,
+    "t_ready": 442.924,
+    "latency_s": 20.754
+  },
+  "eurosatclass__app8": {
+    "t_arrive": 420.71,
+    "t_ready": 443.182,
+    "latency_s": 22.472
+  },
+  "gestureclass__app5": {
+    "t_arrive": 423.27,
+    "t_ready": 447.582,
+    "latency_s": 24.312
+  },
+  "eurosatclass__app9": {
+    "t_arrive": 423.71,
+    "t_ready": 448.502,
+    "latency_s": 24.792
+  },
+  "heartrate__app5": {
+    "t_arrive": 427.35,
+    "t_ready": 449.003,
+    "latency_s": 21.653
+  },
+  "ecgclass__app5": {
+    "t_arrive": 423.17,
+    "t_ready": 452.747,
+    "latency_s": 29.577
+  },
+  "nyudepth__app9": {
+    "t_arrive": 429.21,
+    "t_ready": 453.216,
+    "latency_s": 24.006
+  },
+  "sysbp__app5": {
+    "t_arrive": 430.8,
+    "t_ready": 466.871,
+    "latency_s": 36.071
+  }
+}
