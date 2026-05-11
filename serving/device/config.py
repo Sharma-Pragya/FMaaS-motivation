@@ -340,83 +340,83 @@ DECODERS={
     # DINOv2 variants
     'linear_dinosmall_eurosatclass':{
         'decoder_type': 'linear',
-        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':384,'output_dim':10}}
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':384,'output_dim':10,'mode':'CLS'}}
     },
     'linear_dinobase_eurosatclass':{
         'decoder_type': 'linear',
-        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':768,'output_dim':10}}
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':768,'output_dim':10,'mode':'CLS'}}
     },
     'linear_dinolarge_eurosatclass':{
         'decoder_type': 'linear',
-        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':1024,'output_dim':10}}
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':1024,'output_dim':10,'mode':'CLS'}}
     },
     'linear_dinogiant_eurosatclass':{
         'decoder_type': 'linear',
-        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':1536,'output_dim':10}}
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':1536,'output_dim':10,'mode':'CLS'}}
     },
     # Swin Transformer variants
     'linear_swintiny_eurosatclass':{
         'decoder_type': 'linear',
-        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':768,'output_dim':10}}
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':768,'output_dim':10,'mode':'ALL'}}
     },
     'linear_swinsmall_eurosatclass':{
         'decoder_type': 'linear',
-        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':768,'output_dim':10}}
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':768,'output_dim':10,'mode':'ALL'}}
     },
     'linear_swinbase_eurosatclass':{
         'decoder_type': 'linear',
-        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':1024,'output_dim':10}}
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':1024,'output_dim':10,'mode':'ALL'}}
     },
     'linear_swinlarge_eurosatclass':{
         'decoder_type': 'linear',
-        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':1536,'output_dim':10}}
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':1536,'output_dim':10,'mode':'ALL'}}
     },
     # MAE (ViT-MAE) variants
     'linear_maebase_eurosatclass':{
         'decoder_type': 'linear',
-        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':768,'output_dim':10}}
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':768,'output_dim':10,'mode':'CLS'}}
     },
     'linear_maelarge_eurosatclass':{
         'decoder_type': 'linear',
-        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':1024,'output_dim':10}}
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':1024,'output_dim':10,'mode':'CLS'}}
     },
     'linear_maehuge_eurosatclass':{
         'decoder_type': 'linear',
-        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':1280,'output_dim':10}}
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':1280,'output_dim':10,'mode':'CLS'}}
     },
     # VGG variants (4096-dim features after classifier head)
     'linear_vgg11_eurosatclass':{
         'decoder_type': 'linear',
-        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':4096,'output_dim':10}}
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':4096,'output_dim':10,'mode':'CLS'}}
     },
     'linear_vgg13_eurosatclass':{
         'decoder_type': 'linear',
-        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':4096,'output_dim':10}}
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':4096,'output_dim':10,'mode':'CLS'}}
     },
     'linear_vgg16_eurosatclass':{
         'decoder_type': 'linear',
-        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':4096,'output_dim':10}}
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':4096,'output_dim':10,'mode':'CLS'}}
     },
     'linear_vgg19_eurosatclass':{
         'decoder_type': 'linear',
-        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':4096,'output_dim':10}}
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':4096,'output_dim':10,'mode':'CLS'}}
     },
     # ResNet variants (pooler_output flattened: resnet18/34 = 512*7*7, resnet50/101 = 2048*7*7)
     'linear_resnet18_eurosatclass':{
         'decoder_type': 'linear',
-        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':25088,'output_dim':10}}
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':25088,'output_dim':10,'mode':'CLS'}}
     },
     'linear_resnet34_eurosatclass':{
         'decoder_type': 'linear',
-        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':25088,'output_dim':10}}
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':25088,'output_dim':10,'mode':'CLS'}}
     },
     'linear_resnet50_eurosatclass':{
         'decoder_type': 'linear',
-        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':100352,'output_dim':10}}
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':100352,'output_dim':10,'mode':'CLS'}}
     },
     'linear_resnet101_eurosatclass':{
         'decoder_type': 'linear',
-        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':100352,'output_dim':10}}
+        'decoder_config':{'DEVICE': DEVICE, 'cfg':{'input_dim':100352,'output_dim':10,'mode':'CLS'}}
     },
 
     # ── Monocular depth decoders (NYU Depth V2) ──────────────────────────
@@ -436,6 +436,22 @@ DECODERS={
         'decoder_type': 'monocular_depth',
         'decoder_config':{'device': DEVICE, 'cfg':{'input_dim':1536, 'height':16, 'width':16, 'pixel_height':224, 'pixel_width':224, 'mode':'PATCH'}}
     },
+    'monodepth_swintiny':{
+        'decoder_type': 'monocular_depth',
+        'decoder_config':{'device': DEVICE, 'cfg':{'input_dim':768, 'height':7, 'width':7, 'pixel_height':224, 'pixel_width':224, 'mode':'ALL'}}
+    },
+    'monodepth_swinsmall':{
+        'decoder_type': 'monocular_depth',
+        'decoder_config':{'device': DEVICE, 'cfg':{'input_dim':768, 'height':7, 'width':7, 'pixel_height':224, 'pixel_width':224, 'mode':'ALL'}}
+    },
+    'monodepth_swinbase':{
+        'decoder_type': 'monocular_depth',
+        'decoder_config':{'device': DEVICE, 'cfg':{'input_dim':1024, 'height':7, 'width':7, 'pixel_height':224, 'pixel_width':224, 'mode':'ALL'}}
+    },
+    'monodepth_swinlarge':{
+        'decoder_type': 'monocular_depth',
+        'decoder_config':{'device': DEVICE, 'cfg':{'input_dim':1536, 'height':7, 'width':7, 'pixel_height':224, 'pixel_width':224, 'mode':'ALL'}}
+    }, 
 
     # ── Linear semantic segmentation decoders (VOC12) ─────────────────────
     'linseg_dinosmall_vocseg':{
@@ -454,90 +470,106 @@ DECODERS={
         'decoder_type': 'linear_seg',
         'decoder_config':{'device': DEVICE, 'cfg':{'input_dim':1536, 'output_dim':21, 'height':16, 'width':16, 'pixel_height':224, 'pixel_width':224, 'ignore_index':255, 'mode':'PATCH'}}
     },
+    'linseg_swintiny_vocseg':{
+        'decoder_type': 'linear_seg',
+        'decoder_config':{'device': DEVICE, 'cfg':{'input_dim':768, 'output_dim':21, 'height':7, 'width':7, 'pixel_height':224, 'pixel_width':224, 'ignore_index':255, 'mode':'ALL'}}
+    },
+    'linseg_swinsmall_vocseg':{
+        'decoder_type': 'linear_seg',
+        'decoder_config':{'device': DEVICE, 'cfg':{'input_dim':768, 'output_dim':21, 'height':7, 'width':7, 'pixel_height':224, 'pixel_width':224, 'ignore_index':255, 'mode':'ALL'}}
+    },
+    'linseg_swinbase_vocseg':{
+        'decoder_type': 'linear_seg',
+        'decoder_config':{'device': DEVICE, 'cfg':{'input_dim':1024, 'output_dim':21, 'height':7, 'width':7, 'pixel_height':224, 'pixel_width':224, 'ignore_index':255, 'mode':'ALL'}}
+    },
+    'linseg_swinlarge_vocseg':{
+        'decoder_type': 'linear_seg',
+        'decoder_config':{'device': DEVICE, 'cfg':{'input_dim':1536, 'output_dim':21, 'height':7, 'width':7, 'pixel_height':224, 'pixel_width':224, 'ignore_index':255, 'mode':'ALL'}}
+    },
 
     # ── Vision decoders (linear, 10-class classification) ──────────────
     'linear_dinosmall_imgclass10': {
         'decoder_type': 'linear',
         'decoder_config': {
             'device': DEVICE,
-            'cfg': {'input_dim': 384, 'output_dim': 10},
+            'cfg': {'input_dim': 384, 'output_dim': 10, 'mode': 'CLS'},
         }
     },
     'linear_dinobase_imgclass10': {
         'decoder_type': 'linear',
         'decoder_config': {
             'device': DEVICE,
-            'cfg': {'input_dim': 768, 'output_dim': 10},
+            'cfg': {'input_dim': 768, 'output_dim': 10, 'mode': 'CLS'},
         }
     },
     'linear_dinolarge_imgclass10': {
         'decoder_type': 'linear',
         'decoder_config': {
             'device': DEVICE,
-            'cfg': {'input_dim': 1024, 'output_dim': 10},
+            'cfg': {'input_dim': 1024, 'output_dim': 10, 'mode': 'CLS'},
         }
     },
     'linear_dinogiant_imgclass10': {
         'decoder_type': 'linear',
         'decoder_config': {
             'device': DEVICE,
-            'cfg': {'input_dim': 1536, 'output_dim': 10},
+            'cfg': {'input_dim': 1536, 'output_dim': 10, 'mode': 'CLS'},
         }
     },
     'linear_maebase_imgclass10': {
         'decoder_type': 'linear',
         'decoder_config': {
             'device': DEVICE,
-            'cfg': {'input_dim': 768, 'output_dim': 10},
+            'cfg': {'input_dim': 768, 'output_dim': 10, 'mode': 'CLS'},
         }
     },
     'linear_maelarge_imgclass10': {
         'decoder_type': 'linear',
         'decoder_config': {
             'device': DEVICE,
-            'cfg': {'input_dim': 1024, 'output_dim': 10},
+            'cfg': {'input_dim': 1024, 'output_dim': 10, 'mode': 'CLS'},
         }
     },
     'linear_maehuge_imgclass10': {
         'decoder_type': 'linear',
         'decoder_config': {
             'device': DEVICE,
-            'cfg': {'input_dim': 1280, 'output_dim': 10},
+            'cfg': {'input_dim': 1280, 'output_dim': 10, 'mode': 'CLS'},
         }
     },
     'linear_swintiny_imgclass10': {
         'decoder_type': 'linear',
         'decoder_config': {
             'device': DEVICE,
-            'cfg': {'input_dim': 768, 'output_dim': 10},
+            'cfg': {'input_dim': 768, 'output_dim': 10, 'mode': 'ALL'},
         }
     },
     'linear_swinsmall_imgclass10': {
         'decoder_type': 'linear',
         'decoder_config': {
             'device': DEVICE,
-            'cfg': {'input_dim': 768, 'output_dim': 10},
+            'cfg': {'input_dim': 768, 'output_dim': 10, 'mode': 'ALL'},
         }
     },
     'linear_swinbase_imgclass10': {
         'decoder_type': 'linear',
         'decoder_config': {
             'device': DEVICE,
-            'cfg': {'input_dim': 1024, 'output_dim': 10},
+            'cfg': {'input_dim': 1024, 'output_dim': 10, 'mode': 'ALL'},
         }
     },
     'linear_swinlarge_imgclass10': {
         'decoder_type': 'linear',
         'decoder_config': {
             'device': DEVICE,
-            'cfg': {'input_dim': 1536, 'output_dim': 10},
+            'cfg': {'input_dim': 1536, 'output_dim': 10, 'mode': 'ALL'},
         }
     },
     'linear_vgg_imgclass10': {
         'decoder_type': 'linear',
         'decoder_config': {
             'device': DEVICE,
-            'cfg': {'input_dim': 4096, 'output_dim': 10},
+            'cfg': {'input_dim': 4096, 'output_dim': 10, 'mode': 'CLS'},
         }
     },
 }

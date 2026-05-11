@@ -68,6 +68,12 @@ class BaseRuntime(ABC):
     def add_adapters(self, adapters: list) -> Logger:
         """Hot-add LoRA adapters to the loaded backbone."""
 
+    def remove_decoders(self, task_names: list) -> Logger:
+        """Remove decoders for the given tasks and free GPU memory.
+        Default no-op; override in concrete runtimes that support it."""
+        from fmtk.logger import Logger
+        return Logger(None, "noop")
+
 
 # ---------------------------------------------------------------------------
 # PyTorch runtime (TSFM backbones + MLP decoders)
@@ -124,6 +130,12 @@ class PyTorchRuntime(BaseRuntime):
     def add_adapters(self, adapters: list) -> Logger:
         with self._lock:
             op_log = self._loader.add_adapter(adapters)
+            self._sync()
+            return op_log
+
+    def remove_decoders(self, task_names: list) -> Logger:
+        with self._lock:
+            op_log = self._loader.remove_decoder(task_names)
             self._sync()
             return op_log
 

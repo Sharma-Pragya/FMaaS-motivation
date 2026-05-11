@@ -58,8 +58,7 @@ def _build_pipeline(backbone: str, device, logger: Logger | None, model_config: 
                        "dinosmall-patch", "dinobase-patch", "dinolarge-patch", "dinogiant-patch"):
         size = backbone.replace("dino", "").replace("-patch", "")  # small, base, large, giant
         cfg = model_config or {}
-        if backbone.endswith("-patch"):
-            cfg.setdefault("return_all_tokens", True)
+        cfg.setdefault("return_all_tokens", True)
         return Pipeline(DinoV2Model(device, size, model_config=cfg), logger=logger)
     elif backbone in ("swintiny", "swinsmall", "swinbase", "swinlarge"):
         size = backbone.replace("swin", "")  # tiny, small, base, large
@@ -237,6 +236,27 @@ class ModelLoader:
         self.pipeline.logger = self.logger
         print(f"[ModelLoader] Hot-added {len(adapter_specs)} adapter(s). Total adapters: "
               f"{sum(v is not None for v in self.adapters.values())}")
+        self._merge(op_log)
+        return op_log
+
+    def remove_decoder(self, task_names: list) -> Logger:
+        """Remove decoders for the given tasks and free their GPU memory."""
+        op_log = self._op_logger()
+        removed = []
+        for task in task_names:
+            decoder_name = self.decoders.pop(task, None)
+            if decoder_name is not None and self.pipeline is not None:
+                decoder_obj = self.pipeline.decoders.pop(decoder_name, None)
+                if decoder_obj is not None:
+                    if hasattr(decoder_obj, "model") and decoder_obj.model is not None:
+                        del decoder_obj.model
+                    del decoder_obj
+                removed.append(task)
+        if removed:
+            torch.cuda.empty_cache()
+            gc.collect()
+        print(f"[ModelLoader] Removed {len(removed)} decoder(s): {removed}. "
+              f"Remaining: {len(self.decoders)}")
         self._merge(op_log)
         return op_log
 
