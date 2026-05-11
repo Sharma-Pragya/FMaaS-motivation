@@ -93,12 +93,13 @@ class ClipperPlacementScheduler(BaseScheduler):
                     f"Task '{task_name}' has no 'backbone' specified. "
                     f"clipper_place requires a backbone per task in user_config."
                 )
-            temp_plan, demand_left = self._deploy_task(state, task)
+            temp_plan, demand_left, bottleneck = self._deploy_task(state, task)
 
             if demand_left is not None and demand_left > self.config.demand_epsilon:
-                logger.warning(
+                print(
                     f"ClipperPlacement: task '{task_name}' has {demand_left:.4f} rps "
-                    f"unsatisfied demand out of {task.peak_workload:.4f} rps"
+                    f"unsatisfied demand out of {task.peak_workload:.4f} rps "
+                    f"(bottleneck: {bottleneck})"
                 )
 
             if temp_plan:
@@ -129,7 +130,7 @@ class ClipperPlacementScheduler(BaseScheduler):
         state: DeploymentState,
         task: TaskSpec,
         accuracy_mode: bool = False,  # accepted for interface compatibility, ignored
-    ) -> Tuple[Optional[Dict], float]:
+    ) -> Tuple[Optional[Dict], float, str]:
         """Deploy a single task using its user-specified backbone.
 
         No sharing — skips existing deployments entirely. Places only on
@@ -141,7 +142,7 @@ class ClipperPlacementScheduler(BaseScheduler):
             task: TaskSpec with backbone set.
 
         Returns:
-            Tuple of (deployment plan dict, remaining demand).
+            Tuple of (deployment plan dict, remaining demand, bottleneck reason).
         """
         backbone = task.backbone
         # Unique key per task: prevents merging with any other task's deployment
@@ -153,9 +154,31 @@ class ClipperPlacementScheduler(BaseScheduler):
         demand_left = task.peak_workload
 
         backbone_mem = self.data.get_component_mem(backbone)
-        candidate_servers = state.get_servers_by_least_capacity(
-            backbone_mem, max_util=self.config.util_factor,
+
+        # Check how many servers exist with compute headroom vs memory headroom
+        all_compute_ok = state.get_servers_by_least_capacity(
+            min_mem=0.0, max_util=self.config.util_factor, reverse=True
         )
+        candidate_servers = state.get_servers_by_least_capacity(
+            backbone_mem, max_util=self.config.util_factor, reverse=True
+        )
+
+        if not candidate_servers:
+            # No server can fit another copy of this backbone in memory
+            n_blocked_by_mem = len(all_compute_ok)
+            per_server_free = {
+                s.name: s.mem - state.get_server_used_mem(s.name)
+                for s in all_compute_ok
+            }
+            print(
+                f"ClipperPlacement: task '{task.name}' backbone '{backbone}' "
+                f"requires {backbone_mem:.0f} MB but no server has enough free "
+                f"GPU memory for another isolated copy. "
+                f"{n_blocked_by_mem} server(s) have compute headroom (util < "
+                f"{self.config.util_factor}) but are memory-full. "
+                f"Free mem per server: {per_server_free}"
+            )
+            return temp_plan, demand_left, "memory"
 
         # First, check whether any single new server can satisfy the full task
         # before falling back to multi-device distribution.
@@ -171,7 +194,7 @@ class ClipperPlacementScheduler(BaseScheduler):
                 real_backbone=backbone,
             )
             if solo_demand_left <= self.config.demand_epsilon:
-                return solo_plan, solo_demand_left
+                return solo_plan, solo_demand_left, "none"
 
             self.batch_size_map = saved_batch_size_map
             self.expected_batch_size_map = saved_expected_batch_size_map
@@ -185,9 +208,25 @@ class ClipperPlacementScheduler(BaseScheduler):
                 real_backbone=backbone,
             )
             if demand_left <= self.config.demand_epsilon:
-                return temp_plan, demand_left
+                return temp_plan, demand_left, "none"
 
-        return temp_plan, demand_left
+        # Demand remains after trying all candidate servers.
+        # If memory filtering excluded some servers from candidacy, the real
+        # bottleneck is memory restricting the candidate pool — the compute
+        # would fit if all servers were available (as FMaaS proves by sharing).
+        if len(candidate_servers) < len(all_compute_ok):
+            n_excluded = len(all_compute_ok) - len(candidate_servers)
+            print(
+                f"ClipperPlacement: task '{task.name}' backbone '{backbone}' "
+                f"requires {backbone_mem:.0f} MB; {n_excluded} server(s) had "
+                f"compute headroom but were excluded due to insufficient free "
+                f"GPU memory for another isolated backbone copy. "
+                f"Candidate servers (memory-ok): {len(candidate_servers)}, "
+                f"total with compute headroom: {len(all_compute_ok)}"
+            )
+            return temp_plan, demand_left, "memory (restricted candidate pool)"
+
+        return temp_plan, demand_left, "compute"
 
     def _distribute_demand(
         self,

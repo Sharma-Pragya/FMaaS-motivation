@@ -108,9 +108,11 @@ class FMaaSPlacementScheduler(BaseScheduler):
                 for deployment in temp_plan.values():
                     key = (deployment.server_name, deployment.backbone)
                     existing = state.get_deployment(deployment.server_name, deployment.backbone)
-                    if existing and self.batch_profile is not None:
-                        # Batching logic builds fully merged deployments —
-                        # replace directly to avoid double-counting in add_deployment's merge.
+                    if existing:
+                        # _deploy_task returns a fully merged deployment for this
+                        # (server, backbone). Replacing preserves the recomputed
+                        # per-task allocations; add_deployment would merge it
+                        # again and double-count existing task demand.
                         if ':' not in deployment.ip:
                             port = state.get_next_port(
                                 deployment.ip, self.config.base_port, self.config.port_increment,
@@ -139,6 +141,22 @@ class FMaaSPlacementScheduler(BaseScheduler):
             value=spec.get('value', 0),
             backbone=spec.get('backbone', None),
         )
+
+    def _estimate_deployment_util(self, deployment: Deployment) -> float:
+        """Estimate the utilization contributed by one backbone deployment.
+
+        Deployment.util is synchronized to the server's total utilization in
+        DeploymentState, so it cannot be used as the contribution of this
+        specific (server, backbone) deployment when we later revisit it.
+        """
+        util = 0.0
+        for task_name, task_info in deployment.task_info.items():
+            pid = self.data.find_pipeline_id(task_name, deployment.backbone)
+            latency = self.data.get_pipeline_latency(pid, deployment.device_type) if pid else None
+            if latency is None:
+                continue
+            util += task_info.request_per_sec * latency / 1000.0
+        return util
 
     def _deploy_task(
         self,
@@ -174,10 +192,7 @@ class FMaaSPlacementScheduler(BaseScheduler):
                 t_name: t_info.request_per_sec
                 for t_name, t_info in d.task_info.items()
             }
-            # The util on the deployment includes all deployments on that server,
-            # so we estimate this deployment's share from its task demands
-            # (will be recomputed accurately when we touch it)
-            base_deploy_util_tracker[key] = d.util  # initial estimate
+            base_deploy_util_tracker[key] = self._estimate_deployment_util(d)
 
         active_endpoints = [
             (d.server_name, backbone)

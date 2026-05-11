@@ -101,7 +101,7 @@ class DeploymentState:
         ]
         return sorted(servers, key=lambda s: s.util)
 
-    def get_servers_by_least_capacity(self, min_mem: float = 0.0, max_util: float = 1.0) -> List[Server]:
+    def get_servers_by_least_capacity(self, min_mem: float = 0.0, max_util: float = 1.0, reverse: bool = False) -> List[Server]:
         """Get servers sorted by least capacity (most utilized first).
 
         Prefer servers with the least headroom so existing deployments are
@@ -124,7 +124,7 @@ class DeploymentState:
             if s.util < max_util
             and (s.mem - self.get_server_used_mem(s.name)) >= min_mem
         ]
-        return sorted(servers, key=lambda s: s.util, reverse=True)
+        return sorted(servers, key=lambda s: s.util, reverse=reverse)
     
     # --- Deployment Access ---
     
