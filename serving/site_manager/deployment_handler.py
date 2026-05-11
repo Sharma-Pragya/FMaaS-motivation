@@ -138,8 +138,31 @@ async def _wait_for_grpc_ready(log_path: str, timeout_s: float = 60.0, poll_inte
     return False
 
 
+async def _ssh_setup_gpu(ssh_host: str) -> None:
+    """Set GPU persistence mode and lock clocks before starting a device server."""
+    try:
+        ssh_kwargs = dict(username=username, agent_forwarding=True, known_hosts=None)
+        if ssh_key:
+            ssh_kwargs["client_keys"] = [ssh_key]
+        else:
+            ssh_kwargs["agent_path"] = os.environ.get("SSH_AUTH_SOCK")
+        async with asyncssh.connect(ssh_host, **ssh_kwargs) as conn:
+            for cmd in [
+                "sudo nvidia-smi -pm 1",
+                "sudo nvidia-smi -lgc 1590,1590",
+            ]:
+                result = await conn.run(cmd)
+                if result.exit_status == 0:
+                    print(f"[GPU setup] {ssh_host}: `{cmd}` OK")
+                else:
+                    print(f"[GPU setup] {ssh_host}: `{cmd}` exited {result.exit_status}: {result.stderr.strip()}")
+    except Exception as exc:
+        print(f"[GPU setup] {ssh_host}: WARNING — could not run nvidia-smi setup: {exc}")
+
+
 async def _deploy_one(spec: dict):
     ssh_host, grpc_url, grpc_port = _parse_url(spec["device"])
+    await _ssh_setup_gpu(ssh_host)
     print(ssh_host, grpc_port, grpc_url)
     if spec["backbone"] in ("qwen2.5-0.5b", "qwen2.5-1.5b", "qwen2.5-7b"):
         conda_env = vlm_env
@@ -258,6 +281,12 @@ async def _add_decoder_to_device(device_url: str, decoders: list) -> dict:
     _, grpc_url, _ = _parse_url(device_url)
     config_payload = {"decoders": decoders}
     return await _send_control(grpc_url, "add_decoder", json.dumps(config_payload))
+
+
+async def _remove_decoder_from_device(device_url: str, task_names: list) -> dict:
+    """Remove decoders for the given tasks from a running device server."""
+    _, grpc_url, _ = _parse_url(device_url)
+    return await _send_control(grpc_url, "remove_decoder", json.dumps({"tasks": task_names}))
 
 
 async def _swap_backbone_on_device(device_url: str, new_backbone: str, decoders: list) -> dict:
