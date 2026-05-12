@@ -1,0 +1,6 @@
+task,tpc_count,duration_s,offered_rps,delivered_rps
+ecgclass,2,15.0,200.0,80.3333
+ecgclass,5,15.0,200.0,203.3333
+ecgclass,10,15.0,200.0,247.25
+ecgclass,14,15.0,200.0,247.25
+ecgclass,20,15.0,200.0,247.25

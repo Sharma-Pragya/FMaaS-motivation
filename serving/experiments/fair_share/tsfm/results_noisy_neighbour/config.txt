@@ -1,4 +1,4 @@
-Experiment config - Wed May  6 22:06:56 UTC 2026
+Experiment config - Tue May 12 15:32:11 UTC 2026
 Backbone: momentlarge
 Client A (priority/victim): ecgclass
 Client B (other/aggressor): gestureclass
@@ -8,12 +8,9 @@ Number of phases: 3
   Phase 3 (60s): A @ 5 rps, B @ 60 rps
 Total duration: 180s
 Sharing runs:
-  fcfs: scheduler=fifo batch_size=32 batch_wait_ms=0
-  fcfs_nobatch: scheduler=fifo batch_size=1 batch_wait_ms=0
-  stfq: scheduler=stfq batch_size=1 batch_wait_ms=0 rates=ecgclass:1,gestureclass:2
-  bfq_1_1: scheduler=stfq batch_size=32 batch_wait_ms=0 rates=ecgclass:1,gestureclass:1
-  bfq_2_1: scheduler=stfq batch_size=32 batch_wait_ms=0 rates=ecgclass:1,gestureclass:2
-  bfq_3_1: scheduler=stfq batch_size=32 batch_wait_ms=0 rates=ecgclass:1,gestureclass:3
-No-sharing TPC runs: 32  0  no_sharing_tpc_1_1  1  1 32  0  no_sharing_tpc_2_1  2  1 32  0  no_sharing_tpc_3_1  3  1 (tpc_mode=libsmctrl)
-No-sharing runs: 32  0  no_sharing
-Results base: experiments/fair_share/tsfm/results
+  stfq_1_1: scheduler=stfq batch_size=1 batch_wait_ms=0 rates=ecgclass:1,gestureclass:1
+  stfq_1_2: scheduler=stfq batch_size=1 batch_wait_ms=0 rates=ecgclass:1,gestureclass:2
+  stfq_1_3: scheduler=stfq batch_size=1 batch_wait_ms=0 rates=ecgclass:1,gestureclass:3
+No-sharing TPC runs:  (tpc_mode=libsmctrl)
+No-sharing runs: 
+Results base: experiments/fair_share/tsfm/results_noisy_neighbour

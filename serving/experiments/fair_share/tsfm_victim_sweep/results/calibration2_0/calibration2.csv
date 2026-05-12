@@ -1,0 +1,5 @@
+t1_task,t1_tpcs,t2_task,t2_tpcs,batch_size,duration_s,t1_rps,t2_rps
+ecgclass,5,,0,16,15.0,38.6667,0.0
+ecgclass,5,gestureclass,5,16,15.0,18.6667,20.0
+ecgclass,5,gestureclass,10,16,15.0,16.0,33.3333
+ecgclass,5,gestureclass,15,16,15.0,16.0,38.6667

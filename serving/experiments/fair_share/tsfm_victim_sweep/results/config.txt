@@ -1,0 +1,11 @@
+Experiment config - Tue May  5 18:55:34 UTC 2026
+Backbone: momentlarge
+Victim task : ecgclass
+Aggressor task: gestureclass
+Aggressor RPS (fixed): 50
+Victim RPS sweep    : 10 30 50 70
+Duration per run    : 10s
+Sharing runs       : fifo  3  0  fcfs             stfq  3  0  bfq_2_1         ecgclass:1,gestureclass:2
+No-sharing TPC runs: 3  0  no_sharing_tpc  2  1 (tpc_mode=libsmctrl)
+No-sharing runs    : 3  0  no_sharing
+Results base: experiments/fair_share/tsfm_victim_sweep/results

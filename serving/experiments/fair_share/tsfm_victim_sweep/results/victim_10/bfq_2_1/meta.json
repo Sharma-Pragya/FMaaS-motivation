@@ -1,0 +1,7 @@
+{
+  "duration_s": 10.0,
+  "victim_rps": 10.0,
+  "aggressor_rps": 50.0,
+  "scheduler": "stfq",
+  "warmup_secs": 2.0
+}

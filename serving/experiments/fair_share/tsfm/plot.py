@@ -39,23 +39,26 @@ COLORS = {
     "fcfs":           "#D68910",   # darker amber — Shared-BE (visible on white)
     "no_sharing":     "#888888",   # mid gray — BE
     "no_sharing_tpc": "#6B9AC4",   # muted blue — SP (TPC)
+    "stfq":           "#232020",   # very dark gray - STFQ
     "bfq":            "#E06C75",   # pink-red — FMVisor (any weight)
 }
 LABELS = {
-    "fcfs":           "Shared-BE",
+    "fcfs":           "S-BE",
     "no_sharing":     "BE",
     "no_sharing_tpc": "SP",
+    "stfq":           "S-STFQ",
     "bfq":            "FMVisor",
 }
 LINESTYLES = {
     "fcfs":           "-.",
     "no_sharing":     (0, (3, 1, 1, 1)),
     "no_sharing_tpc": "--",
+    "stfq":           "-.",
     "bfq":            "-",
 }
 
 # Plot order (left-to-right on bar charts; top-to-bottom in legends)
-METHOD_ORDER = ["fcfs", "no_sharing", "no_sharing_tpc", "bfq"]
+METHOD_ORDER = ["no_sharing", "no_sharing_tpc", "fcfs", "stfq", "bfq"]
 
 
 def apply_paper_style() -> None:
@@ -368,7 +371,7 @@ def plot_fairness_summary(
                  linewidth=0.4, label="System tput", zorder=3)
 
     ax_left.set_ylabel(r"Fairness", color=FAIR_COLOR)
-    ax_right.set_ylabel("System throughput (req/s)", color=TPUT_COLOR)
+    ax_right.set_ylabel("Throughput (req/s)", color=TPUT_COLOR)
     ax_left.tick_params(axis="y", colors=FAIR_COLOR)
     ax_right.tick_params(axis="y", colors=TPUT_COLOR)
 
@@ -453,11 +456,11 @@ def plot_throughput_timeseries(
                     linewidth=1.0, label=LABELS[m], zorder=3)
             if rps.size:
                 panel_max = max(panel_max, float(rps.max()))
-        if task in offered:
-            centers_o, rps_o = offered[task]
-            ax.plot(centers_o, rps_o, color="black", linestyle=":",
-                    linewidth=0.8, label="Offered load", zorder=2)
-            panel_max = max(panel_max, float(rps_o.max()))
+        # if task in offered:
+        #     centers_o, rps_o = offered[task]
+        #     ax.plot(centers_o, rps_o, color="black", linestyle=":",
+        #             linewidth=0.8, label="Offered load", zorder=2)
+        #     panel_max = max(panel_max, float(rps_o.max()))
         _add_phase_lines(ax, meta, t_max)
         ax.set_ylabel("Throughput (req/sec)")
         ax.text(0.02, 0.93, panel_label, transform=ax.transAxes,
@@ -567,9 +570,9 @@ def plot_latency_timeseries(
 # Per-scenario: (BFQ dir, TPC dir, w_A, w_B, filename tag)
 # The TPC dir uses a proportional split matching the weight ratio.
 WEIGHT_SCENARIOS = [
-    ("bfq_1_1", "no_sharing_tpc_1_1", 1.0, 1.0, "1to1"),
-    ("bfq_2_1", "no_sharing_tpc_2_1", 2.0, 1.0, "2to1"),
-    ("bfq_3_1", "no_sharing_tpc_3_1", 3.0, 1.0, "3to1"),
+    ("bfq_1_1", "no_sharing_tpc_1_1", "stfq_1_1", 1.0, 1.0, "1to1"),
+    ("bfq_2_1", "no_sharing_tpc_2_1", "stfq_1_2", 2.0, 1.0, "2to1"),
+    ("bfq_3_1", "no_sharing_tpc_3_1", "stfq_1_3", 3.0, 1.0, "3to1"),
 ]
 
 # Weight-agnostic baselines shared across all scenarios.
@@ -579,7 +582,7 @@ BASELINES = ["fcfs", "no_sharing"]
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--results-base", default="experiments/fair_share/tsfm/results")
+    ap.add_argument("--results-base", default="experiments/fair_share/tsfm/results_t4")
     ap.add_argument("--plot-dir",     default=None,
                     help="Output dir (default: <results-base>/plots)")
     ap.add_argument("--victim-task",    default="ecgclass")
@@ -607,7 +610,7 @@ def main() -> int:
         print(f"[Error] no meta.json found under {base}")
         return 1
 
-    for bfq_name, tpc_name, w_a, w_b, tag in WEIGHT_SCENARIOS:
+    for bfq_name, tpc_name, stfq_name, w_a, w_b, tag in WEIGHT_SCENARIOS:
         bfq_dir = base / bfq_name
         if not bfq_dir.exists():
             print(f"[Skip] {bfq_name}: dir not found")
@@ -623,6 +626,12 @@ def main() -> int:
             method_dirs["no_sharing_tpc"] = tpc_dir
         else:
             print(f"[Skip] {tpc_name}: dir not found — TPC bars omitted for {tag}")
+
+        stfq_dir = base / stfq_name
+        if stfq_dir.exists():
+            method_dirs["stfq"] = stfq_dir
+        else:
+            print(f"[Skip] {stfq_name}: dir not found — STFQ bars omitted for {tag}")
 
         plot_fairness_summary(
             method_dirs, args.victim_task, args.aggressor_task,
