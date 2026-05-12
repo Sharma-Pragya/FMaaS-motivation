@@ -263,7 +263,7 @@ async def _deploy_one(spec: dict):
     await _ssh_start_server(ssh_host, username, conda_env, server_cmd, log_path,
                             cuda_visible=cuda_visible)
 
-    ready = await _wait_for_grpc_ready(log_path, timeout_s=60.0)
+    ready = await _wait_for_grpc_ready(log_path, timeout_s=240.0)
     if not ready:
         print(f"[SiteManager] {grpc_url} process crashed before gRPC started — skipping load.")
         return {"status": "error_process_exited"}
