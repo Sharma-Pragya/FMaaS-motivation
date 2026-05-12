@@ -96,12 +96,13 @@ class FMaaSPlacementScheduler(BaseScheduler):
                     f"Task '{task_name}' has no 'backbone' specified. "
                     f"fmaas_place requires a backbone per task in user_config."
                 )
-            temp_plan, demand_left = self._deploy_task(state, task)
+            temp_plan, demand_left, bottleneck = self._deploy_task(state, task)
 
             if demand_left is not None and demand_left > self.config.demand_epsilon:
                 logger.warning(
                     f"FMaaSPlacement: task '{task_name}' has {demand_left:.4f} rps "
-                    f"unsatisfied demand out of {task.peak_workload:.4f} rps"
+                    f"unsatisfied demand out of {task.peak_workload:.4f} rps "
+                    f"(bottleneck: {bottleneck})"
                 )
 
             if temp_plan:
@@ -163,7 +164,7 @@ class FMaaSPlacementScheduler(BaseScheduler):
         state: DeploymentState,
         task: TaskSpec,
         share_mode: bool = True,  # accepted for interface compatibility, ignored
-    ) -> Tuple[Optional[Dict], float]:
+    ) -> Tuple[Optional[Dict], float, str]:
         """Deploy a single task using its user-specified backbone.
 
         Phase 1: Exhaust capacity on existing deployments that already have
@@ -175,7 +176,9 @@ class FMaaSPlacementScheduler(BaseScheduler):
             task: TaskSpec with backbone set.
 
         Returns:
-            Tuple of (deployment plan dict, remaining demand).
+            Tuple of (deployment plan dict, remaining demand, bottleneck reason).
+            bottleneck ∈ {"none", "memory", "memory (restricted candidate pool)",
+                          "compute"}.
         """
         backbone = task.backbone
         # demand_tracker: accumulates total demand per (server, backbone) across
@@ -203,9 +206,27 @@ class FMaaSPlacementScheduler(BaseScheduler):
             (server.name, backbone)
             for server in state.get_servers_by_least_capacity(
                 backbone_mem, max_util=self.config.util_factor,
+                reverse=False,
             )
             if (server.name, backbone) not in active_endpoints
         ]
+        # Snapshot the initial pool — used to classify the bottleneck on
+        # failure.  Crucially, get_servers_by_least_capacity() filters by
+        # BOTH memory and util, so "new_endpoints is empty" can mean memory
+        # OR compute (or both).  Split the two filters here so we can tell
+        # them apart.
+        n_active_initial = len(active_endpoints)
+        n_new_initial    = len(new_endpoints)
+        # Servers with util headroom (ignoring memory) — used to spot
+        # compute-bound failures where free RAM exists but no util budget.
+        n_util_headroom_servers = sum(
+            1 for s in state._servers.values() if s.util < self.config.util_factor
+        )
+        # Servers with memory headroom for THIS backbone (ignoring util).
+        n_mem_headroom_servers = sum(
+            1 for s in state._servers.values()
+            if (s.mem - state.get_server_used_mem(s.name)) >= backbone_mem
+        )
 
         # Prefer the smallest candidate pool that can satisfy the full task:
         # 1) one active endpoint, 2) active endpoints together, then 3) add one
@@ -223,7 +244,7 @@ class FMaaSPlacementScheduler(BaseScheduler):
                 deploy_util_tracker=base_deploy_util_tracker,
             )
             if single_demand_left <= self.config.demand_epsilon:
-                return single_plan, single_demand_left
+                return single_plan, single_demand_left, "none"
 
             if candidate_pool:
                 (
@@ -242,10 +263,33 @@ class FMaaSPlacementScheduler(BaseScheduler):
                 if candidate_demand_left <= self.config.demand_epsilon:
                     self.batch_size_map = candidate_batch_size_map
                     self.expected_batch_size_map = candidate_expected_batch_size_map
-                    return candidate_plan, candidate_demand_left
+                    return candidate_plan, candidate_demand_left, "none"
 
             if not new_endpoints:
-                return candidate_plan, candidate_demand_left
+                # Disambiguate memory vs compute by looking at independent
+                # mem-only and util-only headroom counts:
+                #   - both 0 → both ran out
+                #   - mem only → util saturated, mem free → "compute"
+                #   - util only → util free, mem full → "memory"
+                if n_active_initial == 0 and n_new_initial == 0:
+                    if n_util_headroom_servers == 0 and n_mem_headroom_servers > 0:
+                        bn = "compute"
+                    elif n_mem_headroom_servers == 0 and n_util_headroom_servers > 0:
+                        bn = "memory"
+                    elif n_mem_headroom_servers == 0 and n_util_headroom_servers == 0:
+                        bn = "compute+memory"
+                    else:
+                        # Both have some headroom individually but no server
+                        # has BOTH simultaneously — e.g. mem-rich GPUs are
+                        # util-saturated and vice versa.  Mark as compute
+                        # since adding more GPUs of the same kind wouldn't
+                        # immediately help.
+                        bn = "compute"
+                elif n_new_initial == 0:
+                    bn = "memory (restricted candidate pool)"
+                else:
+                    bn = "compute"
+                return candidate_plan, candidate_demand_left, bn
 
             candidate_pool.append(new_endpoints.pop(0))
 

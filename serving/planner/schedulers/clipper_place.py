@@ -157,28 +157,40 @@ class ClipperPlacementScheduler(BaseScheduler):
 
         # Check how many servers exist with compute headroom vs memory headroom
         all_compute_ok = state.get_servers_by_least_capacity(
-            min_mem=0.0, max_util=self.config.util_factor, reverse=True
+            min_mem=0.0, max_util=self.config.util_factor, reverse=False
         )
         candidate_servers = state.get_servers_by_least_capacity(
-            backbone_mem, max_util=self.config.util_factor, reverse=True
+            backbone_mem, max_util=self.config.util_factor, reverse=False
         )
 
         if not candidate_servers:
-            # No server can fit another copy of this backbone in memory
-            n_blocked_by_mem = len(all_compute_ok)
-            per_server_free = {
-                s.name: s.mem - state.get_server_used_mem(s.name)
-                for s in all_compute_ok
-            }
+            # No (util-OK, mem-OK) server.  Distinguish:
+            #   compute-only  → some GPU has mem free but util saturated
+            #   memory-only   → some GPU has util free but no room for backbone
+            #   both          → neither resource has headroom anywhere
+            mem_headroom = sum(
+                1 for s in state._servers.values()
+                if (s.mem - state.get_server_used_mem(s.name)) >= backbone_mem
+            )
+            if len(all_compute_ok) == 0 and mem_headroom > 0:
+                bn = "compute"
+            elif len(all_compute_ok) > 0 and mem_headroom == 0:
+                bn = "memory"
+            elif len(all_compute_ok) == 0 and mem_headroom == 0:
+                bn = "compute+memory"
+            else:
+                # Both have some headroom individually but not on the same
+                # server.  Adding more memory wouldn't help (util GPUs are
+                # full); call it compute.
+                bn = "compute"
             print(
                 f"ClipperPlacement: task '{task.name}' backbone '{backbone}' "
-                f"requires {backbone_mem:.0f} MB but no server has enough free "
-                f"GPU memory for another isolated copy. "
-                f"{n_blocked_by_mem} server(s) have compute headroom (util < "
-                f"{self.config.util_factor}) but are memory-full. "
-                f"Free mem per server: {per_server_free}"
+                f"requires {backbone_mem:.0f} MB; no server has BOTH util<{self.config.util_factor} "
+                f"AND free_mem>={backbone_mem:.0f}.  "
+                f"util-OK servers: {len(all_compute_ok)}, mem-OK servers: {mem_headroom}.  "
+                f"Bottleneck: {bn}."
             )
-            return temp_plan, demand_left, "memory"
+            return temp_plan, demand_left, bn
 
         # First, check whether any single new server can satisfy the full task
         # before falling back to multi-device distribution.
