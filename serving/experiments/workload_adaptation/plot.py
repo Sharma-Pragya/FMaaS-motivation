@@ -279,8 +279,8 @@ def _color_cycle(n: int):
 
 
 CASE_STYLES = {
-    "case1": {"label": "Case 1", "color": "#6B9AC4", "linestyle": "--", "marker": "^"},
-    "case5": {"label": "Case 5", "color": "#E06C75", "linestyle": "-",  "marker": "o"},
+    "case1": {"label": "Attach Decoder", "color": "#6B9AC4", "linestyle": "--", "marker": "^"},
+    "case5": {"label": "Start Backbone", "color": "#E06C75", "linestyle": "-",  "marker": "o"},
 }
 
 
@@ -436,6 +436,124 @@ def _plot_bumped_task_mean_response_time_case_ax(
     ax.yaxis.set_major_locator(ticker.MaxNLocator(nbins=5, integer=True, steps=[1, 2, 5, 10]))
     ax.margins(x=0.01)
     ax.grid(True, axis="y")
+
+
+def plot_bumped_task_mean_response_time_comparison(
+    cases: list[dict],
+    out_path: Path,
+    bin_s: float,
+    x_max: float | None = None,
+    y_max: float | None = None,
+) -> None:
+    if not cases:
+        print("[plot] no comparison cases available; skipping combined mean RT plot.")
+        return
+
+    with plt.rc_context({
+        "font.size": 8.5,
+        "axes.labelsize": 9,
+        "xtick.labelsize": 8,
+        "ytick.labelsize": 8,
+        "legend.fontsize": 7.5,
+        "lines.linewidth": 1.35,
+    }):
+        fig, ax = plt.subplots(figsize=(5, 1.9))
+
+        # Collect event times first so workload-change vline is drawn first
+        # (controls its position in legend ordering).
+        bump_t = None
+        attach_done_t = None
+        backbone_done_t = None
+        for case in cases:
+            bt = _event_time(case["events"], "bump_rps")
+            if bt is not None and bump_t is None:
+                bump_t = bt
+            if case["name"] == "case1":
+                t = _event_time(case["events"], "split_traffic")
+                if t is None:
+                    t = _event_time(case["events"], "attach_decoder_done")
+                attach_done_t = t
+            if case["name"] == "case5":
+                backbone_done_t = _event_time(case["events"], "start_backbone_done")
+
+        # "Workload change" first in legend — plot its vline before case lines.
+        if bump_t is not None:
+            ax.axvline(bump_t, color="#888888", linestyle="--", linewidth=0.9,
+                       label="Workload change", zorder=0)
+
+        any_rows = False
+        for case in cases:
+            ts = case["ts"]
+            if ts.empty:
+                continue
+            any_rows = True
+            style = CASE_STYLES.get(case["name"], {
+                "label": case["name"],
+                "color": "#222222",
+                "linestyle": "-",
+            })
+            ax.plot(
+                ts["t_center"],
+                ts["mean_ms"],
+                label=style["label"],
+                color=style["color"],
+                linestyle=style["linestyle"],
+                linewidth=1.5,
+            )
+
+        if not any_rows:
+            print("[plot] no mean RT rows found in comparison cases; skipping combined plot.")
+            plt.close(fig)
+            return
+
+        # X axis: fixed at 120 s with even 20 s ticks
+        paper_x_max = 120.0
+
+        # Y axis: log scale with clean bounds
+        raw_y_max = y_max if y_max is not None else max(
+            float(case["ts"]["mean_ms"].max()) for case in cases if not case["ts"].empty
+        )
+        paper_y_max = _nice_axis_limit(raw_y_max)
+        raw_y_min = min(
+            float(case["ts"]["mean_ms"].min()) for case in cases if not case["ts"].empty
+        )
+        paper_y_min = 10.0 ** np.floor(np.log10(max(raw_y_min, 1.0)))
+
+        ax.set_xlim(0, paper_x_max)
+        ax.set_ylim(paper_y_min, paper_y_max)
+        ax.set_yscale("log")
+        ax.set_xlabel("Time (sec)")
+        ax.set_ylabel("Mean RT (ms)")
+        ax.xaxis.set_major_locator(ticker.MultipleLocator(20))
+        ax.yaxis.set_major_locator(ticker.LogLocator(base=10, numticks=8))
+        ax.yaxis.set_major_formatter(ticker.LogFormatterMathtext(base=10))
+        ax.margins(x=0.01)
+        ax.grid(True, axis="y", which="major")
+
+        # Annotation vlines — no legend label; text placed just above the top spine.
+        if attach_done_t is not None:
+            c1_color = CASE_STYLES["case1"]["color"]
+            ax.axvline(attach_done_t, color=c1_color, linestyle=":", linewidth=0.9, zorder=0)
+            ax.text(attach_done_t + 0.8, 1.015, "Decoder\nattached",
+                    transform=ax.get_xaxis_transform(),
+                    color=c1_color, fontsize=5.5, ha="left", va="bottom",
+                    linespacing=1.15, clip_on=False)
+
+        if backbone_done_t is not None:
+            c5_color = CASE_STYLES["case5"]["color"]
+            ax.axvline(backbone_done_t, color=c5_color, linestyle=":", linewidth=0.9, zorder=0)
+            ax.text(backbone_done_t + 0.8, 1.015, "Backbone\nready",
+                    transform=ax.get_xaxis_transform(),
+                    color=c5_color, fontsize=5.5, ha="left", va="bottom",
+                    linespacing=1.15, clip_on=False)
+
+        # Legend inside the plot — upper-right (RT is low after adaptation settles).
+        ax.legend(loc="upper right", frameon=False, fontsize=6.5,
+                  handlelength=1.6, labelspacing=0.3, borderaxespad=0.3)
+        fig.tight_layout(pad=0.3)
+        fig.subplots_adjust(top=0.88)   # leave headroom above axes for the text labels
+        save_figure(fig, out_path)
+        plt.close(fig)
 
 
 def _paper_top_legend(ax, ncol: int) -> None:
@@ -929,11 +1047,20 @@ def _build_phases(plan0: dict, events: list[dict]) -> list[tuple[str, dict, floa
         t = (float(e["epoch"]) - float(trace_start)) if trace_start else 0.0
         p = e.get("params") or {}
         if e["label"] == "start_backbone_done":
-            lab = f"+ backbone\non {p.get('device','?')}"
+            lab = "+backbone"
         else:
-            lab = f"+ decoder {p.get('task','?')}\non {p.get('device','?')}"
+            lab = "+decoder"
         phases.append((lab, cur_plan, t))
     return phases
+
+
+def _abbrev_device(name: str) -> str:
+    """'device1' → 'D1', 'cuda0' → 'C0', etc."""
+    for i, ch in enumerate(name):
+        if ch.isdigit():
+            prefix = name[:i]
+            return (prefix[0].upper() if prefix else "?") + name[i:]
+    return name[0].upper() if name else name
 
 
 def _draw_panel(ax, plan: dict, gpu_order: list[str], task_color: dict,
@@ -964,9 +1091,9 @@ def _draw_panel(ax, plan: dict, gpu_order: list[str], task_color: dict,
     GPU_GAP = 0.04
     col_w = (1.0 - GPU_GAP * (n - 1)) / n
 
-    GPU_H, BB_H, TASK_H = 0.16, 0.18, 0.22
-    BOTTOM = 0.05
-    PAD = 0.03
+    GPU_H, BB_H, TASK_H = 0.20, 0.25, 0.33
+    BOTTOM = 0.04
+    PAD = 0.04
     SUB_GAP = 0.008
     bb_y = BOTTOM + GPU_H + PAD
     task_y = bb_y + BB_H + PAD
@@ -980,7 +1107,7 @@ def _draw_panel(ax, plan: dict, gpu_order: list[str], task_color: dict,
             (x, BOTTOM), col_w, GPU_H, boxstyle="round,pad=0.005",
             facecolor=GPU_COLOR, edgecolor="#5aafc4", linewidth=0.7,
             transform=ax.transAxes, clip_on=False))
-        ax.text(x + col_w / 2, BOTTOM + GPU_H / 2, gpu_label,
+        ax.text(x + col_w / 2, BOTTOM + GPU_H / 2, _abbrev_device(gpu_label),
                 transform=ax.transAxes, ha="center", va="center",
                 fontsize=7, fontweight="bold")
 
@@ -1090,43 +1217,33 @@ def plot_deployment_timeline(plan: dict, events: list[dict],
     task_abbrev = {t: f"T{i+1}" for i, t in enumerate(all_tasks)}
 
     n_phases = len(phases)
-    panel_w = max(1.15, 0.48 * len(gpu_order) + 0.35)
-    fig_w = panel_w * n_phases + 0.22 * (n_phases - 1) + 0.25
-    fig_h = 1.25
+    panel_w = max(0.70, 0.28 * len(gpu_order) + 0.18)
+    fig_w = panel_w * n_phases + 0.12 * (n_phases - 1) + 0.12
+    fig_h = 1.0
 
     fig, axes = plt.subplots(
         1, n_phases,
         figsize=(fig_w, fig_h),
         squeeze=False,
         gridspec_kw={
-            "left": 0.025,
-            "right": 0.985,
-            "top": 0.78,
-            "bottom": 0.20,
-            "wspace": 0.14,
+            "left": 0.02,
+            "right": 0.99,
+            "top": 0.83,
+            "bottom": 0.18,
+            "wspace": 0.12,
         },
     )
 
     panel_axes = []
     for i, (label, pl, t) in enumerate(phases):
         ax = axes[0, i]
-        prefix = "0s" if i == 0 else f"{t:.1f}s"
-        ax.set_title(f"{label.replace(chr(10), ' ')}\n{prefix}",
-                     fontsize=6.5, fontweight="bold", pad=1.5)
+        prefix = "t=0" if i == 0 else f"t={t:.0f}s"
+        ax.set_title(f"{label}  {prefix}",
+                     fontsize=6.0, fontweight="bold", pad=2.0)
         _draw_panel(ax, pl, gpu_order, task_color, task_abbrev)
         panel_axes.append(ax)
 
-    # Arrows between adjacent panels (figure-level coords)
-    fig.canvas.draw()
-    for i in range(n_phases - 1):
-        a, b = panel_axes[i], panel_axes[i + 1]
-        bb_a = a.get_position(); bb_b = b.get_position()
-        y = (bb_a.y0 + bb_a.y1) / 2.0
-        arrow = FancyArrowPatch(
-            (bb_a.x1 + 0.002, y), (bb_b.x0 - 0.002, y),
-            transform=fig.transFigure, arrowstyle="->",
-            mutation_scale=10, linewidth=0.8, color="#444444")
-        fig.patches.append(arrow)
+
 
     # Legend (backbone abbreviations only; task names stay out of the paper figure).
     legend_bits = []
@@ -1140,8 +1257,8 @@ def plot_deployment_timeline(plan: dict, events: list[dict],
     for bb in backbones_seen:
         legend_bits.append(f"{BACKBONE_ABBREV.get(bb, bb)}={bb}")
     if legend_bits:
-        fig.text(0.5, 0.035, "  |  ".join(legend_bits),
-                 ha="center", va="bottom", fontsize=6.5, color="#333333")
+        fig.text(0.5, 0.06, "  |  ".join(legend_bits),
+                 ha="center", va="bottom", fontsize=6.0, color="#333333")
 
     fig.savefig(out_path, bbox_inches="tight")
     plt.close(fig)
@@ -1154,7 +1271,7 @@ def plot_deployment_timeline(plan: dict, events: list[dict],
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--results-dir",default="experiments/workload_adaptation/results/case1",
+    ap.add_argument("--results-dir",default="experiments/workload_adaptation/results_t4/case1",
                     help="Directory containing request_latency_results.csv")
     ap.add_argument("--bin-s", type=float, default=1.0,
                     help="Aggregation window for full-run timeseries (seconds)")
@@ -1222,6 +1339,13 @@ def main() -> int:
                 y_max=paper_thr_y_max,
                 x_max=paper_x_max,
             )
+        plot_bumped_task_mean_response_time_comparison(
+            case_data,
+            out_dir / "bumped_task_mean_response_time_case1_case5.pdf",
+            bin_s=args.bin_s,
+            x_max=paper_x_max,
+            y_max=paper_y_max,
+        )
     else:
         print("[plot] case1/case5 comparison unavailable; skipping bumped-task plot.")
 
