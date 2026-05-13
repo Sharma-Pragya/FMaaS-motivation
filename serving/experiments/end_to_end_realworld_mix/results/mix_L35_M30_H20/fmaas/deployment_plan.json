@@ -1,0 +1,1250 @@
+{
+  "sites": [
+    {
+      "id": "site1",
+      "deployments": [
+        {
+          "device": "172.31.40.38:8000",
+          "device_name": "device1",
+          "device_type": "TESLA T4",
+          "backbone": "dinosmall",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "vocseg__app15",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app14",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app17",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app16",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app13",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app1",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app8",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            }
+          ],
+          "tasks": {
+            "vocseg__app15": {
+              "type": "linear_seg",
+              "request_per_sec": 27.421666666666667,
+              "total_requested_workload": 27.421666666666667
+            },
+            "vocseg__app14": {
+              "type": "linear_seg",
+              "request_per_sec": 16.511666666666667,
+              "total_requested_workload": 16.511666666666667
+            },
+            "vocseg__app17": {
+              "type": "linear_seg",
+              "request_per_sec": 13.326666666666666,
+              "total_requested_workload": 13.326666666666666
+            },
+            "vocseg__app16": {
+              "type": "linear_seg",
+              "request_per_sec": 12.556666666666667,
+              "total_requested_workload": 12.556666666666667
+            },
+            "vocseg__app13": {
+              "type": "linear_seg",
+              "request_per_sec": 11.37,
+              "total_requested_workload": 11.37
+            },
+            "vocseg": {
+              "type": "linear_seg",
+              "request_per_sec": 1.0,
+              "total_requested_workload": 1.0
+            },
+            "vocseg__app1": {
+              "type": "linear_seg",
+              "request_per_sec": 1.0,
+              "total_requested_workload": 1.0
+            },
+            "vocseg__app8": {
+              "type": "linear_seg",
+              "request_per_sec": 1.0,
+              "total_requested_workload": 1.0
+            }
+          },
+          "max_batch_size": 32,
+          "max_batch_wait_ms": 0,
+          "isolation_mode": "shared",
+          "max_model_len": 256,
+          "gpu_memory_utilization": 0.85
+        },
+        {
+          "device": "172.31.34.115:8000",
+          "device_name": "device2",
+          "device_type": "TESLA T4",
+          "backbone": "papageissvri",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "etth1fore__app4",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app7",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app6",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app5",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app1",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app2",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            }
+          ],
+          "tasks": {
+            "etth1fore__app4": {
+              "type": "forecasting",
+              "request_per_sec": 24.815,
+              "total_requested_workload": 24.815
+            },
+            "etth1fore__app7": {
+              "type": "forecasting",
+              "request_per_sec": 15.663333333333334,
+              "total_requested_workload": 15.663333333333334
+            },
+            "etth1fore__app6": {
+              "type": "forecasting",
+              "request_per_sec": 14.56,
+              "total_requested_workload": 14.56
+            },
+            "etth1fore__app5": {
+              "type": "forecasting",
+              "request_per_sec": 11.088333333333333,
+              "total_requested_workload": 11.088333333333333
+            },
+            "etth1fore": {
+              "type": "forecasting",
+              "request_per_sec": 1.0,
+              "total_requested_workload": 1.0
+            },
+            "etth1fore__app1": {
+              "type": "forecasting",
+              "request_per_sec": 1.0,
+              "total_requested_workload": 1.0
+            },
+            "etth1fore__app2": {
+              "type": "forecasting",
+              "request_per_sec": 0.4,
+              "total_requested_workload": 0.4
+            }
+          },
+          "max_batch_size": 32,
+          "max_batch_wait_ms": 0,
+          "isolation_mode": "shared",
+          "max_model_len": 256,
+          "gpu_memory_utilization": 0.85
+        },
+        {
+          "device": "172.31.39.15:8000",
+          "device_name": "device3",
+          "device_type": "TESLA T4",
+          "backbone": "papageip",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "sysbp__app8",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app6",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app7",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            }
+          ],
+          "tasks": {
+            "sysbp__app8": {
+              "type": "regression",
+              "request_per_sec": 23.93,
+              "total_requested_workload": 23.93
+            },
+            "sysbp__app6": {
+              "type": "regression",
+              "request_per_sec": 23.461666666666666,
+              "total_requested_workload": 23.461666666666666
+            },
+            "sysbp__app7": {
+              "type": "regression",
+              "request_per_sec": 20.493333333333332,
+              "total_requested_workload": 20.493333333333332
+            }
+          },
+          "max_batch_size": 32,
+          "max_batch_wait_ms": 0,
+          "isolation_mode": "shared",
+          "max_model_len": 256,
+          "gpu_memory_utilization": 0.85
+        },
+        {
+          "device": "172.31.46.11:8000",
+          "device_name": "device4",
+          "device_type": "TESLA T4",
+          "backbone": "swintiny",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "imgclass10__app12",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app5",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app3",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app11",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app9",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            }
+          ],
+          "tasks": {
+            "imgclass10__app12": {
+              "type": "linear_classification",
+              "request_per_sec": 22.888333333333332,
+              "total_requested_workload": 22.888333333333332
+            },
+            "imgclass10__app5": {
+              "type": "linear_classification",
+              "request_per_sec": 0.6166666666666667,
+              "total_requested_workload": 0.6166666666666667
+            },
+            "imgclass10__app3": {
+              "type": "linear_classification",
+              "request_per_sec": 0.4,
+              "total_requested_workload": 0.4
+            },
+            "imgclass10__app11": {
+              "type": "linear_classification",
+              "request_per_sec": 0.26666666666666666,
+              "total_requested_workload": 0.26666666666666666
+            },
+            "imgclass10": {
+              "type": "linear_classification",
+              "request_per_sec": 0.23333333333333334,
+              "total_requested_workload": 0.23333333333333334
+            },
+            "imgclass10__app9": {
+              "type": "linear_classification",
+              "request_per_sec": 0.2,
+              "total_requested_workload": 0.2
+            }
+          },
+          "max_batch_size": 32,
+          "max_batch_wait_ms": 0,
+          "isolation_mode": "shared",
+          "max_model_len": 256,
+          "gpu_memory_utilization": 0.85
+        },
+        {
+          "device": "172.31.35.65:8000",
+          "device_name": "device5",
+          "device_type": "TESLA T4",
+          "backbone": "momentsmall",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "gestureclass__app6",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app4",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app5",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app1",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app2",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app3",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            }
+          ],
+          "tasks": {
+            "gestureclass__app6": {
+              "type": "classification",
+              "request_per_sec": 19.523333333333333,
+              "total_requested_workload": 19.523333333333333
+            },
+            "gestureclass__app4": {
+              "type": "classification",
+              "request_per_sec": 15.69,
+              "total_requested_workload": 15.69
+            },
+            "gestureclass__app5": {
+              "type": "classification",
+              "request_per_sec": 15.546666666666667,
+              "total_requested_workload": 15.546666666666667
+            },
+            "gestureclass": {
+              "type": "classification",
+              "request_per_sec": 0.6,
+              "total_requested_workload": 0.6
+            },
+            "gestureclass__app1": {
+              "type": "classification",
+              "request_per_sec": 0.5,
+              "total_requested_workload": 0.5
+            },
+            "gestureclass__app2": {
+              "type": "classification",
+              "request_per_sec": 0.36666666666666664,
+              "total_requested_workload": 0.36666666666666664
+            },
+            "gestureclass__app3": {
+              "type": "classification",
+              "request_per_sec": 0.26666666666666666,
+              "total_requested_workload": 0.26666666666666666
+            }
+          },
+          "max_batch_size": 32,
+          "max_batch_wait_ms": 0,
+          "isolation_mode": "shared",
+          "max_model_len": 256,
+          "gpu_memory_utilization": 0.85
+        },
+        {
+          "device": "172.31.32.69:8000",
+          "device_name": "device6",
+          "device_type": "TESLA T4",
+          "backbone": "papageip",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "sysbp__app5",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app4",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app3",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app1",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app2",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            }
+          ],
+          "tasks": {
+            "sysbp__app5": {
+              "type": "regression",
+              "request_per_sec": 12.746666666666666,
+              "total_requested_workload": 12.746666666666666
+            },
+            "sysbp__app4": {
+              "type": "regression",
+              "request_per_sec": 11.096666666666666,
+              "total_requested_workload": 11.096666666666666
+            },
+            "sysbp__app3": {
+              "type": "regression",
+              "request_per_sec": 10.61,
+              "total_requested_workload": 10.61
+            },
+            "sysbp__app1": {
+              "type": "regression",
+              "request_per_sec": 0.6166666666666667,
+              "total_requested_workload": 0.6166666666666667
+            },
+            "sysbp": {
+              "type": "regression",
+              "request_per_sec": 0.36666666666666664,
+              "total_requested_workload": 0.36666666666666664
+            },
+            "sysbp__app2": {
+              "type": "regression",
+              "request_per_sec": 0.25,
+              "total_requested_workload": 0.25
+            }
+          },
+          "max_batch_size": 32,
+          "max_batch_wait_ms": 0,
+          "isolation_mode": "shared",
+          "max_model_len": 256,
+          "gpu_memory_utilization": 0.85
+        },
+        {
+          "device": "172.31.34.179:8000",
+          "device_name": "device7",
+          "device_type": "TESLA T4",
+          "backbone": "papageis",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "diasbp__app3",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app2",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app1",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            }
+          ],
+          "tasks": {
+            "diasbp__app3": {
+              "type": "regression",
+              "request_per_sec": 11.946666666666667,
+              "total_requested_workload": 11.946666666666667
+            },
+            "diasbp__app2": {
+              "type": "regression",
+              "request_per_sec": 0.23333333333333334,
+              "total_requested_workload": 0.23333333333333334
+            },
+            "diasbp": {
+              "type": "regression",
+              "request_per_sec": 0.2,
+              "total_requested_workload": 0.2
+            },
+            "diasbp__app1": {
+              "type": "regression",
+              "request_per_sec": 0.13333333333333333,
+              "total_requested_workload": 0.13333333333333333
+            }
+          },
+          "max_batch_size": 32,
+          "max_batch_wait_ms": 0,
+          "isolation_mode": "shared",
+          "max_model_len": 256,
+          "gpu_memory_utilization": 0.85
+        },
+        {
+          "device": "172.31.36.225:8000",
+          "device_name": "device8",
+          "device_type": "TESLA T4",
+          "backbone": "swinlarge",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "eurosatclass__app3",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app1",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app4",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app6",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app8",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            }
+          ],
+          "tasks": {
+            "eurosatclass__app3": {
+              "type": "linear_classification",
+              "request_per_sec": 7.93,
+              "total_requested_workload": 7.93
+            },
+            "eurosatclass__app1": {
+              "type": "linear_classification",
+              "request_per_sec": 5.011666666666667,
+              "total_requested_workload": 5.011666666666667
+            },
+            "eurosatclass__app4": {
+              "type": "linear_classification",
+              "request_per_sec": 3.89,
+              "total_requested_workload": 3.89
+            },
+            "eurosatclass__app6": {
+              "type": "linear_classification",
+              "request_per_sec": 2.033333333333333,
+              "total_requested_workload": 2.033333333333333
+            },
+            "eurosatclass": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0,
+              "total_requested_workload": 2.0
+            },
+            "eurosatclass__app8": {
+              "type": "linear_classification",
+              "request_per_sec": 1.66,
+              "total_requested_workload": 1.66
+            }
+          },
+          "max_batch_size": 32,
+          "max_batch_wait_ms": 0,
+          "isolation_mode": "shared",
+          "max_model_len": 256,
+          "gpu_memory_utilization": 0.85
+        },
+        {
+          "device": "172.31.44.130:8000",
+          "device_name": "device9",
+          "device_type": "TESLA T4",
+          "backbone": "dinolarge",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "nyudepth__app5",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app2",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            }
+          ],
+          "tasks": {
+            "nyudepth__app5": {
+              "type": "monocular",
+              "request_per_sec": 7.483333333333333,
+              "total_requested_workload": 7.483333333333333
+            },
+            "nyudepth__app2": {
+              "type": "monocular",
+              "request_per_sec": 6.156666666666666,
+              "total_requested_workload": 6.156666666666666
+            }
+          },
+          "max_batch_size": 32,
+          "max_batch_wait_ms": 0,
+          "isolation_mode": "shared",
+          "max_model_len": 256,
+          "gpu_memory_utilization": 0.85
+        },
+        {
+          "device": "172.31.33.84:8000",
+          "device_name": "device10",
+          "device_type": "TESLA T4",
+          "backbone": "dinobase",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "vocseg__app12",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app11",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app9",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app10",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            }
+          ],
+          "tasks": {
+            "vocseg__app12": {
+              "type": "linear_seg",
+              "request_per_sec": 5.703333333333333,
+              "total_requested_workload": 5.703333333333333
+            },
+            "vocseg__app11": {
+              "type": "linear_seg",
+              "request_per_sec": 5.001666666666667,
+              "total_requested_workload": 5.001666666666667
+            },
+            "vocseg__app9": {
+              "type": "linear_seg",
+              "request_per_sec": 1.0166666666666666,
+              "total_requested_workload": 1.0166666666666666
+            },
+            "vocseg__app10": {
+              "type": "linear_seg",
+              "request_per_sec": 1.0166666666666666,
+              "total_requested_workload": 1.0166666666666666
+            }
+          },
+          "max_batch_size": 32,
+          "max_batch_wait_ms": 0,
+          "isolation_mode": "shared",
+          "max_model_len": 256,
+          "gpu_memory_utilization": 0.85
+        },
+        {
+          "device": "172.31.35.104:8000",
+          "device_name": "device11",
+          "device_type": "TESLA T4",
+          "backbone": "momentlarge",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "ecgclass__app5",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app4",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app6",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app1",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app2",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app3",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app7",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            }
+          ],
+          "tasks": {
+            "ecgclass__app5": {
+              "type": "classification",
+              "request_per_sec": 4.516666666666667,
+              "total_requested_workload": 4.516666666666667
+            },
+            "ecgclass__app4": {
+              "type": "classification",
+              "request_per_sec": 3.42,
+              "total_requested_workload": 3.42
+            },
+            "ecgclass__app6": {
+              "type": "classification",
+              "request_per_sec": 2.473333333333333,
+              "total_requested_workload": 2.473333333333333
+            },
+            "ecgclass__app1": {
+              "type": "classification",
+              "request_per_sec": 1.9566666666666668,
+              "total_requested_workload": 1.9566666666666668
+            },
+            "ecgclass__app2": {
+              "type": "classification",
+              "request_per_sec": 1.9483333333333333,
+              "total_requested_workload": 1.9483333333333333
+            },
+            "ecgclass__app3": {
+              "type": "classification",
+              "request_per_sec": 1.7966666666666666,
+              "total_requested_workload": 1.7966666666666666
+            },
+            "ecgclass": {
+              "type": "classification",
+              "request_per_sec": 1.7816666666666667,
+              "total_requested_workload": 1.7816666666666667
+            },
+            "ecgclass__app7": {
+              "type": "classification",
+              "request_per_sec": 1.065,
+              "total_requested_workload": 1.065
+            }
+          },
+          "max_batch_size": 32,
+          "max_batch_wait_ms": 0,
+          "isolation_mode": "shared",
+          "max_model_len": 256,
+          "gpu_memory_utilization": 0.85
+        },
+        {
+          "device": "172.31.43.153:8000",
+          "device_name": "device12",
+          "device_type": "TESLA T4",
+          "backbone": "dinolarge",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "nyudepth__app4",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app6",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app1",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app3",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            }
+          ],
+          "tasks": {
+            "nyudepth__app4": {
+              "type": "monocular",
+              "request_per_sec": 3.3066666666666666,
+              "total_requested_workload": 3.3066666666666666
+            },
+            "nyudepth__app6": {
+              "type": "monocular",
+              "request_per_sec": 1.4433333333333334,
+              "total_requested_workload": 1.4433333333333334
+            },
+            "nyudepth": {
+              "type": "monocular",
+              "request_per_sec": 1.2,
+              "total_requested_workload": 1.2
+            },
+            "nyudepth__app1": {
+              "type": "monocular",
+              "request_per_sec": 1.1516666666666666,
+              "total_requested_workload": 1.1516666666666666
+            },
+            "nyudepth__app3": {
+              "type": "monocular",
+              "request_per_sec": 1.005,
+              "total_requested_workload": 1.005
+            }
+          },
+          "max_batch_size": 32,
+          "max_batch_wait_ms": 0,
+          "isolation_mode": "shared",
+          "max_model_len": 256,
+          "gpu_memory_utilization": 0.85
+        },
+        {
+          "device": "172.31.47.61:8000",
+          "device_name": "device13",
+          "device_type": "TESLA T4",
+          "backbone": "swinbase",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "eurosatclass__app7",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app5",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app2",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            }
+          ],
+          "tasks": {
+            "eurosatclass__app7": {
+              "type": "linear_classification",
+              "request_per_sec": 2.328333333333333,
+              "total_requested_workload": 2.328333333333333
+            },
+            "eurosatclass__app5": {
+              "type": "linear_classification",
+              "request_per_sec": 2.0383333333333336,
+              "total_requested_workload": 2.0383333333333336
+            },
+            "eurosatclass__app2": {
+              "type": "linear_classification",
+              "request_per_sec": 1.0033333333333334,
+              "total_requested_workload": 1.0033333333333334
+            }
+          },
+          "max_batch_size": 32,
+          "max_batch_wait_ms": 0,
+          "isolation_mode": "shared",
+          "max_model_len": 256,
+          "gpu_memory_utilization": 0.85
+        },
+        {
+          "device": "172.31.39.252:8000",
+          "device_name": "device14",
+          "device_type": "TESLA T4",
+          "backbone": "momentbase",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "heartrate__app1",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            }
+          ],
+          "tasks": {
+            "heartrate__app1": {
+              "type": "regression",
+              "request_per_sec": 1.6533333333333333,
+              "total_requested_workload": 1.6533333333333333
+            },
+            "heartrate": {
+              "type": "regression",
+              "request_per_sec": 1.065,
+              "total_requested_workload": 1.065
+            }
+          },
+          "max_batch_size": 32,
+          "max_batch_wait_ms": 0,
+          "isolation_mode": "shared",
+          "max_model_len": 256,
+          "gpu_memory_utilization": 0.85
+        },
+        {
+          "device": "172.31.36.14:8000",
+          "device_name": "device15",
+          "device_type": "TESLA T4",
+          "backbone": "swinsmall",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "imgclass10__app4",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app1",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app10",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app8",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app2",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app6",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app7",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            }
+          ],
+          "tasks": {
+            "imgclass10__app4": {
+              "type": "linear_classification",
+              "request_per_sec": 0.6,
+              "total_requested_workload": 0.6
+            },
+            "imgclass10__app1": {
+              "type": "linear_classification",
+              "request_per_sec": 0.2,
+              "total_requested_workload": 0.2
+            },
+            "imgclass10__app10": {
+              "type": "linear_classification",
+              "request_per_sec": 0.2,
+              "total_requested_workload": 0.2
+            },
+            "imgclass10__app8": {
+              "type": "linear_classification",
+              "request_per_sec": 0.16666666666666666,
+              "total_requested_workload": 0.16666666666666666
+            },
+            "imgclass10__app2": {
+              "type": "linear_classification",
+              "request_per_sec": 0.13333333333333333,
+              "total_requested_workload": 0.13333333333333333
+            },
+            "imgclass10__app6": {
+              "type": "linear_classification",
+              "request_per_sec": 0.13333333333333333,
+              "total_requested_workload": 0.13333333333333333
+            },
+            "imgclass10__app7": {
+              "type": "linear_classification",
+              "request_per_sec": 0.13333333333333333,
+              "total_requested_workload": 0.13333333333333333
+            }
+          },
+          "max_batch_size": 32,
+          "max_batch_wait_ms": 0,
+          "isolation_mode": "shared",
+          "max_model_len": 256,
+          "gpu_memory_utilization": 0.85
+        },
+        {
+          "device": "172.31.34.252:8000",
+          "device_name": "device16",
+          "device_type": "TESLA T4",
+          "backbone": "dinosmall",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "vocseg__app6",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app5",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app7",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app4",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app2",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app3",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            }
+          ],
+          "tasks": {
+            "vocseg__app6": {
+              "type": "linear_seg",
+              "request_per_sec": 0.43333333333333335,
+              "total_requested_workload": 0.43333333333333335
+            },
+            "vocseg__app5": {
+              "type": "linear_seg",
+              "request_per_sec": 0.4,
+              "total_requested_workload": 0.4
+            },
+            "vocseg__app7": {
+              "type": "linear_seg",
+              "request_per_sec": 0.31666666666666665,
+              "total_requested_workload": 0.31666666666666665
+            },
+            "vocseg__app4": {
+              "type": "linear_seg",
+              "request_per_sec": 0.2,
+              "total_requested_workload": 0.2
+            },
+            "vocseg__app2": {
+              "type": "linear_seg",
+              "request_per_sec": 0.13333333333333333,
+              "total_requested_workload": 0.13333333333333333
+            },
+            "vocseg__app3": {
+              "type": "linear_seg",
+              "request_per_sec": 0.13333333333333333,
+              "total_requested_workload": 0.13333333333333333
+            }
+          },
+          "max_batch_size": 32,
+          "max_batch_wait_ms": 0,
+          "isolation_mode": "shared",
+          "max_model_len": 256,
+          "gpu_memory_utilization": 0.425
+        },
+        {
+          "device": "172.31.34.252:8010",
+          "device_name": "device16",
+          "device_type": "TESLA T4",
+          "backbone": "papageissvri",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "etth1fore__app3",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            }
+          ],
+          "tasks": {
+            "etth1fore__app3": {
+              "type": "forecasting",
+              "request_per_sec": 0.4,
+              "total_requested_workload": 0.4
+            }
+          },
+          "max_batch_size": 32,
+          "max_batch_wait_ms": 0,
+          "isolation_mode": "shared",
+          "max_model_len": 256,
+          "gpu_memory_utilization": 0.425
+        }
+      ]
+    }
+  ]
+}

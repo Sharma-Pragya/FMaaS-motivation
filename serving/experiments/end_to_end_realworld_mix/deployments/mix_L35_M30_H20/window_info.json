@@ -1,0 +1,17 @@
+{
+  "day": 3,
+  "minute_of_day": 1166,
+  "window_minutes": 10,
+  "cv_max": 1.0,
+  "headroom_min": 67,
+  "n_eligible": {
+    "low": 602,
+    "medium": 242,
+    "high": 87
+  },
+  "picks_per_band": {
+    "low": 35,
+    "medium": 30,
+    "high": 20
+  }
+}
