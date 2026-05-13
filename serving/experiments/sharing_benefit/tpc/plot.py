@@ -93,9 +93,21 @@ SINGLE_CONDITIONS_BY_TASK_SET = {
     "vision": ["single_nyudepth", "single_vocseg"],
 }
 
+# Optional per-task-set styling for ntasks line plots (mean/p99 vs RPS).
+# Omit ymax to keep the data-driven tight upper bound.
+LINE_RPS_PLOT_OVERRIDES: Dict[str, Dict[int, Dict[str, object]]] = {
+    "tsfm": {
+        2: {"mean_ymax": 120.0, "p99_ymax": 400.0, "legend_inside": True},
+    },
+    "vision": {
+        2: {"legend_inside": True},
+    },
+}
+
 # Set in main() — used only by legacy per-dir loaders
 SINGLE_CONDITIONS: List[str] = SINGLE_CONDITIONS_BY_TASK_SET["tsfm"]
 CONDITION_ORDER:   List[str] = SINGLE_CONDITIONS + ["no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing"]
+CURRENT_TASK_SET: str = "tsfm"
 
 
 def apply_paper_style() -> None:
@@ -1230,7 +1242,7 @@ def _tight_linear_upper(vmax: float) -> float:
     target = vmax * 1.12
     exp  = np.floor(np.log10(target))
     base = target / (10 ** exp)
-    for step in (1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0):
+    for step in (1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9, 9.5, 10.0):
         if step >= base:
             return float(step * 10 ** exp)
     return float(10 ** (exp + 1))
@@ -1243,6 +1255,8 @@ def _plot_latency_stat_vs_rps_line(
     ylabel: str,
     log_y: bool = False,
     ntasks: Optional[int] = None,
+    ymax: Optional[float] = None,
+    legend_inside: bool = False,
 ) -> None:
     """Line plot: x=RPS/task, y=latency stat (ms), one line per condition.
 
@@ -1295,9 +1309,9 @@ def _plot_latency_stat_vs_rps_line(
     if log_y and pos_vals:
         _set_log_y_axis_with_endpoint(ax, pos_vals)
     elif all_vals:
-        upper = _tight_linear_upper(max(all_vals))
+        upper = ymax if ymax is not None else _tight_linear_upper(max(all_vals))
         _set_linear_axis_with_endpoint(ax, axis="y", lower=0.0, upper=upper,
-                                       target_ticks=5, decimals=0)
+                                       target_ticks=4, decimals=0)
 
     legend_handles = [
         plt.Line2D([0], [0],
@@ -1311,22 +1325,41 @@ def _plot_latency_stat_vs_rps_line(
                    label=SERIES_LABELS[s])
         for s in present
     ]
-    ax.legend(
-        handles=legend_handles,
-        loc="lower center",
-        bbox_to_anchor=(0.5, 1.02),
-        ncol=max(1, min(len(present), 3)),
-        fontsize=4.5,
-        frameon=False,
-        handlelength=1.6,
-        handletextpad=0.3,
-        labelspacing=0.1,
-        borderpad=0.1,
-        columnspacing=0.5,
-    )
+    if legend_inside:
+        ax.legend(
+            handles=legend_handles,
+            loc="upper left",
+            ncol=1,
+            fontsize=5.4,
+            frameon=False,
+            handlelength=1.8,
+            handletextpad=0.35,
+            labelspacing=0.15,
+            borderpad=0.15,
+        )
+    else:
+        ax.legend(
+            handles=legend_handles,
+            loc="lower center",
+            bbox_to_anchor=(0.5, 1.02),
+            ncol=max(1, min(len(present), 3)),
+            fontsize=4.5,
+            frameon=False,
+            handlelength=1.6,
+            handletextpad=0.3,
+            labelspacing=0.1,
+            borderpad=0.1,
+            columnspacing=0.5,
+        )
     fig.tight_layout(pad=0.1)
     save_figure(fig, out_path)
     plt.close(fig)
+
+
+def _line_rps_plot_override(ntasks: Optional[int], key: str, default: object = None) -> object:
+    if ntasks is None:
+        return default
+    return LINE_RPS_PLOT_OVERRIDES.get(CURRENT_TASK_SET, {}).get(ntasks, {}).get(key, default)
 
 
 def plot_p99_vs_rps_line(
@@ -1341,6 +1374,8 @@ def plot_p99_vs_rps_line(
         ylabel="P99 Latency (ms)",
         log_y=False,
         ntasks=ntasks,
+        ymax=_line_rps_plot_override(ntasks, "p99_ymax"),
+        legend_inside=bool(_line_rps_plot_override(ntasks, "legend_inside", False)),
     )
 
 
@@ -1356,6 +1391,8 @@ def plot_mean_vs_rps_line(
         ylabel="Mean Latency (ms)",
         log_y=False,
         ntasks=ntasks,
+        ymax=_line_rps_plot_override(ntasks, "mean_ymax"),
+        legend_inside=bool(_line_rps_plot_override(ntasks, "legend_inside", False)),
     )
 
 
@@ -1805,7 +1842,7 @@ def plot_tpc_count_sweep(
 
 def main() -> int:
     import argparse
-    global SINGLE_CONDITIONS, CONDITION_ORDER
+    global SINGLE_CONDITIONS, CONDITION_ORDER, CURRENT_TASK_SET
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--task-set",        default=os.environ.get("TASK_SET", "tsfm"),
@@ -1824,6 +1861,7 @@ def main() -> int:
 
     SINGLE_CONDITIONS = SINGLE_CONDITIONS_BY_TASK_SET[args.task_set]
     CONDITION_ORDER   = SINGLE_CONDITIONS + ["no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing"]
+    CURRENT_TASK_SET  = args.task_set
 
     result_root = (SERVING_DIR / args.exp_dir).resolve()
     if not result_root.exists():
