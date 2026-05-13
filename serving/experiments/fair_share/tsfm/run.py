@@ -383,6 +383,9 @@ def save_records(records: Dict[str, List[Record]], out_dir: Path,
     meta = {
         "phase_boundaries_s": phase_boundaries,
         "aggressor_rps_phases": aggressor_rps_phases,
+        "victim_rps_phases": victim_rps_list if "victim_rps_list" in locals() else [args.victim_rps] * num_phases,
+        "victim_task": args.victim_task,
+        "aggressor_task": args.aggressor_task,
     }
     with (out_dir / "meta.json").open("w") as f:
         json.dump(meta, f, indent=2)

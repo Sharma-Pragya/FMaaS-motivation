@@ -32,16 +32,18 @@ SERVING_DIR = Path(__file__).resolve().parents[3]
 
 
 # ---------------------------------------------------------------------------
-# Style — matches sharing_benefit/tpc/plot.py (paper-ready, small figures)
+# Style — publication ready
 # ---------------------------------------------------------------------------
 
+# Professional color palette (Colorblind friendly & high contrast)
 COLORS = {
-    "fcfs":           "#D68910",   # darker amber — Shared-BE (visible on white)
-    "no_sharing":     "#888888",   # mid gray — BE
-    "no_sharing_tpc": "#6B9AC4",   # muted blue — SP (TPC)
-    "stfq":           "#232020",   # very dark gray - STFQ
-    "bfq":            "#E06C75",   # pink-red — FMVisor (any weight)
+    "fcfs":           "#FF8C00",   # DarkOrange — Shared-BE
+    "no_sharing":     "#708090",   # SlateGray — BE
+    "no_sharing_tpc": "#1F77B4",   # SteelBlue — SP (TPC)
+    "stfq":           "#2CA02C",   # ForestGreen - STFQ
+    "bfq":            "#D62728",   # Crimson — FMVisor
 }
+
 LABELS = {
     "fcfs":           "S-BE",
     "no_sharing":     "BE",
@@ -49,12 +51,21 @@ LABELS = {
     "stfq":           "S-STFQ",
     "bfq":            "FMVisor",
 }
+
 LINESTYLES = {
     "fcfs":           "-.",
-    "no_sharing":     (0, (3, 1, 1, 1)),
-    "no_sharing_tpc": "--",
+    "no_sharing":     "--",
+    "no_sharing_tpc": ":",
     "stfq":           "-.",
     "bfq":            "-",
+}
+
+MARKERS = {
+    "fcfs":           "s",  # square
+    "no_sharing":     "v",  # triangle down
+    "no_sharing_tpc": "^",  # triangle up
+    "stfq":           "D",  # diamond
+    "bfq":            "o",  # circle
 }
 
 # Plot order (left-to-right on bar charts; top-to-bottom in legends)
@@ -67,34 +78,41 @@ def apply_paper_style() -> None:
         "axes.facecolor":     "white",
         "axes.edgecolor":     "black",
         "axes.labelcolor":    "black",
-        "axes.linewidth":     0.6,
+        "axes.linewidth":     0.5,      # Thin, crisp spines like the paper
         "axes.spines.top":    False,
         "axes.spines.right":  False,
-        "grid.color":         "#cccccc",
-        "grid.linestyle":     ":",
-        "grid.linewidth":     0.4,
+        "grid.color":         "#e5e5e5", # Very light grid
+        "grid.linestyle":     "-",       # Solid light lines
+        "grid.linewidth":     0.3,
         "grid.alpha":         1.0,
         "xtick.color":        "black",
         "ytick.color":        "black",
+        "xtick.direction":    "out",     # Ticks outside like the paper
+        "ytick.direction":    "out",
         "xtick.major.width":  0.5,
         "ytick.major.width":  0.5,
-        "xtick.major.size":   2.5,
-        "ytick.major.size":   2.5,
+        "xtick.major.size":   3.0,
+        "ytick.major.size":   3.0,
         "text.color":         "black",
         "font.family":        "sans-serif",
-        "font.size":          7,
-        "axes.titlesize":     7.5,
-        "axes.labelsize":     7,
-        "xtick.labelsize":    6.5,
-        "ytick.labelsize":    6.5,
-        "legend.fontsize":    6.5,
-        "lines.linewidth":    1.0,
+        "font.sans-serif":    ["Arial", "Helvetica", "DejaVu Sans"],
+        "font.size":          8,         # Standard size for subplots
+        "axes.titlesize":     8,
+        "axes.labelsize":     8,
+        "xtick.labelsize":    7.5,
+        "ytick.labelsize":    7.5,
+        "legend.fontsize":    7.5,
+        "legend.frameon":     False,     # No frame usually in paper legends
+        "legend.loc":         "upper center",
+        "lines.linewidth":    1.2,
+        "lines.markersize":   4,
         "pdf.fonttype":       42,
         "ps.fonttype":        42,
         "figure.dpi":         300,
         "savefig.dpi":        300,
         "savefig.facecolor":  "white",
         "savefig.bbox":       "tight",
+        "savefig.pad_inches": 0.02,
     })
 
 
@@ -278,7 +296,7 @@ def _nice_ceil(value: float) -> float:
         return 1.0
     magnitude = 10.0 ** np.floor(np.log10(value))
     fraction = value / magnitude
-    for cap in (1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0):
+    for cap in (1.0, 1.2, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0):
         if fraction <= cap + 1e-9:
             return cap * magnitude
     return 10.0 * magnitude
@@ -319,11 +337,7 @@ def plot_fairness_summary(
     out_path: Path,
     bin_s: float = 1.0,
 ) -> None:
-    """Twin-axis bars over phase 2: left=fairness, right=system throughput.
-
-    Fairness = hybrid satisfaction + weighted max-min ratio (see
-    `minmax_fairness`); 1 = method delivered the operator's intended split.
-    """
+    """Twin-axis bars over phase 2: left=fairness, right=system throughput."""
     p_start, p_end = _phase2_window(meta)
     p_dur = max(p_end - p_start, 1e-6)
 
@@ -352,47 +366,52 @@ def plot_fairness_summary(
         sys_rps.append(T_A + T_B)
 
     labels = [LABELS[m] for m in methods]
-    bar_w  = 0.36
+    bar_w  = 0.35
     x      = np.arange(len(methods))
 
-    fig, ax_left = plt.subplots(figsize=(2.7, 1.55))
+    # Compact figsize for 1/3 column width
+    fig, ax_left = plt.subplots(figsize=(2.2, 1.8))
     ax_right     = ax_left.twinx()
     ax_right.spines["top"].set_visible(False)
     ax_right.spines["right"].set_visible(True)
 
-    FAIR_COLOR = "#3B7DC4"
-    TPUT_COLOR = "#E8A24B"
+    # Professional solid colors with thin black edges
+    FAIR_COLOR = "#4E79A7" # Muted Blue
+    TPUT_COLOR = "#F28E2B" # Muted Orange
 
     ax_left.bar(x - bar_w / 2, fairness, width=bar_w,
                 color=FAIR_COLOR, edgecolor="black",
-                linewidth=0.4, label="Fairness", zorder=3)
+                linewidth=0.5, label="Fairness", zorder=3)
     ax_right.bar(x + bar_w / 2, sys_rps, width=bar_w,
                  color=TPUT_COLOR, edgecolor="black",
-                 linewidth=0.4, label="System tput", zorder=3)
+                 linewidth=0.5, label="Throughput", zorder=3)
 
-    ax_left.set_ylabel(r"Fairness", color=FAIR_COLOR)
-    ax_right.set_ylabel("Throughput (req/s)", color=TPUT_COLOR)
-    ax_left.tick_params(axis="y", colors=FAIR_COLOR)
-    ax_right.tick_params(axis="y", colors=TPUT_COLOR)
+    ax_left.set_ylabel(r"Fairness", fontsize=8, color=FAIR_COLOR, fontweight='bold')
+    ax_right.set_ylabel("Throughput (req/s)", fontsize=8, color=TPUT_COLOR, fontweight='bold')
+    
+    # Re-add colored ticks for visibility
+    ax_left.tick_params(axis="y", labelsize=7, colors=FAIR_COLOR)
+    ax_right.tick_params(axis="y", labelsize=7, colors=TPUT_COLOR)
 
     ymax_fair = 1.0
-    ymax_tput = _nice_ceil(max(sys_rps, default=1.0) * 1.02)
+    ymax_tput = _nice_ceil(max(sys_rps, default=1.0) * 1.05)
     ax_left.set_ylim(0, ymax_fair)
     ax_right.set_ylim(0, ymax_tput)
     ax_left.set_xticks(x)
-    ax_left.set_xticklabels(labels, rotation=18, ha="right")
-    ax_left.grid(axis="y", linewidth=0.4)
+    ax_left.set_xticklabels(labels, rotation=90, ha="center", fontsize=7)
+    ax_left.grid(axis="y", linewidth=0.3, zorder=0)
 
+    # Value annotations - subtle and small
     for xi, v in zip(x, fairness):
         if v > 0:
-            ax_left.text(xi - bar_w / 2, v + ymax_fair * 0.02, f"{v:.2f}",
-                         ha="center", va="bottom", fontsize=5.5)
+            ax_left.text(xi - bar_w / 2, v + 0.01, f"{v:.2f}",
+                         ha="center", va="bottom", fontsize=6)
     for xi, v in zip(x, sys_rps):
         if v > 0:
-            ax_right.text(xi + bar_w / 2, v + ymax_tput * 0.02, f"{v:.0f}",
-                          ha="center", va="bottom", fontsize=5.5)
+            ax_right.text(xi + bar_w / 2, v + ymax_tput * 0.01, f"{v:.0f}",
+                          ha="center", va="bottom", fontsize=6)
 
-    fig.tight_layout(pad=0.3)
+    fig.tight_layout(pad=0.1)
     save_figure(fig, out_path)
     plt.close(fig)
 
@@ -407,43 +426,25 @@ def plot_throughput_timeseries(
     weight_b: float = 1.0,
     bin_s: float = 1.0,
 ) -> None:
-    """Two-panel throughput-vs-time: top=Client A, bottom=Client B.
-    Throughput binned by completion time (req/s actually delivered).
-    Offered load from trace.json drawn as a thin black dotted line.
-    """
-    methods = [m for m in METHOD_ORDER if m in method_dirs]
+    """Two-panel throughput-vs-time."""
+    # Only show SP, S-STFQ, and FMVisor as requested
+    ALLOWED_METHODS = ["no_sharing_tpc", "stfq", "bfq"]
+    methods = [m for m in METHOD_ORDER if m in method_dirs and m in ALLOWED_METHODS]
     if not methods:
         return
 
     bounds = meta.get("phase_boundaries_s", [])
     t_max  = float(bounds[-1]) if bounds else 30.0
 
-    # Load offered load from trace.json (shared across all methods).
-    # Fall back to send times from the first method's CSV if trace not found.
-    import json as _json
-    offered: Dict[str, Tuple[np.ndarray, np.ndarray]] = {}
-    base = next(iter(method_dirs.values())).parent
-    trace_path = base / "trace.json"
-    if trace_path.exists():
-        raw = _json.loads(trace_path.read_text())
-        for task, times in raw.items():
-            t_arr = np.array(times, dtype=float)
-            t_arr = t_arr[t_arr <= t_max]
-            if t_arr.size:
-                offered[task] = _bin_rate(t_arr, t_max, bin_s=bin_s)
-    else:
-        first_dir = next(iter(method_dirs.values()))
-        for task in (victim_task, aggressor_task):
-            recs = _load_records(first_dir, task)
-            if recs:
-                sends = np.array([s for s, _ in recs])
-                offered[task] = _bin_rate(sends, t_max, bin_s=bin_s)
-
-    fig, (ax_a, ax_b) = plt.subplots(2, 1, figsize=(2.8, 2.4), sharex=True)
+    fig, (ax_a, ax_b) = plt.subplots(2, 1, figsize=(3.3, 3.2), sharex=True)
     panels = [(ax_a, victim_task,    f"Client A (w={weight_a:g})"),
               (ax_b, aggressor_task, f"Client B (w={weight_b:g})")]
 
     panel_max = 0.0
+    # Load offered load from trace.json
+    base = next(iter(method_dirs.values())).parent
+    trace_path = base / "trace.json"
+    
     for ax, task, panel_label in panels:
         for m in methods:
             recs = _load_records(method_dirs[m], task)
@@ -451,43 +452,64 @@ def plot_throughput_timeseries(
                 continue
             done = np.array([s + l / 1000.0 for s, l in recs])
             centers, rps = _bin_rate(done, t_max, bin_s=bin_s)
+            
             ax.plot(centers, rps,
                     color=COLORS[m], linestyle=LINESTYLES[m],
-                    linewidth=1.0, label=LABELS[m], zorder=3)
+                    marker=MARKERS[m], markevery=max(1, len(centers)//8),
+                    markersize=3.5, linewidth=1.0, label=LABELS[m], zorder=3)
             if rps.size:
                 panel_max = max(panel_max, float(rps.max()))
-        # if task in offered:
-        #     centers_o, rps_o = offered[task]
-        #     ax.plot(centers_o, rps_o, color="black", linestyle=":",
-        #             linewidth=0.8, label="Offered load", zorder=2)
-        #     panel_max = max(panel_max, float(rps_o.max()))
-        _add_phase_lines(ax, meta, t_max)
-        ax.set_ylabel("Throughput (req/sec)")
-        ax.text(0.02, 0.93, panel_label, transform=ax.transAxes,
-                fontsize=6.5, va="top", ha="left", color="black")
-        ax.grid(axis="y", linewidth=0.4)
+        
+        # Annotate offered load for each phase from run config
+        boundaries = [0.0] + meta.get("phase_boundaries_s", [])
+        
+        # Determine which RPS list to use from meta
+        if task == meta.get("victim_task", victim_task):
+            rps_list = meta.get("victim_rps_phases", [5.0, 60.0, 5.0]) # Fallback to common config
+        else:
+            rps_list = meta.get("aggressor_rps_phases", [60.0, 60.0, 60.0])
 
-    # Shared y-limit (nice number) so both panels share scale.
-    y_nice = _nice_ceil(panel_max * 1.10) if panel_max > 0 else 1.0
+        for i in range(min(len(boundaries)-1, len(rps_list))):
+            t_s, t_e = boundaries[i], boundaries[i+1]
+            rate = rps_list[i]
+            mid = (t_s + t_e) / 2
+            ax.text(mid, 0.96, f"{rate:.0f}", transform=ax.get_xaxis_transform(),
+                    ha="center", va="top", fontsize=7.5, color="#444444", 
+                    fontweight='bold', zorder=10)
+
+        _add_phase_lines(ax, meta, t_max)
+        ax.set_ylabel("Throughput (req/s)", fontsize=7.5)
+        # Move Client label to top right to avoid overlap with phase numbers
+        ax.text(0.98, 0.95, panel_label, transform=ax.transAxes,
+                fontsize=7.5, fontweight='bold', va="top", ha="right",
+                bbox=dict(facecolor='white', alpha=0.8, edgecolor='none', pad=1))
+        ax.grid(axis="y", linewidth=0.3)
+
+    # Tighter y-limit
+    y_nice = _nice_ceil(panel_max * 1.02) if panel_max > 0 else 1.0
     x_nice = _nice_ceil(t_max)
     for ax, _, _ in panels:
         ax.set_xlim(0, x_nice)
         ax.set_ylim(0, y_nice)
+        ax.tick_params(axis='both', labelsize=7)
 
-    ax_b.set_xlabel("Time (s)")
-    # De-duplicate legend entries (both panels add "Offered load").
+    ax_b.set_xlabel("Time (s)", fontsize=7.5)
+    
     handles, leg_labels = ax_a.get_legend_handles_labels()
-    seen: Dict[str, int] = {}
     dedup_h, dedup_l = [], []
+    seen = set()
     for h, l in zip(handles, leg_labels):
         if l not in seen:
-            seen[l] = 1
+            seen.add(l)
             dedup_h.append(h)
             dedup_l.append(l)
-    fig.tight_layout(pad=0.3, rect=(0, 0, 1, 0.90))
+    
+    fig.tight_layout(rect=(0, 0, 1, 0.94), pad=0.2)
     fig.legend(dedup_h, dedup_l, loc="upper center",
                bbox_to_anchor=(0.5, 0.99), ncol=len(dedup_h),
-               frameon=False, handlelength=1.6, columnspacing=0.9)
+               frameon=False, handlelength=1.5, columnspacing=0.8,
+               fontsize=7)
+    
     save_figure(fig, out_path)
     plt.close(fig)
 
@@ -502,7 +524,7 @@ def plot_latency_timeseries(
     weight_b: float = 1.0,
     bin_s: float = 1.0,
 ) -> None:
-    """Two-panel mean-latency-vs-time: top=Client A, bottom=Client B."""
+    """Two-panel mean-latency-vs-time."""
     methods = [m for m in METHOD_ORDER if m in method_dirs]
     if not methods:
         return
@@ -522,7 +544,7 @@ def plot_latency_timeseries(
     scale = 1.0 / 1000.0 if all_max > 2000 else 1.0
     unit  = "s" if scale < 1 else "ms"
 
-    fig, (ax_a, ax_b) = plt.subplots(2, 1, figsize=(2.8, 2.4), sharex=True)
+    fig, (ax_a, ax_b) = plt.subplots(2, 1, figsize=(3.3, 3.2), sharex=True)
     panels = [(ax_a, victim_task,    f"Client A (w={weight_a:g})"),
               (ax_b, aggressor_task, f"Client B (w={weight_b:g})")]
 
@@ -535,30 +557,37 @@ def plot_latency_timeseries(
             send_times = np.array([s for s, _ in recs])
             lats       = np.array([l * scale for _, l in recs])
             centers, mean_lat = _bin_mean(send_times, lats, t_max, bin_s=bin_s)
+            
             ax.plot(centers, mean_lat,
                     color=COLORS[m], linestyle=LINESTYLES[m],
-                    linewidth=1.0, label=LABELS[m], zorder=3)
+                    marker=MARKERS[m], markevery=max(1, len(centers)//8),
+                    markersize=3.5, linewidth=1.0, label=LABELS[m], zorder=3)
             valid = mean_lat[~np.isnan(mean_lat)]
             if valid.size:
                 panel_max = max(panel_max, float(valid.max()))
+        
         _add_phase_lines(ax, meta, t_max)
-        ax.set_ylabel(f"Latency ({unit})")
-        ax.text(0.02, 0.93, panel_label, transform=ax.transAxes,
-                fontsize=6.5, va="top", ha="left", color="black")
-        ax.grid(axis="y", linewidth=0.4)
+        ax.set_ylabel(f"Latency ({unit})", fontsize=7.5)
+        ax.text(0.02, 0.95, panel_label, transform=ax.transAxes,
+                fontsize=7.5, fontweight='bold', va="top", ha="left")
+        ax.grid(axis="y", linewidth=0.3)
 
-    y_nice = _nice_ceil(panel_max * 1.10) if panel_max > 0 else 1.0
+    y_nice = _nice_ceil(panel_max * 1.1) if panel_max > 0 else 1.0
     x_nice = _nice_ceil(t_max)
     for ax, _, _ in panels:
         ax.set_xlim(0, x_nice)
         ax.set_ylim(0, y_nice)
+        ax.tick_params(axis='both', labelsize=7)
 
-    ax_b.set_xlabel("Time (s)")
+    ax_b.set_xlabel("Time (s)", fontsize=7.5)
+    
     handles, leg_labels = ax_a.get_legend_handles_labels()
-    fig.tight_layout(pad=0.3, rect=(0, 0, 1, 0.90))
+    fig.tight_layout(rect=(0, 0, 1, 0.94), pad=0.2)
     fig.legend(handles, leg_labels, loc="upper center",
                bbox_to_anchor=(0.5, 0.99), ncol=len(handles),
-               frameon=False, handlelength=1.6, columnspacing=0.9)
+               frameon=False, handlelength=1.5, columnspacing=0.8,
+               fontsize=7)
+    
     save_figure(fig, out_path)
     plt.close(fig)
 

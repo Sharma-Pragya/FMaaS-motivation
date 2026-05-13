@@ -1,0 +1,16 @@
+Experiment config - Wed May 13 00:37:13 UTC 2026
+Backbone: swinbase
+Client A (priority/victim): nyudepth
+Client B (other/aggressor): vocseg
+Number of phases: 3
+  Phase 1 (60s): A @ 5 rps, B @ 60 rps
+  Phase 2 (60s): A @ 60 rps, B @ 60 rps
+  Phase 3 (60s): A @ 5 rps, B @ 60 rps
+Total duration: 180s
+Sharing runs:
+  fcfs: scheduler=fifo batch_size=32 batch_wait_ms=0
+  stfq_1_3: scheduler=stfq batch_size=1 batch_wait_ms=0 rates=nyudepth:1,vocseg:3
+  bfq_3_1: scheduler=stfq batch_size=32 batch_wait_ms=0 rates=nyudepth:1,vocseg:3
+No-sharing TPC runs: 32  0  no_sharing_tpc_3_1  3  1 (tpc_mode=libsmctrl)
+No-sharing runs: 32  0  no_sharing
+Results base: experiments/fair_share/vision/results_t4

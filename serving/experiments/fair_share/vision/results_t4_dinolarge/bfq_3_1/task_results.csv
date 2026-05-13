@@ -1,0 +1,3 @@
+task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_client_pre_rpc_ms,avg_non_server_exec_overhead_ms
+nyudepth,stfq,4114,24.2,5014.654,4328.274,10738.653,11517.805,457.512,449.804,0.003,0.355,4515.43,0.0,4557.142
+vocseg,stfq,10170,59.8235,28892.7,39551.05,50537.876,51519.771,413.686,387.391,0.004,1.139,28447.67,0.0,28479.015
