@@ -17,3 +17,4 @@ timeseries/Linux/nixtla-foundational-time-series/data
 serving/dataset
 serving/**/*.log
 serving/experiments/SystemInAction/results/
+serving/experiments/end_to_end_realworld/deployments/*/trace.json

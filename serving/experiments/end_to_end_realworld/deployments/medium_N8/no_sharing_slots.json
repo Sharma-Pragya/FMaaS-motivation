@@ -1,0 +1,330 @@
+[
+  {
+    "task": "ecgclass",
+    "base_task": "ecgclass",
+    "backbone": "momentlarge",
+    "tier": "large",
+    "decoder_path": "ecgclass_momentlarge_mlp",
+    "arrive": 0.0,
+    "depart": 600.0,
+    "backbone_idx": 0,
+    "function_id": "abe9c32684eecf470828b8293487d05df3167bab4a02e966856c5da9582c5cea",
+    "model_id": null,
+    "req_model_id": null,
+    "owner_n_req": 86428,
+    "owner_rate_real": 1.000324074074074,
+    "device_name": "device1",
+    "device_url": "172.31.40.38:8000",
+    "tpc_partition": null,
+    "deploy_spec": {
+      "device": "172.31.40.38:8000",
+      "device_name": "device1",
+      "device_type": "TESLA T4",
+      "backbone": "momentlarge",
+      "cuda": "cuda:0",
+      "scheduler_policy": "fifo",
+      "worker_mode": "inline",
+      "decoders": [
+        {
+          "task": "ecgclass",
+          "base_task": "ecgclass",
+          "type": "classification",
+          "path": "ecgclass_momentlarge_mlp"
+        }
+      ],
+      "tasks": {
+        "ecgclass": {
+          "type": "classification",
+          "request_per_sec": 1.005
+        }
+      }
+    }
+  },
+  {
+    "task": "heartrate",
+    "base_task": "heartrate",
+    "backbone": "momentbase",
+    "tier": "large",
+    "decoder_path": "heartrate_momentbase_mlp",
+    "arrive": 0.0,
+    "depart": 600.0,
+    "backbone_idx": 1,
+    "function_id": "633af257b16dc9d4ca82b735a56cb39bfa4cb3e78b5ba27b68e04e3053b3c077",
+    "model_id": null,
+    "req_model_id": null,
+    "owner_n_req": 86433,
+    "owner_rate_real": 1.0003819444444444,
+    "device_name": "device1",
+    "device_url": "172.31.40.38:8010",
+    "tpc_partition": null,
+    "deploy_spec": {
+      "device": "172.31.40.38:8010",
+      "device_name": "device1",
+      "device_type": "TESLA T4",
+      "backbone": "momentbase",
+      "cuda": "cuda:0",
+      "scheduler_policy": "fifo",
+      "worker_mode": "inline",
+      "decoders": [
+        {
+          "task": "heartrate",
+          "base_task": "heartrate",
+          "type": "regression",
+          "path": "heartrate_momentbase_mlp"
+        }
+      ],
+      "tasks": {
+        "heartrate": {
+          "type": "regression",
+          "request_per_sec": 1.0
+        }
+      }
+    }
+  },
+  {
+    "task": "gestureclass",
+    "base_task": "gestureclass",
+    "backbone": "momentsmall",
+    "tier": "medium",
+    "decoder_path": "gestureclass_momentsmall_mlp",
+    "arrive": 0.0,
+    "depart": 600.0,
+    "backbone_idx": 2,
+    "function_id": "5b2f4f1690a206c72cec59e631fc7f24dbea7bb2674753569b1f05e8de0ea225",
+    "model_id": null,
+    "req_model_id": null,
+    "owner_n_req": 86437,
+    "owner_rate_real": 1.0004282407407408,
+    "device_name": "device1",
+    "device_url": "172.31.40.38:8020",
+    "tpc_partition": null,
+    "deploy_spec": {
+      "device": "172.31.40.38:8020",
+      "device_name": "device1",
+      "device_type": "TESLA T4",
+      "backbone": "momentsmall",
+      "cuda": "cuda:0",
+      "scheduler_policy": "fifo",
+      "worker_mode": "inline",
+      "decoders": [
+        {
+          "task": "gestureclass",
+          "base_task": "gestureclass",
+          "type": "classification",
+          "path": "gestureclass_momentsmall_mlp"
+        }
+      ],
+      "tasks": {
+        "gestureclass": {
+          "type": "classification",
+          "request_per_sec": 0.9966666666666667
+        }
+      }
+    }
+  },
+  {
+    "task": "sysbp",
+    "base_task": "sysbp",
+    "backbone": "papageip",
+    "tier": "small",
+    "decoder_path": "sysbp_papageip_mlp",
+    "arrive": 0.0,
+    "depart": 600.0,
+    "backbone_idx": 3,
+    "function_id": "633af257b16dc9d4ca82b735a56cb39bfa4cb3e78b5ba27b68e04e3053b3c077",
+    "model_id": null,
+    "req_model_id": null,
+    "owner_n_req": 86438,
+    "owner_rate_real": 1.0004398148148148,
+    "device_name": "device1",
+    "device_url": "172.31.40.38:8030",
+    "tpc_partition": null,
+    "deploy_spec": {
+      "device": "172.31.40.38:8030",
+      "device_name": "device1",
+      "device_type": "TESLA T4",
+      "backbone": "papageip",
+      "cuda": "cuda:0",
+      "scheduler_policy": "fifo",
+      "worker_mode": "inline",
+      "decoders": [
+        {
+          "task": "sysbp",
+          "base_task": "sysbp",
+          "type": "regression",
+          "path": "sysbp_papageip_mlp"
+        }
+      ],
+      "tasks": {
+        "sysbp": {
+          "type": "regression",
+          "request_per_sec": 1.0
+        }
+      }
+    }
+  },
+  {
+    "task": "diasbp",
+    "base_task": "diasbp",
+    "backbone": "papageis",
+    "tier": "small",
+    "decoder_path": "diasbp_papageis_mlp",
+    "arrive": 0.0,
+    "depart": 600.0,
+    "backbone_idx": 4,
+    "function_id": "633af257b16dc9d4ca82b735a56cb39bfa4cb3e78b5ba27b68e04e3053b3c077",
+    "model_id": null,
+    "req_model_id": null,
+    "owner_n_req": 86439,
+    "owner_rate_real": 1.0004513888888888,
+    "device_name": "device1",
+    "device_url": "172.31.40.38:8040",
+    "tpc_partition": null,
+    "deploy_spec": {
+      "device": "172.31.40.38:8040",
+      "device_name": "device1",
+      "device_type": "TESLA T4",
+      "backbone": "papageis",
+      "cuda": "cuda:0",
+      "scheduler_policy": "fifo",
+      "worker_mode": "inline",
+      "decoders": [
+        {
+          "task": "diasbp",
+          "base_task": "diasbp",
+          "type": "regression",
+          "path": "diasbp_papageis_mlp"
+        }
+      ],
+      "tasks": {
+        "diasbp": {
+          "type": "regression",
+          "request_per_sec": 1.0
+        }
+      }
+    }
+  },
+  {
+    "task": "etth1fore",
+    "base_task": "etth1fore",
+    "backbone": "papageissvri",
+    "tier": "small",
+    "decoder_path": "etth1fore_papageissvri_mlp",
+    "arrive": 0.0,
+    "depart": 600.0,
+    "backbone_idx": 5,
+    "function_id": "633af257b16dc9d4ca82b735a56cb39bfa4cb3e78b5ba27b68e04e3053b3c077",
+    "model_id": null,
+    "req_model_id": null,
+    "owner_n_req": 86442,
+    "owner_rate_real": 1.0004861111111112,
+    "device_name": "device1",
+    "device_url": "172.31.40.38:8050",
+    "tpc_partition": null,
+    "deploy_spec": {
+      "device": "172.31.40.38:8050",
+      "device_name": "device1",
+      "device_type": "TESLA T4",
+      "backbone": "papageissvri",
+      "cuda": "cuda:0",
+      "scheduler_policy": "fifo",
+      "worker_mode": "inline",
+      "decoders": [
+        {
+          "task": "etth1fore",
+          "base_task": "etth1fore",
+          "type": "forecasting",
+          "path": "etth1fore_papageissvri_mlp"
+        }
+      ],
+      "tasks": {
+        "etth1fore": {
+          "type": "forecasting",
+          "request_per_sec": 1.0
+        }
+      }
+    }
+  },
+  {
+    "task": "imgclass10",
+    "base_task": "imgclass10",
+    "backbone": "swintiny",
+    "tier": "small",
+    "decoder_path": null,
+    "arrive": 0.0,
+    "depart": 600.0,
+    "backbone_idx": 6,
+    "function_id": "633af257b16dc9d4ca82b735a56cb39bfa4cb3e78b5ba27b68e04e3053b3c077",
+    "model_id": null,
+    "req_model_id": null,
+    "owner_n_req": 86443,
+    "owner_rate_real": 1.0004976851851852,
+    "device_name": "device1",
+    "device_url": "172.31.40.38:8060",
+    "tpc_partition": null,
+    "deploy_spec": {
+      "device": "172.31.40.38:8060",
+      "device_name": "device1",
+      "device_type": "TESLA T4",
+      "backbone": "swintiny",
+      "cuda": "cuda:0",
+      "scheduler_policy": "fifo",
+      "worker_mode": "inline",
+      "decoders": [
+        {
+          "task": "imgclass10",
+          "base_task": "imgclass10",
+          "type": "linear_classification",
+          "path": null
+        }
+      ],
+      "tasks": {
+        "imgclass10": {
+          "type": "linear_classification",
+          "request_per_sec": 1.0
+        }
+      }
+    }
+  },
+  {
+    "task": "imgclass10__app1",
+    "base_task": "imgclass10",
+    "backbone": "swinsmall",
+    "tier": "small",
+    "decoder_path": null,
+    "arrive": 0.0,
+    "depart": 600.0,
+    "backbone_idx": 7,
+    "function_id": "633af257b16dc9d4ca82b735a56cb39bfa4cb3e78b5ba27b68e04e3053b3c077",
+    "model_id": null,
+    "req_model_id": null,
+    "owner_n_req": 86443,
+    "owner_rate_real": 1.0004976851851852,
+    "device_name": "device1",
+    "device_url": "172.31.40.38:8070",
+    "tpc_partition": null,
+    "deploy_spec": {
+      "device": "172.31.40.38:8070",
+      "device_name": "device1",
+      "device_type": "TESLA T4",
+      "backbone": "swinsmall",
+      "cuda": "cuda:0",
+      "scheduler_policy": "fifo",
+      "worker_mode": "inline",
+      "decoders": [
+        {
+          "task": "imgclass10__app1",
+          "base_task": "imgclass10",
+          "type": "linear_classification",
+          "path": null
+        }
+      ],
+      "tasks": {
+        "imgclass10__app1": {
+          "type": "linear_classification",
+          "request_per_sec": 1.0
+        }
+      }
+    }
+  }
+]

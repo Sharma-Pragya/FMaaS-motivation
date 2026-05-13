@@ -1,0 +1,5298 @@
+{
+  "sites": [
+    {
+      "id": "site1",
+      "deployments": [
+        {
+          "device": "172.31.40.38:8000",
+          "device_name": "device1",
+          "device_type": "TESLA T4",
+          "backbone": "momentlarge",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "ecgclass",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app1",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app2",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app3",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app4",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app5",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app6",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app7",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app8",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app9",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app10",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app11",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app12",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app13",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app14",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app15",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app16",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app17",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app18",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app19",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app20",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app21",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app22",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app23",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app24",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app25",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app26",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app27",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app28",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app29",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app30",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app31",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app32",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app33",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app34",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app35",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app36",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app37",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app38",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            },
+            {
+              "task": "ecgclass__app39",
+              "base_task": "ecgclass",
+              "type": "classification",
+              "path": "ecgclass_momentlarge_mlp"
+            }
+          ],
+          "tasks": {
+            "ecgclass": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "ecgclass__app1": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "ecgclass__app2": {
+              "type": "classification",
+              "request_per_sec": 0.10333333333333333
+            },
+            "ecgclass__app3": {
+              "type": "classification",
+              "request_per_sec": 0.10333333333333333
+            },
+            "ecgclass__app4": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "ecgclass__app5": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "ecgclass__app6": {
+              "type": "classification",
+              "request_per_sec": 0.10833333333333334
+            },
+            "ecgclass__app7": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "ecgclass__app8": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "ecgclass__app9": {
+              "type": "classification",
+              "request_per_sec": 0.105
+            },
+            "ecgclass__app10": {
+              "type": "classification",
+              "request_per_sec": 0.10166666666666667
+            },
+            "ecgclass__app11": {
+              "type": "classification",
+              "request_per_sec": 0.105
+            },
+            "ecgclass__app12": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "ecgclass__app13": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "ecgclass__app14": {
+              "type": "classification",
+              "request_per_sec": 0.3566666666666667
+            },
+            "ecgclass__app15": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "ecgclass__app16": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "ecgclass__app17": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "ecgclass__app18": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "ecgclass__app19": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "ecgclass__app20": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "ecgclass__app21": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "ecgclass__app22": {
+              "type": "classification",
+              "request_per_sec": 0.10333333333333333
+            },
+            "ecgclass__app23": {
+              "type": "classification",
+              "request_per_sec": 2.6683333333333334
+            },
+            "ecgclass__app24": {
+              "type": "classification",
+              "request_per_sec": 1.9783333333333333
+            },
+            "ecgclass__app25": {
+              "type": "classification",
+              "request_per_sec": 0.10666666666666667
+            },
+            "ecgclass__app26": {
+              "type": "classification",
+              "request_per_sec": 0.11833333333333333
+            },
+            "ecgclass__app27": {
+              "type": "classification",
+              "request_per_sec": 0.105
+            },
+            "ecgclass__app28": {
+              "type": "classification",
+              "request_per_sec": 0.10666666666666667
+            },
+            "ecgclass__app29": {
+              "type": "classification",
+              "request_per_sec": 0.10833333333333334
+            },
+            "ecgclass__app30": {
+              "type": "classification",
+              "request_per_sec": 0.105
+            },
+            "ecgclass__app31": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "ecgclass__app32": {
+              "type": "classification",
+              "request_per_sec": 0.11166666666666666
+            },
+            "ecgclass__app33": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "ecgclass__app34": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "ecgclass__app35": {
+              "type": "classification",
+              "request_per_sec": 0.10166666666666667
+            },
+            "ecgclass__app36": {
+              "type": "classification",
+              "request_per_sec": 0.255
+            },
+            "ecgclass__app37": {
+              "type": "classification",
+              "request_per_sec": 0.10666666666666667
+            },
+            "ecgclass__app38": {
+              "type": "classification",
+              "request_per_sec": 0.10833333333333334
+            },
+            "ecgclass__app39": {
+              "type": "classification",
+              "request_per_sec": 0.11833333333333333
+            }
+          }
+        },
+        {
+          "device": "172.31.34.115:8000",
+          "device_name": "device2",
+          "device_type": "TESLA T4",
+          "backbone": "momentbase",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "heartrate",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app1",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app2",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app3",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app4",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app5",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app6",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app7",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app8",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app9",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app10",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app11",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app12",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app13",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app14",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app15",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app16",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app17",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app18",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app19",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app20",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app21",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app22",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app23",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app24",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app25",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app26",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app27",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app28",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app29",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app30",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app31",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app32",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app33",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app34",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app35",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app36",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app37",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app38",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            },
+            {
+              "task": "heartrate__app39",
+              "base_task": "heartrate",
+              "type": "regression",
+              "path": "heartrate_momentbase_mlp"
+            }
+          ],
+          "tasks": {
+            "heartrate": {
+              "type": "regression",
+              "request_per_sec": 0.10333333333333333
+            },
+            "heartrate__app1": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "heartrate__app2": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "heartrate__app3": {
+              "type": "regression",
+              "request_per_sec": 0.10166666666666667
+            },
+            "heartrate__app4": {
+              "type": "regression",
+              "request_per_sec": 0.15
+            },
+            "heartrate__app5": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "heartrate__app6": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "heartrate__app7": {
+              "type": "regression",
+              "request_per_sec": 0.13833333333333334
+            },
+            "heartrate__app8": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "heartrate__app9": {
+              "type": "regression",
+              "request_per_sec": 0.105
+            },
+            "heartrate__app10": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "heartrate__app11": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "heartrate__app12": {
+              "type": "regression",
+              "request_per_sec": 4.73
+            },
+            "heartrate__app13": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "heartrate__app14": {
+              "type": "regression",
+              "request_per_sec": 0.21166666666666667
+            },
+            "heartrate__app15": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "heartrate__app16": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "heartrate__app17": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "heartrate__app18": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "heartrate__app19": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "heartrate__app20": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "heartrate__app21": {
+              "type": "regression",
+              "request_per_sec": 0.10333333333333333
+            },
+            "heartrate__app22": {
+              "type": "regression",
+              "request_per_sec": 0.10333333333333333
+            },
+            "heartrate__app23": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "heartrate__app24": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "heartrate__app25": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "heartrate__app26": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "heartrate__app27": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "heartrate__app28": {
+              "type": "regression",
+              "request_per_sec": 0.115
+            },
+            "heartrate__app29": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "heartrate__app30": {
+              "type": "regression",
+              "request_per_sec": 0.105
+            },
+            "heartrate__app31": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "heartrate__app32": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "heartrate__app33": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "heartrate__app34": {
+              "type": "regression",
+              "request_per_sec": 0.11833333333333333
+            },
+            "heartrate__app35": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "heartrate__app36": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "heartrate__app37": {
+              "type": "regression",
+              "request_per_sec": 0.10833333333333334
+            },
+            "heartrate__app38": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "heartrate__app39": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            }
+          }
+        },
+        {
+          "device": "172.31.39.15:8000",
+          "device_name": "device3",
+          "device_type": "TESLA T4",
+          "backbone": "momentsmall",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "gestureclass",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app1",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app2",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app3",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app4",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app5",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app6",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app7",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app8",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app9",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app10",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app11",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app12",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app13",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app14",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app15",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app16",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app17",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app18",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app19",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app20",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app21",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app22",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app23",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app24",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app25",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app26",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app27",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app28",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app29",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app30",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app31",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app32",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app33",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app34",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app35",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app36",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app37",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app38",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            },
+            {
+              "task": "gestureclass__app39",
+              "base_task": "gestureclass",
+              "type": "classification",
+              "path": "gestureclass_momentsmall_mlp"
+            }
+          ],
+          "tasks": {
+            "gestureclass": {
+              "type": "classification",
+              "request_per_sec": 0.10166666666666667
+            },
+            "gestureclass__app1": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "gestureclass__app2": {
+              "type": "classification",
+              "request_per_sec": 0.10166666666666667
+            },
+            "gestureclass__app3": {
+              "type": "classification",
+              "request_per_sec": 0.10166666666666667
+            },
+            "gestureclass__app4": {
+              "type": "classification",
+              "request_per_sec": 0.105
+            },
+            "gestureclass__app5": {
+              "type": "classification",
+              "request_per_sec": 0.10666666666666667
+            },
+            "gestureclass__app6": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "gestureclass__app7": {
+              "type": "classification",
+              "request_per_sec": 0.105
+            },
+            "gestureclass__app8": {
+              "type": "classification",
+              "request_per_sec": 0.5633333333333334
+            },
+            "gestureclass__app9": {
+              "type": "classification",
+              "request_per_sec": 0.10166666666666667
+            },
+            "gestureclass__app10": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "gestureclass__app11": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "gestureclass__app12": {
+              "type": "classification",
+              "request_per_sec": 0.10333333333333333
+            },
+            "gestureclass__app13": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "gestureclass__app14": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "gestureclass__app15": {
+              "type": "classification",
+              "request_per_sec": 0.10333333333333333
+            },
+            "gestureclass__app16": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "gestureclass__app17": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "gestureclass__app18": {
+              "type": "classification",
+              "request_per_sec": 0.12333333333333334
+            },
+            "gestureclass__app19": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "gestureclass__app20": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "gestureclass__app21": {
+              "type": "classification",
+              "request_per_sec": 0.10333333333333333
+            },
+            "gestureclass__app22": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "gestureclass__app23": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "gestureclass__app24": {
+              "type": "classification",
+              "request_per_sec": 0.15333333333333332
+            },
+            "gestureclass__app25": {
+              "type": "classification",
+              "request_per_sec": 0.10333333333333333
+            },
+            "gestureclass__app26": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "gestureclass__app27": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "gestureclass__app28": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "gestureclass__app29": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "gestureclass__app30": {
+              "type": "classification",
+              "request_per_sec": 0.105
+            },
+            "gestureclass__app31": {
+              "type": "classification",
+              "request_per_sec": 0.12
+            },
+            "gestureclass__app32": {
+              "type": "classification",
+              "request_per_sec": 0.10833333333333334
+            },
+            "gestureclass__app33": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "gestureclass__app34": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "gestureclass__app35": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "gestureclass__app36": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "gestureclass__app37": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            },
+            "gestureclass__app38": {
+              "type": "classification",
+              "request_per_sec": 0.10166666666666667
+            },
+            "gestureclass__app39": {
+              "type": "classification",
+              "request_per_sec": 0.1
+            }
+          }
+        },
+        {
+          "device": "172.31.46.11:8000",
+          "device_name": "device4",
+          "device_type": "TESLA T4",
+          "backbone": "papageip",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "sysbp",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app1",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app2",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app3",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app4",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app5",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app6",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app7",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app8",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app9",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app10",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app11",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app12",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app13",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app14",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app15",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app16",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app17",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app18",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app19",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app20",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app21",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app22",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app23",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app24",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app25",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app26",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app27",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app28",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app29",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app30",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app31",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app32",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app33",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app34",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app35",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app36",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app37",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app38",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            },
+            {
+              "task": "sysbp__app39",
+              "base_task": "sysbp",
+              "type": "regression",
+              "path": "sysbp_papageip_mlp"
+            }
+          ],
+          "tasks": {
+            "sysbp": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "sysbp__app1": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "sysbp__app2": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "sysbp__app3": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "sysbp__app4": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "sysbp__app5": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "sysbp__app6": {
+              "type": "regression",
+              "request_per_sec": 0.10166666666666667
+            },
+            "sysbp__app7": {
+              "type": "regression",
+              "request_per_sec": 0.105
+            },
+            "sysbp__app8": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "sysbp__app9": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "sysbp__app10": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "sysbp__app11": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "sysbp__app12": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "sysbp__app13": {
+              "type": "regression",
+              "request_per_sec": 0.12833333333333333
+            },
+            "sysbp__app14": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "sysbp__app15": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "sysbp__app16": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "sysbp__app17": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "sysbp__app18": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "sysbp__app19": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "sysbp__app20": {
+              "type": "regression",
+              "request_per_sec": 0.13333333333333333
+            },
+            "sysbp__app21": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "sysbp__app22": {
+              "type": "regression",
+              "request_per_sec": 0.12333333333333334
+            },
+            "sysbp__app23": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "sysbp__app24": {
+              "type": "regression",
+              "request_per_sec": 0.14666666666666667
+            },
+            "sysbp__app25": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "sysbp__app26": {
+              "type": "regression",
+              "request_per_sec": 0.10833333333333334
+            },
+            "sysbp__app27": {
+              "type": "regression",
+              "request_per_sec": 0.3283333333333333
+            },
+            "sysbp__app28": {
+              "type": "regression",
+              "request_per_sec": 0.16666666666666666
+            },
+            "sysbp__app29": {
+              "type": "regression",
+              "request_per_sec": 0.465
+            },
+            "sysbp__app30": {
+              "type": "regression",
+              "request_per_sec": 0.105
+            },
+            "sysbp__app31": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "sysbp__app32": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "sysbp__app33": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "sysbp__app34": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "sysbp__app35": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "sysbp__app36": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "sysbp__app37": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "sysbp__app38": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "sysbp__app39": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            }
+          }
+        },
+        {
+          "device": "172.31.35.65:8000",
+          "device_name": "device5",
+          "device_type": "TESLA T4",
+          "backbone": "papageis",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "diasbp",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app1",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app2",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app3",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app4",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app5",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app6",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app7",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app8",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app9",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app10",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app11",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app12",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app13",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app14",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app15",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app16",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app17",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app18",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app19",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app20",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app21",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app22",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app23",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app24",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app25",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app26",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app27",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app28",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app29",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app30",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app31",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app32",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app33",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app34",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app35",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app36",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app37",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app38",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            },
+            {
+              "task": "diasbp__app39",
+              "base_task": "diasbp",
+              "type": "regression",
+              "path": "diasbp_papageis_mlp"
+            }
+          ],
+          "tasks": {
+            "diasbp": {
+              "type": "regression",
+              "request_per_sec": 0.10166666666666667
+            },
+            "diasbp__app1": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "diasbp__app2": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "diasbp__app3": {
+              "type": "regression",
+              "request_per_sec": 0.10166666666666667
+            },
+            "diasbp__app4": {
+              "type": "regression",
+              "request_per_sec": 0.105
+            },
+            "diasbp__app5": {
+              "type": "regression",
+              "request_per_sec": 0.145
+            },
+            "diasbp__app6": {
+              "type": "regression",
+              "request_per_sec": 0.4533333333333333
+            },
+            "diasbp__app7": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "diasbp__app8": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "diasbp__app9": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "diasbp__app10": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "diasbp__app11": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "diasbp__app12": {
+              "type": "regression",
+              "request_per_sec": 0.10166666666666667
+            },
+            "diasbp__app13": {
+              "type": "regression",
+              "request_per_sec": 0.10666666666666667
+            },
+            "diasbp__app14": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "diasbp__app15": {
+              "type": "regression",
+              "request_per_sec": 0.15333333333333332
+            },
+            "diasbp__app16": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "diasbp__app17": {
+              "type": "regression",
+              "request_per_sec": 0.105
+            },
+            "diasbp__app18": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "diasbp__app19": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "diasbp__app20": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "diasbp__app21": {
+              "type": "regression",
+              "request_per_sec": 0.14833333333333334
+            },
+            "diasbp__app22": {
+              "type": "regression",
+              "request_per_sec": 0.10333333333333333
+            },
+            "diasbp__app23": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "diasbp__app24": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "diasbp__app25": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "diasbp__app26": {
+              "type": "regression",
+              "request_per_sec": 0.10666666666666667
+            },
+            "diasbp__app27": {
+              "type": "regression",
+              "request_per_sec": 0.15666666666666668
+            },
+            "diasbp__app28": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "diasbp__app29": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "diasbp__app30": {
+              "type": "regression",
+              "request_per_sec": 0.105
+            },
+            "diasbp__app31": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "diasbp__app32": {
+              "type": "regression",
+              "request_per_sec": 0.10833333333333334
+            },
+            "diasbp__app33": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "diasbp__app34": {
+              "type": "regression",
+              "request_per_sec": 0.11833333333333333
+            },
+            "diasbp__app35": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "diasbp__app36": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            },
+            "diasbp__app37": {
+              "type": "regression",
+              "request_per_sec": 0.18666666666666668
+            },
+            "diasbp__app38": {
+              "type": "regression",
+              "request_per_sec": 0.12
+            },
+            "diasbp__app39": {
+              "type": "regression",
+              "request_per_sec": 0.1
+            }
+          }
+        },
+        {
+          "device": "172.31.32.69:8000",
+          "device_name": "device6",
+          "device_type": "TESLA T4",
+          "backbone": "papageissvri",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "etth1fore",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app1",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app2",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app3",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app4",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app5",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app6",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app7",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app8",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app9",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app10",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app11",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app12",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app13",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app14",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app15",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app16",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app17",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app18",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app19",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app20",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app21",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app22",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app23",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app24",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app25",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app26",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app27",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app28",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app29",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app30",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app31",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app32",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app33",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app34",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app35",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app36",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app37",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            },
+            {
+              "task": "etth1fore__app38",
+              "base_task": "etth1fore",
+              "type": "forecasting",
+              "path": "etth1fore_papageissvri_mlp"
+            }
+          ],
+          "tasks": {
+            "etth1fore": {
+              "type": "forecasting",
+              "request_per_sec": 0.10166666666666667
+            },
+            "etth1fore__app1": {
+              "type": "forecasting",
+              "request_per_sec": 0.1
+            },
+            "etth1fore__app2": {
+              "type": "forecasting",
+              "request_per_sec": 0.10333333333333333
+            },
+            "etth1fore__app3": {
+              "type": "forecasting",
+              "request_per_sec": 0.1
+            },
+            "etth1fore__app4": {
+              "type": "forecasting",
+              "request_per_sec": 0.1
+            },
+            "etth1fore__app5": {
+              "type": "forecasting",
+              "request_per_sec": 0.1
+            },
+            "etth1fore__app6": {
+              "type": "forecasting",
+              "request_per_sec": 0.1
+            },
+            "etth1fore__app7": {
+              "type": "forecasting",
+              "request_per_sec": 0.1
+            },
+            "etth1fore__app8": {
+              "type": "forecasting",
+              "request_per_sec": 0.1
+            },
+            "etth1fore__app9": {
+              "type": "forecasting",
+              "request_per_sec": 0.10166666666666667
+            },
+            "etth1fore__app10": {
+              "type": "forecasting",
+              "request_per_sec": 0.10166666666666667
+            },
+            "etth1fore__app11": {
+              "type": "forecasting",
+              "request_per_sec": 0.1
+            },
+            "etth1fore__app12": {
+              "type": "forecasting",
+              "request_per_sec": 0.10166666666666667
+            },
+            "etth1fore__app13": {
+              "type": "forecasting",
+              "request_per_sec": 0.10333333333333333
+            },
+            "etth1fore__app14": {
+              "type": "forecasting",
+              "request_per_sec": 0.10166666666666667
+            },
+            "etth1fore__app15": {
+              "type": "forecasting",
+              "request_per_sec": 0.1
+            },
+            "etth1fore__app16": {
+              "type": "forecasting",
+              "request_per_sec": 0.1
+            },
+            "etth1fore__app17": {
+              "type": "forecasting",
+              "request_per_sec": 0.1
+            },
+            "etth1fore__app18": {
+              "type": "forecasting",
+              "request_per_sec": 0.10666666666666667
+            },
+            "etth1fore__app19": {
+              "type": "forecasting",
+              "request_per_sec": 0.16666666666666666
+            },
+            "etth1fore__app20": {
+              "type": "forecasting",
+              "request_per_sec": 0.47333333333333333
+            },
+            "etth1fore__app21": {
+              "type": "forecasting",
+              "request_per_sec": 0.1
+            },
+            "etth1fore__app22": {
+              "type": "forecasting",
+              "request_per_sec": 0.10333333333333333
+            },
+            "etth1fore__app23": {
+              "type": "forecasting",
+              "request_per_sec": 0.10666666666666667
+            },
+            "etth1fore__app24": {
+              "type": "forecasting",
+              "request_per_sec": 0.1
+            },
+            "etth1fore__app25": {
+              "type": "forecasting",
+              "request_per_sec": 0.1
+            },
+            "etth1fore__app26": {
+              "type": "forecasting",
+              "request_per_sec": 0.1
+            },
+            "etth1fore__app27": {
+              "type": "forecasting",
+              "request_per_sec": 0.13166666666666665
+            },
+            "etth1fore__app28": {
+              "type": "forecasting",
+              "request_per_sec": 0.1
+            },
+            "etth1fore__app29": {
+              "type": "forecasting",
+              "request_per_sec": 0.105
+            },
+            "etth1fore__app30": {
+              "type": "forecasting",
+              "request_per_sec": 0.13333333333333333
+            },
+            "etth1fore__app31": {
+              "type": "forecasting",
+              "request_per_sec": 0.1
+            },
+            "etth1fore__app32": {
+              "type": "forecasting",
+              "request_per_sec": 0.10833333333333334
+            },
+            "etth1fore__app33": {
+              "type": "forecasting",
+              "request_per_sec": 0.11
+            },
+            "etth1fore__app34": {
+              "type": "forecasting",
+              "request_per_sec": 0.12333333333333334
+            },
+            "etth1fore__app35": {
+              "type": "forecasting",
+              "request_per_sec": 0.10333333333333333
+            },
+            "etth1fore__app36": {
+              "type": "forecasting",
+              "request_per_sec": 0.1
+            },
+            "etth1fore__app37": {
+              "type": "forecasting",
+              "request_per_sec": 0.1
+            },
+            "etth1fore__app38": {
+              "type": "forecasting",
+              "request_per_sec": 0.14
+            }
+          }
+        },
+        {
+          "device": "172.31.34.179:8000",
+          "device_name": "device7",
+          "device_type": "TESLA T4",
+          "backbone": "swintiny",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "imgclass10",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app2",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app4",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app6",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app8",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app10",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app12",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app14",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app16",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app18",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app20",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app22",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app24",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app26",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app28",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app30",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app32",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app34",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app36",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app38",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app40",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app42",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app44",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app46",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app48",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app50",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app52",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app54",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app56",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app58",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app60",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app62",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app64",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app66",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app68",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app70",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app72",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app74",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app76",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            }
+          ],
+          "tasks": {
+            "imgclass10": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app2": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app4": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app6": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app8": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app10": {
+              "type": "linear_classification",
+              "request_per_sec": 0.10666666666666667
+            },
+            "imgclass10__app12": {
+              "type": "linear_classification",
+              "request_per_sec": 0.105
+            },
+            "imgclass10__app14": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app16": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app18": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app20": {
+              "type": "linear_classification",
+              "request_per_sec": 0.10666666666666667
+            },
+            "imgclass10__app22": {
+              "type": "linear_classification",
+              "request_per_sec": 0.10166666666666667
+            },
+            "imgclass10__app24": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app26": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app28": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app30": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app32": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app34": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app36": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app38": {
+              "type": "linear_classification",
+              "request_per_sec": 2.7383333333333333
+            },
+            "imgclass10__app40": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app42": {
+              "type": "linear_classification",
+              "request_per_sec": 0.10333333333333333
+            },
+            "imgclass10__app44": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app46": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app48": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app50": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app52": {
+              "type": "linear_classification",
+              "request_per_sec": 0.10833333333333334
+            },
+            "imgclass10__app54": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app56": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app58": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app60": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app62": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app64": {
+              "type": "linear_classification",
+              "request_per_sec": 0.10833333333333334
+            },
+            "imgclass10__app66": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app68": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app70": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app72": {
+              "type": "linear_classification",
+              "request_per_sec": 0.10833333333333334
+            },
+            "imgclass10__app74": {
+              "type": "linear_classification",
+              "request_per_sec": 0.13166666666666665
+            },
+            "imgclass10__app76": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            }
+          }
+        },
+        {
+          "device": "172.31.36.225:8000",
+          "device_name": "device8",
+          "device_type": "TESLA T4",
+          "backbone": "swinsmall",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "imgclass10__app1",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app3",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app5",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app7",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app9",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app11",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app13",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app15",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app17",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app19",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app21",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app23",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app25",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app27",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app29",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app31",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app33",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app35",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app37",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app39",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app41",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app43",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app45",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app47",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app49",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app51",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app53",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app55",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app57",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app59",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app61",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app63",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app65",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app67",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app69",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app71",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app73",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app75",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "imgclass10__app77",
+              "base_task": "imgclass10",
+              "type": "linear_classification",
+              "path": null
+            }
+          ],
+          "tasks": {
+            "imgclass10__app1": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app3": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app5": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app7": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app9": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app11": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app13": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app15": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app17": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app19": {
+              "type": "linear_classification",
+              "request_per_sec": 2.8016666666666667
+            },
+            "imgclass10__app21": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app23": {
+              "type": "linear_classification",
+              "request_per_sec": 0.12333333333333334
+            },
+            "imgclass10__app25": {
+              "type": "linear_classification",
+              "request_per_sec": 0.16333333333333333
+            },
+            "imgclass10__app27": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app29": {
+              "type": "linear_classification",
+              "request_per_sec": 0.13
+            },
+            "imgclass10__app31": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app33": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app35": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app37": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app39": {
+              "type": "linear_classification",
+              "request_per_sec": 0.10166666666666667
+            },
+            "imgclass10__app41": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app43": {
+              "type": "linear_classification",
+              "request_per_sec": 0.10333333333333333
+            },
+            "imgclass10__app45": {
+              "type": "linear_classification",
+              "request_per_sec": 0.165
+            },
+            "imgclass10__app47": {
+              "type": "linear_classification",
+              "request_per_sec": 0.15666666666666668
+            },
+            "imgclass10__app49": {
+              "type": "linear_classification",
+              "request_per_sec": 0.16666666666666666
+            },
+            "imgclass10__app51": {
+              "type": "linear_classification",
+              "request_per_sec": 0.36666666666666664
+            },
+            "imgclass10__app53": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app55": {
+              "type": "linear_classification",
+              "request_per_sec": 0.10833333333333334
+            },
+            "imgclass10__app57": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app59": {
+              "type": "linear_classification",
+              "request_per_sec": 0.11
+            },
+            "imgclass10__app61": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app63": {
+              "type": "linear_classification",
+              "request_per_sec": 0.15
+            },
+            "imgclass10__app65": {
+              "type": "linear_classification",
+              "request_per_sec": 0.10833333333333334
+            },
+            "imgclass10__app67": {
+              "type": "linear_classification",
+              "request_per_sec": 0.10333333333333333
+            },
+            "imgclass10__app69": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app71": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app73": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app75": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "imgclass10__app77": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            }
+          }
+        },
+        {
+          "device": "172.31.40.31:8000",
+          "device_name": "device9",
+          "device_type": "TESLA T4",
+          "backbone": "swinbase",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "eurosatclass",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app2",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app4",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app6",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app8",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app10",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app12",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app14",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app16",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app18",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app20",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app22",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app24",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app26",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app28",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app30",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app32",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app34",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app36",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app38",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app40",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app42",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app44",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app46",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app48",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app50",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app52",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app54",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app56",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app58",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app60",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app62",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app64",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app66",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app68",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app70",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app72",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app74",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app76",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            }
+          ],
+          "tasks": {
+            "eurosatclass": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app2": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app4": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app6": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app8": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app10": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app12": {
+              "type": "linear_classification",
+              "request_per_sec": 0.10166666666666667
+            },
+            "eurosatclass__app14": {
+              "type": "linear_classification",
+              "request_per_sec": 0.14
+            },
+            "eurosatclass__app16": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app18": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app20": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app22": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app24": {
+              "type": "linear_classification",
+              "request_per_sec": 0.12166666666666667
+            },
+            "eurosatclass__app26": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app28": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app30": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app32": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app34": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app36": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app38": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app40": {
+              "type": "linear_classification",
+              "request_per_sec": 0.10333333333333333
+            },
+            "eurosatclass__app42": {
+              "type": "linear_classification",
+              "request_per_sec": 0.105
+            },
+            "eurosatclass__app44": {
+              "type": "linear_classification",
+              "request_per_sec": 0.8966666666666666
+            },
+            "eurosatclass__app46": {
+              "type": "linear_classification",
+              "request_per_sec": 3.485
+            },
+            "eurosatclass__app48": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app50": {
+              "type": "linear_classification",
+              "request_per_sec": 0.125
+            },
+            "eurosatclass__app52": {
+              "type": "linear_classification",
+              "request_per_sec": 0.10833333333333334
+            },
+            "eurosatclass__app54": {
+              "type": "linear_classification",
+              "request_per_sec": 0.10666666666666667
+            },
+            "eurosatclass__app56": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app58": {
+              "type": "linear_classification",
+              "request_per_sec": 0.10666666666666667
+            },
+            "eurosatclass__app60": {
+              "type": "linear_classification",
+              "request_per_sec": 0.20666666666666667
+            },
+            "eurosatclass__app62": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app64": {
+              "type": "linear_classification",
+              "request_per_sec": 0.10833333333333334
+            },
+            "eurosatclass__app66": {
+              "type": "linear_classification",
+              "request_per_sec": 0.32166666666666666
+            },
+            "eurosatclass__app68": {
+              "type": "linear_classification",
+              "request_per_sec": 0.10833333333333334
+            },
+            "eurosatclass__app70": {
+              "type": "linear_classification",
+              "request_per_sec": 0.195
+            },
+            "eurosatclass__app72": {
+              "type": "linear_classification",
+              "request_per_sec": 0.10666666666666667
+            },
+            "eurosatclass__app74": {
+              "type": "linear_classification",
+              "request_per_sec": 0.12666666666666668
+            },
+            "eurosatclass__app76": {
+              "type": "linear_classification",
+              "request_per_sec": 0.11333333333333333
+            }
+          }
+        },
+        {
+          "device": "172.31.34.111:8000",
+          "device_name": "device10",
+          "device_type": "TESLA T4",
+          "backbone": "swinlarge",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "eurosatclass__app1",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app3",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app5",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app7",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app9",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app11",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app13",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app15",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app17",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app19",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app21",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app23",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app25",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app27",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app29",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app31",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app33",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app35",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app37",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app39",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app41",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app43",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app45",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app47",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app49",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app51",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app53",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app55",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app57",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app59",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app61",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app63",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app65",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app67",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app69",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app71",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app73",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app75",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            },
+            {
+              "task": "eurosatclass__app77",
+              "base_task": "eurosatclass",
+              "type": "linear_classification",
+              "path": null
+            }
+          ],
+          "tasks": {
+            "eurosatclass__app1": {
+              "type": "linear_classification",
+              "request_per_sec": 0.13833333333333334
+            },
+            "eurosatclass__app3": {
+              "type": "linear_classification",
+              "request_per_sec": 0.11333333333333333
+            },
+            "eurosatclass__app5": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app7": {
+              "type": "linear_classification",
+              "request_per_sec": 0.14333333333333334
+            },
+            "eurosatclass__app9": {
+              "type": "linear_classification",
+              "request_per_sec": 0.105
+            },
+            "eurosatclass__app11": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app13": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app15": {
+              "type": "linear_classification",
+              "request_per_sec": 0.12666666666666668
+            },
+            "eurosatclass__app17": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app19": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app21": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app23": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app25": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app27": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app29": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app31": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app33": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app35": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app37": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app39": {
+              "type": "linear_classification",
+              "request_per_sec": 0.23333333333333334
+            },
+            "eurosatclass__app41": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app43": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app45": {
+              "type": "linear_classification",
+              "request_per_sec": 0.825
+            },
+            "eurosatclass__app47": {
+              "type": "linear_classification",
+              "request_per_sec": 0.10666666666666667
+            },
+            "eurosatclass__app49": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app51": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app53": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app55": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app57": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app59": {
+              "type": "linear_classification",
+              "request_per_sec": 0.10666666666666667
+            },
+            "eurosatclass__app61": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app63": {
+              "type": "linear_classification",
+              "request_per_sec": 0.37666666666666665
+            },
+            "eurosatclass__app65": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app67": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app69": {
+              "type": "linear_classification",
+              "request_per_sec": 0.10833333333333334
+            },
+            "eurosatclass__app71": {
+              "type": "linear_classification",
+              "request_per_sec": 0.1
+            },
+            "eurosatclass__app73": {
+              "type": "linear_classification",
+              "request_per_sec": 0.12166666666666667
+            },
+            "eurosatclass__app75": {
+              "type": "linear_classification",
+              "request_per_sec": 0.10833333333333334
+            },
+            "eurosatclass__app77": {
+              "type": "linear_classification",
+              "request_per_sec": 0.11833333333333333
+            }
+          }
+        },
+        {
+          "device": "172.31.39.13:8000",
+          "device_name": "device11",
+          "device_type": "TESLA T4",
+          "backbone": "dinosmall",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "vocseg",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app2",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app4",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app6",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app8",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app10",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app12",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app14",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app16",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app18",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app20",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app22",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app24",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app26",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app28",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app30",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app32",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app34",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app36",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app38",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app40",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app42",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app44",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app46",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app48",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app50",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app52",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app54",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app56",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app58",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app60",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app62",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app64",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app66",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app68",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app70",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app72",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app74",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app76",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            }
+          ],
+          "tasks": {
+            "vocseg": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app2": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app4": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app6": {
+              "type": "linear_seg",
+              "request_per_sec": 0.105
+            },
+            "vocseg__app8": {
+              "type": "linear_seg",
+              "request_per_sec": 0.105
+            },
+            "vocseg__app10": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app12": {
+              "type": "linear_seg",
+              "request_per_sec": 0.38666666666666666
+            },
+            "vocseg__app14": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app16": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app18": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app20": {
+              "type": "linear_seg",
+              "request_per_sec": 0.11
+            },
+            "vocseg__app22": {
+              "type": "linear_seg",
+              "request_per_sec": 0.105
+            },
+            "vocseg__app24": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app26": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app28": {
+              "type": "linear_seg",
+              "request_per_sec": 0.12
+            },
+            "vocseg__app30": {
+              "type": "linear_seg",
+              "request_per_sec": 0.12833333333333333
+            },
+            "vocseg__app32": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app34": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app36": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app38": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app40": {
+              "type": "linear_seg",
+              "request_per_sec": 0.10333333333333333
+            },
+            "vocseg__app42": {
+              "type": "linear_seg",
+              "request_per_sec": 0.10333333333333333
+            },
+            "vocseg__app44": {
+              "type": "linear_seg",
+              "request_per_sec": 0.10333333333333333
+            },
+            "vocseg__app46": {
+              "type": "linear_seg",
+              "request_per_sec": 0.16666666666666666
+            },
+            "vocseg__app48": {
+              "type": "linear_seg",
+              "request_per_sec": 0.10333333333333333
+            },
+            "vocseg__app50": {
+              "type": "linear_seg",
+              "request_per_sec": 0.10666666666666667
+            },
+            "vocseg__app52": {
+              "type": "linear_seg",
+              "request_per_sec": 0.11666666666666667
+            },
+            "vocseg__app54": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app56": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app58": {
+              "type": "linear_seg",
+              "request_per_sec": 0.105
+            },
+            "vocseg__app60": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app62": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app64": {
+              "type": "linear_seg",
+              "request_per_sec": 0.10833333333333334
+            },
+            "vocseg__app66": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app68": {
+              "type": "linear_seg",
+              "request_per_sec": 0.35333333333333333
+            },
+            "vocseg__app70": {
+              "type": "linear_seg",
+              "request_per_sec": 0.11
+            },
+            "vocseg__app72": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app74": {
+              "type": "linear_seg",
+              "request_per_sec": 0.16666666666666666
+            },
+            "vocseg__app76": {
+              "type": "linear_seg",
+              "request_per_sec": 0.455
+            }
+          }
+        },
+        {
+          "device": "172.31.46.10:8000",
+          "device_name": "device12",
+          "device_type": "TESLA T4",
+          "backbone": "dinobase",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "vocseg__app1",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app3",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app5",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app7",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app9",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app11",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app13",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app15",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app17",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app19",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app21",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app23",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app25",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app27",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app29",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app31",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app33",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app35",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app37",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app39",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app41",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app43",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app45",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app47",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app49",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app51",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app53",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app55",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app57",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app59",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app61",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app63",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app65",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app67",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app69",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app71",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app73",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app75",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            },
+            {
+              "task": "vocseg__app77",
+              "base_task": "vocseg",
+              "type": "linear_seg",
+              "path": null
+            }
+          ],
+          "tasks": {
+            "vocseg__app1": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app3": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app5": {
+              "type": "linear_seg",
+              "request_per_sec": 0.10333333333333333
+            },
+            "vocseg__app7": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app9": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app11": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app13": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app15": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app17": {
+              "type": "linear_seg",
+              "request_per_sec": 0.325
+            },
+            "vocseg__app19": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app21": {
+              "type": "linear_seg",
+              "request_per_sec": 0.105
+            },
+            "vocseg__app23": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app25": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app27": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app29": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app31": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app33": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app35": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app37": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app39": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app41": {
+              "type": "linear_seg",
+              "request_per_sec": 0.105
+            },
+            "vocseg__app43": {
+              "type": "linear_seg",
+              "request_per_sec": 0.10333333333333333
+            },
+            "vocseg__app45": {
+              "type": "linear_seg",
+              "request_per_sec": 0.12333333333333334
+            },
+            "vocseg__app47": {
+              "type": "linear_seg",
+              "request_per_sec": 0.10833333333333334
+            },
+            "vocseg__app49": {
+              "type": "linear_seg",
+              "request_per_sec": 0.11
+            },
+            "vocseg__app51": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app53": {
+              "type": "linear_seg",
+              "request_per_sec": 2.7216666666666667
+            },
+            "vocseg__app55": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app57": {
+              "type": "linear_seg",
+              "request_per_sec": 0.10666666666666667
+            },
+            "vocseg__app59": {
+              "type": "linear_seg",
+              "request_per_sec": 0.105
+            },
+            "vocseg__app61": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app63": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app65": {
+              "type": "linear_seg",
+              "request_per_sec": 0.10833333333333334
+            },
+            "vocseg__app67": {
+              "type": "linear_seg",
+              "request_per_sec": 0.10666666666666667
+            },
+            "vocseg__app69": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app71": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app73": {
+              "type": "linear_seg",
+              "request_per_sec": 0.11
+            },
+            "vocseg__app75": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            },
+            "vocseg__app77": {
+              "type": "linear_seg",
+              "request_per_sec": 0.1
+            }
+          }
+        },
+        {
+          "device": "172.31.35.60:8000",
+          "device_name": "device13",
+          "device_type": "TESLA T4",
+          "backbone": "dinolarge",
+          "cuda": "cuda:0",
+          "scheduler_policy": "stfq",
+          "worker_mode": "threaded",
+          "decoders": [
+            {
+              "task": "nyudepth",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app1",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app2",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app3",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app4",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app5",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app6",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app7",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app8",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app9",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app10",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app11",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app12",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app13",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app14",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app15",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app16",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app17",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app18",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app19",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app20",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app21",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app22",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app23",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app24",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app25",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app26",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app27",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app28",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app29",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app30",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app31",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app32",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app33",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app34",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app35",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app36",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app37",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            },
+            {
+              "task": "nyudepth__app38",
+              "base_task": "nyudepth",
+              "type": "monocular",
+              "path": null
+            }
+          ],
+          "tasks": {
+            "nyudepth": {
+              "type": "monocular",
+              "request_per_sec": 0.1
+            },
+            "nyudepth__app1": {
+              "type": "monocular",
+              "request_per_sec": 0.10166666666666667
+            },
+            "nyudepth__app2": {
+              "type": "monocular",
+              "request_per_sec": 0.10166666666666667
+            },
+            "nyudepth__app3": {
+              "type": "monocular",
+              "request_per_sec": 0.15333333333333332
+            },
+            "nyudepth__app4": {
+              "type": "monocular",
+              "request_per_sec": 0.10833333333333334
+            },
+            "nyudepth__app5": {
+              "type": "monocular",
+              "request_per_sec": 0.1
+            },
+            "nyudepth__app6": {
+              "type": "monocular",
+              "request_per_sec": 0.1
+            },
+            "nyudepth__app7": {
+              "type": "monocular",
+              "request_per_sec": 0.1
+            },
+            "nyudepth__app8": {
+              "type": "monocular",
+              "request_per_sec": 0.14
+            },
+            "nyudepth__app9": {
+              "type": "monocular",
+              "request_per_sec": 0.1
+            },
+            "nyudepth__app10": {
+              "type": "monocular",
+              "request_per_sec": 0.1
+            },
+            "nyudepth__app11": {
+              "type": "monocular",
+              "request_per_sec": 0.105
+            },
+            "nyudepth__app12": {
+              "type": "monocular",
+              "request_per_sec": 0.1
+            },
+            "nyudepth__app13": {
+              "type": "monocular",
+              "request_per_sec": 0.1
+            },
+            "nyudepth__app14": {
+              "type": "monocular",
+              "request_per_sec": 0.1
+            },
+            "nyudepth__app15": {
+              "type": "monocular",
+              "request_per_sec": 0.10666666666666667
+            },
+            "nyudepth__app16": {
+              "type": "monocular",
+              "request_per_sec": 0.1
+            },
+            "nyudepth__app17": {
+              "type": "monocular",
+              "request_per_sec": 0.12833333333333333
+            },
+            "nyudepth__app18": {
+              "type": "monocular",
+              "request_per_sec": 0.1
+            },
+            "nyudepth__app19": {
+              "type": "monocular",
+              "request_per_sec": 0.10333333333333333
+            },
+            "nyudepth__app20": {
+              "type": "monocular",
+              "request_per_sec": 0.1
+            },
+            "nyudepth__app21": {
+              "type": "monocular",
+              "request_per_sec": 0.10333333333333333
+            },
+            "nyudepth__app22": {
+              "type": "monocular",
+              "request_per_sec": 0.10333333333333333
+            },
+            "nyudepth__app23": {
+              "type": "monocular",
+              "request_per_sec": 0.10666666666666667
+            },
+            "nyudepth__app24": {
+              "type": "monocular",
+              "request_per_sec": 0.16166666666666665
+            },
+            "nyudepth__app25": {
+              "type": "monocular",
+              "request_per_sec": 0.1
+            },
+            "nyudepth__app26": {
+              "type": "monocular",
+              "request_per_sec": 0.1
+            },
+            "nyudepth__app27": {
+              "type": "monocular",
+              "request_per_sec": 0.1
+            },
+            "nyudepth__app28": {
+              "type": "monocular",
+              "request_per_sec": 0.10333333333333333
+            },
+            "nyudepth__app29": {
+              "type": "monocular",
+              "request_per_sec": 0.105
+            },
+            "nyudepth__app30": {
+              "type": "monocular",
+              "request_per_sec": 0.1
+            },
+            "nyudepth__app31": {
+              "type": "monocular",
+              "request_per_sec": 0.1
+            },
+            "nyudepth__app32": {
+              "type": "monocular",
+              "request_per_sec": 0.11
+            },
+            "nyudepth__app33": {
+              "type": "monocular",
+              "request_per_sec": 0.1
+            },
+            "nyudepth__app34": {
+              "type": "monocular",
+              "request_per_sec": 0.1
+            },
+            "nyudepth__app35": {
+              "type": "monocular",
+              "request_per_sec": 0.18833333333333332
+            },
+            "nyudepth__app36": {
+              "type": "monocular",
+              "request_per_sec": 0.1
+            },
+            "nyudepth__app37": {
+              "type": "monocular",
+              "request_per_sec": 0.1
+            },
+            "nyudepth__app38": {
+              "type": "monocular",
+              "request_per_sec": 0.1
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

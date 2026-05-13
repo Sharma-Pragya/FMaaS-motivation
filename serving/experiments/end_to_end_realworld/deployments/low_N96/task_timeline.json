@@ -1,0 +1,866 @@
+{
+  "ecgclass": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "2d09062cc6e812e656341a89376bb1ce4c456d47503e571903e1949a6e6258b1",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "ecgclass",
+    "backbone": "momentlarge"
+  },
+  "heartrate": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "8ed54bb829a28c343280a9041b953bdffe0556e765764a8f7f102e65aa911c75",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "heartrate",
+    "backbone": "momentbase"
+  },
+  "gestureclass": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "142beafd59af84958ac2d5376fb87fae6931f983d5eb604ba25a99353061d332",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "gestureclass",
+    "backbone": "momentsmall"
+  },
+  "sysbp": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "3453eeef7d0b4c83fb623449c32580ed22fce4eb15e8fcf08d10ee103092bd5b",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "sysbp",
+    "backbone": "papageip"
+  },
+  "diasbp": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "142beafd59af84958ac2d5376fb87fae6931f983d5eb604ba25a99353061d332",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "diasbp",
+    "backbone": "papageis"
+  },
+  "etth1fore": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "142beafd59af84958ac2d5376fb87fae6931f983d5eb604ba25a99353061d332",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "etth1fore",
+    "backbone": "papageissvri"
+  },
+  "imgclass10": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "25d95ff697c495d80ad20f83f2a81b5fe29b9ab75823ac69a46751ae105ab6e8",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "imgclass10",
+    "backbone": "swintiny"
+  },
+  "imgclass10__app1": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "4bc079af4dacc0abc577deaf4859aaa328e03a899e320a79f87dd03ac38af891",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "imgclass10",
+    "backbone": "swinsmall"
+  },
+  "eurosatclass": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "013bb00e12d99467f3e26d49c314870dfc0a792ff9535d66a65e4db06adec887",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "eurosatclass",
+    "backbone": "swinbase"
+  },
+  "eurosatclass__app1": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "b914d7a7f725af3bd9feb560c458dc5b85c28423783e0f3ed274eb0c7c7f4ee6",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "eurosatclass",
+    "backbone": "swinlarge"
+  },
+  "vocseg": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "25d95ff697c495d80ad20f83f2a81b5fe29b9ab75823ac69a46751ae105ab6e8",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "vocseg",
+    "backbone": "dinosmall"
+  },
+  "vocseg__app1": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "8ed54bb829a28c343280a9041b953bdffe0556e765764a8f7f102e65aa911c75",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "vocseg",
+    "backbone": "dinobase"
+  },
+  "nyudepth": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "522c1d75314016b327eeb84fa2f618dd3afa49d5e4880f98c05039d8d57f07db",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "nyudepth",
+    "backbone": "dinolarge"
+  },
+  "ecgclass__app1": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "de7571a94b50372bc829df73b79dd2f639a96076f978103a756b05abff5a7b77",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "ecgclass",
+    "backbone": "momentlarge"
+  },
+  "heartrate__app1": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "522c1d75314016b327eeb84fa2f618dd3afa49d5e4880f98c05039d8d57f07db",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "heartrate",
+    "backbone": "momentbase"
+  },
+  "gestureclass__app1": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "90bc25f16c5eff16d59b015406343974e399a2b9b3c5a6a9072e32e374b7c8db",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "gestureclass",
+    "backbone": "momentsmall"
+  },
+  "sysbp__app1": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "de7571a94b50372bc829df73b79dd2f639a96076f978103a756b05abff5a7b77",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "sysbp",
+    "backbone": "papageip"
+  },
+  "diasbp__app1": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "de7571a94b50372bc829df73b79dd2f639a96076f978103a756b05abff5a7b77",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "diasbp",
+    "backbone": "papageis"
+  },
+  "etth1fore__app1": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "522c1d75314016b327eeb84fa2f618dd3afa49d5e4880f98c05039d8d57f07db",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "etth1fore",
+    "backbone": "papageissvri"
+  },
+  "imgclass10__app2": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "60e40fe6d4e66a76439b0620b6765a1ef142e1fb48731f8ae75677d50c681443",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "imgclass10",
+    "backbone": "swintiny"
+  },
+  "imgclass10__app3": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "60e40fe6d4e66a76439b0620b6765a1ef142e1fb48731f8ae75677d50c681443",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "imgclass10",
+    "backbone": "swinsmall"
+  },
+  "eurosatclass__app2": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "37aa6c526c41d20edd0039b51afdb9d95fe4422d5beefc55b73ca8af33d6b05c",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "eurosatclass",
+    "backbone": "swinbase"
+  },
+  "eurosatclass__app3": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "8ed54bb829a28c343280a9041b953bdffe0556e765764a8f7f102e65aa911c75",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "eurosatclass",
+    "backbone": "swinlarge"
+  },
+  "vocseg__app2": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "5bd46d00a344f4dfd73849ee489809f8939eacb28ef16481e11c5b181ac1d8fd",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "vocseg",
+    "backbone": "dinosmall"
+  },
+  "vocseg__app3": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "bb1b1f67dfac2b7d27a6e97d32a9cc5dca868fd53f684af93931309ea1f1a3b7",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "vocseg",
+    "backbone": "dinobase"
+  },
+  "nyudepth__app1": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "b89e2ad0203f3ba53fe4e5a00d081c3326d872ce799aa91e1c3797696f4b039f",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "nyudepth",
+    "backbone": "dinolarge"
+  },
+  "ecgclass__app2": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "b89e2ad0203f3ba53fe4e5a00d081c3326d872ce799aa91e1c3797696f4b039f",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "ecgclass",
+    "backbone": "momentlarge"
+  },
+  "heartrate__app2": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "0b36bb7cc7fc66610ef15741b75ce5001d03e650e962432a2ad03c4b95a5924e",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "heartrate",
+    "backbone": "momentbase"
+  },
+  "gestureclass__app2": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "0242e095532c93c8bb2aadf14fdfa5cb3c83c5ff802b42a09c6fed4b45402be8",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "gestureclass",
+    "backbone": "momentsmall"
+  },
+  "sysbp__app2": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "522c1d75314016b327eeb84fa2f618dd3afa49d5e4880f98c05039d8d57f07db",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "sysbp",
+    "backbone": "papageip"
+  },
+  "diasbp__app2": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "522c1d75314016b327eeb84fa2f618dd3afa49d5e4880f98c05039d8d57f07db",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "diasbp",
+    "backbone": "papageis"
+  },
+  "etth1fore__app2": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "b89e2ad0203f3ba53fe4e5a00d081c3326d872ce799aa91e1c3797696f4b039f",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "etth1fore",
+    "backbone": "papageissvri"
+  },
+  "imgclass10__app4": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "3fdd49fd4241000e463f4ecb24224979470d673c015bd76c2009384151f0bf17",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "imgclass10",
+    "backbone": "swintiny"
+  },
+  "imgclass10__app5": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "e30ae4362546e6d252899de79483ed3646db42868ac93089ed1652bac9a5cb6e",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "imgclass10",
+    "backbone": "swinsmall"
+  },
+  "eurosatclass__app4": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "5bd46d00a344f4dfd73849ee489809f8939eacb28ef16481e11c5b181ac1d8fd",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "eurosatclass",
+    "backbone": "swinbase"
+  },
+  "eurosatclass__app5": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "5bd46d00a344f4dfd73849ee489809f8939eacb28ef16481e11c5b181ac1d8fd",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "eurosatclass",
+    "backbone": "swinlarge"
+  },
+  "vocseg__app4": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "5bd46d00a344f4dfd73849ee489809f8939eacb28ef16481e11c5b181ac1d8fd",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "vocseg",
+    "backbone": "dinosmall"
+  },
+  "vocseg__app5": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "b89e2ad0203f3ba53fe4e5a00d081c3326d872ce799aa91e1c3797696f4b039f",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "vocseg",
+    "backbone": "dinobase"
+  },
+  "nyudepth__app2": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "b89e2ad0203f3ba53fe4e5a00d081c3326d872ce799aa91e1c3797696f4b039f",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "nyudepth",
+    "backbone": "dinolarge"
+  },
+  "ecgclass__app3": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "b89e2ad0203f3ba53fe4e5a00d081c3326d872ce799aa91e1c3797696f4b039f",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "ecgclass",
+    "backbone": "momentlarge"
+  },
+  "heartrate__app3": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "b89e2ad0203f3ba53fe4e5a00d081c3326d872ce799aa91e1c3797696f4b039f",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "heartrate",
+    "backbone": "momentbase"
+  },
+  "gestureclass__app3": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "b89e2ad0203f3ba53fe4e5a00d081c3326d872ce799aa91e1c3797696f4b039f",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "gestureclass",
+    "backbone": "momentsmall"
+  },
+  "sysbp__app3": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "de7571a94b50372bc829df73b79dd2f639a96076f978103a756b05abff5a7b77",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "sysbp",
+    "backbone": "papageip"
+  },
+  "diasbp__app3": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "2d09062cc6e812e656341a89376bb1ce4c456d47503e571903e1949a6e6258b1",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "diasbp",
+    "backbone": "papageis"
+  },
+  "etth1fore__app3": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "9202820e01a0bdcd7350958976f74197d51c4cf014be24297902a6b0be6064ad",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "etth1fore",
+    "backbone": "papageissvri"
+  },
+  "imgclass10__app6": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "5bd46d00a344f4dfd73849ee489809f8939eacb28ef16481e11c5b181ac1d8fd",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "imgclass10",
+    "backbone": "swintiny"
+  },
+  "imgclass10__app7": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "e30ae4362546e6d252899de79483ed3646db42868ac93089ed1652bac9a5cb6e",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "imgclass10",
+    "backbone": "swinsmall"
+  },
+  "eurosatclass__app6": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "4bc079af4dacc0abc577deaf4859aaa328e03a899e320a79f87dd03ac38af891",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "eurosatclass",
+    "backbone": "swinbase"
+  },
+  "eurosatclass__app7": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "b914d7a7f725af3bd9feb560c458dc5b85c28423783e0f3ed274eb0c7c7f4ee6",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "eurosatclass",
+    "backbone": "swinlarge"
+  },
+  "vocseg__app6": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "c1bb8a2443a290fb80deaf2f8f0f11ac6aab3380a5a0f27a0e07fb6ce791596f",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "vocseg",
+    "backbone": "dinosmall"
+  },
+  "vocseg__app7": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "9202820e01a0bdcd7350958976f74197d51c4cf014be24297902a6b0be6064ad",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "vocseg",
+    "backbone": "dinobase"
+  },
+  "nyudepth__app3": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "971a3536b79cc97cde93db9a6dbe059c5c50a2963570228a9d16e4a6a1b25cbd",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "nyudepth",
+    "backbone": "dinolarge"
+  },
+  "ecgclass__app4": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "5bd46d00a344f4dfd73849ee489809f8939eacb28ef16481e11c5b181ac1d8fd",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "ecgclass",
+    "backbone": "momentlarge"
+  },
+  "heartrate__app4": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "059797c6383ea8194604e7fc77ed89820ccdaaec00b4f2034d1a62041b90eea7",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "heartrate",
+    "backbone": "momentbase"
+  },
+  "gestureclass__app4": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "97a1eadb5f5703dc94cba2fcc3f1a11a66e18db43a3fd8f4c7be4d06d6aaed17",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "gestureclass",
+    "backbone": "momentsmall"
+  },
+  "sysbp__app4": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "60e40fe6d4e66a76439b0620b6765a1ef142e1fb48731f8ae75677d50c681443",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "sysbp",
+    "backbone": "papageip"
+  },
+  "diasbp__app4": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "97a1eadb5f5703dc94cba2fcc3f1a11a66e18db43a3fd8f4c7be4d06d6aaed17",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "diasbp",
+    "backbone": "papageis"
+  },
+  "etth1fore__app4": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "f1d0690e56defbe667cb0b2f548289415d830e0316956a7e8b150e1b75e13256",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "etth1fore",
+    "backbone": "papageissvri"
+  },
+  "imgclass10__app8": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "9202820e01a0bdcd7350958976f74197d51c4cf014be24297902a6b0be6064ad",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "imgclass10",
+    "backbone": "swintiny"
+  },
+  "imgclass10__app9": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "b534f680d93fd8e07246a7b22afeb6157ea686ca3f05e134fadb6213328328e8",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "imgclass10",
+    "backbone": "swinsmall"
+  },
+  "eurosatclass__app8": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "de9c658fcceeb397057550dd1881483e741c2e132b0e8d3a80f83c7b918aa5f0",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "eurosatclass",
+    "backbone": "swinbase"
+  },
+  "eurosatclass__app9": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "97a1eadb5f5703dc94cba2fcc3f1a11a66e18db43a3fd8f4c7be4d06d6aaed17",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "eurosatclass",
+    "backbone": "swinlarge"
+  },
+  "vocseg__app8": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "97a1eadb5f5703dc94cba2fcc3f1a11a66e18db43a3fd8f4c7be4d06d6aaed17",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "vocseg",
+    "backbone": "dinosmall"
+  },
+  "vocseg__app9": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "a04769fe93defa6c937aa1232596750aa5cc4b204acb3daa8a7238077de2ef41",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "vocseg",
+    "backbone": "dinobase"
+  },
+  "nyudepth__app4": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "97a1eadb5f5703dc94cba2fcc3f1a11a66e18db43a3fd8f4c7be4d06d6aaed17",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "nyudepth",
+    "backbone": "dinolarge"
+  },
+  "ecgclass__app5": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "4f06cb62531b80de5078e2639064dd8d09108157f2dea309197ee33680b2b864",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "ecgclass",
+    "backbone": "momentlarge"
+  },
+  "heartrate__app5": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "e30ae4362546e6d252899de79483ed3646db42868ac93089ed1652bac9a5cb6e",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "heartrate",
+    "backbone": "momentbase"
+  },
+  "gestureclass__app5": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "97a1eadb5f5703dc94cba2fcc3f1a11a66e18db43a3fd8f4c7be4d06d6aaed17",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "gestureclass",
+    "backbone": "momentsmall"
+  },
+  "sysbp__app5": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "97a1eadb5f5703dc94cba2fcc3f1a11a66e18db43a3fd8f4c7be4d06d6aaed17",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "sysbp",
+    "backbone": "papageip"
+  },
+  "diasbp__app5": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "dca131e7c65dd2cd022d5358b1213aff0efee99aa2f1fe083ca384f5237b431d",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "diasbp",
+    "backbone": "papageis"
+  },
+  "etth1fore__app5": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "90bc25f16c5eff16d59b015406343974e399a2b9b3c5a6a9072e32e374b7c8db",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "etth1fore",
+    "backbone": "papageissvri"
+  },
+  "imgclass10__app10": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "9202820e01a0bdcd7350958976f74197d51c4cf014be24297902a6b0be6064ad",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "imgclass10",
+    "backbone": "swintiny"
+  },
+  "imgclass10__app11": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "25d95ff697c495d80ad20f83f2a81b5fe29b9ab75823ac69a46751ae105ab6e8",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "imgclass10",
+    "backbone": "swinsmall"
+  },
+  "eurosatclass__app10": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "25d95ff697c495d80ad20f83f2a81b5fe29b9ab75823ac69a46751ae105ab6e8",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "eurosatclass",
+    "backbone": "swinbase"
+  },
+  "eurosatclass__app11": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "be54902b3e604b2683b13c5189c5d9b6d6ec605638e38c472b714588fb7bd329",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "eurosatclass",
+    "backbone": "swinlarge"
+  },
+  "vocseg__app10": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "4c134f4317c4f9d9c76f26034d157685bbd7b20288a614eb9fa402c2a3efc08c",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "vocseg",
+    "backbone": "dinosmall"
+  },
+  "vocseg__app11": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "9202820e01a0bdcd7350958976f74197d51c4cf014be24297902a6b0be6064ad",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "vocseg",
+    "backbone": "dinobase"
+  },
+  "nyudepth__app5": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "b914d7a7f725af3bd9feb560c458dc5b85c28423783e0f3ed274eb0c7c7f4ee6",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "nyudepth",
+    "backbone": "dinolarge"
+  },
+  "ecgclass__app6": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "0f123cbc3722927542eccd291aa59399a28d132c6fca65d42c9963399029105b",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "ecgclass",
+    "backbone": "momentlarge"
+  },
+  "heartrate__app6": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "a134c431e6cd666d809188bf5701ad56524c23f753fd1b21eb8efce0cbe5934c",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "heartrate",
+    "backbone": "momentbase"
+  },
+  "gestureclass__app6": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "c1bb8a2443a290fb80deaf2f8f0f11ac6aab3380a5a0f27a0e07fb6ce791596f",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "gestureclass",
+    "backbone": "momentsmall"
+  },
+  "sysbp__app6": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "b89e2ad0203f3ba53fe4e5a00d081c3326d872ce799aa91e1c3797696f4b039f",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "sysbp",
+    "backbone": "papageip"
+  },
+  "diasbp__app6": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "d3205e3295090b7ad05bbc317cd98af83bbee34c0376c81531ffb2a2d05f686e",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "diasbp",
+    "backbone": "papageis"
+  },
+  "etth1fore__app6": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "97a1eadb5f5703dc94cba2fcc3f1a11a66e18db43a3fd8f4c7be4d06d6aaed17",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "etth1fore",
+    "backbone": "papageissvri"
+  },
+  "imgclass10__app12": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "97a1eadb5f5703dc94cba2fcc3f1a11a66e18db43a3fd8f4c7be4d06d6aaed17",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "imgclass10",
+    "backbone": "swintiny"
+  },
+  "imgclass10__app13": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "3fdd49fd4241000e463f4ecb24224979470d673c015bd76c2009384151f0bf17",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "imgclass10",
+    "backbone": "swinsmall"
+  },
+  "eurosatclass__app12": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "4bc079af4dacc0abc577deaf4859aaa328e03a899e320a79f87dd03ac38af891",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "eurosatclass",
+    "backbone": "swinbase"
+  },
+  "eurosatclass__app13": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "3fdd49fd4241000e463f4ecb24224979470d673c015bd76c2009384151f0bf17",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "eurosatclass",
+    "backbone": "swinlarge"
+  },
+  "vocseg__app12": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "9566254e6306046af50722185aa33fd0a44e491f399a616bd28634437c4de424",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "vocseg",
+    "backbone": "dinosmall"
+  },
+  "vocseg__app13": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "60e40fe6d4e66a76439b0620b6765a1ef142e1fb48731f8ae75677d50c681443",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "vocseg",
+    "backbone": "dinobase"
+  },
+  "nyudepth__app6": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "9202820e01a0bdcd7350958976f74197d51c4cf014be24297902a6b0be6064ad",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "nyudepth",
+    "backbone": "dinolarge"
+  },
+  "ecgclass__app7": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "62d231d4f4d3c59c8e23b339387dc62d0f89b661457617e4b505151cd00fa98c",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "ecgclass",
+    "backbone": "momentlarge"
+  },
+  "heartrate__app7": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "ed63fa8a2b29c3a3a49901aff153af2045e9f53c1df72e84f019024828a74e3d",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "heartrate",
+    "backbone": "momentbase"
+  },
+  "gestureclass__app7": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "97a1eadb5f5703dc94cba2fcc3f1a11a66e18db43a3fd8f4c7be4d06d6aaed17",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "gestureclass",
+    "backbone": "momentsmall"
+  },
+  "sysbp__app7": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "c1bb8a2443a290fb80deaf2f8f0f11ac6aab3380a5a0f27a0e07fb6ce791596f",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "sysbp",
+    "backbone": "papageip"
+  },
+  "diasbp__app7": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "e30ae4362546e6d252899de79483ed3646db42868ac93089ed1652bac9a5cb6e",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "diasbp",
+    "backbone": "papageis"
+  }
+}

@@ -1,0 +1,218 @@
+{
+  "ecgclass": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "abe9c32684eecf470828b8293487d05df3167bab4a02e966856c5da9582c5cea",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "ecgclass",
+    "backbone": "momentlarge"
+  },
+  "heartrate": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "633af257b16dc9d4ca82b735a56cb39bfa4cb3e78b5ba27b68e04e3053b3c077",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "heartrate",
+    "backbone": "momentbase"
+  },
+  "gestureclass": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "5b2f4f1690a206c72cec59e631fc7f24dbea7bb2674753569b1f05e8de0ea225",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "gestureclass",
+    "backbone": "momentsmall"
+  },
+  "sysbp": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "633af257b16dc9d4ca82b735a56cb39bfa4cb3e78b5ba27b68e04e3053b3c077",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "sysbp",
+    "backbone": "papageip"
+  },
+  "diasbp": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "633af257b16dc9d4ca82b735a56cb39bfa4cb3e78b5ba27b68e04e3053b3c077",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "diasbp",
+    "backbone": "papageis"
+  },
+  "etth1fore": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "633af257b16dc9d4ca82b735a56cb39bfa4cb3e78b5ba27b68e04e3053b3c077",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "etth1fore",
+    "backbone": "papageissvri"
+  },
+  "imgclass10": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "633af257b16dc9d4ca82b735a56cb39bfa4cb3e78b5ba27b68e04e3053b3c077",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "imgclass10",
+    "backbone": "swintiny"
+  },
+  "imgclass10__app1": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "633af257b16dc9d4ca82b735a56cb39bfa4cb3e78b5ba27b68e04e3053b3c077",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "imgclass10",
+    "backbone": "swinsmall"
+  },
+  "eurosatclass": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "633af257b16dc9d4ca82b735a56cb39bfa4cb3e78b5ba27b68e04e3053b3c077",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "eurosatclass",
+    "backbone": "swinbase"
+  },
+  "eurosatclass__app1": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "633af257b16dc9d4ca82b735a56cb39bfa4cb3e78b5ba27b68e04e3053b3c077",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "eurosatclass",
+    "backbone": "swinlarge"
+  },
+  "vocseg": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "36f41b678bdf2f4f820556f2833cdf813ff72b1c10dd5d497ca8fa97631e29be",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "vocseg",
+    "backbone": "dinosmall"
+  },
+  "vocseg__app1": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "0e513454949fd39948b27bccb82f5bdd81360e4e49e9653763860324f2b69682",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "vocseg",
+    "backbone": "dinobase"
+  },
+  "nyudepth": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "abe9c32684eecf470828b8293487d05df3167bab4a02e966856c5da9582c5cea",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "nyudepth",
+    "backbone": "dinolarge"
+  },
+  "ecgclass__app1": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "abe9c32684eecf470828b8293487d05df3167bab4a02e966856c5da9582c5cea",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "ecgclass",
+    "backbone": "momentlarge"
+  },
+  "heartrate__app1": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "5b2f4f1690a206c72cec59e631fc7f24dbea7bb2674753569b1f05e8de0ea225",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "heartrate",
+    "backbone": "momentbase"
+  },
+  "gestureclass__app1": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "9dbfe43d4f7909dba50de46ee5e6b54f1cc5622529a3849350049d397b761134",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "gestureclass",
+    "backbone": "momentsmall"
+  },
+  "sysbp__app1": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "78a7edbe385e104cb7c1ca4c3ebbf91169cae82d54608632a2f64c00cae17656",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "sysbp",
+    "backbone": "papageip"
+  },
+  "diasbp__app1": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "abe9c32684eecf470828b8293487d05df3167bab4a02e966856c5da9582c5cea",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "diasbp",
+    "backbone": "papageis"
+  },
+  "etth1fore__app1": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "abe9c32684eecf470828b8293487d05df3167bab4a02e966856c5da9582c5cea",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "etth1fore",
+    "backbone": "papageissvri"
+  },
+  "imgclass10__app2": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "5b2f4f1690a206c72cec59e631fc7f24dbea7bb2674753569b1f05e8de0ea225",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "imgclass10",
+    "backbone": "swintiny"
+  },
+  "imgclass10__app3": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "4eaf1fd4221782ed650fc8317c61cb9bf09d6f2cc2f0a91c3ca97a1c32d6ca58",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "imgclass10",
+    "backbone": "swinsmall"
+  },
+  "eurosatclass__app2": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "abe9c32684eecf470828b8293487d05df3167bab4a02e966856c5da9582c5cea",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "eurosatclass",
+    "backbone": "swinbase"
+  },
+  "eurosatclass__app3": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "5b2f4f1690a206c72cec59e631fc7f24dbea7bb2674753569b1f05e8de0ea225",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "eurosatclass",
+    "backbone": "swinlarge"
+  },
+  "vocseg__app2": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "fa4ab58cc6d1ee3edcde6b83f127a8642d6cc7f05ca8be7ffe9f3405e7ce25a8",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "vocseg",
+    "backbone": "dinosmall"
+  }
+}

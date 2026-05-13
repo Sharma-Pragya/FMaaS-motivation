@@ -1,0 +1,57 @@
+{
+  "regime": "medium",
+  "n_requested": 8,
+  "n_placed": 8,
+  "placed_tasks": [
+    "diasbp",
+    "ecgclass",
+    "etth1fore",
+    "gestureclass",
+    "heartrate",
+    "imgclass10",
+    "imgclass10__app1",
+    "sysbp"
+  ],
+  "rejected": [],
+  "condition": "fmaas",
+  "duration": 600.0,
+  "task_rps": {
+    "ecgclass": 2.55,
+    "heartrate": 9.523333333333333,
+    "gestureclass": 5.466666666666667,
+    "sysbp": 7.718333333333334,
+    "diasbp": 0.6316666666666667,
+    "etth1fore": 0.1,
+    "imgclass10": 4.541666666666667,
+    "imgclass10__app1": 3.611666666666667
+  },
+  "experiment": {
+    "trace": "maf_lh",
+    "group_by": "HashOwner",
+    "maf_n_days": 1,
+    "duration": 600,
+    "trace_duration": 600,
+    "n_tasks_sweep": [
+      8,
+      24,
+      48
+    ],
+    "load_regimes": [
+      "medium"
+    ],
+    "rate_bands_req_per_s": {
+      "medium": [
+        2.0,
+        10.0
+      ]
+    },
+    "maf_min_invocations": 10,
+    "max_batch_wait_ms": 200,
+    "max_batch_size": 32,
+    "isolation_mode": "shared",
+    "warmup_gap": 2.0,
+    "max_model_len": 256,
+    "batch_mode": "fixedpoint"
+  },
+  "start_epoch": 1778541571.6762028
+}

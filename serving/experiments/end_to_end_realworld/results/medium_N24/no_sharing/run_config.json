@@ -1,0 +1,89 @@
+{
+  "regime": "medium",
+  "n_requested": 24,
+  "n_placed": 24,
+  "placed_tasks": [
+    "diasbp",
+    "diasbp__app1",
+    "ecgclass",
+    "ecgclass__app1",
+    "etth1fore",
+    "etth1fore__app1",
+    "eurosatclass",
+    "eurosatclass__app1",
+    "eurosatclass__app2",
+    "eurosatclass__app3",
+    "gestureclass",
+    "gestureclass__app1",
+    "heartrate",
+    "heartrate__app1",
+    "imgclass10",
+    "imgclass10__app1",
+    "imgclass10__app2",
+    "imgclass10__app3",
+    "nyudepth",
+    "sysbp",
+    "sysbp__app1",
+    "vocseg",
+    "vocseg__app1",
+    "vocseg__app2"
+  ],
+  "rejected": [],
+  "condition": "no_sharing",
+  "duration": 600.0,
+  "task_rps": {
+    "ecgclass": 2.55,
+    "heartrate": 9.523333333333333,
+    "gestureclass": 5.466666666666667,
+    "sysbp": 7.718333333333334,
+    "diasbp": 0.6316666666666667,
+    "etth1fore": 0.1,
+    "imgclass10": 4.541666666666667,
+    "imgclass10__app1": 3.611666666666667,
+    "eurosatclass": 0.1,
+    "eurosatclass__app1": 1.1266666666666667,
+    "vocseg": 8.581666666666667,
+    "vocseg__app1": 8.775,
+    "nyudepth": 8.7,
+    "ecgclass__app1": 8.561666666666667,
+    "heartrate__app1": 8.84,
+    "gestureclass__app1": 6.595,
+    "sysbp__app1": 4.215,
+    "diasbp__app1": 8.48,
+    "etth1fore__app1": 3.3833333333333333,
+    "imgclass10__app2": 6.331666666666667,
+    "imgclass10__app3": 16.625,
+    "eurosatclass__app2": 7.931666666666667,
+    "eurosatclass__app3": 4.291666666666667,
+    "vocseg__app2": 0.255
+  },
+  "experiment": {
+    "trace": "maf_lh",
+    "group_by": "HashOwner",
+    "maf_n_days": 1,
+    "duration": 600,
+    "trace_duration": 600,
+    "n_tasks_sweep": [
+      8,
+      24,
+      48
+    ],
+    "load_regimes": [
+      "medium"
+    ],
+    "rate_bands_req_per_s": {
+      "medium": [
+        2.0,
+        10.0
+      ]
+    },
+    "maf_min_invocations": 10,
+    "max_batch_wait_ms": 200,
+    "max_batch_size": 32,
+    "isolation_mode": "shared",
+    "warmup_gap": 2.0,
+    "max_model_len": 256,
+    "batch_mode": "fixedpoint"
+  },
+  "start_epoch": 1778542516.1853735
+}

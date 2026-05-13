@@ -1,0 +1,406 @@
+{
+  "no_sharing": {
+    "placed": [
+      "diasbp",
+      "diasbp__app1",
+      "diasbp__app2",
+      "diasbp__app3",
+      "ecgclass",
+      "ecgclass__app1",
+      "ecgclass__app2",
+      "ecgclass__app3",
+      "etth1fore",
+      "etth1fore__app1",
+      "etth1fore__app2",
+      "etth1fore__app3",
+      "eurosatclass",
+      "eurosatclass__app1",
+      "eurosatclass__app2",
+      "eurosatclass__app3",
+      "eurosatclass__app4",
+      "eurosatclass__app5",
+      "eurosatclass__app6",
+      "gestureclass",
+      "gestureclass__app1",
+      "gestureclass__app2",
+      "gestureclass__app3",
+      "heartrate",
+      "heartrate__app1",
+      "heartrate__app2",
+      "heartrate__app3",
+      "imgclass10",
+      "imgclass10__app1",
+      "imgclass10__app2",
+      "imgclass10__app3",
+      "imgclass10__app4",
+      "imgclass10__app5",
+      "imgclass10__app6",
+      "imgclass10__app7",
+      "nyudepth",
+      "nyudepth__app1",
+      "nyudepth__app2",
+      "sysbp",
+      "sysbp__app1",
+      "sysbp__app2",
+      "sysbp__app3",
+      "vocseg",
+      "vocseg__app1",
+      "vocseg__app2",
+      "vocseg__app3",
+      "vocseg__app4",
+      "vocseg__app5"
+    ],
+    "rejected": [],
+    "placed_count": 48,
+    "requested": 48,
+    "per_task": {
+      "diasbp": {
+        "placed": true
+      },
+      "diasbp__app1": {
+        "placed": true
+      },
+      "diasbp__app2": {
+        "placed": true
+      },
+      "diasbp__app3": {
+        "placed": true
+      },
+      "ecgclass": {
+        "placed": true
+      },
+      "ecgclass__app1": {
+        "placed": true
+      },
+      "ecgclass__app2": {
+        "placed": true
+      },
+      "ecgclass__app3": {
+        "placed": true
+      },
+      "etth1fore": {
+        "placed": true
+      },
+      "etth1fore__app1": {
+        "placed": true
+      },
+      "etth1fore__app2": {
+        "placed": true
+      },
+      "etth1fore__app3": {
+        "placed": true
+      },
+      "eurosatclass": {
+        "placed": true
+      },
+      "eurosatclass__app1": {
+        "placed": true
+      },
+      "eurosatclass__app2": {
+        "placed": true
+      },
+      "eurosatclass__app3": {
+        "placed": true
+      },
+      "eurosatclass__app4": {
+        "placed": true
+      },
+      "eurosatclass__app5": {
+        "placed": true
+      },
+      "eurosatclass__app6": {
+        "placed": true
+      },
+      "gestureclass": {
+        "placed": true
+      },
+      "gestureclass__app1": {
+        "placed": true
+      },
+      "gestureclass__app2": {
+        "placed": true
+      },
+      "gestureclass__app3": {
+        "placed": true
+      },
+      "heartrate": {
+        "placed": true
+      },
+      "heartrate__app1": {
+        "placed": true
+      },
+      "heartrate__app2": {
+        "placed": true
+      },
+      "heartrate__app3": {
+        "placed": true
+      },
+      "imgclass10": {
+        "placed": true
+      },
+      "imgclass10__app1": {
+        "placed": true
+      },
+      "imgclass10__app2": {
+        "placed": true
+      },
+      "imgclass10__app3": {
+        "placed": true
+      },
+      "imgclass10__app4": {
+        "placed": true
+      },
+      "imgclass10__app5": {
+        "placed": true
+      },
+      "imgclass10__app6": {
+        "placed": true
+      },
+      "imgclass10__app7": {
+        "placed": true
+      },
+      "nyudepth": {
+        "placed": true
+      },
+      "nyudepth__app1": {
+        "placed": true
+      },
+      "nyudepth__app2": {
+        "placed": true
+      },
+      "sysbp": {
+        "placed": true
+      },
+      "sysbp__app1": {
+        "placed": true
+      },
+      "sysbp__app2": {
+        "placed": true
+      },
+      "sysbp__app3": {
+        "placed": true
+      },
+      "vocseg": {
+        "placed": true
+      },
+      "vocseg__app1": {
+        "placed": true
+      },
+      "vocseg__app2": {
+        "placed": true
+      },
+      "vocseg__app3": {
+        "placed": true
+      },
+      "vocseg__app4": {
+        "placed": true
+      },
+      "vocseg__app5": {
+        "placed": true
+      }
+    },
+    "bottleneck_counts": {}
+  },
+  "fmaas": {
+    "placed": [
+      "diasbp",
+      "diasbp__app1",
+      "diasbp__app2",
+      "diasbp__app3",
+      "ecgclass",
+      "ecgclass__app1",
+      "ecgclass__app2",
+      "ecgclass__app3",
+      "etth1fore",
+      "etth1fore__app1",
+      "etth1fore__app2",
+      "etth1fore__app3",
+      "eurosatclass",
+      "eurosatclass__app1",
+      "eurosatclass__app2",
+      "eurosatclass__app3",
+      "eurosatclass__app4",
+      "eurosatclass__app5",
+      "eurosatclass__app6",
+      "gestureclass",
+      "gestureclass__app1",
+      "gestureclass__app2",
+      "gestureclass__app3",
+      "heartrate",
+      "heartrate__app1",
+      "heartrate__app2",
+      "heartrate__app3",
+      "imgclass10",
+      "imgclass10__app1",
+      "imgclass10__app2",
+      "imgclass10__app3",
+      "imgclass10__app4",
+      "imgclass10__app5",
+      "imgclass10__app6",
+      "imgclass10__app7",
+      "nyudepth",
+      "nyudepth__app1",
+      "nyudepth__app2",
+      "sysbp",
+      "sysbp__app1",
+      "sysbp__app2",
+      "sysbp__app3",
+      "vocseg",
+      "vocseg__app1",
+      "vocseg__app2",
+      "vocseg__app3",
+      "vocseg__app4",
+      "vocseg__app5"
+    ],
+    "rejected": [],
+    "placed_count": 48,
+    "requested": 48,
+    "per_task": {
+      "diasbp": {
+        "placed": true
+      },
+      "diasbp__app1": {
+        "placed": true
+      },
+      "diasbp__app2": {
+        "placed": true
+      },
+      "diasbp__app3": {
+        "placed": true
+      },
+      "ecgclass": {
+        "placed": true
+      },
+      "ecgclass__app1": {
+        "placed": true
+      },
+      "ecgclass__app2": {
+        "placed": true
+      },
+      "ecgclass__app3": {
+        "placed": true
+      },
+      "etth1fore": {
+        "placed": true
+      },
+      "etth1fore__app1": {
+        "placed": true
+      },
+      "etth1fore__app2": {
+        "placed": true
+      },
+      "etth1fore__app3": {
+        "placed": true
+      },
+      "eurosatclass": {
+        "placed": true
+      },
+      "eurosatclass__app1": {
+        "placed": true
+      },
+      "eurosatclass__app2": {
+        "placed": true
+      },
+      "eurosatclass__app3": {
+        "placed": true
+      },
+      "eurosatclass__app4": {
+        "placed": true
+      },
+      "eurosatclass__app5": {
+        "placed": true
+      },
+      "eurosatclass__app6": {
+        "placed": true
+      },
+      "gestureclass": {
+        "placed": true
+      },
+      "gestureclass__app1": {
+        "placed": true
+      },
+      "gestureclass__app2": {
+        "placed": true
+      },
+      "gestureclass__app3": {
+        "placed": true
+      },
+      "heartrate": {
+        "placed": true
+      },
+      "heartrate__app1": {
+        "placed": true
+      },
+      "heartrate__app2": {
+        "placed": true
+      },
+      "heartrate__app3": {
+        "placed": true
+      },
+      "imgclass10": {
+        "placed": true
+      },
+      "imgclass10__app1": {
+        "placed": true
+      },
+      "imgclass10__app2": {
+        "placed": true
+      },
+      "imgclass10__app3": {
+        "placed": true
+      },
+      "imgclass10__app4": {
+        "placed": true
+      },
+      "imgclass10__app5": {
+        "placed": true
+      },
+      "imgclass10__app6": {
+        "placed": true
+      },
+      "imgclass10__app7": {
+        "placed": true
+      },
+      "nyudepth": {
+        "placed": true
+      },
+      "nyudepth__app1": {
+        "placed": true
+      },
+      "nyudepth__app2": {
+        "placed": true
+      },
+      "sysbp": {
+        "placed": true
+      },
+      "sysbp__app1": {
+        "placed": true
+      },
+      "sysbp__app2": {
+        "placed": true
+      },
+      "sysbp__app3": {
+        "placed": true
+      },
+      "vocseg": {
+        "placed": true
+      },
+      "vocseg__app1": {
+        "placed": true
+      },
+      "vocseg__app2": {
+        "placed": true
+      },
+      "vocseg__app3": {
+        "placed": true
+      },
+      "vocseg__app4": {
+        "placed": true
+      },
+      "vocseg__app5": {
+        "placed": true
+      }
+    },
+    "bottleneck_counts": {}
+  }
+}

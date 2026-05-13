@@ -1,0 +1,6830 @@
+{
+  "no_sharing": {
+    "placed": [
+      "diasbp",
+      "diasbp__app1",
+      "diasbp__app2",
+      "diasbp__app3",
+      "diasbp__app4",
+      "ecgclass",
+      "ecgclass__app1",
+      "ecgclass__app2",
+      "ecgclass__app3",
+      "ecgclass__app4",
+      "etth1fore",
+      "etth1fore__app1",
+      "etth1fore__app2",
+      "etth1fore__app3",
+      "etth1fore__app4",
+      "eurosatclass",
+      "eurosatclass__app1",
+      "eurosatclass__app2",
+      "eurosatclass__app3",
+      "eurosatclass__app4",
+      "eurosatclass__app5",
+      "eurosatclass__app6",
+      "eurosatclass__app7",
+      "eurosatclass__app8",
+      "eurosatclass__app9",
+      "gestureclass",
+      "gestureclass__app1",
+      "gestureclass__app2",
+      "gestureclass__app3",
+      "gestureclass__app4",
+      "heartrate",
+      "heartrate__app1",
+      "heartrate__app2",
+      "heartrate__app3",
+      "heartrate__app4",
+      "imgclass10",
+      "imgclass10__app1",
+      "imgclass10__app2",
+      "imgclass10__app3",
+      "imgclass10__app4",
+      "imgclass10__app5",
+      "imgclass10__app6",
+      "imgclass10__app7",
+      "imgclass10__app8",
+      "imgclass10__app9",
+      "nyudepth",
+      "nyudepth__app1",
+      "nyudepth__app2",
+      "nyudepth__app3",
+      "sysbp",
+      "sysbp__app1",
+      "sysbp__app2",
+      "sysbp__app3",
+      "sysbp__app4",
+      "vocseg",
+      "vocseg__app1",
+      "vocseg__app2",
+      "vocseg__app3",
+      "vocseg__app4",
+      "vocseg__app5",
+      "vocseg__app6",
+      "vocseg__app7"
+    ],
+    "rejected": [
+      "diasbp__app10",
+      "diasbp__app11",
+      "diasbp__app12",
+      "diasbp__app13",
+      "diasbp__app14",
+      "diasbp__app15",
+      "diasbp__app16",
+      "diasbp__app17",
+      "diasbp__app18",
+      "diasbp__app19",
+      "diasbp__app20",
+      "diasbp__app21",
+      "diasbp__app22",
+      "diasbp__app23",
+      "diasbp__app24",
+      "diasbp__app25",
+      "diasbp__app26",
+      "diasbp__app27",
+      "diasbp__app28",
+      "diasbp__app29",
+      "diasbp__app30",
+      "diasbp__app31",
+      "diasbp__app32",
+      "diasbp__app33",
+      "diasbp__app34",
+      "diasbp__app35",
+      "diasbp__app36",
+      "diasbp__app37",
+      "diasbp__app38",
+      "diasbp__app39",
+      "diasbp__app5",
+      "diasbp__app6",
+      "diasbp__app7",
+      "diasbp__app8",
+      "diasbp__app9",
+      "ecgclass__app10",
+      "ecgclass__app11",
+      "ecgclass__app12",
+      "ecgclass__app13",
+      "ecgclass__app14",
+      "ecgclass__app15",
+      "ecgclass__app16",
+      "ecgclass__app17",
+      "ecgclass__app18",
+      "ecgclass__app19",
+      "ecgclass__app20",
+      "ecgclass__app21",
+      "ecgclass__app22",
+      "ecgclass__app23",
+      "ecgclass__app24",
+      "ecgclass__app25",
+      "ecgclass__app26",
+      "ecgclass__app27",
+      "ecgclass__app28",
+      "ecgclass__app29",
+      "ecgclass__app30",
+      "ecgclass__app31",
+      "ecgclass__app32",
+      "ecgclass__app33",
+      "ecgclass__app34",
+      "ecgclass__app35",
+      "ecgclass__app36",
+      "ecgclass__app37",
+      "ecgclass__app38",
+      "ecgclass__app39",
+      "ecgclass__app5",
+      "ecgclass__app6",
+      "ecgclass__app7",
+      "ecgclass__app8",
+      "ecgclass__app9",
+      "etth1fore__app10",
+      "etth1fore__app11",
+      "etth1fore__app12",
+      "etth1fore__app13",
+      "etth1fore__app14",
+      "etth1fore__app15",
+      "etth1fore__app16",
+      "etth1fore__app17",
+      "etth1fore__app18",
+      "etth1fore__app19",
+      "etth1fore__app20",
+      "etth1fore__app21",
+      "etth1fore__app22",
+      "etth1fore__app23",
+      "etth1fore__app24",
+      "etth1fore__app25",
+      "etth1fore__app26",
+      "etth1fore__app27",
+      "etth1fore__app28",
+      "etth1fore__app29",
+      "etth1fore__app30",
+      "etth1fore__app31",
+      "etth1fore__app32",
+      "etth1fore__app33",
+      "etth1fore__app34",
+      "etth1fore__app35",
+      "etth1fore__app36",
+      "etth1fore__app37",
+      "etth1fore__app38",
+      "etth1fore__app5",
+      "etth1fore__app6",
+      "etth1fore__app7",
+      "etth1fore__app8",
+      "etth1fore__app9",
+      "eurosatclass__app10",
+      "eurosatclass__app11",
+      "eurosatclass__app12",
+      "eurosatclass__app13",
+      "eurosatclass__app14",
+      "eurosatclass__app15",
+      "eurosatclass__app16",
+      "eurosatclass__app17",
+      "eurosatclass__app18",
+      "eurosatclass__app19",
+      "eurosatclass__app20",
+      "eurosatclass__app21",
+      "eurosatclass__app22",
+      "eurosatclass__app23",
+      "eurosatclass__app24",
+      "eurosatclass__app25",
+      "eurosatclass__app26",
+      "eurosatclass__app27",
+      "eurosatclass__app28",
+      "eurosatclass__app29",
+      "eurosatclass__app30",
+      "eurosatclass__app31",
+      "eurosatclass__app32",
+      "eurosatclass__app33",
+      "eurosatclass__app34",
+      "eurosatclass__app35",
+      "eurosatclass__app36",
+      "eurosatclass__app37",
+      "eurosatclass__app38",
+      "eurosatclass__app39",
+      "eurosatclass__app40",
+      "eurosatclass__app41",
+      "eurosatclass__app42",
+      "eurosatclass__app43",
+      "eurosatclass__app44",
+      "eurosatclass__app45",
+      "eurosatclass__app46",
+      "eurosatclass__app47",
+      "eurosatclass__app48",
+      "eurosatclass__app49",
+      "eurosatclass__app50",
+      "eurosatclass__app51",
+      "eurosatclass__app52",
+      "eurosatclass__app53",
+      "eurosatclass__app54",
+      "eurosatclass__app55",
+      "eurosatclass__app56",
+      "eurosatclass__app57",
+      "eurosatclass__app58",
+      "eurosatclass__app59",
+      "eurosatclass__app60",
+      "eurosatclass__app61",
+      "eurosatclass__app62",
+      "eurosatclass__app63",
+      "eurosatclass__app64",
+      "eurosatclass__app65",
+      "eurosatclass__app66",
+      "eurosatclass__app67",
+      "eurosatclass__app68",
+      "eurosatclass__app69",
+      "eurosatclass__app70",
+      "eurosatclass__app71",
+      "eurosatclass__app72",
+      "eurosatclass__app73",
+      "eurosatclass__app74",
+      "eurosatclass__app75",
+      "eurosatclass__app76",
+      "eurosatclass__app77",
+      "gestureclass__app10",
+      "gestureclass__app11",
+      "gestureclass__app12",
+      "gestureclass__app13",
+      "gestureclass__app14",
+      "gestureclass__app15",
+      "gestureclass__app16",
+      "gestureclass__app17",
+      "gestureclass__app18",
+      "gestureclass__app19",
+      "gestureclass__app20",
+      "gestureclass__app21",
+      "gestureclass__app22",
+      "gestureclass__app23",
+      "gestureclass__app24",
+      "gestureclass__app25",
+      "gestureclass__app26",
+      "gestureclass__app27",
+      "gestureclass__app28",
+      "gestureclass__app29",
+      "gestureclass__app30",
+      "gestureclass__app31",
+      "gestureclass__app32",
+      "gestureclass__app33",
+      "gestureclass__app34",
+      "gestureclass__app35",
+      "gestureclass__app36",
+      "gestureclass__app37",
+      "gestureclass__app38",
+      "gestureclass__app39",
+      "gestureclass__app5",
+      "gestureclass__app6",
+      "gestureclass__app7",
+      "gestureclass__app8",
+      "gestureclass__app9",
+      "heartrate__app10",
+      "heartrate__app11",
+      "heartrate__app12",
+      "heartrate__app13",
+      "heartrate__app14",
+      "heartrate__app15",
+      "heartrate__app16",
+      "heartrate__app17",
+      "heartrate__app18",
+      "heartrate__app19",
+      "heartrate__app20",
+      "heartrate__app21",
+      "heartrate__app22",
+      "heartrate__app23",
+      "heartrate__app24",
+      "heartrate__app25",
+      "heartrate__app26",
+      "heartrate__app27",
+      "heartrate__app28",
+      "heartrate__app29",
+      "heartrate__app30",
+      "heartrate__app31",
+      "heartrate__app32",
+      "heartrate__app33",
+      "heartrate__app34",
+      "heartrate__app35",
+      "heartrate__app36",
+      "heartrate__app37",
+      "heartrate__app38",
+      "heartrate__app39",
+      "heartrate__app5",
+      "heartrate__app6",
+      "heartrate__app7",
+      "heartrate__app8",
+      "heartrate__app9",
+      "imgclass10__app10",
+      "imgclass10__app11",
+      "imgclass10__app12",
+      "imgclass10__app13",
+      "imgclass10__app14",
+      "imgclass10__app15",
+      "imgclass10__app16",
+      "imgclass10__app17",
+      "imgclass10__app18",
+      "imgclass10__app19",
+      "imgclass10__app20",
+      "imgclass10__app21",
+      "imgclass10__app22",
+      "imgclass10__app23",
+      "imgclass10__app24",
+      "imgclass10__app25",
+      "imgclass10__app26",
+      "imgclass10__app27",
+      "imgclass10__app28",
+      "imgclass10__app29",
+      "imgclass10__app30",
+      "imgclass10__app31",
+      "imgclass10__app32",
+      "imgclass10__app33",
+      "imgclass10__app34",
+      "imgclass10__app35",
+      "imgclass10__app36",
+      "imgclass10__app37",
+      "imgclass10__app38",
+      "imgclass10__app39",
+      "imgclass10__app40",
+      "imgclass10__app41",
+      "imgclass10__app42",
+      "imgclass10__app43",
+      "imgclass10__app44",
+      "imgclass10__app45",
+      "imgclass10__app46",
+      "imgclass10__app47",
+      "imgclass10__app48",
+      "imgclass10__app49",
+      "imgclass10__app50",
+      "imgclass10__app51",
+      "imgclass10__app52",
+      "imgclass10__app53",
+      "imgclass10__app54",
+      "imgclass10__app55",
+      "imgclass10__app56",
+      "imgclass10__app57",
+      "imgclass10__app58",
+      "imgclass10__app59",
+      "imgclass10__app60",
+      "imgclass10__app61",
+      "imgclass10__app62",
+      "imgclass10__app63",
+      "imgclass10__app64",
+      "imgclass10__app65",
+      "imgclass10__app66",
+      "imgclass10__app67",
+      "imgclass10__app68",
+      "imgclass10__app69",
+      "imgclass10__app70",
+      "imgclass10__app71",
+      "imgclass10__app72",
+      "imgclass10__app73",
+      "imgclass10__app74",
+      "imgclass10__app75",
+      "imgclass10__app76",
+      "imgclass10__app77",
+      "nyudepth__app10",
+      "nyudepth__app11",
+      "nyudepth__app12",
+      "nyudepth__app13",
+      "nyudepth__app14",
+      "nyudepth__app15",
+      "nyudepth__app16",
+      "nyudepth__app17",
+      "nyudepth__app18",
+      "nyudepth__app19",
+      "nyudepth__app20",
+      "nyudepth__app21",
+      "nyudepth__app22",
+      "nyudepth__app23",
+      "nyudepth__app24",
+      "nyudepth__app25",
+      "nyudepth__app26",
+      "nyudepth__app27",
+      "nyudepth__app28",
+      "nyudepth__app29",
+      "nyudepth__app30",
+      "nyudepth__app31",
+      "nyudepth__app32",
+      "nyudepth__app33",
+      "nyudepth__app34",
+      "nyudepth__app35",
+      "nyudepth__app36",
+      "nyudepth__app37",
+      "nyudepth__app38",
+      "nyudepth__app4",
+      "nyudepth__app5",
+      "nyudepth__app6",
+      "nyudepth__app7",
+      "nyudepth__app8",
+      "nyudepth__app9",
+      "sysbp__app10",
+      "sysbp__app11",
+      "sysbp__app12",
+      "sysbp__app13",
+      "sysbp__app14",
+      "sysbp__app15",
+      "sysbp__app16",
+      "sysbp__app17",
+      "sysbp__app18",
+      "sysbp__app19",
+      "sysbp__app20",
+      "sysbp__app21",
+      "sysbp__app22",
+      "sysbp__app23",
+      "sysbp__app24",
+      "sysbp__app25",
+      "sysbp__app26",
+      "sysbp__app27",
+      "sysbp__app28",
+      "sysbp__app29",
+      "sysbp__app30",
+      "sysbp__app31",
+      "sysbp__app32",
+      "sysbp__app33",
+      "sysbp__app34",
+      "sysbp__app35",
+      "sysbp__app36",
+      "sysbp__app37",
+      "sysbp__app38",
+      "sysbp__app39",
+      "sysbp__app5",
+      "sysbp__app6",
+      "sysbp__app7",
+      "sysbp__app8",
+      "sysbp__app9",
+      "vocseg__app10",
+      "vocseg__app11",
+      "vocseg__app12",
+      "vocseg__app13",
+      "vocseg__app14",
+      "vocseg__app15",
+      "vocseg__app16",
+      "vocseg__app17",
+      "vocseg__app18",
+      "vocseg__app19",
+      "vocseg__app20",
+      "vocseg__app21",
+      "vocseg__app22",
+      "vocseg__app23",
+      "vocseg__app24",
+      "vocseg__app25",
+      "vocseg__app26",
+      "vocseg__app27",
+      "vocseg__app28",
+      "vocseg__app29",
+      "vocseg__app30",
+      "vocseg__app31",
+      "vocseg__app32",
+      "vocseg__app33",
+      "vocseg__app34",
+      "vocseg__app35",
+      "vocseg__app36",
+      "vocseg__app37",
+      "vocseg__app38",
+      "vocseg__app39",
+      "vocseg__app40",
+      "vocseg__app41",
+      "vocseg__app42",
+      "vocseg__app43",
+      "vocseg__app44",
+      "vocseg__app45",
+      "vocseg__app46",
+      "vocseg__app47",
+      "vocseg__app48",
+      "vocseg__app49",
+      "vocseg__app50",
+      "vocseg__app51",
+      "vocseg__app52",
+      "vocseg__app53",
+      "vocseg__app54",
+      "vocseg__app55",
+      "vocseg__app56",
+      "vocseg__app57",
+      "vocseg__app58",
+      "vocseg__app59",
+      "vocseg__app60",
+      "vocseg__app61",
+      "vocseg__app62",
+      "vocseg__app63",
+      "vocseg__app64",
+      "vocseg__app65",
+      "vocseg__app66",
+      "vocseg__app67",
+      "vocseg__app68",
+      "vocseg__app69",
+      "vocseg__app70",
+      "vocseg__app71",
+      "vocseg__app72",
+      "vocseg__app73",
+      "vocseg__app74",
+      "vocseg__app75",
+      "vocseg__app76",
+      "vocseg__app77",
+      "vocseg__app8",
+      "vocseg__app9"
+    ],
+    "placed_count": 62,
+    "requested": 512,
+    "per_task": {
+      "eurosatclass__app9": {
+        "demand_left": 8.3268,
+        "peak_workload": 11.81,
+        "bottleneck": "compute",
+        "placed": true
+      },
+      "vocseg__app8": {
+        "demand_left": 2.6733,
+        "peak_workload": 2.6733,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app9": {
+        "demand_left": 11.34,
+        "peak_workload": 11.34,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app4": {
+        "demand_left": 10.685,
+        "peak_workload": 10.685,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app5": {
+        "demand_left": 9.9783,
+        "peak_workload": 9.9783,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app5": {
+        "demand_left": 0.105,
+        "peak_workload": 0.105,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app5": {
+        "demand_left": 0.1,
+        "peak_workload": 0.1,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app5": {
+        "demand_left": 11.4133,
+        "peak_workload": 11.4133,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app5": {
+        "demand_left": 11.295,
+        "peak_workload": 11.295,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app5": {
+        "demand_left": 11.34,
+        "peak_workload": 11.34,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app10": {
+        "demand_left": 0.425,
+        "peak_workload": 0.425,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app11": {
+        "demand_left": 11.2717,
+        "peak_workload": 11.2717,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app10": {
+        "demand_left": 11.3717,
+        "peak_workload": 11.3717,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app11": {
+        "demand_left": 4.5767,
+        "peak_workload": 4.5767,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app10": {
+        "demand_left": 13.0483,
+        "peak_workload": 13.0483,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app11": {
+        "demand_left": 4.205,
+        "peak_workload": 4.205,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app5": {
+        "demand_left": 11.3433,
+        "peak_workload": 11.3433,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app6": {
+        "demand_left": 11.3417,
+        "peak_workload": 11.3417,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app6": {
+        "demand_left": 0.4767,
+        "peak_workload": 0.4767,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app6": {
+        "demand_left": 11.3867,
+        "peak_workload": 11.3867,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app6": {
+        "demand_left": 11.3883,
+        "peak_workload": 11.3883,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app6": {
+        "demand_left": 11.63,
+        "peak_workload": 11.63,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app6": {
+        "demand_left": 11.895,
+        "peak_workload": 11.895,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app12": {
+        "demand_left": 24.53,
+        "peak_workload": 24.53,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app13": {
+        "demand_left": 0.3133,
+        "peak_workload": 0.3133,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app12": {
+        "demand_left": 11.575,
+        "peak_workload": 11.575,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app13": {
+        "demand_left": 11.5967,
+        "peak_workload": 11.5967,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app12": {
+        "demand_left": 32.4533,
+        "peak_workload": 32.4533,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app13": {
+        "demand_left": 5.2,
+        "peak_workload": 5.2,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app6": {
+        "demand_left": 0.1,
+        "peak_workload": 0.1,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app7": {
+        "demand_left": 32.665,
+        "peak_workload": 32.665,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app7": {
+        "demand_left": 2.915,
+        "peak_workload": 2.915,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app7": {
+        "demand_left": 11.16,
+        "peak_workload": 11.16,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app7": {
+        "demand_left": 7.1933,
+        "peak_workload": 7.1933,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app7": {
+        "demand_left": 11.54,
+        "peak_workload": 11.54,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app7": {
+        "demand_left": 9.08,
+        "peak_workload": 9.08,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app14": {
+        "demand_left": 11.8117,
+        "peak_workload": 11.8117,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app15": {
+        "demand_left": 32.2417,
+        "peak_workload": 32.2417,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app14": {
+        "demand_left": 7.3067,
+        "peak_workload": 7.3067,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app15": {
+        "demand_left": 30.3533,
+        "peak_workload": 30.3533,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app14": {
+        "demand_left": 2.11,
+        "peak_workload": 2.11,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app15": {
+        "demand_left": 7.9683,
+        "peak_workload": 7.9683,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app7": {
+        "demand_left": 2.47,
+        "peak_workload": 2.47,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app8": {
+        "demand_left": 30.8867,
+        "peak_workload": 30.8867,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app8": {
+        "demand_left": 11.2,
+        "peak_workload": 11.2,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app8": {
+        "demand_left": 11.7583,
+        "peak_workload": 11.7583,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app8": {
+        "demand_left": 10.385,
+        "peak_workload": 10.385,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app8": {
+        "demand_left": 3.0817,
+        "peak_workload": 3.0817,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app8": {
+        "demand_left": 5.5567,
+        "peak_workload": 5.5567,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app16": {
+        "demand_left": 11.56,
+        "peak_workload": 11.56,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app17": {
+        "demand_left": 12.0283,
+        "peak_workload": 12.0283,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app16": {
+        "demand_left": 11.935,
+        "peak_workload": 11.935,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app17": {
+        "demand_left": 10.965,
+        "peak_workload": 10.965,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app16": {
+        "demand_left": 11.545,
+        "peak_workload": 11.545,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app17": {
+        "demand_left": 35.5933,
+        "peak_workload": 35.5933,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app8": {
+        "demand_left": 11.5233,
+        "peak_workload": 11.5233,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app9": {
+        "demand_left": 8.6467,
+        "peak_workload": 8.6467,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app9": {
+        "demand_left": 7.015,
+        "peak_workload": 7.015,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app9": {
+        "demand_left": 2.5567,
+        "peak_workload": 2.5567,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app9": {
+        "demand_left": 11.395,
+        "peak_workload": 11.395,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app9": {
+        "demand_left": 31.6467,
+        "peak_workload": 31.6467,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app9": {
+        "demand_left": 11.5367,
+        "peak_workload": 11.5367,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app18": {
+        "demand_left": 33.4867,
+        "peak_workload": 33.4867,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app19": {
+        "demand_left": 1.6033,
+        "peak_workload": 1.6033,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app18": {
+        "demand_left": 5.4783,
+        "peak_workload": 5.4783,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app19": {
+        "demand_left": 15.7367,
+        "peak_workload": 15.7367,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app18": {
+        "demand_left": 10.89,
+        "peak_workload": 10.89,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app19": {
+        "demand_left": 11.7867,
+        "peak_workload": 11.7867,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app9": {
+        "demand_left": 11.6267,
+        "peak_workload": 11.6267,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app10": {
+        "demand_left": 10.9833,
+        "peak_workload": 10.9833,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app10": {
+        "demand_left": 0.1,
+        "peak_workload": 0.1,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app10": {
+        "demand_left": 12.3033,
+        "peak_workload": 12.3033,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app10": {
+        "demand_left": 5.2,
+        "peak_workload": 5.2,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app10": {
+        "demand_left": 0.1,
+        "peak_workload": 0.1,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app10": {
+        "demand_left": 9.0583,
+        "peak_workload": 9.0583,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app20": {
+        "demand_left": 0.6617,
+        "peak_workload": 0.6617,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app21": {
+        "demand_left": 10.685,
+        "peak_workload": 10.685,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app20": {
+        "demand_left": 33.2233,
+        "peak_workload": 33.2233,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app21": {
+        "demand_left": 10.1267,
+        "peak_workload": 10.1267,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app20": {
+        "demand_left": 12.2317,
+        "peak_workload": 12.2317,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app21": {
+        "demand_left": 6.7583,
+        "peak_workload": 6.7583,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app10": {
+        "demand_left": 6.6233,
+        "peak_workload": 6.6233,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app11": {
+        "demand_left": 7.08,
+        "peak_workload": 7.08,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app11": {
+        "demand_left": 15.7467,
+        "peak_workload": 15.7467,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app11": {
+        "demand_left": 15.2167,
+        "peak_workload": 15.2167,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app11": {
+        "demand_left": 31.1867,
+        "peak_workload": 31.1867,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app11": {
+        "demand_left": 18.0733,
+        "peak_workload": 18.0733,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app11": {
+        "demand_left": 23.0,
+        "peak_workload": 23.0,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app22": {
+        "demand_left": 0.1333,
+        "peak_workload": 0.1333,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app23": {
+        "demand_left": 0.5033,
+        "peak_workload": 0.5033,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app22": {
+        "demand_left": 10.985,
+        "peak_workload": 10.985,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app23": {
+        "demand_left": 12.265,
+        "peak_workload": 12.265,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app22": {
+        "demand_left": 45.7967,
+        "peak_workload": 45.7967,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app23": {
+        "demand_left": 9.87,
+        "peak_workload": 9.87,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app11": {
+        "demand_left": 0.1,
+        "peak_workload": 0.1,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app12": {
+        "demand_left": 12.2667,
+        "peak_workload": 12.2667,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app12": {
+        "demand_left": 6.5667,
+        "peak_workload": 6.5667,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app12": {
+        "demand_left": 11.8767,
+        "peak_workload": 11.8767,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app12": {
+        "demand_left": 7.5717,
+        "peak_workload": 7.5717,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app12": {
+        "demand_left": 0.1,
+        "peak_workload": 0.1,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app12": {
+        "demand_left": 12.4633,
+        "peak_workload": 12.4633,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app24": {
+        "demand_left": 12.145,
+        "peak_workload": 12.145,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app25": {
+        "demand_left": 29.7167,
+        "peak_workload": 29.7167,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app24": {
+        "demand_left": 12.6783,
+        "peak_workload": 12.6783,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app25": {
+        "demand_left": 6.5083,
+        "peak_workload": 6.5083,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app24": {
+        "demand_left": 12.1833,
+        "peak_workload": 12.1833,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app25": {
+        "demand_left": 12.7767,
+        "peak_workload": 12.7767,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app12": {
+        "demand_left": 21.495,
+        "peak_workload": 21.495,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app13": {
+        "demand_left": 24.61,
+        "peak_workload": 24.61,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app13": {
+        "demand_left": 13.0617,
+        "peak_workload": 13.0617,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app13": {
+        "demand_left": 12.1117,
+        "peak_workload": 12.1117,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app13": {
+        "demand_left": 12.935,
+        "peak_workload": 12.935,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app13": {
+        "demand_left": 13.7117,
+        "peak_workload": 13.7117,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app13": {
+        "demand_left": 12.7983,
+        "peak_workload": 12.7983,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app26": {
+        "demand_left": 13.0217,
+        "peak_workload": 13.0217,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app27": {
+        "demand_left": 12.4333,
+        "peak_workload": 12.4333,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app26": {
+        "demand_left": 12.72,
+        "peak_workload": 12.72,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app27": {
+        "demand_left": 0.1,
+        "peak_workload": 0.1,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app26": {
+        "demand_left": 9.2917,
+        "peak_workload": 9.2917,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app27": {
+        "demand_left": 0.1,
+        "peak_workload": 0.1,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app13": {
+        "demand_left": 4.6883,
+        "peak_workload": 4.6883,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app14": {
+        "demand_left": 15.0833,
+        "peak_workload": 15.0833,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app14": {
+        "demand_left": 16.02,
+        "peak_workload": 16.02,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app14": {
+        "demand_left": 10.6883,
+        "peak_workload": 10.6883,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app14": {
+        "demand_left": 20.1283,
+        "peak_workload": 20.1283,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app14": {
+        "demand_left": 8.6033,
+        "peak_workload": 8.6033,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app14": {
+        "demand_left": 16.0433,
+        "peak_workload": 16.0433,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app28": {
+        "demand_left": 14.2917,
+        "peak_workload": 14.2917,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app29": {
+        "demand_left": 0.4133,
+        "peak_workload": 0.4133,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app28": {
+        "demand_left": 10.2333,
+        "peak_workload": 10.2333,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app29": {
+        "demand_left": 0.1,
+        "peak_workload": 0.1,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app28": {
+        "demand_left": 12.635,
+        "peak_workload": 12.635,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app29": {
+        "demand_left": 5.8333,
+        "peak_workload": 5.8333,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app14": {
+        "demand_left": 0.4867,
+        "peak_workload": 0.4867,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app15": {
+        "demand_left": 9.8517,
+        "peak_workload": 9.8517,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app15": {
+        "demand_left": 10.7267,
+        "peak_workload": 10.7267,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app15": {
+        "demand_left": 10.9367,
+        "peak_workload": 10.9367,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app15": {
+        "demand_left": 10.5017,
+        "peak_workload": 10.5017,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app15": {
+        "demand_left": 5.9333,
+        "peak_workload": 5.9333,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app15": {
+        "demand_left": 14.97,
+        "peak_workload": 14.97,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app30": {
+        "demand_left": 12.905,
+        "peak_workload": 12.905,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app31": {
+        "demand_left": 0.415,
+        "peak_workload": 0.415,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app30": {
+        "demand_left": 11.28,
+        "peak_workload": 11.28,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app31": {
+        "demand_left": 16.3017,
+        "peak_workload": 16.3017,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app30": {
+        "demand_left": 12.0033,
+        "peak_workload": 12.0033,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app31": {
+        "demand_left": 11.7883,
+        "peak_workload": 11.7883,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app15": {
+        "demand_left": 10.4833,
+        "peak_workload": 10.4833,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app16": {
+        "demand_left": 0.4767,
+        "peak_workload": 0.4767,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app16": {
+        "demand_left": 15.2533,
+        "peak_workload": 15.2533,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app16": {
+        "demand_left": 11.0267,
+        "peak_workload": 11.0267,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app16": {
+        "demand_left": 0.1067,
+        "peak_workload": 0.1067,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app16": {
+        "demand_left": 10.4117,
+        "peak_workload": 10.4117,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app16": {
+        "demand_left": 0.6733,
+        "peak_workload": 0.6733,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app32": {
+        "demand_left": 0.4467,
+        "peak_workload": 0.4467,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app33": {
+        "demand_left": 15.5783,
+        "peak_workload": 15.5783,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app32": {
+        "demand_left": 9.56,
+        "peak_workload": 9.56,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app33": {
+        "demand_left": 0.1,
+        "peak_workload": 0.1,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app32": {
+        "demand_left": 11.54,
+        "peak_workload": 11.54,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app33": {
+        "demand_left": 12.8067,
+        "peak_workload": 12.8067,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app16": {
+        "demand_left": 2.8483,
+        "peak_workload": 2.8483,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app17": {
+        "demand_left": 21.2933,
+        "peak_workload": 21.2933,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app17": {
+        "demand_left": 20.345,
+        "peak_workload": 20.345,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app17": {
+        "demand_left": 2.615,
+        "peak_workload": 2.615,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app17": {
+        "demand_left": 9.6867,
+        "peak_workload": 9.6867,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app17": {
+        "demand_left": 15.0933,
+        "peak_workload": 15.0933,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app17": {
+        "demand_left": 13.0267,
+        "peak_workload": 13.0267,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app34": {
+        "demand_left": 10.7667,
+        "peak_workload": 10.7667,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app35": {
+        "demand_left": 22.9233,
+        "peak_workload": 22.9233,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app34": {
+        "demand_left": 13.3033,
+        "peak_workload": 13.3033,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app35": {
+        "demand_left": 22.8717,
+        "peak_workload": 22.8717,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app34": {
+        "demand_left": 15.445,
+        "peak_workload": 15.445,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app35": {
+        "demand_left": 16.475,
+        "peak_workload": 16.475,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app17": {
+        "demand_left": 22.7467,
+        "peak_workload": 22.7467,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app18": {
+        "demand_left": 22.875,
+        "peak_workload": 22.875,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app18": {
+        "demand_left": 13.8417,
+        "peak_workload": 13.8417,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app18": {
+        "demand_left": 12.8333,
+        "peak_workload": 12.8333,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app18": {
+        "demand_left": 23.0083,
+        "peak_workload": 23.0083,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app18": {
+        "demand_left": 23.0017,
+        "peak_workload": 23.0017,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app18": {
+        "demand_left": 0.4917,
+        "peak_workload": 0.4917,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app36": {
+        "demand_left": 22.7767,
+        "peak_workload": 22.7767,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app37": {
+        "demand_left": 22.6683,
+        "peak_workload": 22.6683,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app36": {
+        "demand_left": 22.69,
+        "peak_workload": 22.69,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app37": {
+        "demand_left": 13.405,
+        "peak_workload": 13.405,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app36": {
+        "demand_left": 22.8517,
+        "peak_workload": 22.8517,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app37": {
+        "demand_left": 14.1967,
+        "peak_workload": 14.1967,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app18": {
+        "demand_left": 13.2917,
+        "peak_workload": 13.2917,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app19": {
+        "demand_left": 16.5083,
+        "peak_workload": 16.5083,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app19": {
+        "demand_left": 14.935,
+        "peak_workload": 14.935,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app19": {
+        "demand_left": 14.2,
+        "peak_workload": 14.2,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app19": {
+        "demand_left": 3.0133,
+        "peak_workload": 3.0133,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app19": {
+        "demand_left": 8.765,
+        "peak_workload": 8.765,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app19": {
+        "demand_left": 0.1,
+        "peak_workload": 0.1,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app38": {
+        "demand_left": 16.4583,
+        "peak_workload": 16.4583,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app39": {
+        "demand_left": 15.8267,
+        "peak_workload": 15.8267,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app38": {
+        "demand_left": 16.5783,
+        "peak_workload": 16.5783,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app39": {
+        "demand_left": 14.325,
+        "peak_workload": 14.325,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app38": {
+        "demand_left": 12.5167,
+        "peak_workload": 12.5167,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app39": {
+        "demand_left": 9.4583,
+        "peak_workload": 9.4583,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app19": {
+        "demand_left": 17.145,
+        "peak_workload": 17.145,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app20": {
+        "demand_left": 16.715,
+        "peak_workload": 16.715,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app20": {
+        "demand_left": 16.7067,
+        "peak_workload": 16.7067,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app20": {
+        "demand_left": 15.3333,
+        "peak_workload": 15.3333,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app20": {
+        "demand_left": 14.91,
+        "peak_workload": 14.91,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app20": {
+        "demand_left": 17.0433,
+        "peak_workload": 17.0433,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app20": {
+        "demand_left": 7.1867,
+        "peak_workload": 7.1867,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app40": {
+        "demand_left": 16.3583,
+        "peak_workload": 16.3583,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app41": {
+        "demand_left": 0.4133,
+        "peak_workload": 0.4133,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app40": {
+        "demand_left": 101.6033,
+        "peak_workload": 101.6033,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app41": {
+        "demand_left": 17.3283,
+        "peak_workload": 17.3283,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app40": {
+        "demand_left": 16.8867,
+        "peak_workload": 16.8867,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app41": {
+        "demand_left": 1.3267,
+        "peak_workload": 1.3267,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app20": {
+        "demand_left": 2.3133,
+        "peak_workload": 2.3133,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app21": {
+        "demand_left": 16.8933,
+        "peak_workload": 16.8933,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app21": {
+        "demand_left": 14.5417,
+        "peak_workload": 14.5417,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app21": {
+        "demand_left": 9.1983,
+        "peak_workload": 9.1983,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app21": {
+        "demand_left": 1.8233,
+        "peak_workload": 1.8233,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app21": {
+        "demand_left": 0.4883,
+        "peak_workload": 0.4883,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app21": {
+        "demand_left": 17.4267,
+        "peak_workload": 17.4267,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app42": {
+        "demand_left": 11.9833,
+        "peak_workload": 11.9833,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app43": {
+        "demand_left": 16.6533,
+        "peak_workload": 16.6533,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app42": {
+        "demand_left": 7.56,
+        "peak_workload": 7.56,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app43": {
+        "demand_left": 15.2817,
+        "peak_workload": 15.2817,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app42": {
+        "demand_left": 15.63,
+        "peak_workload": 15.63,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app43": {
+        "demand_left": 4.1567,
+        "peak_workload": 4.1567,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app21": {
+        "demand_left": 0.3083,
+        "peak_workload": 0.3083,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app22": {
+        "demand_left": 0.6767,
+        "peak_workload": 0.6767,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app22": {
+        "demand_left": 7.5817,
+        "peak_workload": 7.5817,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app22": {
+        "demand_left": 9.2217,
+        "peak_workload": 9.2217,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app22": {
+        "demand_left": 17.5133,
+        "peak_workload": 17.5133,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app22": {
+        "demand_left": 16.51,
+        "peak_workload": 16.51,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app22": {
+        "demand_left": 16.2817,
+        "peak_workload": 16.2817,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app44": {
+        "demand_left": 8.7567,
+        "peak_workload": 8.7567,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app45": {
+        "demand_left": 15.5217,
+        "peak_workload": 15.5217,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app44": {
+        "demand_left": 14.8333,
+        "peak_workload": 14.8333,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app45": {
+        "demand_left": 14.235,
+        "peak_workload": 14.235,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app44": {
+        "demand_left": 14.825,
+        "peak_workload": 14.825,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app45": {
+        "demand_left": 18.0767,
+        "peak_workload": 18.0767,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app22": {
+        "demand_left": 15.34,
+        "peak_workload": 15.34,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app23": {
+        "demand_left": 10.3833,
+        "peak_workload": 10.3833,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app23": {
+        "demand_left": 48.96,
+        "peak_workload": 48.96,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app23": {
+        "demand_left": 17.6367,
+        "peak_workload": 17.6367,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app23": {
+        "demand_left": 0.4483,
+        "peak_workload": 0.4483,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app23": {
+        "demand_left": 16.6517,
+        "peak_workload": 16.6517,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app23": {
+        "demand_left": 6.135,
+        "peak_workload": 6.135,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app46": {
+        "demand_left": 6.285,
+        "peak_workload": 6.285,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app47": {
+        "demand_left": 2.1767,
+        "peak_workload": 2.1767,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app46": {
+        "demand_left": 7.1467,
+        "peak_workload": 7.1467,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app47": {
+        "demand_left": 16.7817,
+        "peak_workload": 16.7817,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app46": {
+        "demand_left": 2.1333,
+        "peak_workload": 2.1333,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app47": {
+        "demand_left": 12.3867,
+        "peak_workload": 12.3867,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app23": {
+        "demand_left": 16.0,
+        "peak_workload": 16.0,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app24": {
+        "demand_left": 17.41,
+        "peak_workload": 17.41,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app24": {
+        "demand_left": 9.27,
+        "peak_workload": 9.27,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app24": {
+        "demand_left": 0.505,
+        "peak_workload": 0.505,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app24": {
+        "demand_left": 15.2017,
+        "peak_workload": 15.2017,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app24": {
+        "demand_left": 16.5017,
+        "peak_workload": 16.5017,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app24": {
+        "demand_left": 3.9933,
+        "peak_workload": 3.9933,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app48": {
+        "demand_left": 12.5283,
+        "peak_workload": 12.5283,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app49": {
+        "demand_left": 4.1933,
+        "peak_workload": 4.1933,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app48": {
+        "demand_left": 12.5633,
+        "peak_workload": 12.5633,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app49": {
+        "demand_left": 14.5867,
+        "peak_workload": 14.5867,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app48": {
+        "demand_left": 5.0483,
+        "peak_workload": 5.0483,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app49": {
+        "demand_left": 4.675,
+        "peak_workload": 4.675,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app24": {
+        "demand_left": 21.4167,
+        "peak_workload": 21.4167,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app25": {
+        "demand_left": 5.4667,
+        "peak_workload": 5.4667,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app25": {
+        "demand_left": 2.0983,
+        "peak_workload": 2.0983,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app25": {
+        "demand_left": 15.0033,
+        "peak_workload": 15.0033,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app25": {
+        "demand_left": 14.7833,
+        "peak_workload": 14.7833,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app25": {
+        "demand_left": 18.4867,
+        "peak_workload": 18.4867,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app25": {
+        "demand_left": 9.465,
+        "peak_workload": 9.465,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app50": {
+        "demand_left": 16.6917,
+        "peak_workload": 16.6917,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app51": {
+        "demand_left": 17.9933,
+        "peak_workload": 17.9933,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app50": {
+        "demand_left": 16.6317,
+        "peak_workload": 16.6317,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app51": {
+        "demand_left": 14.5417,
+        "peak_workload": 14.5417,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app50": {
+        "demand_left": 14.09,
+        "peak_workload": 14.09,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app51": {
+        "demand_left": 15.5917,
+        "peak_workload": 15.5917,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app25": {
+        "demand_left": 15.9533,
+        "peak_workload": 15.9533,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app26": {
+        "demand_left": 0.8283,
+        "peak_workload": 0.8283,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app26": {
+        "demand_left": 15.0483,
+        "peak_workload": 15.0483,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app26": {
+        "demand_left": 17.1783,
+        "peak_workload": 17.1783,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app26": {
+        "demand_left": 18.8283,
+        "peak_workload": 18.8283,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app26": {
+        "demand_left": 16.9817,
+        "peak_workload": 16.9817,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app26": {
+        "demand_left": 18.4717,
+        "peak_workload": 18.4717,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app52": {
+        "demand_left": 12.9883,
+        "peak_workload": 12.9883,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app53": {
+        "demand_left": 7.03,
+        "peak_workload": 7.03,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app52": {
+        "demand_left": 16.9383,
+        "peak_workload": 16.9383,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app53": {
+        "demand_left": 0.1,
+        "peak_workload": 0.1,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app52": {
+        "demand_left": 11.6667,
+        "peak_workload": 11.6667,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app53": {
+        "demand_left": 40.8017,
+        "peak_workload": 40.8017,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app26": {
+        "demand_left": 15.01,
+        "peak_workload": 15.01,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app27": {
+        "demand_left": 11.385,
+        "peak_workload": 11.385,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app27": {
+        "demand_left": 13.7683,
+        "peak_workload": 13.7683,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app27": {
+        "demand_left": 17.4883,
+        "peak_workload": 17.4883,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app27": {
+        "demand_left": 12.86,
+        "peak_workload": 12.86,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app27": {
+        "demand_left": 15.07,
+        "peak_workload": 15.07,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app27": {
+        "demand_left": 13.9683,
+        "peak_workload": 13.9683,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app54": {
+        "demand_left": 6.1283,
+        "peak_workload": 6.1283,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app55": {
+        "demand_left": 19.4783,
+        "peak_workload": 19.4783,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app54": {
+        "demand_left": 4.39,
+        "peak_workload": 4.39,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app55": {
+        "demand_left": 16.4083,
+        "peak_workload": 16.4083,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app54": {
+        "demand_left": 17.8083,
+        "peak_workload": 17.8083,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app55": {
+        "demand_left": 7.3617,
+        "peak_workload": 7.3617,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app27": {
+        "demand_left": 12.0333,
+        "peak_workload": 12.0333,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app28": {
+        "demand_left": 14.005,
+        "peak_workload": 14.005,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app28": {
+        "demand_left": 11.2117,
+        "peak_workload": 11.2117,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app28": {
+        "demand_left": 48.295,
+        "peak_workload": 48.295,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app28": {
+        "demand_left": 8.7483,
+        "peak_workload": 8.7483,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app28": {
+        "demand_left": 4.3833,
+        "peak_workload": 4.3833,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app28": {
+        "demand_left": 17.725,
+        "peak_workload": 17.725,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app56": {
+        "demand_left": 16.2133,
+        "peak_workload": 16.2133,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app57": {
+        "demand_left": 6.4467,
+        "peak_workload": 6.4467,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app56": {
+        "demand_left": 16.9733,
+        "peak_workload": 16.9733,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app57": {
+        "demand_left": 16.915,
+        "peak_workload": 16.915,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app56": {
+        "demand_left": 8.6067,
+        "peak_workload": 8.6067,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app57": {
+        "demand_left": 18.5933,
+        "peak_workload": 18.5933,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app28": {
+        "demand_left": 16.4817,
+        "peak_workload": 16.4817,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app29": {
+        "demand_left": 19.16,
+        "peak_workload": 19.16,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app29": {
+        "demand_left": 3.0383,
+        "peak_workload": 3.0383,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app29": {
+        "demand_left": 17.025,
+        "peak_workload": 17.025,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app29": {
+        "demand_left": 16.4233,
+        "peak_workload": 16.4233,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app29": {
+        "demand_left": 28.805,
+        "peak_workload": 28.805,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app29": {
+        "demand_left": 23.535,
+        "peak_workload": 23.535,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app58": {
+        "demand_left": 24.045,
+        "peak_workload": 24.045,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app59": {
+        "demand_left": 19.115,
+        "peak_workload": 19.115,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app58": {
+        "demand_left": 16.0667,
+        "peak_workload": 16.0667,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app59": {
+        "demand_left": 17.735,
+        "peak_workload": 17.735,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app58": {
+        "demand_left": 16.8383,
+        "peak_workload": 16.8383,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app59": {
+        "demand_left": 3.17,
+        "peak_workload": 3.17,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app29": {
+        "demand_left": 16.0717,
+        "peak_workload": 16.0717,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app30": {
+        "demand_left": 16.7983,
+        "peak_workload": 16.7983,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app30": {
+        "demand_left": 9.655,
+        "peak_workload": 9.655,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app30": {
+        "demand_left": 13.2533,
+        "peak_workload": 13.2533,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app30": {
+        "demand_left": 17.2533,
+        "peak_workload": 17.2533,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app30": {
+        "demand_left": 6.655,
+        "peak_workload": 6.655,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app30": {
+        "demand_left": 7.725,
+        "peak_workload": 7.725,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app60": {
+        "demand_left": 21.04,
+        "peak_workload": 21.04,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app61": {
+        "demand_left": 10.2233,
+        "peak_workload": 10.2233,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app60": {
+        "demand_left": 16.7967,
+        "peak_workload": 16.7967,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app61": {
+        "demand_left": 8.6133,
+        "peak_workload": 8.6133,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app60": {
+        "demand_left": 16.3717,
+        "peak_workload": 16.3717,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app61": {
+        "demand_left": 8.0917,
+        "peak_workload": 8.0917,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app30": {
+        "demand_left": 7.7817,
+        "peak_workload": 7.7817,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app31": {
+        "demand_left": 17.7967,
+        "peak_workload": 17.7967,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app31": {
+        "demand_left": 16.255,
+        "peak_workload": 16.255,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app31": {
+        "demand_left": 17.2967,
+        "peak_workload": 17.2967,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app31": {
+        "demand_left": 16.8033,
+        "peak_workload": 16.8033,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app31": {
+        "demand_left": 11.3417,
+        "peak_workload": 11.3417,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app31": {
+        "demand_left": 13.045,
+        "peak_workload": 13.045,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app62": {
+        "demand_left": 17.6317,
+        "peak_workload": 17.6317,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app63": {
+        "demand_left": 26.3467,
+        "peak_workload": 26.3467,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app62": {
+        "demand_left": 21.5717,
+        "peak_workload": 21.5717,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app63": {
+        "demand_left": 11.96,
+        "peak_workload": 11.96,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app62": {
+        "demand_left": 26.3467,
+        "peak_workload": 26.3467,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app63": {
+        "demand_left": 21.115,
+        "peak_workload": 21.115,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app31": {
+        "demand_left": 26.355,
+        "peak_workload": 26.355,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app32": {
+        "demand_left": 13.5533,
+        "peak_workload": 13.5533,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app32": {
+        "demand_left": 26.4117,
+        "peak_workload": 26.4117,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app32": {
+        "demand_left": 7.0033,
+        "peak_workload": 7.0033,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app32": {
+        "demand_left": 10.04,
+        "peak_workload": 10.04,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app32": {
+        "demand_left": 26.3183,
+        "peak_workload": 26.3183,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app32": {
+        "demand_left": 26.345,
+        "peak_workload": 26.345,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app64": {
+        "demand_left": 12.8917,
+        "peak_workload": 12.8917,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app65": {
+        "demand_left": 11.1483,
+        "peak_workload": 11.1483,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app64": {
+        "demand_left": 17.4833,
+        "peak_workload": 17.4833,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app65": {
+        "demand_left": 14.8467,
+        "peak_workload": 14.8467,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app64": {
+        "demand_left": 15.7017,
+        "peak_workload": 15.7017,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app65": {
+        "demand_left": 17.24,
+        "peak_workload": 17.24,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app32": {
+        "demand_left": 10.9983,
+        "peak_workload": 10.9983,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app33": {
+        "demand_left": 18.5133,
+        "peak_workload": 18.5133,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app33": {
+        "demand_left": 13.3917,
+        "peak_workload": 13.3917,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app33": {
+        "demand_left": 27.1233,
+        "peak_workload": 27.1233,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app33": {
+        "demand_left": 17.0567,
+        "peak_workload": 17.0567,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app33": {
+        "demand_left": 9.1667,
+        "peak_workload": 9.1667,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app33": {
+        "demand_left": 17.9017,
+        "peak_workload": 17.9017,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app66": {
+        "demand_left": 6.59,
+        "peak_workload": 6.59,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app67": {
+        "demand_left": 18.2033,
+        "peak_workload": 18.2033,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app66": {
+        "demand_left": 44.1933,
+        "peak_workload": 44.1933,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app67": {
+        "demand_left": 35.6767,
+        "peak_workload": 35.6767,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app66": {
+        "demand_left": 17.9917,
+        "peak_workload": 17.9917,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app67": {
+        "demand_left": 12.0717,
+        "peak_workload": 12.0717,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app33": {
+        "demand_left": 17.63,
+        "peak_workload": 17.63,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app34": {
+        "demand_left": 19.5817,
+        "peak_workload": 19.5817,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app34": {
+        "demand_left": 18.2,
+        "peak_workload": 18.2,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app34": {
+        "demand_left": 13.665,
+        "peak_workload": 13.665,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app34": {
+        "demand_left": 20.3183,
+        "peak_workload": 20.3183,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app34": {
+        "demand_left": 12.82,
+        "peak_workload": 12.82,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app34": {
+        "demand_left": 13.595,
+        "peak_workload": 13.595,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app68": {
+        "demand_left": 13.1883,
+        "peak_workload": 13.1883,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app69": {
+        "demand_left": 7.8483,
+        "peak_workload": 7.8483,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app68": {
+        "demand_left": 23.1017,
+        "peak_workload": 23.1017,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app69": {
+        "demand_left": 18.2517,
+        "peak_workload": 18.2517,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app68": {
+        "demand_left": 18.0383,
+        "peak_workload": 18.0383,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app69": {
+        "demand_left": 18.76,
+        "peak_workload": 18.76,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app34": {
+        "demand_left": 15.1283,
+        "peak_workload": 15.1283,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app35": {
+        "demand_left": 16.5133,
+        "peak_workload": 16.5133,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app35": {
+        "demand_left": 18.8033,
+        "peak_workload": 18.8033,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app35": {
+        "demand_left": 32.41,
+        "peak_workload": 32.41,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app35": {
+        "demand_left": 20.9767,
+        "peak_workload": 20.9767,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app35": {
+        "demand_left": 17.3233,
+        "peak_workload": 17.3233,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app35": {
+        "demand_left": 19.2917,
+        "peak_workload": 19.2917,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app70": {
+        "demand_left": 28.2233,
+        "peak_workload": 28.2233,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app71": {
+        "demand_left": 19.12,
+        "peak_workload": 19.12,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app70": {
+        "demand_left": 12.41,
+        "peak_workload": 12.41,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app71": {
+        "demand_left": 18.8167,
+        "peak_workload": 18.8167,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app70": {
+        "demand_left": 27.935,
+        "peak_workload": 27.935,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app71": {
+        "demand_left": 19.1383,
+        "peak_workload": 19.1383,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app35": {
+        "demand_left": 19.185,
+        "peak_workload": 19.185,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app36": {
+        "demand_left": 19.0783,
+        "peak_workload": 19.0783,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app36": {
+        "demand_left": 19.0233,
+        "peak_workload": 19.0233,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app36": {
+        "demand_left": 5.34,
+        "peak_workload": 5.34,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app36": {
+        "demand_left": 38.21,
+        "peak_workload": 38.21,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app36": {
+        "demand_left": 19.045,
+        "peak_workload": 19.045,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app36": {
+        "demand_left": 26.69,
+        "peak_workload": 26.69,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app72": {
+        "demand_left": 9.4817,
+        "peak_workload": 9.4817,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app73": {
+        "demand_left": 12.1883,
+        "peak_workload": 12.1883,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app72": {
+        "demand_left": 13.1267,
+        "peak_workload": 13.1267,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app73": {
+        "demand_left": 40.5617,
+        "peak_workload": 40.5617,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app72": {
+        "demand_left": 30.8517,
+        "peak_workload": 30.8517,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app73": {
+        "demand_left": 8.7183,
+        "peak_workload": 8.7183,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app36": {
+        "demand_left": 0.1,
+        "peak_workload": 0.1,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app37": {
+        "demand_left": 16.265,
+        "peak_workload": 16.265,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app37": {
+        "demand_left": 39.7683,
+        "peak_workload": 39.7683,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app37": {
+        "demand_left": 13.4733,
+        "peak_workload": 13.4733,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app37": {
+        "demand_left": 12.885,
+        "peak_workload": 12.885,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app37": {
+        "demand_left": 6.9533,
+        "peak_workload": 6.9533,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app37": {
+        "demand_left": 26.365,
+        "peak_workload": 26.365,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app74": {
+        "demand_left": 36.165,
+        "peak_workload": 36.165,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app75": {
+        "demand_left": 7.8517,
+        "peak_workload": 7.8517,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app74": {
+        "demand_left": 24.1533,
+        "peak_workload": 24.1533,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app75": {
+        "demand_left": 15.91,
+        "peak_workload": 15.91,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app74": {
+        "demand_left": 23.3767,
+        "peak_workload": 23.3767,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app75": {
+        "demand_left": 12.735,
+        "peak_workload": 12.735,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app37": {
+        "demand_left": 16.8917,
+        "peak_workload": 16.8917,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app38": {
+        "demand_left": 9.915,
+        "peak_workload": 9.915,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app38": {
+        "demand_left": 7.9533,
+        "peak_workload": 7.9533,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app38": {
+        "demand_left": 14.015,
+        "peak_workload": 14.015,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app38": {
+        "demand_left": 31.8217,
+        "peak_workload": 31.8217,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app38": {
+        "demand_left": 22.335,
+        "peak_workload": 22.335,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app38": {
+        "demand_left": 40.5283,
+        "peak_workload": 40.5283,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app76": {
+        "demand_left": 10.0583,
+        "peak_workload": 10.0583,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app77": {
+        "demand_left": 28.8667,
+        "peak_workload": 28.8667,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app76": {
+        "demand_left": 14.225,
+        "peak_workload": 14.225,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app77": {
+        "demand_left": 20.2433,
+        "peak_workload": 20.2433,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app76": {
+        "demand_left": 26.9533,
+        "peak_workload": 26.9533,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app77": {
+        "demand_left": 26.3417,
+        "peak_workload": 26.3417,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app38": {
+        "demand_left": 11.0633,
+        "peak_workload": 11.0633,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app39": {
+        "demand_left": 20.4233,
+        "peak_workload": 20.4233,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app39": {
+        "demand_left": 20.5067,
+        "peak_workload": 20.5067,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app39": {
+        "demand_left": 24.0483,
+        "peak_workload": 24.0483,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app39": {
+        "demand_left": 20.555,
+        "peak_workload": 20.555,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app39": {
+        "demand_left": 17.0683,
+        "peak_workload": 17.0683,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp": {
+        "placed": true
+      },
+      "diasbp__app1": {
+        "placed": true
+      },
+      "diasbp__app2": {
+        "placed": true
+      },
+      "diasbp__app3": {
+        "placed": true
+      },
+      "diasbp__app4": {
+        "placed": true
+      },
+      "ecgclass": {
+        "placed": true
+      },
+      "ecgclass__app1": {
+        "placed": true
+      },
+      "ecgclass__app2": {
+        "placed": true
+      },
+      "ecgclass__app3": {
+        "placed": true
+      },
+      "ecgclass__app4": {
+        "placed": true
+      },
+      "etth1fore": {
+        "placed": true
+      },
+      "etth1fore__app1": {
+        "placed": true
+      },
+      "etth1fore__app2": {
+        "placed": true
+      },
+      "etth1fore__app3": {
+        "placed": true
+      },
+      "etth1fore__app4": {
+        "placed": true
+      },
+      "eurosatclass": {
+        "placed": true
+      },
+      "eurosatclass__app1": {
+        "placed": true
+      },
+      "eurosatclass__app2": {
+        "placed": true
+      },
+      "eurosatclass__app3": {
+        "placed": true
+      },
+      "eurosatclass__app4": {
+        "placed": true
+      },
+      "eurosatclass__app5": {
+        "placed": true
+      },
+      "eurosatclass__app6": {
+        "placed": true
+      },
+      "eurosatclass__app7": {
+        "placed": true
+      },
+      "eurosatclass__app8": {
+        "placed": true
+      },
+      "gestureclass": {
+        "placed": true
+      },
+      "gestureclass__app1": {
+        "placed": true
+      },
+      "gestureclass__app2": {
+        "placed": true
+      },
+      "gestureclass__app3": {
+        "placed": true
+      },
+      "gestureclass__app4": {
+        "placed": true
+      },
+      "heartrate": {
+        "placed": true
+      },
+      "heartrate__app1": {
+        "placed": true
+      },
+      "heartrate__app2": {
+        "placed": true
+      },
+      "heartrate__app3": {
+        "placed": true
+      },
+      "heartrate__app4": {
+        "placed": true
+      },
+      "imgclass10": {
+        "placed": true
+      },
+      "imgclass10__app1": {
+        "placed": true
+      },
+      "imgclass10__app2": {
+        "placed": true
+      },
+      "imgclass10__app3": {
+        "placed": true
+      },
+      "imgclass10__app4": {
+        "placed": true
+      },
+      "imgclass10__app5": {
+        "placed": true
+      },
+      "imgclass10__app6": {
+        "placed": true
+      },
+      "imgclass10__app7": {
+        "placed": true
+      },
+      "imgclass10__app8": {
+        "placed": true
+      },
+      "imgclass10__app9": {
+        "placed": true
+      },
+      "nyudepth": {
+        "placed": true
+      },
+      "nyudepth__app1": {
+        "placed": true
+      },
+      "nyudepth__app2": {
+        "placed": true
+      },
+      "nyudepth__app3": {
+        "placed": true
+      },
+      "sysbp": {
+        "placed": true
+      },
+      "sysbp__app1": {
+        "placed": true
+      },
+      "sysbp__app2": {
+        "placed": true
+      },
+      "sysbp__app3": {
+        "placed": true
+      },
+      "sysbp__app4": {
+        "placed": true
+      },
+      "vocseg": {
+        "placed": true
+      },
+      "vocseg__app1": {
+        "placed": true
+      },
+      "vocseg__app2": {
+        "placed": true
+      },
+      "vocseg__app3": {
+        "placed": true
+      },
+      "vocseg__app4": {
+        "placed": true
+      },
+      "vocseg__app5": {
+        "placed": true
+      },
+      "vocseg__app6": {
+        "placed": true
+      },
+      "vocseg__app7": {
+        "placed": true
+      }
+    },
+    "bottleneck_counts": {
+      "compute": 450
+    }
+  },
+  "fmaas": {
+    "placed": [
+      "diasbp",
+      "diasbp__app1",
+      "diasbp__app2",
+      "diasbp__app3",
+      "diasbp__app4",
+      "ecgclass",
+      "ecgclass__app1",
+      "ecgclass__app2",
+      "ecgclass__app3",
+      "ecgclass__app4",
+      "etth1fore",
+      "etth1fore__app1",
+      "etth1fore__app2",
+      "etth1fore__app3",
+      "etth1fore__app4",
+      "eurosatclass",
+      "eurosatclass__app1",
+      "eurosatclass__app2",
+      "eurosatclass__app3",
+      "eurosatclass__app4",
+      "eurosatclass__app5",
+      "eurosatclass__app6",
+      "eurosatclass__app7",
+      "eurosatclass__app8",
+      "eurosatclass__app9",
+      "gestureclass",
+      "gestureclass__app1",
+      "gestureclass__app2",
+      "gestureclass__app3",
+      "gestureclass__app4",
+      "heartrate",
+      "heartrate__app1",
+      "heartrate__app2",
+      "heartrate__app3",
+      "heartrate__app4",
+      "imgclass10",
+      "imgclass10__app1",
+      "imgclass10__app2",
+      "imgclass10__app3",
+      "imgclass10__app4",
+      "imgclass10__app5",
+      "imgclass10__app6",
+      "imgclass10__app7",
+      "imgclass10__app8",
+      "imgclass10__app9",
+      "nyudepth",
+      "nyudepth__app1",
+      "nyudepth__app2",
+      "nyudepth__app3",
+      "sysbp",
+      "sysbp__app1",
+      "sysbp__app2",
+      "sysbp__app3",
+      "sysbp__app4",
+      "vocseg",
+      "vocseg__app1",
+      "vocseg__app2",
+      "vocseg__app3",
+      "vocseg__app4",
+      "vocseg__app5",
+      "vocseg__app6",
+      "vocseg__app7"
+    ],
+    "rejected": [
+      "diasbp__app10",
+      "diasbp__app11",
+      "diasbp__app12",
+      "diasbp__app13",
+      "diasbp__app14",
+      "diasbp__app15",
+      "diasbp__app16",
+      "diasbp__app17",
+      "diasbp__app18",
+      "diasbp__app19",
+      "diasbp__app20",
+      "diasbp__app21",
+      "diasbp__app22",
+      "diasbp__app23",
+      "diasbp__app24",
+      "diasbp__app25",
+      "diasbp__app26",
+      "diasbp__app27",
+      "diasbp__app28",
+      "diasbp__app29",
+      "diasbp__app30",
+      "diasbp__app31",
+      "diasbp__app32",
+      "diasbp__app33",
+      "diasbp__app34",
+      "diasbp__app35",
+      "diasbp__app36",
+      "diasbp__app37",
+      "diasbp__app38",
+      "diasbp__app39",
+      "diasbp__app5",
+      "diasbp__app6",
+      "diasbp__app7",
+      "diasbp__app8",
+      "diasbp__app9",
+      "ecgclass__app10",
+      "ecgclass__app11",
+      "ecgclass__app12",
+      "ecgclass__app13",
+      "ecgclass__app14",
+      "ecgclass__app15",
+      "ecgclass__app16",
+      "ecgclass__app17",
+      "ecgclass__app18",
+      "ecgclass__app19",
+      "ecgclass__app20",
+      "ecgclass__app21",
+      "ecgclass__app22",
+      "ecgclass__app23",
+      "ecgclass__app24",
+      "ecgclass__app25",
+      "ecgclass__app26",
+      "ecgclass__app27",
+      "ecgclass__app28",
+      "ecgclass__app29",
+      "ecgclass__app30",
+      "ecgclass__app31",
+      "ecgclass__app32",
+      "ecgclass__app33",
+      "ecgclass__app34",
+      "ecgclass__app35",
+      "ecgclass__app36",
+      "ecgclass__app37",
+      "ecgclass__app38",
+      "ecgclass__app39",
+      "ecgclass__app5",
+      "ecgclass__app6",
+      "ecgclass__app7",
+      "ecgclass__app8",
+      "ecgclass__app9",
+      "etth1fore__app10",
+      "etth1fore__app11",
+      "etth1fore__app12",
+      "etth1fore__app13",
+      "etth1fore__app14",
+      "etth1fore__app15",
+      "etth1fore__app16",
+      "etth1fore__app17",
+      "etth1fore__app18",
+      "etth1fore__app19",
+      "etth1fore__app20",
+      "etth1fore__app21",
+      "etth1fore__app22",
+      "etth1fore__app23",
+      "etth1fore__app24",
+      "etth1fore__app25",
+      "etth1fore__app26",
+      "etth1fore__app27",
+      "etth1fore__app28",
+      "etth1fore__app29",
+      "etth1fore__app30",
+      "etth1fore__app31",
+      "etth1fore__app32",
+      "etth1fore__app33",
+      "etth1fore__app34",
+      "etth1fore__app35",
+      "etth1fore__app36",
+      "etth1fore__app37",
+      "etth1fore__app38",
+      "etth1fore__app5",
+      "etth1fore__app6",
+      "etth1fore__app7",
+      "etth1fore__app8",
+      "etth1fore__app9",
+      "eurosatclass__app10",
+      "eurosatclass__app11",
+      "eurosatclass__app12",
+      "eurosatclass__app13",
+      "eurosatclass__app14",
+      "eurosatclass__app15",
+      "eurosatclass__app16",
+      "eurosatclass__app17",
+      "eurosatclass__app18",
+      "eurosatclass__app19",
+      "eurosatclass__app20",
+      "eurosatclass__app21",
+      "eurosatclass__app22",
+      "eurosatclass__app23",
+      "eurosatclass__app24",
+      "eurosatclass__app25",
+      "eurosatclass__app26",
+      "eurosatclass__app27",
+      "eurosatclass__app28",
+      "eurosatclass__app29",
+      "eurosatclass__app30",
+      "eurosatclass__app31",
+      "eurosatclass__app32",
+      "eurosatclass__app33",
+      "eurosatclass__app34",
+      "eurosatclass__app35",
+      "eurosatclass__app36",
+      "eurosatclass__app37",
+      "eurosatclass__app38",
+      "eurosatclass__app39",
+      "eurosatclass__app40",
+      "eurosatclass__app41",
+      "eurosatclass__app42",
+      "eurosatclass__app43",
+      "eurosatclass__app44",
+      "eurosatclass__app45",
+      "eurosatclass__app46",
+      "eurosatclass__app47",
+      "eurosatclass__app48",
+      "eurosatclass__app49",
+      "eurosatclass__app50",
+      "eurosatclass__app51",
+      "eurosatclass__app52",
+      "eurosatclass__app53",
+      "eurosatclass__app54",
+      "eurosatclass__app55",
+      "eurosatclass__app56",
+      "eurosatclass__app57",
+      "eurosatclass__app58",
+      "eurosatclass__app59",
+      "eurosatclass__app60",
+      "eurosatclass__app61",
+      "eurosatclass__app62",
+      "eurosatclass__app63",
+      "eurosatclass__app64",
+      "eurosatclass__app65",
+      "eurosatclass__app66",
+      "eurosatclass__app67",
+      "eurosatclass__app68",
+      "eurosatclass__app69",
+      "eurosatclass__app70",
+      "eurosatclass__app71",
+      "eurosatclass__app72",
+      "eurosatclass__app73",
+      "eurosatclass__app74",
+      "eurosatclass__app75",
+      "eurosatclass__app76",
+      "eurosatclass__app77",
+      "gestureclass__app10",
+      "gestureclass__app11",
+      "gestureclass__app12",
+      "gestureclass__app13",
+      "gestureclass__app14",
+      "gestureclass__app15",
+      "gestureclass__app16",
+      "gestureclass__app17",
+      "gestureclass__app18",
+      "gestureclass__app19",
+      "gestureclass__app20",
+      "gestureclass__app21",
+      "gestureclass__app22",
+      "gestureclass__app23",
+      "gestureclass__app24",
+      "gestureclass__app25",
+      "gestureclass__app26",
+      "gestureclass__app27",
+      "gestureclass__app28",
+      "gestureclass__app29",
+      "gestureclass__app30",
+      "gestureclass__app31",
+      "gestureclass__app32",
+      "gestureclass__app33",
+      "gestureclass__app34",
+      "gestureclass__app35",
+      "gestureclass__app36",
+      "gestureclass__app37",
+      "gestureclass__app38",
+      "gestureclass__app39",
+      "gestureclass__app5",
+      "gestureclass__app6",
+      "gestureclass__app7",
+      "gestureclass__app8",
+      "gestureclass__app9",
+      "heartrate__app10",
+      "heartrate__app11",
+      "heartrate__app12",
+      "heartrate__app13",
+      "heartrate__app14",
+      "heartrate__app15",
+      "heartrate__app16",
+      "heartrate__app17",
+      "heartrate__app18",
+      "heartrate__app19",
+      "heartrate__app20",
+      "heartrate__app21",
+      "heartrate__app22",
+      "heartrate__app23",
+      "heartrate__app24",
+      "heartrate__app25",
+      "heartrate__app26",
+      "heartrate__app27",
+      "heartrate__app28",
+      "heartrate__app29",
+      "heartrate__app30",
+      "heartrate__app31",
+      "heartrate__app32",
+      "heartrate__app33",
+      "heartrate__app34",
+      "heartrate__app35",
+      "heartrate__app36",
+      "heartrate__app37",
+      "heartrate__app38",
+      "heartrate__app39",
+      "heartrate__app5",
+      "heartrate__app6",
+      "heartrate__app7",
+      "heartrate__app8",
+      "heartrate__app9",
+      "imgclass10__app10",
+      "imgclass10__app11",
+      "imgclass10__app12",
+      "imgclass10__app13",
+      "imgclass10__app14",
+      "imgclass10__app15",
+      "imgclass10__app16",
+      "imgclass10__app17",
+      "imgclass10__app18",
+      "imgclass10__app19",
+      "imgclass10__app20",
+      "imgclass10__app21",
+      "imgclass10__app22",
+      "imgclass10__app23",
+      "imgclass10__app24",
+      "imgclass10__app25",
+      "imgclass10__app26",
+      "imgclass10__app27",
+      "imgclass10__app28",
+      "imgclass10__app29",
+      "imgclass10__app30",
+      "imgclass10__app31",
+      "imgclass10__app32",
+      "imgclass10__app33",
+      "imgclass10__app34",
+      "imgclass10__app35",
+      "imgclass10__app36",
+      "imgclass10__app37",
+      "imgclass10__app38",
+      "imgclass10__app39",
+      "imgclass10__app40",
+      "imgclass10__app41",
+      "imgclass10__app42",
+      "imgclass10__app43",
+      "imgclass10__app44",
+      "imgclass10__app45",
+      "imgclass10__app46",
+      "imgclass10__app47",
+      "imgclass10__app48",
+      "imgclass10__app49",
+      "imgclass10__app50",
+      "imgclass10__app51",
+      "imgclass10__app52",
+      "imgclass10__app53",
+      "imgclass10__app54",
+      "imgclass10__app55",
+      "imgclass10__app56",
+      "imgclass10__app57",
+      "imgclass10__app58",
+      "imgclass10__app59",
+      "imgclass10__app60",
+      "imgclass10__app61",
+      "imgclass10__app62",
+      "imgclass10__app63",
+      "imgclass10__app64",
+      "imgclass10__app65",
+      "imgclass10__app66",
+      "imgclass10__app67",
+      "imgclass10__app68",
+      "imgclass10__app69",
+      "imgclass10__app70",
+      "imgclass10__app71",
+      "imgclass10__app72",
+      "imgclass10__app73",
+      "imgclass10__app74",
+      "imgclass10__app75",
+      "imgclass10__app76",
+      "imgclass10__app77",
+      "nyudepth__app10",
+      "nyudepth__app11",
+      "nyudepth__app12",
+      "nyudepth__app13",
+      "nyudepth__app14",
+      "nyudepth__app15",
+      "nyudepth__app16",
+      "nyudepth__app17",
+      "nyudepth__app18",
+      "nyudepth__app19",
+      "nyudepth__app20",
+      "nyudepth__app21",
+      "nyudepth__app22",
+      "nyudepth__app23",
+      "nyudepth__app24",
+      "nyudepth__app25",
+      "nyudepth__app26",
+      "nyudepth__app27",
+      "nyudepth__app28",
+      "nyudepth__app29",
+      "nyudepth__app30",
+      "nyudepth__app31",
+      "nyudepth__app32",
+      "nyudepth__app33",
+      "nyudepth__app34",
+      "nyudepth__app35",
+      "nyudepth__app36",
+      "nyudepth__app37",
+      "nyudepth__app38",
+      "nyudepth__app4",
+      "nyudepth__app5",
+      "nyudepth__app6",
+      "nyudepth__app7",
+      "nyudepth__app8",
+      "nyudepth__app9",
+      "sysbp__app10",
+      "sysbp__app11",
+      "sysbp__app12",
+      "sysbp__app13",
+      "sysbp__app14",
+      "sysbp__app15",
+      "sysbp__app16",
+      "sysbp__app17",
+      "sysbp__app18",
+      "sysbp__app19",
+      "sysbp__app20",
+      "sysbp__app21",
+      "sysbp__app22",
+      "sysbp__app23",
+      "sysbp__app24",
+      "sysbp__app25",
+      "sysbp__app26",
+      "sysbp__app27",
+      "sysbp__app28",
+      "sysbp__app29",
+      "sysbp__app30",
+      "sysbp__app31",
+      "sysbp__app32",
+      "sysbp__app33",
+      "sysbp__app34",
+      "sysbp__app35",
+      "sysbp__app36",
+      "sysbp__app37",
+      "sysbp__app38",
+      "sysbp__app39",
+      "sysbp__app5",
+      "sysbp__app6",
+      "sysbp__app7",
+      "sysbp__app8",
+      "sysbp__app9",
+      "vocseg__app10",
+      "vocseg__app11",
+      "vocseg__app12",
+      "vocseg__app13",
+      "vocseg__app14",
+      "vocseg__app15",
+      "vocseg__app16",
+      "vocseg__app17",
+      "vocseg__app18",
+      "vocseg__app19",
+      "vocseg__app20",
+      "vocseg__app21",
+      "vocseg__app22",
+      "vocseg__app23",
+      "vocseg__app24",
+      "vocseg__app25",
+      "vocseg__app26",
+      "vocseg__app27",
+      "vocseg__app28",
+      "vocseg__app29",
+      "vocseg__app30",
+      "vocseg__app31",
+      "vocseg__app32",
+      "vocseg__app33",
+      "vocseg__app34",
+      "vocseg__app35",
+      "vocseg__app36",
+      "vocseg__app37",
+      "vocseg__app38",
+      "vocseg__app39",
+      "vocseg__app40",
+      "vocseg__app41",
+      "vocseg__app42",
+      "vocseg__app43",
+      "vocseg__app44",
+      "vocseg__app45",
+      "vocseg__app46",
+      "vocseg__app47",
+      "vocseg__app48",
+      "vocseg__app49",
+      "vocseg__app50",
+      "vocseg__app51",
+      "vocseg__app52",
+      "vocseg__app53",
+      "vocseg__app54",
+      "vocseg__app55",
+      "vocseg__app56",
+      "vocseg__app57",
+      "vocseg__app58",
+      "vocseg__app59",
+      "vocseg__app60",
+      "vocseg__app61",
+      "vocseg__app62",
+      "vocseg__app63",
+      "vocseg__app64",
+      "vocseg__app65",
+      "vocseg__app66",
+      "vocseg__app67",
+      "vocseg__app68",
+      "vocseg__app69",
+      "vocseg__app70",
+      "vocseg__app71",
+      "vocseg__app72",
+      "vocseg__app73",
+      "vocseg__app74",
+      "vocseg__app75",
+      "vocseg__app76",
+      "vocseg__app77",
+      "vocseg__app8",
+      "vocseg__app9"
+    ],
+    "placed_count": 62,
+    "requested": 512,
+    "per_task": {
+      "eurosatclass__app9": {
+        "demand_left": 8.3268,
+        "peak_workload": 11.81,
+        "bottleneck": "compute",
+        "placed": true
+      },
+      "vocseg__app8": {
+        "demand_left": 2.6733,
+        "peak_workload": 2.6733,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app9": {
+        "demand_left": 11.34,
+        "peak_workload": 11.34,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app4": {
+        "demand_left": 10.685,
+        "peak_workload": 10.685,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app5": {
+        "demand_left": 9.9783,
+        "peak_workload": 9.9783,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app5": {
+        "demand_left": 0.105,
+        "peak_workload": 0.105,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app5": {
+        "demand_left": 0.1,
+        "peak_workload": 0.1,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app5": {
+        "demand_left": 11.4133,
+        "peak_workload": 11.4133,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app5": {
+        "demand_left": 11.295,
+        "peak_workload": 11.295,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app5": {
+        "demand_left": 11.34,
+        "peak_workload": 11.34,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app10": {
+        "demand_left": 0.425,
+        "peak_workload": 0.425,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app11": {
+        "demand_left": 11.2717,
+        "peak_workload": 11.2717,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app10": {
+        "demand_left": 11.3717,
+        "peak_workload": 11.3717,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app11": {
+        "demand_left": 4.5767,
+        "peak_workload": 4.5767,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app10": {
+        "demand_left": 13.0483,
+        "peak_workload": 13.0483,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app11": {
+        "demand_left": 4.205,
+        "peak_workload": 4.205,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app5": {
+        "demand_left": 11.3433,
+        "peak_workload": 11.3433,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app6": {
+        "demand_left": 11.3417,
+        "peak_workload": 11.3417,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app6": {
+        "demand_left": 0.4767,
+        "peak_workload": 0.4767,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app6": {
+        "demand_left": 11.3867,
+        "peak_workload": 11.3867,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app6": {
+        "demand_left": 11.3883,
+        "peak_workload": 11.3883,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app6": {
+        "demand_left": 11.63,
+        "peak_workload": 11.63,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app6": {
+        "demand_left": 11.895,
+        "peak_workload": 11.895,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app12": {
+        "demand_left": 24.53,
+        "peak_workload": 24.53,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app13": {
+        "demand_left": 0.3133,
+        "peak_workload": 0.3133,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app12": {
+        "demand_left": 11.575,
+        "peak_workload": 11.575,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app13": {
+        "demand_left": 11.5967,
+        "peak_workload": 11.5967,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app12": {
+        "demand_left": 32.4533,
+        "peak_workload": 32.4533,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app13": {
+        "demand_left": 5.2,
+        "peak_workload": 5.2,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app6": {
+        "demand_left": 0.1,
+        "peak_workload": 0.1,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app7": {
+        "demand_left": 32.665,
+        "peak_workload": 32.665,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app7": {
+        "demand_left": 2.915,
+        "peak_workload": 2.915,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app7": {
+        "demand_left": 11.16,
+        "peak_workload": 11.16,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app7": {
+        "demand_left": 7.1933,
+        "peak_workload": 7.1933,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app7": {
+        "demand_left": 11.54,
+        "peak_workload": 11.54,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app7": {
+        "demand_left": 9.08,
+        "peak_workload": 9.08,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app14": {
+        "demand_left": 11.8117,
+        "peak_workload": 11.8117,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app15": {
+        "demand_left": 32.2417,
+        "peak_workload": 32.2417,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app14": {
+        "demand_left": 7.3067,
+        "peak_workload": 7.3067,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app15": {
+        "demand_left": 30.3533,
+        "peak_workload": 30.3533,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app14": {
+        "demand_left": 2.11,
+        "peak_workload": 2.11,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app15": {
+        "demand_left": 7.9683,
+        "peak_workload": 7.9683,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app7": {
+        "demand_left": 2.47,
+        "peak_workload": 2.47,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app8": {
+        "demand_left": 30.8867,
+        "peak_workload": 30.8867,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app8": {
+        "demand_left": 11.2,
+        "peak_workload": 11.2,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app8": {
+        "demand_left": 11.7583,
+        "peak_workload": 11.7583,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app8": {
+        "demand_left": 10.385,
+        "peak_workload": 10.385,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app8": {
+        "demand_left": 3.0817,
+        "peak_workload": 3.0817,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app8": {
+        "demand_left": 5.5567,
+        "peak_workload": 5.5567,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app16": {
+        "demand_left": 11.56,
+        "peak_workload": 11.56,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app17": {
+        "demand_left": 12.0283,
+        "peak_workload": 12.0283,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app16": {
+        "demand_left": 11.935,
+        "peak_workload": 11.935,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app17": {
+        "demand_left": 10.965,
+        "peak_workload": 10.965,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app16": {
+        "demand_left": 11.545,
+        "peak_workload": 11.545,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app17": {
+        "demand_left": 35.5933,
+        "peak_workload": 35.5933,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app8": {
+        "demand_left": 11.5233,
+        "peak_workload": 11.5233,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app9": {
+        "demand_left": 8.6467,
+        "peak_workload": 8.6467,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app9": {
+        "demand_left": 7.015,
+        "peak_workload": 7.015,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app9": {
+        "demand_left": 2.5567,
+        "peak_workload": 2.5567,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app9": {
+        "demand_left": 11.395,
+        "peak_workload": 11.395,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app9": {
+        "demand_left": 31.6467,
+        "peak_workload": 31.6467,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app9": {
+        "demand_left": 11.5367,
+        "peak_workload": 11.5367,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app18": {
+        "demand_left": 33.4867,
+        "peak_workload": 33.4867,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app19": {
+        "demand_left": 1.6033,
+        "peak_workload": 1.6033,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app18": {
+        "demand_left": 5.4783,
+        "peak_workload": 5.4783,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app19": {
+        "demand_left": 15.7367,
+        "peak_workload": 15.7367,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app18": {
+        "demand_left": 10.89,
+        "peak_workload": 10.89,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app19": {
+        "demand_left": 11.7867,
+        "peak_workload": 11.7867,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app9": {
+        "demand_left": 11.6267,
+        "peak_workload": 11.6267,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app10": {
+        "demand_left": 10.9833,
+        "peak_workload": 10.9833,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app10": {
+        "demand_left": 0.1,
+        "peak_workload": 0.1,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app10": {
+        "demand_left": 12.3033,
+        "peak_workload": 12.3033,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app10": {
+        "demand_left": 5.2,
+        "peak_workload": 5.2,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app10": {
+        "demand_left": 0.1,
+        "peak_workload": 0.1,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app10": {
+        "demand_left": 9.0583,
+        "peak_workload": 9.0583,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app20": {
+        "demand_left": 0.6617,
+        "peak_workload": 0.6617,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app21": {
+        "demand_left": 10.685,
+        "peak_workload": 10.685,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app20": {
+        "demand_left": 33.2233,
+        "peak_workload": 33.2233,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app21": {
+        "demand_left": 10.1267,
+        "peak_workload": 10.1267,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app20": {
+        "demand_left": 12.2317,
+        "peak_workload": 12.2317,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app21": {
+        "demand_left": 6.7583,
+        "peak_workload": 6.7583,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app10": {
+        "demand_left": 6.6233,
+        "peak_workload": 6.6233,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app11": {
+        "demand_left": 7.08,
+        "peak_workload": 7.08,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app11": {
+        "demand_left": 15.7467,
+        "peak_workload": 15.7467,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app11": {
+        "demand_left": 15.2167,
+        "peak_workload": 15.2167,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app11": {
+        "demand_left": 31.1867,
+        "peak_workload": 31.1867,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app11": {
+        "demand_left": 18.0733,
+        "peak_workload": 18.0733,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app11": {
+        "demand_left": 23.0,
+        "peak_workload": 23.0,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app22": {
+        "demand_left": 0.1333,
+        "peak_workload": 0.1333,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app23": {
+        "demand_left": 0.5033,
+        "peak_workload": 0.5033,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app22": {
+        "demand_left": 10.985,
+        "peak_workload": 10.985,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app23": {
+        "demand_left": 12.265,
+        "peak_workload": 12.265,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app22": {
+        "demand_left": 45.7967,
+        "peak_workload": 45.7967,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app23": {
+        "demand_left": 9.87,
+        "peak_workload": 9.87,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app11": {
+        "demand_left": 0.1,
+        "peak_workload": 0.1,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app12": {
+        "demand_left": 12.2667,
+        "peak_workload": 12.2667,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app12": {
+        "demand_left": 6.5667,
+        "peak_workload": 6.5667,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app12": {
+        "demand_left": 11.8767,
+        "peak_workload": 11.8767,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app12": {
+        "demand_left": 7.5717,
+        "peak_workload": 7.5717,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app12": {
+        "demand_left": 0.1,
+        "peak_workload": 0.1,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app12": {
+        "demand_left": 12.4633,
+        "peak_workload": 12.4633,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app24": {
+        "demand_left": 12.145,
+        "peak_workload": 12.145,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app25": {
+        "demand_left": 29.7167,
+        "peak_workload": 29.7167,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app24": {
+        "demand_left": 12.6783,
+        "peak_workload": 12.6783,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app25": {
+        "demand_left": 6.5083,
+        "peak_workload": 6.5083,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app24": {
+        "demand_left": 12.1833,
+        "peak_workload": 12.1833,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app25": {
+        "demand_left": 12.7767,
+        "peak_workload": 12.7767,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app12": {
+        "demand_left": 21.495,
+        "peak_workload": 21.495,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app13": {
+        "demand_left": 24.61,
+        "peak_workload": 24.61,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app13": {
+        "demand_left": 13.0617,
+        "peak_workload": 13.0617,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app13": {
+        "demand_left": 12.1117,
+        "peak_workload": 12.1117,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app13": {
+        "demand_left": 12.935,
+        "peak_workload": 12.935,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app13": {
+        "demand_left": 13.7117,
+        "peak_workload": 13.7117,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app13": {
+        "demand_left": 12.7983,
+        "peak_workload": 12.7983,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app26": {
+        "demand_left": 13.0217,
+        "peak_workload": 13.0217,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app27": {
+        "demand_left": 12.4333,
+        "peak_workload": 12.4333,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app26": {
+        "demand_left": 12.72,
+        "peak_workload": 12.72,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app27": {
+        "demand_left": 0.1,
+        "peak_workload": 0.1,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app26": {
+        "demand_left": 9.2917,
+        "peak_workload": 9.2917,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app27": {
+        "demand_left": 0.1,
+        "peak_workload": 0.1,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app13": {
+        "demand_left": 4.6883,
+        "peak_workload": 4.6883,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app14": {
+        "demand_left": 15.0833,
+        "peak_workload": 15.0833,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app14": {
+        "demand_left": 16.02,
+        "peak_workload": 16.02,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app14": {
+        "demand_left": 10.6883,
+        "peak_workload": 10.6883,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app14": {
+        "demand_left": 20.1283,
+        "peak_workload": 20.1283,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app14": {
+        "demand_left": 8.6033,
+        "peak_workload": 8.6033,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app14": {
+        "demand_left": 16.0433,
+        "peak_workload": 16.0433,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app28": {
+        "demand_left": 14.2917,
+        "peak_workload": 14.2917,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app29": {
+        "demand_left": 0.4133,
+        "peak_workload": 0.4133,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app28": {
+        "demand_left": 10.2333,
+        "peak_workload": 10.2333,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app29": {
+        "demand_left": 0.1,
+        "peak_workload": 0.1,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app28": {
+        "demand_left": 12.635,
+        "peak_workload": 12.635,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app29": {
+        "demand_left": 5.8333,
+        "peak_workload": 5.8333,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app14": {
+        "demand_left": 0.4867,
+        "peak_workload": 0.4867,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app15": {
+        "demand_left": 9.8517,
+        "peak_workload": 9.8517,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app15": {
+        "demand_left": 10.7267,
+        "peak_workload": 10.7267,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app15": {
+        "demand_left": 10.9367,
+        "peak_workload": 10.9367,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app15": {
+        "demand_left": 10.5017,
+        "peak_workload": 10.5017,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app15": {
+        "demand_left": 5.9333,
+        "peak_workload": 5.9333,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app15": {
+        "demand_left": 14.97,
+        "peak_workload": 14.97,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app30": {
+        "demand_left": 12.905,
+        "peak_workload": 12.905,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app31": {
+        "demand_left": 0.415,
+        "peak_workload": 0.415,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app30": {
+        "demand_left": 11.28,
+        "peak_workload": 11.28,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app31": {
+        "demand_left": 16.3017,
+        "peak_workload": 16.3017,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app30": {
+        "demand_left": 12.0033,
+        "peak_workload": 12.0033,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app31": {
+        "demand_left": 11.7883,
+        "peak_workload": 11.7883,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app15": {
+        "demand_left": 10.4833,
+        "peak_workload": 10.4833,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app16": {
+        "demand_left": 0.4767,
+        "peak_workload": 0.4767,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app16": {
+        "demand_left": 15.2533,
+        "peak_workload": 15.2533,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app16": {
+        "demand_left": 11.0267,
+        "peak_workload": 11.0267,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app16": {
+        "demand_left": 0.1067,
+        "peak_workload": 0.1067,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app16": {
+        "demand_left": 10.4117,
+        "peak_workload": 10.4117,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app16": {
+        "demand_left": 0.6733,
+        "peak_workload": 0.6733,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app32": {
+        "demand_left": 0.4467,
+        "peak_workload": 0.4467,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app33": {
+        "demand_left": 15.5783,
+        "peak_workload": 15.5783,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app32": {
+        "demand_left": 9.56,
+        "peak_workload": 9.56,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app33": {
+        "demand_left": 0.1,
+        "peak_workload": 0.1,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app32": {
+        "demand_left": 11.54,
+        "peak_workload": 11.54,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app33": {
+        "demand_left": 12.8067,
+        "peak_workload": 12.8067,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app16": {
+        "demand_left": 2.8483,
+        "peak_workload": 2.8483,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app17": {
+        "demand_left": 21.2933,
+        "peak_workload": 21.2933,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app17": {
+        "demand_left": 20.345,
+        "peak_workload": 20.345,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app17": {
+        "demand_left": 2.615,
+        "peak_workload": 2.615,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app17": {
+        "demand_left": 9.6867,
+        "peak_workload": 9.6867,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app17": {
+        "demand_left": 15.0933,
+        "peak_workload": 15.0933,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app17": {
+        "demand_left": 13.0267,
+        "peak_workload": 13.0267,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app34": {
+        "demand_left": 10.7667,
+        "peak_workload": 10.7667,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app35": {
+        "demand_left": 22.9233,
+        "peak_workload": 22.9233,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app34": {
+        "demand_left": 13.3033,
+        "peak_workload": 13.3033,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app35": {
+        "demand_left": 22.8717,
+        "peak_workload": 22.8717,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app34": {
+        "demand_left": 15.445,
+        "peak_workload": 15.445,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app35": {
+        "demand_left": 16.475,
+        "peak_workload": 16.475,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app17": {
+        "demand_left": 22.7467,
+        "peak_workload": 22.7467,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app18": {
+        "demand_left": 22.875,
+        "peak_workload": 22.875,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app18": {
+        "demand_left": 13.8417,
+        "peak_workload": 13.8417,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app18": {
+        "demand_left": 12.8333,
+        "peak_workload": 12.8333,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app18": {
+        "demand_left": 23.0083,
+        "peak_workload": 23.0083,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app18": {
+        "demand_left": 23.0017,
+        "peak_workload": 23.0017,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app18": {
+        "demand_left": 0.4917,
+        "peak_workload": 0.4917,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app36": {
+        "demand_left": 22.7767,
+        "peak_workload": 22.7767,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app37": {
+        "demand_left": 22.6683,
+        "peak_workload": 22.6683,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app36": {
+        "demand_left": 22.69,
+        "peak_workload": 22.69,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app37": {
+        "demand_left": 13.405,
+        "peak_workload": 13.405,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app36": {
+        "demand_left": 22.8517,
+        "peak_workload": 22.8517,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app37": {
+        "demand_left": 14.1967,
+        "peak_workload": 14.1967,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app18": {
+        "demand_left": 13.2917,
+        "peak_workload": 13.2917,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app19": {
+        "demand_left": 16.5083,
+        "peak_workload": 16.5083,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app19": {
+        "demand_left": 14.935,
+        "peak_workload": 14.935,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app19": {
+        "demand_left": 14.2,
+        "peak_workload": 14.2,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app19": {
+        "demand_left": 3.0133,
+        "peak_workload": 3.0133,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app19": {
+        "demand_left": 8.765,
+        "peak_workload": 8.765,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app19": {
+        "demand_left": 0.1,
+        "peak_workload": 0.1,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app38": {
+        "demand_left": 16.4583,
+        "peak_workload": 16.4583,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app39": {
+        "demand_left": 15.8267,
+        "peak_workload": 15.8267,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app38": {
+        "demand_left": 16.5783,
+        "peak_workload": 16.5783,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app39": {
+        "demand_left": 14.325,
+        "peak_workload": 14.325,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app38": {
+        "demand_left": 12.5167,
+        "peak_workload": 12.5167,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app39": {
+        "demand_left": 9.4583,
+        "peak_workload": 9.4583,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app19": {
+        "demand_left": 17.145,
+        "peak_workload": 17.145,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app20": {
+        "demand_left": 16.715,
+        "peak_workload": 16.715,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app20": {
+        "demand_left": 16.7067,
+        "peak_workload": 16.7067,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app20": {
+        "demand_left": 15.3333,
+        "peak_workload": 15.3333,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app20": {
+        "demand_left": 14.91,
+        "peak_workload": 14.91,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app20": {
+        "demand_left": 17.0433,
+        "peak_workload": 17.0433,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app20": {
+        "demand_left": 7.1867,
+        "peak_workload": 7.1867,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app40": {
+        "demand_left": 16.3583,
+        "peak_workload": 16.3583,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app41": {
+        "demand_left": 0.4133,
+        "peak_workload": 0.4133,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app40": {
+        "demand_left": 101.6033,
+        "peak_workload": 101.6033,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app41": {
+        "demand_left": 17.3283,
+        "peak_workload": 17.3283,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app40": {
+        "demand_left": 16.8867,
+        "peak_workload": 16.8867,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app41": {
+        "demand_left": 1.3267,
+        "peak_workload": 1.3267,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app20": {
+        "demand_left": 2.3133,
+        "peak_workload": 2.3133,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app21": {
+        "demand_left": 16.8933,
+        "peak_workload": 16.8933,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app21": {
+        "demand_left": 14.5417,
+        "peak_workload": 14.5417,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app21": {
+        "demand_left": 9.1983,
+        "peak_workload": 9.1983,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app21": {
+        "demand_left": 1.8233,
+        "peak_workload": 1.8233,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app21": {
+        "demand_left": 0.4883,
+        "peak_workload": 0.4883,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app21": {
+        "demand_left": 17.4267,
+        "peak_workload": 17.4267,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app42": {
+        "demand_left": 11.9833,
+        "peak_workload": 11.9833,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app43": {
+        "demand_left": 16.6533,
+        "peak_workload": 16.6533,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app42": {
+        "demand_left": 7.56,
+        "peak_workload": 7.56,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app43": {
+        "demand_left": 15.2817,
+        "peak_workload": 15.2817,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app42": {
+        "demand_left": 15.63,
+        "peak_workload": 15.63,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app43": {
+        "demand_left": 4.1567,
+        "peak_workload": 4.1567,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app21": {
+        "demand_left": 0.3083,
+        "peak_workload": 0.3083,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app22": {
+        "demand_left": 0.6767,
+        "peak_workload": 0.6767,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app22": {
+        "demand_left": 7.5817,
+        "peak_workload": 7.5817,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app22": {
+        "demand_left": 9.2217,
+        "peak_workload": 9.2217,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app22": {
+        "demand_left": 17.5133,
+        "peak_workload": 17.5133,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app22": {
+        "demand_left": 16.51,
+        "peak_workload": 16.51,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app22": {
+        "demand_left": 16.2817,
+        "peak_workload": 16.2817,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app44": {
+        "demand_left": 8.7567,
+        "peak_workload": 8.7567,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app45": {
+        "demand_left": 15.5217,
+        "peak_workload": 15.5217,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app44": {
+        "demand_left": 14.8333,
+        "peak_workload": 14.8333,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app45": {
+        "demand_left": 14.235,
+        "peak_workload": 14.235,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app44": {
+        "demand_left": 14.825,
+        "peak_workload": 14.825,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app45": {
+        "demand_left": 18.0767,
+        "peak_workload": 18.0767,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app22": {
+        "demand_left": 15.34,
+        "peak_workload": 15.34,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app23": {
+        "demand_left": 10.3833,
+        "peak_workload": 10.3833,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app23": {
+        "demand_left": 48.96,
+        "peak_workload": 48.96,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app23": {
+        "demand_left": 17.6367,
+        "peak_workload": 17.6367,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app23": {
+        "demand_left": 0.4483,
+        "peak_workload": 0.4483,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app23": {
+        "demand_left": 16.6517,
+        "peak_workload": 16.6517,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app23": {
+        "demand_left": 6.135,
+        "peak_workload": 6.135,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app46": {
+        "demand_left": 6.285,
+        "peak_workload": 6.285,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app47": {
+        "demand_left": 2.1767,
+        "peak_workload": 2.1767,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app46": {
+        "demand_left": 7.1467,
+        "peak_workload": 7.1467,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app47": {
+        "demand_left": 16.7817,
+        "peak_workload": 16.7817,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app46": {
+        "demand_left": 2.1333,
+        "peak_workload": 2.1333,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app47": {
+        "demand_left": 12.3867,
+        "peak_workload": 12.3867,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app23": {
+        "demand_left": 16.0,
+        "peak_workload": 16.0,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app24": {
+        "demand_left": 17.41,
+        "peak_workload": 17.41,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app24": {
+        "demand_left": 9.27,
+        "peak_workload": 9.27,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app24": {
+        "demand_left": 0.505,
+        "peak_workload": 0.505,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app24": {
+        "demand_left": 15.2017,
+        "peak_workload": 15.2017,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app24": {
+        "demand_left": 16.5017,
+        "peak_workload": 16.5017,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app24": {
+        "demand_left": 3.9933,
+        "peak_workload": 3.9933,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app48": {
+        "demand_left": 12.5283,
+        "peak_workload": 12.5283,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app49": {
+        "demand_left": 4.1933,
+        "peak_workload": 4.1933,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app48": {
+        "demand_left": 12.5633,
+        "peak_workload": 12.5633,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app49": {
+        "demand_left": 14.5867,
+        "peak_workload": 14.5867,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app48": {
+        "demand_left": 5.0483,
+        "peak_workload": 5.0483,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app49": {
+        "demand_left": 4.675,
+        "peak_workload": 4.675,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app24": {
+        "demand_left": 21.4167,
+        "peak_workload": 21.4167,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app25": {
+        "demand_left": 5.4667,
+        "peak_workload": 5.4667,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app25": {
+        "demand_left": 2.0983,
+        "peak_workload": 2.0983,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app25": {
+        "demand_left": 15.0033,
+        "peak_workload": 15.0033,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app25": {
+        "demand_left": 14.7833,
+        "peak_workload": 14.7833,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app25": {
+        "demand_left": 18.4867,
+        "peak_workload": 18.4867,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app25": {
+        "demand_left": 9.465,
+        "peak_workload": 9.465,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app50": {
+        "demand_left": 16.6917,
+        "peak_workload": 16.6917,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app51": {
+        "demand_left": 17.9933,
+        "peak_workload": 17.9933,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app50": {
+        "demand_left": 16.6317,
+        "peak_workload": 16.6317,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app51": {
+        "demand_left": 14.5417,
+        "peak_workload": 14.5417,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app50": {
+        "demand_left": 14.09,
+        "peak_workload": 14.09,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app51": {
+        "demand_left": 15.5917,
+        "peak_workload": 15.5917,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app25": {
+        "demand_left": 15.9533,
+        "peak_workload": 15.9533,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app26": {
+        "demand_left": 0.8283,
+        "peak_workload": 0.8283,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app26": {
+        "demand_left": 15.0483,
+        "peak_workload": 15.0483,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app26": {
+        "demand_left": 17.1783,
+        "peak_workload": 17.1783,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app26": {
+        "demand_left": 18.8283,
+        "peak_workload": 18.8283,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app26": {
+        "demand_left": 16.9817,
+        "peak_workload": 16.9817,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app26": {
+        "demand_left": 18.4717,
+        "peak_workload": 18.4717,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app52": {
+        "demand_left": 12.9883,
+        "peak_workload": 12.9883,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app53": {
+        "demand_left": 7.03,
+        "peak_workload": 7.03,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app52": {
+        "demand_left": 16.9383,
+        "peak_workload": 16.9383,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app53": {
+        "demand_left": 0.1,
+        "peak_workload": 0.1,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app52": {
+        "demand_left": 11.6667,
+        "peak_workload": 11.6667,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app53": {
+        "demand_left": 40.8017,
+        "peak_workload": 40.8017,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app26": {
+        "demand_left": 15.01,
+        "peak_workload": 15.01,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app27": {
+        "demand_left": 11.385,
+        "peak_workload": 11.385,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app27": {
+        "demand_left": 13.7683,
+        "peak_workload": 13.7683,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app27": {
+        "demand_left": 17.4883,
+        "peak_workload": 17.4883,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app27": {
+        "demand_left": 12.86,
+        "peak_workload": 12.86,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app27": {
+        "demand_left": 15.07,
+        "peak_workload": 15.07,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app27": {
+        "demand_left": 13.9683,
+        "peak_workload": 13.9683,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app54": {
+        "demand_left": 6.1283,
+        "peak_workload": 6.1283,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app55": {
+        "demand_left": 19.4783,
+        "peak_workload": 19.4783,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app54": {
+        "demand_left": 4.39,
+        "peak_workload": 4.39,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app55": {
+        "demand_left": 16.4083,
+        "peak_workload": 16.4083,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app54": {
+        "demand_left": 17.8083,
+        "peak_workload": 17.8083,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app55": {
+        "demand_left": 7.3617,
+        "peak_workload": 7.3617,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app27": {
+        "demand_left": 12.0333,
+        "peak_workload": 12.0333,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app28": {
+        "demand_left": 14.005,
+        "peak_workload": 14.005,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app28": {
+        "demand_left": 11.2117,
+        "peak_workload": 11.2117,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app28": {
+        "demand_left": 48.295,
+        "peak_workload": 48.295,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app28": {
+        "demand_left": 8.7483,
+        "peak_workload": 8.7483,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app28": {
+        "demand_left": 4.3833,
+        "peak_workload": 4.3833,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app28": {
+        "demand_left": 17.725,
+        "peak_workload": 17.725,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app56": {
+        "demand_left": 16.2133,
+        "peak_workload": 16.2133,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app57": {
+        "demand_left": 6.4467,
+        "peak_workload": 6.4467,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app56": {
+        "demand_left": 16.9733,
+        "peak_workload": 16.9733,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app57": {
+        "demand_left": 16.915,
+        "peak_workload": 16.915,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app56": {
+        "demand_left": 8.6067,
+        "peak_workload": 8.6067,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app57": {
+        "demand_left": 18.5933,
+        "peak_workload": 18.5933,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app28": {
+        "demand_left": 16.4817,
+        "peak_workload": 16.4817,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app29": {
+        "demand_left": 19.16,
+        "peak_workload": 19.16,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app29": {
+        "demand_left": 3.0383,
+        "peak_workload": 3.0383,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app29": {
+        "demand_left": 17.025,
+        "peak_workload": 17.025,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app29": {
+        "demand_left": 16.4233,
+        "peak_workload": 16.4233,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app29": {
+        "demand_left": 28.805,
+        "peak_workload": 28.805,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app29": {
+        "demand_left": 23.535,
+        "peak_workload": 23.535,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app58": {
+        "demand_left": 24.045,
+        "peak_workload": 24.045,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app59": {
+        "demand_left": 19.115,
+        "peak_workload": 19.115,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app58": {
+        "demand_left": 16.0667,
+        "peak_workload": 16.0667,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app59": {
+        "demand_left": 17.735,
+        "peak_workload": 17.735,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app58": {
+        "demand_left": 16.8383,
+        "peak_workload": 16.8383,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app59": {
+        "demand_left": 3.17,
+        "peak_workload": 3.17,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app29": {
+        "demand_left": 16.0717,
+        "peak_workload": 16.0717,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app30": {
+        "demand_left": 16.7983,
+        "peak_workload": 16.7983,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app30": {
+        "demand_left": 9.655,
+        "peak_workload": 9.655,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app30": {
+        "demand_left": 13.2533,
+        "peak_workload": 13.2533,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app30": {
+        "demand_left": 17.2533,
+        "peak_workload": 17.2533,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app30": {
+        "demand_left": 6.655,
+        "peak_workload": 6.655,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app30": {
+        "demand_left": 7.725,
+        "peak_workload": 7.725,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app60": {
+        "demand_left": 21.04,
+        "peak_workload": 21.04,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app61": {
+        "demand_left": 10.2233,
+        "peak_workload": 10.2233,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app60": {
+        "demand_left": 16.7967,
+        "peak_workload": 16.7967,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app61": {
+        "demand_left": 8.6133,
+        "peak_workload": 8.6133,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app60": {
+        "demand_left": 16.3717,
+        "peak_workload": 16.3717,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app61": {
+        "demand_left": 8.0917,
+        "peak_workload": 8.0917,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app30": {
+        "demand_left": 7.7817,
+        "peak_workload": 7.7817,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app31": {
+        "demand_left": 17.7967,
+        "peak_workload": 17.7967,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app31": {
+        "demand_left": 16.255,
+        "peak_workload": 16.255,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app31": {
+        "demand_left": 17.2967,
+        "peak_workload": 17.2967,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app31": {
+        "demand_left": 16.8033,
+        "peak_workload": 16.8033,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app31": {
+        "demand_left": 11.3417,
+        "peak_workload": 11.3417,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app31": {
+        "demand_left": 13.045,
+        "peak_workload": 13.045,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app62": {
+        "demand_left": 17.6317,
+        "peak_workload": 17.6317,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app63": {
+        "demand_left": 26.3467,
+        "peak_workload": 26.3467,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app62": {
+        "demand_left": 21.5717,
+        "peak_workload": 21.5717,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app63": {
+        "demand_left": 11.96,
+        "peak_workload": 11.96,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app62": {
+        "demand_left": 26.3467,
+        "peak_workload": 26.3467,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app63": {
+        "demand_left": 21.115,
+        "peak_workload": 21.115,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app31": {
+        "demand_left": 26.355,
+        "peak_workload": 26.355,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app32": {
+        "demand_left": 13.5533,
+        "peak_workload": 13.5533,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app32": {
+        "demand_left": 26.4117,
+        "peak_workload": 26.4117,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app32": {
+        "demand_left": 7.0033,
+        "peak_workload": 7.0033,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app32": {
+        "demand_left": 10.04,
+        "peak_workload": 10.04,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app32": {
+        "demand_left": 26.3183,
+        "peak_workload": 26.3183,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app32": {
+        "demand_left": 26.345,
+        "peak_workload": 26.345,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app64": {
+        "demand_left": 12.8917,
+        "peak_workload": 12.8917,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app65": {
+        "demand_left": 11.1483,
+        "peak_workload": 11.1483,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app64": {
+        "demand_left": 17.4833,
+        "peak_workload": 17.4833,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app65": {
+        "demand_left": 14.8467,
+        "peak_workload": 14.8467,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app64": {
+        "demand_left": 15.7017,
+        "peak_workload": 15.7017,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app65": {
+        "demand_left": 17.24,
+        "peak_workload": 17.24,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app32": {
+        "demand_left": 10.9983,
+        "peak_workload": 10.9983,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app33": {
+        "demand_left": 18.5133,
+        "peak_workload": 18.5133,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app33": {
+        "demand_left": 13.3917,
+        "peak_workload": 13.3917,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app33": {
+        "demand_left": 27.1233,
+        "peak_workload": 27.1233,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app33": {
+        "demand_left": 17.0567,
+        "peak_workload": 17.0567,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app33": {
+        "demand_left": 9.1667,
+        "peak_workload": 9.1667,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app33": {
+        "demand_left": 17.9017,
+        "peak_workload": 17.9017,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app66": {
+        "demand_left": 6.59,
+        "peak_workload": 6.59,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app67": {
+        "demand_left": 18.2033,
+        "peak_workload": 18.2033,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app66": {
+        "demand_left": 44.1933,
+        "peak_workload": 44.1933,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app67": {
+        "demand_left": 35.6767,
+        "peak_workload": 35.6767,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app66": {
+        "demand_left": 17.9917,
+        "peak_workload": 17.9917,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app67": {
+        "demand_left": 12.0717,
+        "peak_workload": 12.0717,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app33": {
+        "demand_left": 17.63,
+        "peak_workload": 17.63,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app34": {
+        "demand_left": 19.5817,
+        "peak_workload": 19.5817,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app34": {
+        "demand_left": 18.2,
+        "peak_workload": 18.2,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app34": {
+        "demand_left": 13.665,
+        "peak_workload": 13.665,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app34": {
+        "demand_left": 20.3183,
+        "peak_workload": 20.3183,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app34": {
+        "demand_left": 12.82,
+        "peak_workload": 12.82,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app34": {
+        "demand_left": 13.595,
+        "peak_workload": 13.595,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app68": {
+        "demand_left": 13.1883,
+        "peak_workload": 13.1883,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app69": {
+        "demand_left": 7.8483,
+        "peak_workload": 7.8483,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app68": {
+        "demand_left": 23.1017,
+        "peak_workload": 23.1017,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app69": {
+        "demand_left": 18.2517,
+        "peak_workload": 18.2517,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app68": {
+        "demand_left": 18.0383,
+        "peak_workload": 18.0383,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app69": {
+        "demand_left": 18.76,
+        "peak_workload": 18.76,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app34": {
+        "demand_left": 15.1283,
+        "peak_workload": 15.1283,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app35": {
+        "demand_left": 16.5133,
+        "peak_workload": 16.5133,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app35": {
+        "demand_left": 18.8033,
+        "peak_workload": 18.8033,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app35": {
+        "demand_left": 32.41,
+        "peak_workload": 32.41,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app35": {
+        "demand_left": 20.9767,
+        "peak_workload": 20.9767,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app35": {
+        "demand_left": 17.3233,
+        "peak_workload": 17.3233,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app35": {
+        "demand_left": 19.2917,
+        "peak_workload": 19.2917,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app70": {
+        "demand_left": 28.2233,
+        "peak_workload": 28.2233,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app71": {
+        "demand_left": 19.12,
+        "peak_workload": 19.12,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app70": {
+        "demand_left": 12.41,
+        "peak_workload": 12.41,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app71": {
+        "demand_left": 18.8167,
+        "peak_workload": 18.8167,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app70": {
+        "demand_left": 27.935,
+        "peak_workload": 27.935,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app71": {
+        "demand_left": 19.1383,
+        "peak_workload": 19.1383,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app35": {
+        "demand_left": 19.185,
+        "peak_workload": 19.185,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app36": {
+        "demand_left": 19.0783,
+        "peak_workload": 19.0783,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app36": {
+        "demand_left": 19.0233,
+        "peak_workload": 19.0233,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app36": {
+        "demand_left": 5.34,
+        "peak_workload": 5.34,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app36": {
+        "demand_left": 38.21,
+        "peak_workload": 38.21,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app36": {
+        "demand_left": 19.045,
+        "peak_workload": 19.045,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app36": {
+        "demand_left": 26.69,
+        "peak_workload": 26.69,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app72": {
+        "demand_left": 9.4817,
+        "peak_workload": 9.4817,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app73": {
+        "demand_left": 12.1883,
+        "peak_workload": 12.1883,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app72": {
+        "demand_left": 13.1267,
+        "peak_workload": 13.1267,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app73": {
+        "demand_left": 40.5617,
+        "peak_workload": 40.5617,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app72": {
+        "demand_left": 30.8517,
+        "peak_workload": 30.8517,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app73": {
+        "demand_left": 8.7183,
+        "peak_workload": 8.7183,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app36": {
+        "demand_left": 0.1,
+        "peak_workload": 0.1,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app37": {
+        "demand_left": 16.265,
+        "peak_workload": 16.265,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app37": {
+        "demand_left": 39.7683,
+        "peak_workload": 39.7683,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app37": {
+        "demand_left": 13.4733,
+        "peak_workload": 13.4733,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app37": {
+        "demand_left": 12.885,
+        "peak_workload": 12.885,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app37": {
+        "demand_left": 6.9533,
+        "peak_workload": 6.9533,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app37": {
+        "demand_left": 26.365,
+        "peak_workload": 26.365,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app74": {
+        "demand_left": 36.165,
+        "peak_workload": 36.165,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app75": {
+        "demand_left": 7.8517,
+        "peak_workload": 7.8517,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app74": {
+        "demand_left": 24.1533,
+        "peak_workload": 24.1533,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app75": {
+        "demand_left": 15.91,
+        "peak_workload": 15.91,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app74": {
+        "demand_left": 23.3767,
+        "peak_workload": 23.3767,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app75": {
+        "demand_left": 12.735,
+        "peak_workload": 12.735,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app37": {
+        "demand_left": 16.8917,
+        "peak_workload": 16.8917,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app38": {
+        "demand_left": 9.915,
+        "peak_workload": 9.915,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app38": {
+        "demand_left": 7.9533,
+        "peak_workload": 7.9533,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app38": {
+        "demand_left": 14.015,
+        "peak_workload": 14.015,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app38": {
+        "demand_left": 31.8217,
+        "peak_workload": 31.8217,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app38": {
+        "demand_left": 22.335,
+        "peak_workload": 22.335,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "etth1fore__app38": {
+        "demand_left": 40.5283,
+        "peak_workload": 40.5283,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app76": {
+        "demand_left": 10.0583,
+        "peak_workload": 10.0583,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "imgclass10__app77": {
+        "demand_left": 28.8667,
+        "peak_workload": 28.8667,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app76": {
+        "demand_left": 14.225,
+        "peak_workload": 14.225,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "eurosatclass__app77": {
+        "demand_left": 20.2433,
+        "peak_workload": 20.2433,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app76": {
+        "demand_left": 26.9533,
+        "peak_workload": 26.9533,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "vocseg__app77": {
+        "demand_left": 26.3417,
+        "peak_workload": 26.3417,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "nyudepth__app38": {
+        "demand_left": 11.0633,
+        "peak_workload": 11.0633,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "ecgclass__app39": {
+        "demand_left": 20.4233,
+        "peak_workload": 20.4233,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "heartrate__app39": {
+        "demand_left": 20.5067,
+        "peak_workload": 20.5067,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "gestureclass__app39": {
+        "demand_left": 24.0483,
+        "peak_workload": 24.0483,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "sysbp__app39": {
+        "demand_left": 20.555,
+        "peak_workload": 20.555,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp__app39": {
+        "demand_left": 17.0683,
+        "peak_workload": 17.0683,
+        "bottleneck": "compute",
+        "placed": false
+      },
+      "diasbp": {
+        "placed": true
+      },
+      "diasbp__app1": {
+        "placed": true
+      },
+      "diasbp__app2": {
+        "placed": true
+      },
+      "diasbp__app3": {
+        "placed": true
+      },
+      "diasbp__app4": {
+        "placed": true
+      },
+      "ecgclass": {
+        "placed": true
+      },
+      "ecgclass__app1": {
+        "placed": true
+      },
+      "ecgclass__app2": {
+        "placed": true
+      },
+      "ecgclass__app3": {
+        "placed": true
+      },
+      "ecgclass__app4": {
+        "placed": true
+      },
+      "etth1fore": {
+        "placed": true
+      },
+      "etth1fore__app1": {
+        "placed": true
+      },
+      "etth1fore__app2": {
+        "placed": true
+      },
+      "etth1fore__app3": {
+        "placed": true
+      },
+      "etth1fore__app4": {
+        "placed": true
+      },
+      "eurosatclass": {
+        "placed": true
+      },
+      "eurosatclass__app1": {
+        "placed": true
+      },
+      "eurosatclass__app2": {
+        "placed": true
+      },
+      "eurosatclass__app3": {
+        "placed": true
+      },
+      "eurosatclass__app4": {
+        "placed": true
+      },
+      "eurosatclass__app5": {
+        "placed": true
+      },
+      "eurosatclass__app6": {
+        "placed": true
+      },
+      "eurosatclass__app7": {
+        "placed": true
+      },
+      "eurosatclass__app8": {
+        "placed": true
+      },
+      "gestureclass": {
+        "placed": true
+      },
+      "gestureclass__app1": {
+        "placed": true
+      },
+      "gestureclass__app2": {
+        "placed": true
+      },
+      "gestureclass__app3": {
+        "placed": true
+      },
+      "gestureclass__app4": {
+        "placed": true
+      },
+      "heartrate": {
+        "placed": true
+      },
+      "heartrate__app1": {
+        "placed": true
+      },
+      "heartrate__app2": {
+        "placed": true
+      },
+      "heartrate__app3": {
+        "placed": true
+      },
+      "heartrate__app4": {
+        "placed": true
+      },
+      "imgclass10": {
+        "placed": true
+      },
+      "imgclass10__app1": {
+        "placed": true
+      },
+      "imgclass10__app2": {
+        "placed": true
+      },
+      "imgclass10__app3": {
+        "placed": true
+      },
+      "imgclass10__app4": {
+        "placed": true
+      },
+      "imgclass10__app5": {
+        "placed": true
+      },
+      "imgclass10__app6": {
+        "placed": true
+      },
+      "imgclass10__app7": {
+        "placed": true
+      },
+      "imgclass10__app8": {
+        "placed": true
+      },
+      "imgclass10__app9": {
+        "placed": true
+      },
+      "nyudepth": {
+        "placed": true
+      },
+      "nyudepth__app1": {
+        "placed": true
+      },
+      "nyudepth__app2": {
+        "placed": true
+      },
+      "nyudepth__app3": {
+        "placed": true
+      },
+      "sysbp": {
+        "placed": true
+      },
+      "sysbp__app1": {
+        "placed": true
+      },
+      "sysbp__app2": {
+        "placed": true
+      },
+      "sysbp__app3": {
+        "placed": true
+      },
+      "sysbp__app4": {
+        "placed": true
+      },
+      "vocseg": {
+        "placed": true
+      },
+      "vocseg__app1": {
+        "placed": true
+      },
+      "vocseg__app2": {
+        "placed": true
+      },
+      "vocseg__app3": {
+        "placed": true
+      },
+      "vocseg__app4": {
+        "placed": true
+      },
+      "vocseg__app5": {
+        "placed": true
+      },
+      "vocseg__app6": {
+        "placed": true
+      },
+      "vocseg__app7": {
+        "placed": true
+      }
+    },
+    "bottleneck_counts": {
+      "compute": 450
+    }
+  }
+}

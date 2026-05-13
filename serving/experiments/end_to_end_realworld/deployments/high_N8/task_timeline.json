@@ -1,0 +1,74 @@
+{
+  "ecgclass": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "c7b52c6735b9476cb04b837520116bb7b0cff6c91b076d3956bc8d7e12d2aac6",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "ecgclass",
+    "backbone": "momentlarge"
+  },
+  "heartrate": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "6e26c53b7170b7c83c402b34330e926b059a4f723b53f3152f0ce3d242744fcc",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "heartrate",
+    "backbone": "momentbase"
+  },
+  "gestureclass": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "d5cf158ca531d5dc2bd3ab511a4ae777353893931a5ac38d7a29ef58c5455142",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "gestureclass",
+    "backbone": "momentsmall"
+  },
+  "sysbp": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "bd9aa1cfe385946a3ed53cca986dd2945eb90c3b3f8f7c09e592db2c6639dc8a",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "sysbp",
+    "backbone": "papageip"
+  },
+  "diasbp": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "e01302c7d542427ce06b3634ad526caec84efeb6229da187bdacb76fe8c0cca9",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "diasbp",
+    "backbone": "papageis"
+  },
+  "etth1fore": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "9e11b086030c359e09154d63f0f7dede90692edbd8f11f653503206e25201127",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "etth1fore",
+    "backbone": "papageissvri"
+  },
+  "imgclass10": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "53aeeb0ec2b9e1af8c9b3aaf632253d98871fd794986c63b0ccaafc871b46563",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "imgclass10",
+    "backbone": "swintiny"
+  },
+  "imgclass10__app1": {
+    "arrive": 0.0,
+    "depart": 600.0,
+    "function_id": "bd9aa1cfe385946a3ed53cca986dd2945eb90c3b3f8f7c09e592db2c6639dc8a",
+    "model_id": null,
+    "req_model_id": null,
+    "base_task": "imgclass10",
+    "backbone": "swinsmall"
+  }
+}

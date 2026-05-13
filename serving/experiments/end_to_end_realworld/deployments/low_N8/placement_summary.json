@@ -1,0 +1,86 @@
+{
+  "no_sharing": {
+    "placed": [
+      "diasbp",
+      "ecgclass",
+      "etth1fore",
+      "gestureclass",
+      "heartrate",
+      "imgclass10",
+      "imgclass10__app1",
+      "sysbp"
+    ],
+    "rejected": [],
+    "placed_count": 8,
+    "requested": 8,
+    "per_task": {
+      "diasbp": {
+        "placed": true
+      },
+      "ecgclass": {
+        "placed": true
+      },
+      "etth1fore": {
+        "placed": true
+      },
+      "gestureclass": {
+        "placed": true
+      },
+      "heartrate": {
+        "placed": true
+      },
+      "imgclass10": {
+        "placed": true
+      },
+      "imgclass10__app1": {
+        "placed": true
+      },
+      "sysbp": {
+        "placed": true
+      }
+    },
+    "bottleneck_counts": {}
+  },
+  "fmaas": {
+    "placed": [
+      "diasbp",
+      "ecgclass",
+      "etth1fore",
+      "gestureclass",
+      "heartrate",
+      "imgclass10",
+      "imgclass10__app1",
+      "sysbp"
+    ],
+    "rejected": [],
+    "placed_count": 8,
+    "requested": 8,
+    "per_task": {
+      "diasbp": {
+        "placed": true
+      },
+      "ecgclass": {
+        "placed": true
+      },
+      "etth1fore": {
+        "placed": true
+      },
+      "gestureclass": {
+        "placed": true
+      },
+      "heartrate": {
+        "placed": true
+      },
+      "imgclass10": {
+        "placed": true
+      },
+      "imgclass10__app1": {
+        "placed": true
+      },
+      "sysbp": {
+        "placed": true
+      }
+    },
+    "bottleneck_counts": {}
+  }
+}
