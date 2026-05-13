@@ -84,12 +84,12 @@ fi
 # ---------------------------------------------------------------------------
 CUDA_DEVICE="${CUDA_DEVICE:-cuda:0}"
 TASK_SET="${TASK_SET:-tsfm}"  # vision or tsfm
-RPS_SWEEP="${RPS_SWEEP:-1,5}"
+RPS_SWEEP="${RPS_SWEEP:-10}"
 NUM_TASKS_SWEEP="${NUM_TASKS_SWEEP:-2,4,6,8,10}"   
 PHASE_DURATION="${PHASE_DURATION:-600}"
 DEVICE_PORT="${DEVICE_PORT:-8000}"
 MAX_BATCH_SIZE="${MAX_BATCH_SIZE:-32}"
-RESULTS_BASE="${RESULTS_BASE:-experiments/RTVSntask/tpc/results_tsfm}"
+RESULTS_BASE="${RESULTS_BASE:-experiments/RTVSntask/tpc/results_tsfm_t4}"
 DEVICE_STARTUP_WAIT="${DEVICE_STARTUP_WAIT:-5}"
 MAX_BATCH_WAIT_MS="${MAX_BATCH_WAIT_MS:-0}"
 TPC_MODE="${TPC_MODE:-libsmctrl}"

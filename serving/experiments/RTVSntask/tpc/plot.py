@@ -719,6 +719,30 @@ def _bar_legend_handles(series_keys: Optional[List[str]] = None) -> List:
     ]
 
 
+def plot_standalone_legend(handles: List, out_path: Path, ncol: int = 4) -> None:
+    """Save a legend as a standalone figure."""
+    if not handles:
+        return
+    fig = plt.figure(figsize=(1, 1))
+    legend = fig.legend(
+        handles=handles,
+        loc="center",
+        ncol=ncol,
+        frameon=False,
+        handlelength=1.2,
+        columnspacing=0.7,
+        handletextpad=0.25,
+        labelspacing=0.2,
+        fontsize=6,
+    )
+    # Adjust figure size to tightly fit the legend
+    fig.canvas.draw()
+    bbox = legend.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+    fig.set_size_inches(bbox.width, bbox.height)
+    save_figure(fig, out_path)
+    plt.close(fig)
+
+
 # ---------------------------------------------------------------------------
 # Plot 1: Latency CDF (single RPS)
 # ---------------------------------------------------------------------------
@@ -951,19 +975,12 @@ def _plot_ntasks_line_sweep(
         print(f"[Warn] No selected conditions present, skipping {warn_label} plot")
         return
 
-    n_panels = len(rps_with_data)
-    panel_w = 1.55
-    actual_fig_w = fig_w if fig_w is not None else min(max(3.25, panel_w * n_panels + 0.1), 3.45)
-    fig, axes = plt.subplots(
-        1, n_panels,
-        figsize=(actual_fig_w, fig_h),
-        sharey=True,
-        squeeze=False,
-    )
-    axes = axes[0]
-    fig.subplots_adjust(wspace=0.12)
+    # Save legend separately
+    legend_path = out_path.parent / f"{out_path.stem}_legend{out_path.suffix}"
+    plot_standalone_legend(_legend_handles(present), legend_path, ncol=min(len(present), 4))
 
-    for ax, rps in zip(axes, rps_with_data):
+    for rps in rps_with_data:
+        fig, ax = plt.subplots(figsize=(1.8, fig_h))
         rps_data = data.get(rps, {})
         for s in present:
             xs, ys = [], []
@@ -984,31 +1001,19 @@ def _plot_ntasks_line_sweep(
                 )
 
         ax.set_title(f"{rps} req/s", pad=2)
-        ax.set_xlabel("Tasks")
+        ax.set_xlabel("#Tasks")
         ax.set_xticks(ntasks_list)
         ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{int(v)}"))
         ax.grid(axis="both", zorder=0)
         ax.set_axisbelow(True)
         ax.set_ylim(0, y_max)
-        if ax is axes[0]:
-            ax.set_ylabel(ylabel)
-        else:
-            ax.tick_params(axis="y", left=False)
+        ax.set_ylabel(ylabel)
 
-    fig.legend(
-        handles=_legend_handles(present),
-        loc="upper center",
-        bbox_to_anchor=(0.5, 1.10),
-        ncol=min(len(present), 4),
-        frameon=False,
-        handlelength=1.2,
-        columnspacing=0.7,
-        handletextpad=0.25,
-        labelspacing=0.2,
-    )
-    fig.tight_layout(rect=(0, 0, 1, 0.96))
-    save_figure(fig, out_path)
-    plt.close(fig)
+        # File name with RPS suffix
+        rps_out_path = out_path.parent / f"{out_path.stem}_rps{rps}{out_path.suffix}"
+        fig.tight_layout(pad=0.2)
+        save_figure(fig, rps_out_path)
+        plt.close(fig)
 
 def plot_ntasks_mean_latency(
     data: Dict[int, Dict[int, Dict[str, float]]],
