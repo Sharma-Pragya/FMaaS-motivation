@@ -111,7 +111,10 @@ class PyTorchRuntime(BaseRuntime):
 
     def load(self, backbone: str, decoders: list, **kwargs) -> Logger:
         with self._lock:
-            op_log = self._loader.load_models(backbone, decoders)
+            op_log = self._loader.load_models(
+                backbone, decoders,
+                model_config=kwargs.get("model_config"),
+            )
             self._sync()
             return op_log
 
