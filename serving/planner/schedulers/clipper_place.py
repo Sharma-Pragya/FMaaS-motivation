@@ -157,10 +157,10 @@ class ClipperPlacementScheduler(BaseScheduler):
 
         # Check how many servers exist with compute headroom vs memory headroom
         all_compute_ok = state.get_servers_by_least_capacity(
-            min_mem=0.0, max_util=self.config.util_factor, reverse=False
+            min_mem=0.0, max_util=self.config.util_factor, reverse=True
         )
         candidate_servers = state.get_servers_by_least_capacity(
-            backbone_mem, max_util=self.config.util_factor, reverse=False
+            backbone_mem, max_util=self.config.util_factor, reverse=True
         )
 
         if not candidate_servers:

@@ -146,18 +146,25 @@ class DeploymentState:
     
     def find_active_deployments(self, backbone: str, max_util: float) -> List[Deployment]:
         """Find deployments using a specific backbone with capacity.
-        
+
+        Returned in ascending util order so the caller's first-fit loop
+        becomes best-fit (least-loaded existing replica wins). This prevents
+        cheap tasks from stacking onto the oldest replica and inadvertently
+        co-locating with a later-arriving heavy task on that same replica.
+
         Args:
             backbone: Name of the backbone.
             max_util: Maximum utilization threshold.
-            
+
         Returns:
-            List of deployments using the backbone with util < max_util.
+            List of deployments using the backbone with util < max_util,
+            sorted by util ascending.
         """
-        return [
-            d for d in self._deployments.values()
-            if d.backbone == backbone and d.util < max_util
-        ]
+        return sorted(
+            (d for d in self._deployments.values()
+             if d.backbone == backbone and d.util < max_util),
+            key=lambda d: d.util,
+        )
     
     def find_deployments_by_server(self, server_name: str) -> List[Deployment]:
         """Find all deployments on a specific server.
