@@ -1,3 +1,4 @@
+import inspect
 import threading
 import time
 from abc import ABC, abstractmethod
@@ -8,6 +9,38 @@ import numpy as np
 
 from fmtk.logger import Logger
 from device.model_loader import ModelLoader
+
+
+# ---------------------------------------------------------------------------
+# Backbone capability detection
+# ---------------------------------------------------------------------------
+
+_FORWARD_ADAPTERS_CACHE: dict[int, bool] = {}
+
+
+def _backbone_supports_adapters(forward_callable) -> bool:
+    """True iff `forward(...)` accepts an `adapters` kwarg (or **kwargs).
+
+    Used to decide between the multi-LoRA path (one batched forward with
+    `adapters=[...]`) and the fallback path (per-adapter set_adapter +
+    sub-batched forward). Inspecting once per backbone class is cheap;
+    we cache by id() of the bound method.
+    """
+    key = id(forward_callable)
+    cached = _FORWARD_ADAPTERS_CACHE.get(key)
+    if cached is not None:
+        return cached
+    try:
+        sig = inspect.signature(forward_callable)
+    except (TypeError, ValueError):
+        _FORWARD_ADAPTERS_CACHE[key] = False
+        return False
+    params = sig.parameters
+    has_adapters = "adapters" in params or any(
+        p.kind is inspect.Parameter.VAR_KEYWORD for p in params.values()
+    )
+    _FORWARD_ADAPTERS_CACHE[key] = has_adapters
+    return has_adapters
 
 
 # ---------------------------------------------------------------------------
@@ -169,13 +202,28 @@ class PyTorchRuntime(BaseRuntime):
                 b_mask = torch.from_numpy(mask) if mask is not None else None
 
             adapters_map = self.adapters or {}
-            groups: list[tuple[str | None, list[int]]] = []
-            for idx, task in enumerate(task_names):
-                adapter_name = adapters_map.get(task)
-                if groups and groups[-1][0] == adapter_name:
-                    groups[-1][1].append(idx)
-                else:
-                    groups.append((adapter_name, [idx]))
+            # Per-sample adapter list: one entry per request in the batch
+            # (in task_names order). The backbone forward routes each sample
+            # through its own LoRA in a single batched pass — no per-adapter
+            # set_adapter / forward splitting.
+            adapters_list = [adapters_map.get(task) for task in task_names]
+            indices = list(range(len(task_names)))
+            has_any_adapter = any(a is not None for a in adapters_list)
+            # Backbones that declare an `adapters=` kwarg (e.g. moment.py)
+            # take the multi-LoRA fused path. Backbones without it (e.g.
+            # Qwen-VLM) fall back to per-adapter set_adapter + sub-batched
+            # forwards. Backbones without LoRA at all just get plain forward.
+            backbone_accepts_adapters = _backbone_supports_adapters(
+                self.pipeline.model_instance.forward
+            )
+            use_fallback_split = has_any_adapter and not backbone_accepts_adapters
+            # Only pass `adapters=` when at least one sample actually maps to
+            # an adapter slot AND the backbone accepts the kwarg.
+            forward_kwargs = (
+                {"adapters": adapters_list}
+                if (has_any_adapter and backbone_accepts_adapters)
+                else {}
+            )
 
             feats_by_idx: dict[int, object] = {}
             proc_time_ns = 0
@@ -183,25 +231,71 @@ class PyTorchRuntime(BaseRuntime):
 
             stream_ctx = torch.cuda.stream(self._cuda_stream) if self._cuda_stream else nullcontext()
             with stream_ctx, torch.no_grad():
-                for adapter_name, indices in groups:
-                    if adapter_name is not None:
-                        self.pipeline.set_adapter(adapter_name)
-                    else:
-                        self.pipeline.unload_adapter()
+                if use_fallback_split:
+                    # Fallback path for backbones without `adapters=` support:
+                    # split the batch by adapter, set_adapter / unload_adapter
+                    # between groups, and run one sub-batched forward per
+                    # group. Same semantics as before the multi-LoRA change.
+                    groups: list[tuple[str | None, list[int]]] = []
+                    for idx, a in enumerate(adapters_list):
+                        if groups and groups[-1][0] == a:
+                            groups[-1][1].append(idx)
+                        else:
+                            groups.append((a, [idx]))
 
-                    sub_mask = b_mask[indices] if b_mask is not None else None
+                    for adapter_name, group_indices in groups:
+                        if adapter_name is not None:
+                            self.pipeline.set_adapter(adapter_name)
+                        else:
+                            self.pipeline.unload_adapter()
+
+                        sub_mask = b_mask[group_indices] if b_mask is not None else None
+
+                        bb_start = time.time_ns()
+                        if questions is not None:
+                            sub_q = [questions[i] for i in group_indices]
+                            if bx is not None:
+                                sub_x = bx[group_indices]
+                                sub_feats = self.pipeline.model_instance.forward(
+                                    (sub_x, sub_q), sub_mask
+                                )
+                            else:
+                                sub_feats = self.pipeline.model_instance.forward(
+                                    (None, sub_q), sub_mask
+                                )
+                        else:
+                            sub_x = bx[group_indices]
+                            sub_feats = self.pipeline.model_instance.forward(
+                                sub_x, sub_mask
+                            )
+                        if is_cuda:
+                            self._cuda_stream.synchronize() if self._cuda_stream else torch.cuda.synchronize(device)
+                        proc_time_ns += time.time_ns() - bb_start
+
+                        if is_cuda:
+                            cur_bytes = torch.cuda.memory_allocated(device)
+                            if cur_bytes > peak_bytes:
+                                peak_bytes = cur_bytes
+
+                        for out_pos, orig_idx in enumerate(group_indices):
+                            feats_by_idx[orig_idx] = sub_feats[out_pos : out_pos + 1]
+                else:
+                    sub_mask = b_mask if b_mask is not None else None
 
                     bb_start = time.time_ns()
                     if questions is not None:
-                        sub_q = [questions[i] for i in indices]
                         if bx is not None:
-                            sub_x = bx[indices]
-                            sub_feats = self.pipeline.model_instance.forward((sub_x, sub_q), sub_mask)
+                            sub_feats = self.pipeline.model_instance.forward(
+                                (bx, questions), sub_mask, **forward_kwargs,
+                            )
                         else:
-                            sub_feats = self.pipeline.model_instance.forward((None, questions), sub_mask)
+                            sub_feats = self.pipeline.model_instance.forward(
+                                (None, questions), sub_mask, **forward_kwargs,
+                            )
                     else:
-                        sub_x = bx[indices]
-                        sub_feats = self.pipeline.model_instance.forward(sub_x, sub_mask)
+                        sub_feats = self.pipeline.model_instance.forward(
+                            bx, sub_mask, **forward_kwargs,
+                        )
                     if is_cuda:
                         # Stream-local sync, not device-wide — lets decoder
                         # threads on OTHER streams keep running.

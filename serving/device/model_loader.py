@@ -85,6 +85,12 @@ def _build_pipeline(backbone: str, device, logger: Logger | None, model_config: 
     elif backbone in ("qwen2.5-0.5b", "qwen2.5-1.5b", "qwen2.5-7b"):
         from fmtk.components.backbones.qwen_vllm import QwenVLLMModel
         return Pipeline(QwenVLLMModel(device, backbone, model_config=model_config, async_only=True), logger=logger)
+    elif backbone in ("llama-3.1-8b", "llama-3.2-3b", "llama-3.2-1b"):
+        from fmtk.components.backbones.llama import LlamaModel
+        return Pipeline(LlamaModel(device, backbone, model_config=model_config), logger=logger)
+    elif backbone in ("mistral-7b", "mistral-nemo"):
+        from fmtk.components.backbones.mistral import MistralModel
+        return Pipeline(MistralModel(device, backbone, model_config=model_config), logger=logger)
     else:
         raise ValueError(f"Unsupported backbone: {backbone}")
 
