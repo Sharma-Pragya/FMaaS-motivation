@@ -1049,6 +1049,132 @@ def _generate_scenario(mix: Dict[str, int]) -> None:
     (scenario_dir / 'placement_summary.json').write_text(json.dumps(summary, indent=2))
 
 
+# ── Incremental placement helpers ─────────────────────────────────────────────
+# These are for admission-sweep experiments that place tasks one at a time
+# without re-running full placement from scratch. Existing build_fmaas_place /
+# build_clipper_place functions are untouched.
+
+class _ScaledLatencyProfile:
+    """Wraps ProfileData and scales get_pipeline_latency by a fixed factor.
+
+    All other attribute accesses fall through to the underlying profile so the
+    scheduler sees a fully functional ProfileData interface.
+    """
+    def __init__(self, base, factor: float):
+        self._base = base
+        self._factor = factor
+
+    def __getattr__(self, name):
+        return getattr(self._base, name)
+
+    def get_pipeline_latency(self, pid, device_type):
+        lat = self._base.get_pipeline_latency(pid, device_type)
+        return lat * self._factor if lat is not None else None
+
+
+def make_fmaas_incremental_state(latency_factor: float = 1.0):
+    """Return (scheduler, config, state) for incremental FMaaS placement.
+
+    Pass the tuple to place_task_fmaas_incremental to extend the state with
+    one task at a time instead of replanning the full task set each step.
+
+    latency_factor: scale applied to every profiler latency lookup used in the
+        utilisation formula (util = demand * latency / 1000). A value of 0.9
+        models a 10 % latency reduction from FMaaS batching, allowing more
+        tasks to be packed on each device.
+    """
+    from planner import SchedulerConfig
+    from planner.schedulers.fmaas_place import FMaaSPlacementScheduler
+    from planner.state import DeploymentState
+    repeated = _load_repeated_map()
+    profile = _make_profile(repeated)
+    if latency_factor != 1.0:
+        profile = _ScaledLatencyProfile(profile, latency_factor)
+    config = SchedulerConfig()
+    scheduler = FMaaSPlacementScheduler(profile, config, batch_profile=None)
+    servers = scheduler._create_servers(uc.devices)
+    state = DeploymentState(servers)
+    return scheduler, config, state
+
+
+def make_clipper_incremental_state():
+    """Return (scheduler, config, state) for incremental Clipper placement.
+
+    Pass the tuple to place_task_clipper_incremental to extend the state with
+    one task at a time instead of replanning the full task set each step.
+    """
+    from planner import SchedulerConfig
+    from planner.schedulers.clipper_place import ClipperPlacementScheduler
+    from planner.state import DeploymentState
+    repeated = _load_repeated_map()
+    profile = _make_profile(repeated)
+    config = SchedulerConfig()
+    scheduler = ClipperPlacementScheduler(profile, config, batch_profile=None)
+    servers = scheduler._create_servers(uc.devices)
+    state = DeploymentState(servers)
+    return scheduler, config, state
+
+
+def place_task_fmaas_incremental(scheduler, config, state,
+                                  task: dict, task_rps: Dict[str, float]) -> bool:
+    """Place one task into an existing FMaaS DeploymentState in-place.
+
+    Returns True if the task's demand was fully satisfied.  Mirrors the
+    per-task body of build_fmaas_place so state stays consistent.
+    """
+    base_info = uc.tasks[task['base_task']]
+    task_name = task['task']
+    task_spec = {
+        'backbone':      task['backbone'],
+        'type':          base_info['type'],
+        'peak_workload': float(task_rps[task_name]),
+        'latency':       base_info.get('latency', 50),
+        'metric':        base_info.get('metric', 'mae'),
+        'value':         base_info.get('value', 0),
+    }
+    t = scheduler._create_task_spec(task_name, task_spec)
+    temp_plan, demand_left, _ = scheduler._deploy_task(state, t)
+    if temp_plan:
+        for deployment in temp_plan.values():
+            key = (deployment.server_name, deployment.backbone)
+            existing = state.get_deployment(deployment.server_name, deployment.backbone)
+            if existing:
+                if ':' not in deployment.ip:
+                    port = state.get_next_port(
+                        deployment.ip, config.base_port, config.port_increment)
+                    deployment.ip = f"{deployment.ip}:{port}"
+                state._deployments[key] = deployment
+                state._sync_server_utilization(deployment.server_name, deployment.util)
+            else:
+                state.add_deployment(deployment, config.base_port, config.port_increment)
+    return demand_left is None or demand_left <= config.demand_epsilon
+
+
+def place_task_clipper_incremental(scheduler, config, state,
+                                    task: dict, task_rps: Dict[str, float]) -> bool:
+    """Place one task into an existing Clipper DeploymentState in-place.
+
+    Returns True if the task's demand was fully satisfied.  Mirrors the
+    per-task body of build_clipper_place so state stays consistent.
+    """
+    base_info = uc.tasks[task['base_task']]
+    task_name = task['task']
+    task_spec = {
+        'backbone':      task['backbone'],
+        'type':          base_info['type'],
+        'peak_workload': float(task_rps[task_name]),
+        'latency':       base_info.get('latency', 50),
+        'metric':        base_info.get('metric', 'mae'),
+        'value':         base_info.get('value', 0),
+    }
+    t = scheduler._create_task_spec(task_name, task_spec)
+    temp_plan, demand_left, _ = scheduler._deploy_task(state, t)
+    if temp_plan:
+        for deployment in temp_plan.values():
+            state.add_deployment(deployment, config.base_port, config.port_increment)
+    return demand_left is None or demand_left <= config.demand_epsilon
+
+
 def generate_all() -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     for mix in uc.experiment['mix_sweep']:
