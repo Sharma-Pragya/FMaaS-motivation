@@ -44,6 +44,7 @@ from site_manager.config import DATASET_DIR as _DATASET_DIR
 # ---------------------------------------------------------------------------
 
 TASK_TYPES: Dict[str, str] = {
+    # tsfm
     "ecgclass":     "classification",
     "gestureclass": "classification",
     "sysbp":        "regression",
@@ -54,7 +55,30 @@ TASK_TYPES: Dict[str, str] = {
     "exchangefore": "forecasting",
     "trafficfore":  "forecasting",
     "weatherfore":  "forecasting",
+    # vision
+    "nyudepth":     "monocular",
+    "vocseg":       "linear_seg",
 }
+
+# Per-task decoder path template (passed to backbone). None → no decoder.
+DECODER_PATHS: Dict[str, str] = {
+    "ecgclass":     "{task}_{backbone}_mlp",
+    "gestureclass": "{task}_{backbone}_mlp",
+    "sysbp":        "{task}_{backbone}_mlp",
+    "diasbp":       "{task}_{backbone}_mlp",
+    "heartrate":    "{task}_{backbone}_mlp",
+    "eclfore":      "{task}_{backbone}_mlp",
+    "etth1fore":    "{task}_{backbone}_mlp",
+    "exchangefore": "{task}_{backbone}_mlp",
+    "trafficfore":  "{task}_{backbone}_mlp",
+    "weatherfore":  "{task}_{backbone}_mlp",
+    "nyudepth":     "nyudepth_{backbone}_monocular",
+    "vocseg":       None,
+}
+
+VISION_TASKS = {"nyudepth", "vocseg"}
+NYUDEPTH_PATH  = os.environ.get("NYUDEPTH_PATH",  "../../FMTK/dataset/nyu-depth-v2")
+PASCALVOC_PATH = os.environ.get("PASCALVOC_PATH", "../../FMTK/dataset/PASCAL-VOC")
 
 
 # ---------------------------------------------------------------------------
@@ -62,30 +86,42 @@ TASK_TYPES: Dict[str, str] = {
 # ---------------------------------------------------------------------------
 
 def load_sample(task: str) -> Dict:
-    """Load a single sample for the given task."""
-    from fmtk.datasetloaders.ecg5000 import ECG5000Dataset
-    from fmtk.datasetloaders.uwavegesture import UWaveGestureLibraryALLDataset
-    from fmtk.datasetloaders.ppg import PPGDataset
-    from fmtk.datasetloaders.ecl import ECLDataset
-    from fmtk.datasetloaders.etth1 import ETTh1Dataset
-    from fmtk.datasetloaders.exchange import ExchangeDataset
-    from fmtk.datasetloaders.traffic import TrafficDataset
-    from fmtk.datasetloaders.weather import WeatherDataset
-
-    d = _DATASET_DIR
+    """Load a single sample for the given task (tsfm or vision)."""
     cfg = {"batch_size": 1, "shuffle": False}
-    loaders = {
-        "ecgclass":     lambda: DataLoader(ECG5000Dataset({"dataset_path": f"{d}/ECG5000"}, {"task_type": "classification"}, "test"), **cfg),
-        "gestureclass": lambda: DataLoader(UWaveGestureLibraryALLDataset({"dataset_path": f"{d}/UWaveGestureLibraryAll", "seq_len": 512}, {"task_type": "classification"}, "test"), **cfg),
-        "sysbp":        lambda: DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data", "seq_len": 512, "num_channels": 1}, {"task_type": "regression", "label": "sysbp"}, "test"), **cfg),
-        "diasbp":       lambda: DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data", "seq_len": 512, "num_channels": 1}, {"task_type": "regression", "label": "diasbp"}, "test"), **cfg),
-        "heartrate":    lambda: DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data", "seq_len": 512, "num_channels": 1}, {"task_type": "regression", "label": "hr"}, "test"), **cfg),
-        "eclfore":      lambda: DataLoader(ECLDataset({"dataset_path": f"{d}/ElectricityLoad-data"}, {"task_type": "forecasting", "seq_len": 512}, "test"), **cfg),
-        "etth1fore":    lambda: DataLoader(ETTh1Dataset({"dataset_path": f"{d}/ETTh1"}, {"task_type": "forecasting", "seq_len": 512}, "test"), **cfg),
-        "exchangefore": lambda: DataLoader(ExchangeDataset({"dataset_path": f"{d}/Exchange"}, {"task_type": "forecasting", "seq_len": 512}, "test"), **cfg),
-        "trafficfore":  lambda: DataLoader(TrafficDataset({"dataset_path": f"{d}/Traffic"}, {"task_type": "forecasting", "seq_len": 512}, "test"), **cfg),
-        "weatherfore":  lambda: DataLoader(WeatherDataset({"dataset_path": f"{d}/Weather"}, {"task_type": "forecasting"}, "test"), **cfg),
-    }
+
+    if task in VISION_TASKS:
+        from fmtk.datasetloaders.nyudepthv2 import NYUDepthV2Dataset
+        from fmtk.datasetloaders.voc12 import VOC12Dataset
+        loaders = {
+            "nyudepth": lambda: DataLoader(
+                NYUDepthV2Dataset({"dataset_path": NYUDEPTH_PATH},
+                                  {"task_type": "regression"}, "test"), **cfg),
+            "vocseg":   lambda: DataLoader(
+                VOC12Dataset({"dataset_path": PASCALVOC_PATH, "target_size": 224},
+                             {"task_type": "segmentation"}, "test"), **cfg),
+        }
+    else:
+        from fmtk.datasetloaders.ecg5000 import ECG5000Dataset
+        from fmtk.datasetloaders.uwavegesture import UWaveGestureLibraryALLDataset
+        from fmtk.datasetloaders.ppg import PPGDataset
+        from fmtk.datasetloaders.ecl import ECLDataset
+        from fmtk.datasetloaders.etth1 import ETTh1Dataset
+        from fmtk.datasetloaders.exchange import ExchangeDataset
+        from fmtk.datasetloaders.traffic import TrafficDataset
+        from fmtk.datasetloaders.weather import WeatherDataset
+        d = _DATASET_DIR
+        loaders = {
+            "ecgclass":     lambda: DataLoader(ECG5000Dataset({"dataset_path": f"{d}/ECG5000"}, {"task_type": "classification"}, "test"), **cfg),
+            "gestureclass": lambda: DataLoader(UWaveGestureLibraryALLDataset({"dataset_path": f"{d}/UWaveGestureLibraryAll", "seq_len": 512}, {"task_type": "classification"}, "test"), **cfg),
+            "sysbp":        lambda: DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data", "seq_len": 512, "num_channels": 1}, {"task_type": "regression", "label": "sysbp"}, "test"), **cfg),
+            "diasbp":       lambda: DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data", "seq_len": 512, "num_channels": 1}, {"task_type": "regression", "label": "diasbp"}, "test"), **cfg),
+            "heartrate":    lambda: DataLoader(PPGDataset({"dataset_path": f"{d}/PPG-data", "seq_len": 512, "num_channels": 1}, {"task_type": "regression", "label": "hr"}, "test"), **cfg),
+            "eclfore":      lambda: DataLoader(ECLDataset({"dataset_path": f"{d}/ElectricityLoad-data"}, {"task_type": "forecasting", "seq_len": 512}, "test"), **cfg),
+            "etth1fore":    lambda: DataLoader(ETTh1Dataset({"dataset_path": f"{d}/ETTh1"}, {"task_type": "forecasting", "seq_len": 512}, "test"), **cfg),
+            "exchangefore": lambda: DataLoader(ExchangeDataset({"dataset_path": f"{d}/Exchange"}, {"task_type": "forecasting", "seq_len": 512}, "test"), **cfg),
+            "trafficfore":  lambda: DataLoader(TrafficDataset({"dataset_path": f"{d}/Traffic"}, {"task_type": "forecasting", "seq_len": 512}, "test"), **cfg),
+            "weatherfore":  lambda: DataLoader(WeatherDataset({"dataset_path": f"{d}/Weather"}, {"task_type": "forecasting"}, "test"), **cfg),
+        }
     if task not in loaders:
         raise ValueError(f"Unknown task: {task}")
     loader = loaders[task]()
@@ -106,7 +142,9 @@ async def deploy(device_url: str, backbone: str, task: str) -> Dict:
     client = EdgeRuntimeClient(device_url)
     try:
         await client.wait_ready()
-        decoders = [{"task": task, "type": TASK_TYPES[task], "path": f"{task}_{backbone}_mlp"}]
+        path_tpl = DECODER_PATHS[task]
+        decoder_path = path_tpl.format(task=task, backbone=backbone) if path_tpl else None
+        decoders = [{"task": task, "type": TASK_TYPES[task], "path": decoder_path}]
         payload  = json.dumps({"backbone": backbone, "decoders": decoders})
         print(f"[Deploy] backbone={backbone}  task={task} ...")
         resp = await client.control("load", payload)
@@ -143,24 +181,27 @@ async def run_closed_loop(
     task: str,
     sample: Dict,
     duration: float,
-) -> List[float]:
-    """Send requests one at a time for `duration` seconds. Returns latencies (s)."""
+) -> Dict[str, List[float]]:
+    """Send requests one at a time for `duration` seconds. Returns lists of
+    end-to-end latency (s) and server-side service time (s) per request."""
     client = EdgeRuntimeClient(device_url)
     await client.wait_ready()
 
     latencies: List[float] = []
+    service_times: List[float] = []
     req_id = 0
     deadline = time.time() + duration
     while time.time() < deadline:
         t_send = time.time()
         try:
-            await client.infer({
+            resp = await client.infer({
                 "req_id": req_id,
                 "task":   task,
                 "x":      sample["x"],
                 "mask":   sample.get("mask"),
             })
             latencies.append(time.time() - t_send)
+            service_times.append(resp.get("server_time_ns", 0) / 1e9)
         except Exception as e:
             print(f"[Run] req_id={req_id} error: {e}")
         req_id += 1
@@ -168,9 +209,9 @@ async def run_closed_loop(
     await client.close()
     n = len(latencies)
     print(f"[Run] completed={n}  "
-          f"avg={sum(latencies)/n*1000:.1f}ms  "
-          f"p99={np.percentile(latencies, 99)*1000:.1f}ms")
-    return latencies
+          f"e2e_avg={sum(latencies)/n*1000:.1f}ms  e2e_p99={np.percentile(latencies, 99)*1000:.1f}ms  "
+          f"svc_avg={sum(service_times)/n*1000:.1f}ms  svc_p99={np.percentile(service_times, 99)*1000:.1f}ms")
+    return {"latencies": latencies, "service_times": service_times}
 
 
 # ---------------------------------------------------------------------------
@@ -181,6 +222,7 @@ SUMMARY_FIELDS = [
     "isolation_mode", "backbone", "task",
     "duration_s", "n_completed",
     "avg_lat_ms", "p50_lat_ms", "p95_lat_ms", "p99_lat_ms",
+    "avg_svc_ms", "p50_svc_ms", "p95_svc_ms", "p99_svc_ms",
     "throughput_rps",
     "gpu_allocated_mb",
 ]
@@ -188,8 +230,10 @@ SUMMARY_FIELDS = [
 
 def _compute_row(isolation_mode: str, backbone: str, task: str,
                  duration: float, latencies: List[float],
-                 gpu_mem: Dict) -> Dict:
+                 service_times: List[float], gpu_mem: Dict) -> Dict:
     n = len(latencies)
+    def _ms(xs, q):
+        return round(float(np.percentile(xs, q)) * 1000 if xs else 0.0, 3)
     return {
         "isolation_mode":  isolation_mode,
         "backbone":        backbone,
@@ -197,9 +241,13 @@ def _compute_row(isolation_mode: str, backbone: str, task: str,
         "duration_s":      duration,
         "n_completed":     n,
         "avg_lat_ms":      round(sum(latencies) / n * 1000 if n else 0.0, 3),
-        "p50_lat_ms":      round(float(np.percentile(latencies, 50)) * 1000 if n else 0.0, 3),
-        "p95_lat_ms":      round(float(np.percentile(latencies, 95)) * 1000 if n else 0.0, 3),
-        "p99_lat_ms":      round(float(np.percentile(latencies, 99)) * 1000 if n else 0.0, 3),
+        "p50_lat_ms":      _ms(latencies, 50),
+        "p95_lat_ms":      _ms(latencies, 95),
+        "p99_lat_ms":      _ms(latencies, 99),
+        "avg_svc_ms":      round(sum(service_times) / n * 1000 if n else 0.0, 3),
+        "p50_svc_ms":      _ms(service_times, 50),
+        "p95_svc_ms":      _ms(service_times, 95),
+        "p99_svc_ms":      _ms(service_times, 99),
         "throughput_rps":  round(n / duration if duration > 0 else 0.0, 4),
         "gpu_allocated_mb": round(gpu_mem.get("gpu_allocated_mb", 0.0), 2),
     }
@@ -218,13 +266,14 @@ def _append_summary(path: Path, row: Dict) -> None:
 def _print_row(row: Dict) -> None:
     print(
         f"\n  {'mode':<10}  {'task':<14}  {'n':>6}  "
-        f"{'avg_ms':>8}  {'p50_ms':>8}  {'p95_ms':>8}  {'p99_ms':>8}  "
-        f"{'rps':>6}  {'gpu_alloc_mb':>12}  {'gpu_res_mb':>10}"
+        f"{'e2e_avg':>8}  {'e2e_p99':>8}  "
+        f"{'svc_avg':>8}  {'svc_p99':>8}  "
+        f"{'rps':>6}  {'gpu_alloc_mb':>12}"
     )
     print(
         f"  {row['isolation_mode']:<10}  {row['task']:<14}  {row['n_completed']:>6}  "
-        f"{float(row['avg_lat_ms']):>8.1f}  {float(row['p50_lat_ms']):>8.1f}  "
-        f"{float(row['p95_lat_ms']):>8.1f}  {float(row['p99_lat_ms']):>8.1f}  "
+        f"{float(row['avg_lat_ms']):>8.1f}  {float(row['p99_lat_ms']):>8.1f}  "
+        f"{float(row['avg_svc_ms']):>8.1f}  {float(row['p99_svc_ms']):>8.1f}  "
         f"{float(row['throughput_rps']):>6.2f}  "
         f"{float(row['gpu_allocated_mb']):>12.1f}"
     )
@@ -270,7 +319,7 @@ def main() -> int:
             await asyncio.sleep(1)
 
         print(f"\n[Run] Starting closed-loop for {args.duration}s ...")
-        latencies = await run_closed_loop(
+        timings = await run_closed_loop(
             device_url=args.device_url,
             task=args.task,
             sample=sample,
@@ -278,7 +327,7 @@ def main() -> int:
         )
         return _compute_row(
             args.isolation_mode, args.backbone, args.task,
-            args.duration, latencies, gpu_mem,
+            args.duration, timings["latencies"], timings["service_times"], gpu_mem,
         )
 
     row = asyncio.run(run())
