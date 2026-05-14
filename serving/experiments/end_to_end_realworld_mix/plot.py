@@ -35,16 +35,19 @@ import numpy as np
 EXP_DIR = Path(__file__).resolve().parent
 DEFAULT_RESULTS = EXP_DIR / "results"
 
+# Color palette mirrors serving/experiments/sharing_benefit/*/plot.py so the
+# end-to-end and sharing-benefit figures form a visually consistent set.
 CONDITION_COLORS = {
-    "fmaas": "#1f77b4",
-    "no_sharing": "#d62728",
+    "fmaas":      "#E06C75",   # pink-red — FMVisor (proposed)
+    "no_sharing": "#888888",   # mid gray — BE (baseline)
 }
 CONDITION_LABELS = {
-    "fmaas": "FMVisor",
+    "fmaas":      "FMVisor",
     "no_sharing": "BE",
 }
 
-PAPER_METHODS = ["fmaas", "no_sharing"]
+# Baseline first, proposed second — standard paper convention.
+PAPER_METHODS = ["no_sharing", "fmaas"]
 
 
 def _color(cond: str) -> str:
@@ -432,31 +435,66 @@ def _plot_per_task_mean_latency(per_task: Dict[str, Dict[str, float]],
     plt.close(fig)
 
 
+# ---------------------------------------------------------------------------
+# Paper-ready plots
+# ---------------------------------------------------------------------------
+
+# Default time-series window: 100s ≤ t < 150s (50s) — re-zeroed to 0–50 on
+# the displayed x-axis so the plot reads independently of the trace offset.
+PAPER_TS_START = 100.0
+PAPER_TS_END   = 150.0
+PAPER_TS_BIN_S = 1.0
+
+
 def _paper_style() -> None:
+    """Publication-ready rcParams mirroring sharing_benefit/*/plot.py."""
     plt.rcParams.update({
-        "font.size": 7,
-        "axes.labelsize": 7,
-        "xtick.labelsize": 7,
-        "ytick.labelsize": 7,
-        "legend.fontsize": 6,
-        "axes.linewidth": 0.6,
-        "xtick.major.width": 0.6,
-        "ytick.major.width": 0.6,
-        "xtick.major.size": 2.5,
-        "ytick.major.size": 2.5,
-        "pdf.fonttype": 42,
-        "ps.fonttype": 42,
+        "figure.facecolor":   "white",
+        "axes.facecolor":     "white",
+        "axes.edgecolor":     "black",
+        "axes.labelcolor":    "black",
+        "axes.linewidth":     0.8,
+        "axes.spines.top":    False,
+        "axes.spines.right":  False,
+        "grid.color":         "#cccccc",
+        "grid.linestyle":     ":",
+        "grid.linewidth":     0.5,
+        "grid.alpha":         1.0,
+        "xtick.color":        "black",
+        "ytick.color":        "black",
+        "xtick.direction":    "out",
+        "ytick.direction":    "out",
+        "xtick.major.width":  0.8,
+        "ytick.major.width":  0.8,
+        "xtick.major.size":   3.0,
+        "ytick.major.size":   3.0,
+        "text.color":         "black",
+        "font.family":        "sans-serif",
+        "font.sans-serif":    ["Arial", "Helvetica", "DejaVu Sans"],
+        "font.size":          11,
+        "axes.titlesize":     12,
+        "axes.labelsize":     11,
+        "xtick.labelsize":    10,
+        "ytick.labelsize":    10,
+        "legend.fontsize":    10,
+        "legend.frameon":     False,
+        "lines.linewidth":    1.8,
+        "lines.markersize":   5,
+        "pdf.fonttype":       42,
+        "ps.fonttype":        42,
+        "figure.dpi":         300,
+        "savefig.dpi":        300,
+        "savefig.facecolor":  "white",
     })
 
 
 def _paper_save(fig, out_path: Path) -> None:
-    fig.tight_layout(pad=0.08)
-    fig.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
+    fig.savefig(out_path, bbox_inches="tight", pad_inches=0.04)
     plt.close(fig)
 
 
-def _paper_bar(cond_data: Dict[str, Dict], metric: str, out_path: Path) -> None:
-    conds = [c for c in PAPER_METHODS if c in cond_data]
+def _bar_vals(cond_data: Dict[str, Dict], conds: List[str], metric: str
+              ) -> Tuple[List[float], str]:
     if metric == "mean":
         vals = [float(np.mean(cond_data[c]["e2e_ms"])) for c in conds]
         ylabel = "Mean RT (ms)"
@@ -465,20 +503,127 @@ def _paper_bar(cond_data: Dict[str, Dict], metric: str, out_path: Path) -> None:
         ylabel = "P99 RT (ms)"
     else:
         raise ValueError(metric)
+    return vals, ylabel
 
-    fig, ax = plt.subplots(figsize=(1.55, 1.2))
+
+_NICE_STEPS = (1.0, 2.0, 2.5, 5.0, 10.0)
+
+
+def _nice_top_and_step(value: float, target_ticks: int = 5,
+                        min_ticks: int = 4, max_ticks: int = 7
+                        ) -> Tuple[float, float]:
+    """Return (top, step) such that:
+      • `step` is an integer-friendly value in {1, 2, 2.5, 5, 10} × 10^k
+      • `top = ceil(value / step) * step` (so the top tick lands exactly on
+        the axis limit)
+      • the tick count `top/step + 1` sits in [min_ticks, max_ticks]
+      • among the valid candidates, the one with the *smallest* overshoot
+        (top − value) is chosen, so we don't waste headroom.
+    """
+    if value <= 0 or not np.isfinite(value):
+        return 1.0, 1.0
+
+    magnitude = 10.0 ** np.floor(np.log10(value))
+    # Search across the magnitude one decade smaller and one larger so we
+    # always have a fine-grained step available even when `value` sits just
+    # above a step boundary.
+    candidates: List[Tuple[float, float, float, int]] = []  # (overshoot, step, top, n_intervals)
+    for mag in (magnitude * 0.1, magnitude, magnitude * 10):
+        for s in _NICE_STEPS:
+            step = s * mag
+            if step <= 0:
+                continue
+            n = int(np.ceil(value / step - 1e-9))
+            if n < 1:
+                continue
+            top = n * step
+            overshoot = (top - value) / value
+            candidates.append((overshoot, step, top, n))
+
+    if not candidates:
+        return value, value / 4.0
+
+    valid = [c for c in candidates if min_ticks - 1 <= c[3] <= max_ticks - 1]
+    if not valid:
+        # Relax tick-count bounds rather than emit a degenerate axis.
+        valid = candidates
+    valid.sort(key=lambda c: (c[0], abs(c[3] - (target_ticks - 1))))
+    _, step, top, _ = valid[0]
+    return top, step
+
+
+def _set_y_endpoint(ax, value: float, target_ticks: int = 5) -> float:
+    """Set y-axis to [0, top] with integer-friendly ticks so the last visible
+    tick lands exactly on `top`. Returns the chosen `top`."""
+    top, step = _nice_top_and_step(value, target_ticks=target_ticks)
+    ax.set_ylim(0, top)
+    n = int(round(top / step))
+    ax.set_yticks([i * step for i in range(n + 1)])
+    return top
+
+
+def _draw_paper_bars(ax, cond_data: Dict[str, Dict], metric: str) -> None:
+    """Render a 2-bar comparison (BE vs FMVisor) on `ax` with per-bar value
+    labels and a single downward-arrow improvement annotation above the
+    FMVisor bar."""
+    conds = [c for c in PAPER_METHODS if c in cond_data]
+    vals, ylabel = _bar_vals(cond_data, conds, metric)
+
     x = np.arange(len(conds))
-    ax.bar(x, vals, width=0.58, color=[_color(c) for c in conds],
-           edgecolor="black", linewidth=0.35)
+    ax.bar(
+        x, vals, width=0.6,
+        color=[_color(c) for c in conds],
+        edgecolor="black", linewidth=0.7, zorder=2,
+    )
     ax.set_xticks(x)
     ax.set_xticklabels([_label(c) for c in conds])
     ax.set_ylabel(ylabel)
-    ax.grid(axis="y", alpha=0.22, linewidth=0.45)
+    ax.grid(axis="y", zorder=0)
     ax.set_axisbelow(True)
-    ax.margins(x=0.15)
-    if vals:
-        ax.set_ylim(0, max(vals) * 1.12)
-    _paper_save(fig, out_path)
+    ax.margins(x=0.18)
+
+    if not vals:
+        return
+    vmax = max(vals)
+    # Axis top is a clean round number; gives 25–30% headroom for labels.
+    # _set_y_endpoint guarantees the last labeled tick lands exactly on
+    # the axis limit.
+    y_top = _set_y_endpoint(ax, vmax * 1.32, target_ticks=5)
+
+    # Numerical value just above each bar.
+    for xi, v in zip(x, vals):
+        ax.text(xi, v + y_top * 0.015, f"{v:.0f}",
+                ha="center", va="bottom", fontsize=11)
+
+    # Improvement (or regression) of FMVisor relative to BE. A short vertical
+    # arrow points DOWN at the top of the FMVisor bar with the % label
+    # rendered just above the arrow tail.
+    if "no_sharing" in conds and "fmaas" in conds:
+        i_fm = conds.index("fmaas")
+        i_be = conds.index("no_sharing")
+        be_v, fm_v = vals[i_be], vals[i_fm]
+        if be_v > 0:
+            delta_pct = (be_v - fm_v) / be_v * 100.0
+            arrow_char = "↓" if delta_pct >= 0 else "↑"
+            ann_color = _color("fmaas")
+
+            # Vertical arrow above the FMVisor bar, from y_top*0.92 down to
+            # just above the bar value label.
+            y_tail = y_top * 0.95
+            y_head = fm_v + y_top * 0.08
+            ax.annotate(
+                "",
+                xy=(x[i_fm], y_head),
+                xytext=(x[i_fm], y_tail),
+                arrowprops=dict(arrowstyle="-|>", color=ann_color,
+                                lw=1.6, mutation_scale=14),
+            )
+            ax.text(
+                x[i_fm], y_top * 0.99,
+                f"{arrow_char} {abs(delta_pct):.0f}%",
+                ha="center", va="top",
+                fontsize=12, fontweight="bold", color=ann_color,
+            )
 
 
 def _paper_binned(times: np.ndarray, values: np.ndarray, start: float,
@@ -500,39 +645,144 @@ def _paper_binned(times: np.ndarray, values: np.ndarray, start: float,
     return centers, out
 
 
-def _paper_timeseries(cond_data: Dict[str, Dict], metric: str, out_path: Path,
-                      start: float = 100.0, end: float = 200.0,
-                      bin_sec: float = 1.0) -> None:
+def _draw_paper_timeseries(ax, cond_data: Dict[str, Dict], metric: str,
+                           start: float, end: float, bin_sec: float,
+                           ylabel: str = None) -> None:
+    """Render the binned response-time series on `ax`. X-axis is re-zeroed
+    so `start` is displayed as 0; both axes end on labeled tick marks."""
     if metric == "mean":
         reducer = np.mean
-        ylabel = "Mean RT (ms)"
+        default_ylabel = "Mean RT (ms)"
     elif metric == "p99":
         reducer = lambda a: np.percentile(a, 99)
-        ylabel = "P99 RT (ms)"
+        default_ylabel = "P99 RT (ms)"
     else:
         raise ValueError(metric)
 
-    fig, ax = plt.subplots(figsize=(1.85, 1.2))
+    series_max = 0.0
     for c in PAPER_METHODS:
         if c not in cond_data:
             continue
-        x, y = _paper_binned(cond_data[c]["req_time"], cond_data[c]["e2e_ms"],
-                             start, end, bin_sec, reducer)
-        ax.plot(x, y, label=_label(c), color=_color(c), lw=0.9)
-    ax.set_xlim(0, end - start)
+        x, y = _paper_binned(
+            cond_data[c]["req_time"], cond_data[c]["e2e_ms"],
+            start, end, bin_sec, reducer,
+        )
+        ax.plot(x, y, label=_label(c), color=_color(c),
+                linewidth=2.2)
+        valid = y[np.isfinite(y)]
+        if valid.size:
+            series_max = max(series_max, float(valid.max()))
+
+    x_span = end - start
+    ax.set_xlim(0, x_span)
+    # x-axis ticks every 10 s so the last one lands on x_span; if x_span isn't
+    # a multiple of 10 we fall back to 5 ticks linearly spaced.
+    if abs(x_span - round(x_span / 10.0) * 10.0) < 1e-6:
+        ax.set_xticks(np.arange(0, x_span + 0.5, 10))
+    else:
+        ax.set_xticks(np.linspace(0, x_span, 6))
+
+    # y-axis: clean upper bound with the top tick landing on the limit.
+    # Use a tight 2% pad above the peak so the data fills the panel — the
+    # nice-step rounding will round up to the next clean tick from there.
+    if series_max > 0:
+        _set_y_endpoint(ax, series_max * 1.02, target_ticks=5)
+
     ax.set_xlabel("Time (s)")
-    ax.set_ylabel(ylabel)
-    ax.grid(alpha=0.22, linewidth=0.45)
-    ax.legend(frameon=False, loc="best", handlelength=1.2)
+    ax.set_ylabel(ylabel if ylabel is not None else default_ylabel)
+    ax.grid(zorder=0)
+    ax.set_axisbelow(True)
+
+
+def _paper_bar(cond_data: Dict[str, Dict], metric: str, out_path: Path) -> None:
+    """Standalone bar PDF (kept for cases where individual plots are useful)."""
+    fig, ax = plt.subplots(figsize=(2.8, 2.4))
+    _draw_paper_bars(ax, cond_data, metric)
+    fig.tight_layout(pad=0.3)
     _paper_save(fig, out_path)
+
+
+def _paper_timeseries(cond_data: Dict[str, Dict], metric: str, out_path: Path,
+                      start: float = PAPER_TS_START,
+                      end:   float = PAPER_TS_END,
+                      bin_sec: float = PAPER_TS_BIN_S) -> None:
+    """Standalone time-series PDF (kept for individual use). Slightly larger
+    canvas than the combined 2×2 panels so the fonts stay legible."""
+    with plt.rc_context({
+        "font.size":       13,
+        "axes.labelsize":  13,
+        "xtick.labelsize": 12,
+        "ytick.labelsize": 12,
+        "legend.fontsize": 12,
+    }):
+        fig, ax = plt.subplots(figsize=(4.2, 2.6))
+        _draw_paper_timeseries(ax, cond_data, metric, start, end, bin_sec)
+        # Mean RT lives near the top of its axis, so the legend goes bottom
+        # left to stay out of the data; p99 has spikes throughout, keep it
+        # at upper-left where the curves are typically lowest.
+        legend_loc = "lower left" if metric == "mean" else "upper left"
+        ax.legend(loc=legend_loc, handlelength=1.8,
+                  labelspacing=0.3, borderaxespad=0.4)
+        fig.tight_layout(pad=0.3)
+        _paper_save(fig, out_path)
+
+
+def _paper_combined(cond_data: Dict[str, Dict], out_path: Path,
+                    start: float = PAPER_TS_START,
+                    end:   float = PAPER_TS_END,
+                    bin_sec: float = PAPER_TS_BIN_S) -> None:
+    """One paper-ready 2×2 figure: top row = mean (bar | ts),
+    bottom row = p99 (bar | ts). Bars are narrower than the time series so
+    the four panels read at the same visual weight.
+    """
+    if not any(c in cond_data for c in PAPER_METHODS):
+        return
+
+    # Bumped fonts so the four subplots remain legible at column-width.
+    with plt.rc_context({
+        "font.size":       13,
+        "axes.labelsize":  13,
+        "xtick.labelsize": 12,
+        "ytick.labelsize": 12,
+        "legend.fontsize": 13,
+        "lines.linewidth": 2.2,
+    }):
+        fig, axes = plt.subplots(
+            2, 2, figsize=(8.0, 5.0),
+            gridspec_kw={"width_ratios": [1.0, 1.8]},
+        )
+        (ax_mean_bar, ax_mean_ts), (ax_p99_bar, ax_p99_ts) = axes
+
+        _draw_paper_bars(ax_mean_bar, cond_data, "mean")
+        _draw_paper_bars(ax_p99_bar,  cond_data, "p99")
+        _draw_paper_timeseries(ax_mean_ts, cond_data, "mean", start, end, bin_sec)
+        _draw_paper_timeseries(ax_p99_ts,  cond_data, "p99",  start, end, bin_sec)
+
+        # Legend lives inside the mean-RT TS panel at bottom-left, where the
+        # curves are well above the floor of the axis. Both TS panels share
+        # the same color/style mapping, so a single legend on the upper
+        # panel is enough and keeps the figure top free of clutter.
+        ax_mean_ts.legend(
+            loc="lower left", frameon=False,
+            handlelength=2.0, labelspacing=0.3,
+            borderaxespad=0.4, handletextpad=0.5,
+        )
+
+        fig.subplots_adjust(left=0.10, right=0.985, top=0.97, bottom=0.10,
+                            hspace=0.48, wspace=0.34)
+        _paper_save(fig, out_path)
 
 
 def _paper_plots(cond_data: Dict[str, Dict], out_dir: Path) -> None:
     _paper_style()
+    # Filename reflects the (start, end) time window so older 100–200 files
+    # don't shadow the new 100–160 ones.
+    s, e = int(PAPER_TS_START), int(PAPER_TS_END)
     _paper_bar(cond_data, "mean", out_dir / "paper_mean_bar.pdf")
-    _paper_bar(cond_data, "p99", out_dir / "paper_p99_bar.pdf")
-    _paper_timeseries(cond_data, "mean", out_dir / "paper_mean_ts_100_200.pdf")
-    _paper_timeseries(cond_data, "p99", out_dir / "paper_p99_ts_100_200.pdf")
+    _paper_bar(cond_data, "p99",  out_dir / "paper_p99_bar.pdf")
+    _paper_timeseries(cond_data, "mean", out_dir / f"paper_mean_ts_{s}_{e}.pdf")
+    _paper_timeseries(cond_data, "p99",  out_dir / f"paper_p99_ts_{s}_{e}.pdf")
+    _paper_combined(cond_data, out_dir / "paper_combined.pdf")
 
 
 def _plot_mix(mix_dir: Path, bin_sec: float) -> None:
