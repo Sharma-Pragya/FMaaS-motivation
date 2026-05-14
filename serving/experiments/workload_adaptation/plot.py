@@ -438,6 +438,47 @@ def _plot_bumped_task_mean_response_time_case_ax(
     ax.grid(True, axis="y")
 
 
+def _draw_duration_arrow(
+    ax,
+    x_start: float,
+    x_end: float,
+    y_frac: float,
+    color: str,
+    label: str,
+    label_side: str = "center",
+) -> None:
+    """Draw a horizontal double-headed arrow between two x positions.
+
+    The arrow lives in (data-x, axes-fraction-y) coords so its height is
+    stable regardless of the y-axis scale (linear or log). `label_side`
+    controls where the duration text is placed: 'center' above the arrow,
+    or 'right' just to the right of the arrow end (useful when the span is
+    too narrow to host a centered label).
+    """
+    transform = ax.get_xaxis_transform()
+    ax.annotate(
+        "",
+        xy=(x_end, y_frac), xytext=(x_start, y_frac),
+        xycoords=transform, textcoords=transform,
+        arrowprops=dict(arrowstyle="<->", color=color, lw=1.6,
+                        shrinkA=0, shrinkB=0,
+                        mutation_scale=14),
+        annotation_clip=False,
+    )
+    if label_side == "center":
+        ax.text((x_start + x_end) / 2.0, y_frac + 0.03, label,
+                transform=transform,
+                ha="center", va="bottom",
+                color=color, fontsize=17, fontweight="bold",
+                clip_on=False)
+    else:  # right of arrow end
+        ax.text(x_end + 0.6, y_frac, label,
+                transform=transform,
+                ha="left", va="center",
+                color=color, fontsize=17, fontweight="bold",
+                clip_on=False)
+
+
 def plot_bumped_task_mean_response_time_comparison(
     cases: list[dict],
     out_path: Path,
@@ -449,18 +490,30 @@ def plot_bumped_task_mean_response_time_comparison(
         print("[plot] no comparison cases available; skipping combined mean RT plot.")
         return
 
-    with plt.rc_context({
-        "font.size": 8.5,
-        "axes.labelsize": 9,
-        "xtick.labelsize": 8,
-        "ytick.labelsize": 8,
-        "legend.fontsize": 7.5,
-        "lines.linewidth": 1.35,
-    }):
-        fig, ax = plt.subplots(figsize=(5, 1.9))
+    # Paper view: zoom to the [20s, 80s] window in the original timebase, and
+    # re-zero so 20s appears as 0 on the displayed x-axis. The visible window
+    # spans 60s of wall time.
+    X_ORIGIN = 20.0
+    X_SPAN   = 60.0   # 80 − 20
 
-        # Collect event times first so workload-change vline is drawn first
-        # (controls its position in legend ordering).
+    # Fonts deliberately large so the figure stays legible even if the user
+    # embeds it at one \columnwidth in a 2-column paper. Spines and grid are
+    # inherited from apply_paper_style() (no top/right box, dotted y-grid).
+    with plt.rc_context({
+        "font.size":        17,
+        "axes.labelsize":   18,
+        "xtick.labelsize":  16,
+        "ytick.labelsize":  16,
+        "legend.fontsize":  16,
+        "lines.linewidth":  2.4,
+        "axes.linewidth":   1.0,
+    }):
+        # Wide single-row figure: width >> height, suitable as the dominant
+        # in-text figure for the workload-adaptation result. Height bumped up
+        # to give the large fonts and the on-top legend enough room.
+        fig, ax = plt.subplots(figsize=(7.5, 3.4))
+
+        # Collect event times (still in original trace-relative timebase).
         bump_t = None
         attach_done_t = None
         backbone_done_t = None
@@ -476,10 +529,10 @@ def plot_bumped_task_mean_response_time_comparison(
             if case["name"] == "case5":
                 backbone_done_t = _event_time(case["events"], "start_backbone_done")
 
-        # "Workload change" first in legend — plot its vline before case lines.
+        # Workload-change vline (drawn first so it appears first in the legend).
         if bump_t is not None:
-            ax.axvline(bump_t, color="#888888", linestyle="--", linewidth=0.9,
-                       label="Workload change", zorder=0)
+            ax.axvline(bump_t - X_ORIGIN, color="#555555", linestyle="--",
+                       linewidth=1.3, label="Workload change", zorder=0)
 
         any_rows = False
         for case in cases:
@@ -493,12 +546,12 @@ def plot_bumped_task_mean_response_time_comparison(
                 "linestyle": "-",
             })
             ax.plot(
-                ts["t_center"],
+                ts["t_center"] - X_ORIGIN,
                 ts["mean_ms"],
                 label=style["label"],
                 color=style["color"],
                 linestyle=style["linestyle"],
-                linewidth=1.5,
+                linewidth=2.2,
             )
 
         if not any_rows:
@@ -506,10 +559,7 @@ def plot_bumped_task_mean_response_time_comparison(
             plt.close(fig)
             return
 
-        # X axis: fixed at 120 s with even 20 s ticks
-        paper_x_max = 120.0
-
-        # Y axis: log scale with clean bounds
+        # Y axis: log scale with clean bounds.
         raw_y_max = y_max if y_max is not None else max(
             float(case["ts"]["mean_ms"].max()) for case in cases if not case["ts"].empty
         )
@@ -519,39 +569,68 @@ def plot_bumped_task_mean_response_time_comparison(
         )
         paper_y_min = 10.0 ** np.floor(np.log10(max(raw_y_min, 1.0)))
 
-        ax.set_xlim(0, paper_x_max)
+        ax.set_xlim(0, X_SPAN)
         ax.set_ylim(paper_y_min, paper_y_max)
         ax.set_yscale("log")
         ax.set_xlabel("Time (sec)")
         ax.set_ylabel("Mean RT (ms)")
-        ax.xaxis.set_major_locator(ticker.MultipleLocator(20))
+        ax.xaxis.set_major_locator(ticker.MultipleLocator(10))
         ax.yaxis.set_major_locator(ticker.LogLocator(base=10, numticks=8))
         ax.yaxis.set_major_formatter(ticker.LogFormatterMathtext(base=10))
-        ax.margins(x=0.01)
+        ax.margins(x=0.0)
         ax.grid(True, axis="y", which="major")
+        # Match apply_paper_style() — keep the figure spine-free on top/right
+        # so it doesn't look "in a box" next to the other panels.
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
 
-        # Annotation vlines — no legend label; text placed just above the top spine.
-        if attach_done_t is not None:
+        # Adaptation-duration arrows. Drawn above the data area at two y-fraction
+        # heights so they don't overlap. Each arrow is colored to match its
+        # case and labeled with the elapsed time from "workload change" to the
+        # adaptation-complete event.
+        if bump_t is not None and attach_done_t is not None:
             c1_color = CASE_STYLES["case1"]["color"]
-            ax.axvline(attach_done_t, color=c1_color, linestyle=":", linewidth=0.9, zorder=0)
-            ax.text(attach_done_t + 0.8, 1.015, "Decoder\nattached",
-                    transform=ax.get_xaxis_transform(),
-                    color=c1_color, fontsize=5.5, ha="left", va="bottom",
-                    linespacing=1.15, clip_on=False)
-
-        if backbone_done_t is not None:
+            x_s = bump_t - X_ORIGIN
+            x_e = attach_done_t - X_ORIGIN
+            ax.axvline(x_e, color=c1_color, linestyle=":",
+                       linewidth=1.2, zorder=0)
+            _draw_duration_arrow(
+                ax, x_s, x_e, y_frac=0.72,
+                color=c1_color,
+                label=f"{(x_e - x_s):.1f}s",
+                # Span is <1s — centering the label inside is unreadable, so
+                # place it just to the right of the arrow head.
+                label_side="right",
+            )
+        if bump_t is not None and backbone_done_t is not None:
             c5_color = CASE_STYLES["case5"]["color"]
-            ax.axvline(backbone_done_t, color=c5_color, linestyle=":", linewidth=0.9, zorder=0)
-            ax.text(backbone_done_t + 0.8, 1.015, "Backbone\nready",
-                    transform=ax.get_xaxis_transform(),
-                    color=c5_color, fontsize=5.5, ha="left", va="bottom",
-                    linespacing=1.15, clip_on=False)
+            x_s = bump_t - X_ORIGIN
+            x_e = backbone_done_t - X_ORIGIN
+            ax.axvline(x_e, color=c5_color, linestyle=":",
+                       linewidth=1.2, zorder=0)
+            _draw_duration_arrow(
+                ax, x_s, x_e, y_frac=0.88,
+                color=c5_color,
+                label=f"{(x_e - x_s):.1f}s",
+                label_side="center",
+            )
 
-        # Legend inside the plot — upper-right (RT is low after adaptation settles).
-        ax.legend(loc="upper right", frameon=False, fontsize=6.5,
-                  handlelength=1.6, labelspacing=0.3, borderaxespad=0.3)
-        fig.tight_layout(pad=0.3)
-        fig.subplots_adjust(top=0.88)   # leave headroom above axes for the text labels
+        # Legend on top, outside the axes. Lifted slightly higher and given
+        # extra spacing so the larger fonts don't run into the y-axis label.
+        ax.legend(
+            loc="lower center",
+            bbox_to_anchor=(0.5, 1.06),
+            ncol=3,
+            frameon=False,
+            handlelength=2.2,
+            columnspacing=1.5,
+            handletextpad=0.6,
+            labelspacing=0.3,
+            borderaxespad=0.0,
+        )
+
+        # Reserve a clear band above the axes for the legend row.
+        fig.tight_layout(rect=(0, 0, 1, 0.84), pad=0.4)
         save_figure(fig, out_path)
         plt.close(fig)
 
