@@ -22,101 +22,193 @@ from pathlib import Path
 from glob import glob
 
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
 import numpy as np
 
 DEFAULT_OUTPUT_ROOT = Path(__file__).resolve().parent / "outputs"
 
+# Palette aligned with sharing_benefit / end_to_end_realworld_mix paper plots.
+CONDITION_COLORS = {
+    "fmaas":      "#E06C75",  # FMVisor – pink-red
+    "no_sharing": "#888888",  # BE      – mid grey
+}
+CONDITION_LABELS = {
+    "fmaas":      "FMVisor",
+    "no_sharing": "BE",
+}
+CONDITION_ORDER = ["fmaas", "no_sharing"]
+REGIME_ORDER = {"low": 0, "medium": 1, "high": 2}
 
-def plot_placement_results(summary_path: Path, mode: str, output_path: Path | None = None) -> None:
-    """Plot placement results with confidence intervals."""
-    
-    with open(summary_path, 'r') as f:
+
+def _paper_style() -> None:
+    """Publication-ready rcParams matching the other paper plots."""
+    plt.rcParams.update({
+        "figure.facecolor":   "white",
+        "axes.facecolor":     "white",
+        "axes.edgecolor":     "black",
+        "axes.labelcolor":    "black",
+        "axes.linewidth":     0.9,
+        "axes.spines.top":    False,
+        "axes.spines.right":  False,
+        "grid.color":         "#cccccc",
+        "grid.linestyle":     ":",
+        "grid.linewidth":     0.6,
+        "grid.alpha":         1.0,
+        "xtick.color":        "black",
+        "ytick.color":        "black",
+        "xtick.direction":    "out",
+        "ytick.direction":    "out",
+        "xtick.major.width":  0.9,
+        "ytick.major.width":  0.9,
+        "xtick.major.size":   3.5,
+        "ytick.major.size":   3.5,
+        "text.color":         "black",
+        "font.family":        "sans-serif",
+        "font.sans-serif":    ["Arial", "Helvetica", "DejaVu Sans"],
+        "font.size":          14,
+        "axes.titlesize":     15,
+        "axes.labelsize":     15,
+        "xtick.labelsize":    14,
+        "ytick.labelsize":    14,
+        "legend.fontsize":    14,
+        "legend.frameon":     False,
+        "lines.linewidth":    1.8,
+        "pdf.fonttype":       42,
+        "ps.fonttype":        42,
+        "figure.dpi":         300,
+        "savefig.dpi":        300,
+        "savefig.facecolor":  "white",
+    })
+
+
+def _format_count(v: float) -> str:
+    """Compact tick / annotation label: 1947 -> '1.9k', 312 -> '312'."""
+    if not np.isfinite(v) or v <= 0:
+        return ""
+    if v >= 1000:
+        return f"{v / 1000:.1f}k".replace(".0k", "k")
+    return f"{v:.0f}"
+
+
+def plot_placement_results(summary_path: Path, mode: str,
+                           output_path: Path | None = None) -> None:
+    """Plot placement results with 95 % confidence intervals — paper-ready,
+    single-column-wide layout with the legend above the axes."""
+
+    with open(summary_path, "r") as f:
         data = json.load(f)
-    
-    scenarios = data['scenarios']
-    
-    # Extract data by regime with fixed order
-    all_regimes = set(s['regime'] for s in scenarios)
-    regime_order = {'low': 0, 'medium': 1, 'high': 2}
-    regimes = sorted(all_regimes, key=lambda r: regime_order.get(r, 999))
-    condition_names = {'fmaas': 'FMVisor', 'no_sharing': 'BE'}
-    
-    # Prepare data for plotting
+
+    scenarios = data["scenarios"]
+
+    regimes = sorted({s["regime"] for s in scenarios},
+                     key=lambda r: REGIME_ORDER.get(r, 999))
+
+    metric_key = "admitted_before_failure" if mode == "admission" else "placed_count"
+
     placed_counts = {regime: {} for regime in regimes}
-    
-    # Determine which metric to use based on mode
-    metric_key = 'admitted_before_failure' if mode == 'admission' else 'placed_count'
-    
     for scenario in scenarios:
-        regime = scenario['regime']
-        conditions = scenario['conditions']
-        
-        for condition_key, condition_data in conditions.items():
-            if condition_key not in condition_names:
+        regime = scenario["regime"]
+        for cond_key, cond_data in scenario["conditions"].items():
+            if cond_key not in CONDITION_LABELS:
                 continue
-            
-            if metric_key not in condition_data:
-                print(f"Warning: {metric_key} not found in {condition_key} data")
+            if metric_key not in cond_data:
+                print(f"Warning: {metric_key} not found in {cond_key} data")
                 continue
-            
-            metric = condition_data[metric_key]
-            placed_counts[regime][condition_key] = {
-                'mean': metric['mean'],
-                'ci_low': metric['ci95_low'],
-                'ci_high': metric['ci95_high'],
-                'std': metric['std'],
+            m = cond_data[metric_key]
+            placed_counts[regime][cond_key] = {
+                "mean":    m["mean"],
+                "ci_low":  m["ci95_low"],
+                "ci_high": m["ci95_high"],
+                "std":     m["std"],
             }
-    
-    # Create plot
-    fig, ax = plt.subplots(figsize=(4.0, 2.5), dpi=150)
-    
+
+    _paper_style()
+
+    # Wide-aspect single-column layout: ~ full text-column width with room
+    # for the bigger fonts.
+    fig, ax = plt.subplots(figsize=(7.0, 3.2))
+
     x_positions = np.arange(len(regimes))
-    width = 0.35
-    
-    conditions = ['fmaas', 'no_sharing']
-    colors = {'fmaas': '#E06C75', 'no_sharing': '#888888'}
-    
-    for i, condition in enumerate(conditions):
-        means = []
-        errors = []
-        
+    width = 0.36
+
+    all_means: list[float] = []
+    for i, cond in enumerate(CONDITION_ORDER):
+        means: list[float] = []
+        err_lo: list[float] = []
+        err_hi: list[float] = []
         for regime in regimes:
-            if condition in placed_counts[regime]:
-                data_point = placed_counts[regime][condition]
-                means.append(data_point['mean'])
-                # Calculate error bar size (half-width of CI)
-                error = data_point['mean'] - data_point['ci_low']
-                errors.append(error)
-            else:
+            dp = placed_counts[regime].get(cond)
+            if dp is None:
                 means.append(np.nan)
-                errors.append(0)
-        
+                err_lo.append(0.0)
+                err_hi.append(0.0)
+            else:
+                means.append(dp["mean"])
+                err_lo.append(max(dp["mean"] - dp["ci_low"], 0.0))
+                err_hi.append(max(dp["ci_high"] - dp["mean"], 0.0))
+
         offset = width * (i - 0.5)
-        ax.bar(x_positions + offset, means, width, 
-               label=condition_names[condition],
-               color=colors[condition],
-               capsize=5,
-               error_kw={'linewidth': 1.5},
-               yerr=errors)
-    
-    # Formatting
-    ax.set_ylabel('#Task Placed', fontsize=12, fontweight='bold')
+        xs = x_positions + offset
+        bars = ax.bar(
+            xs, means, width,
+            label=CONDITION_LABELS[cond],
+            color=CONDITION_COLORS[cond],
+            edgecolor="black", linewidth=0.7,
+            yerr=[err_lo, err_hi],
+            capsize=4,
+            error_kw={"linewidth": 1.2, "ecolor": "black"},
+            zorder=2,
+        )
+
+        # Value label above each bar (just above the CI whisker) so the
+        # actual counts are readable even on a log axis.
+        for xi, m, eh in zip(xs, means, err_hi):
+            if not np.isfinite(m) or m <= 0:
+                continue
+            label_y = (m + eh) * 1.15
+            ax.text(xi, label_y, _format_count(m),
+                    ha="center", va="bottom",
+                    fontsize=12, color="black")
+            all_means.append(m)
+
+    ax.set_ylabel("# Tasks Placed")
     ax.set_xticks(x_positions)
-    ax.set_xticklabels([r.capitalize() for r in regimes], fontsize=12)
-    ax.set_yscale('log')
-    ax.legend(fontsize=10, frameon=True, fancybox=False, edgecolor='black')
-    ax.grid(axis='y', alpha=0.25, linestyle='--')
+    ax.set_xticklabels([r.capitalize() for r in regimes])
+
+    ax.set_yscale("log")
+    if all_means:
+        ymin = min(all_means) * 0.4
+        ymax = max(all_means) * 3.0
+        # Snap limits onto integer decades for a clean look.
+        lo_exp = int(np.floor(np.log10(max(ymin, 1e-6))))
+        hi_exp = int(np.ceil(np.log10(max(ymax, 1e-6))))
+        ax.set_ylim(10 ** lo_exp, 10 ** hi_exp)
+        ax.yaxis.set_major_locator(
+            mticker.LogLocator(base=10.0, numticks=hi_exp - lo_exp + 1))
+        ax.yaxis.set_minor_locator(
+            mticker.LogLocator(base=10.0,
+                               subs=np.arange(2, 10) * 0.1,
+                               numticks=12))
+        ax.yaxis.set_major_formatter(mticker.LogFormatterMathtext(base=10.0))
+    ax.grid(axis="y", which="major", zorder=0)
+    ax.grid(axis="y", which="minor", alpha=0.4, zorder=0)
     ax.set_axisbelow(True)
-    ax.tick_params(axis='both', which='major', labelsize=10)
-    
-    # Remove top and right spines
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    
-    plt.tight_layout()
-    
+    ax.margins(x=0.08)
+
+    # Legend ABOVE the axes (single column figure → headroom rather than
+    # in-plot real estate).
+    ax.legend(
+        loc="lower center", bbox_to_anchor=(0.5, 1.02),
+        ncol=len(CONDITION_ORDER), frameon=False,
+        handlelength=1.6, columnspacing=2.0, handletextpad=0.5,
+        borderaxespad=0.0,
+    )
+
+    fig.subplots_adjust(top=0.86, bottom=0.18, left=0.12, right=0.98)
+
     if output_path:
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        fig.savefig(output_path, bbox_inches="tight", pad_inches=0.04)
+        plt.close(fig)
         print(f"Plot saved to {output_path}")
     else:
         plt.show()
