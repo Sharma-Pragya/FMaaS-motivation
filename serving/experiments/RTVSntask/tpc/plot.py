@@ -959,6 +959,7 @@ def _plot_ntasks_line_sweep(
     ylabel: str,
     warn_label: str,
     y_max: float = 300.0,
+    y_max_per_rps: Optional[Dict[int, float]] = None,
     fig_w: Optional[float] = None,
     fig_h: float = 1.55,
 ) -> None:
@@ -1006,7 +1007,8 @@ def _plot_ntasks_line_sweep(
         ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{int(v)}"))
         ax.grid(axis="both", zorder=0)
         ax.set_axisbelow(True)
-        ax.set_ylim(0, y_max)
+        rps_y_max = (y_max_per_rps or {}).get(rps, y_max)
+        _set_linear_axis_with_endpoint(ax, "y", 0.0, rps_y_max, target_ticks=5)
         ax.set_ylabel(ylabel)
 
         # File name with RPS suffix
@@ -1025,6 +1027,7 @@ def plot_ntasks_mean_latency(
         data, rps_list, ntasks_list, out_path,
         ylabel="Response Time (ms)",
         warn_label="ntasks mean latency",
+        y_max_per_rps={7: 500.0},
         fig_w=3.7,
         fig_h=1.25,
     )

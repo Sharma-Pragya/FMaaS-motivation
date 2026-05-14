@@ -628,7 +628,7 @@ else
         # unset _seen_tasks
         # conditions+=("no_sharing" "no_sharing_tpc" "no_sharing_mps" "sharing")
         # conditions+=("no_sharing_tpc" "sharing")
-        conditions+=("sharing" "no_sharing" "no_sharing_tpc")
+        conditions+=("no_sharing_tpc" "sharing" "no_sharing" )
         # conditions+=("single_${ALL_TSFM_TASKS[0]}")
         for rps in "${RPS_LIST[@]}"; do
             echo ""
