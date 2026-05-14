@@ -1,0 +1,50 @@
+{
+  "regime": "low",
+  "trials": 5,
+  "seed": 12345,
+  "max_tasks": 2000,
+  "owner_pool_size": 80,
+  "owner_source": "auto",
+  "fmaas_latency_factor": 0.9,
+  "resolved_owner_source": "real",
+  "window_info": {
+    "day": 11,
+    "minute_of_day": 752,
+    "window_minutes": 10,
+    "cv_max": 1.0,
+    "headroom_min": 601,
+    "n_eligible": {
+      "low": 681
+    },
+    "picks_per_band": {
+      "low": 80
+    },
+    "source": "real"
+  },
+  "conditions": {
+    "fmaas": {
+      "successful_trials": 5,
+      "admitted_before_failure": {
+        "mean": 1947.6,
+        "std": 45.85629727747324,
+        "ci95_low": 1907.4051832197233,
+        "ci95_high": 1987.7948167802765
+      },
+      "min_capacity": 1891.0,
+      "max_capacity": 2000.0,
+      "censored_trials": 1
+    },
+    "no_sharing": {
+      "successful_trials": 5,
+      "admitted_before_failure": {
+        "mean": 312.8,
+        "std": 14.771594362153328,
+        "ci95_low": 299.85212666110766,
+        "ci95_high": 325.74787333889236
+      },
+      "min_capacity": 297.0,
+      "max_capacity": 337.0,
+      "censored_trials": 0
+    }
+  }
+}

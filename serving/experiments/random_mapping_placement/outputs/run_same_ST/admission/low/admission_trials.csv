@@ -1,0 +1,11 @@
+regime,trial,seed,condition,admitted_before_failure,first_failure_n,placed_at_failure,censored,max_tasks
+low,0,12345,fmaas,1781,1782,1781,False,2000
+low,0,12345,no_sharing,309,310,309,False,2000
+low,1,12346,fmaas,1743,1744,1743,False,2000
+low,1,12346,no_sharing,313,314,313,False,2000
+low,2,12347,fmaas,1753,1754,1753,False,2000
+low,2,12347,no_sharing,297,298,297,False,2000
+low,3,12348,fmaas,1703,1704,1703,False,2000
+low,3,12348,no_sharing,337,338,337,False,2000
+low,4,12349,fmaas,1826,1827,1826,False,2000
+low,4,12349,no_sharing,308,309,308,False,2000

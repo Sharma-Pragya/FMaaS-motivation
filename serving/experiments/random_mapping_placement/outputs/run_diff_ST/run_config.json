@@ -1,0 +1,22 @@
+{
+  "mode": "admission",
+  "regimes": [
+    "low",
+    "medium",
+    "high"
+  ],
+  "task_counts": [
+    1500
+  ],
+  "trials": 5,
+  "seed": 12345,
+  "admission_max_tasks": 2000,
+  "owner_pool_size": 80,
+  "owner_source": "auto",
+  "fmaas_latency_factor": 0.9,
+  "output_dir": "/NFS/FMaaS-motivation/serving/experiments/random_mapping_placement/outputs/run_20260513_194020",
+  "conditions": [
+    "fmaas",
+    "no_sharing"
+  ]
+}
