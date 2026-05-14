@@ -1,0 +1,16 @@
+{
+  "mode": "sharing_no_adapter",
+  "backbone": "momentlarge",
+  "base_task": "ecgclass",
+  "num_tasks": 2,
+  "concurrency_per_task": 1,
+  "duration_s": 60.0,
+  "warmup_s": 5.0,
+  "n_requests_total": 2315,
+  "n_requests_pre_warmup": 199,
+  "aggregate_throughput_rps": 42.0909,
+  "avg_latency_ms_all": 47.502,
+  "p50_latency_ms_all": 47.431,
+  "p95_latency_ms_all": 48.261,
+  "p99_latency_ms_all": 48.666
+}

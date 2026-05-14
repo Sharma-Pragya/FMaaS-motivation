@@ -1,0 +1,15 @@
+mode,num_tasks,aggregate_throughput_rps,avg_latency_ms_all,p95_latency_ms_all,p99_latency_ms_all
+sharing,2,22.9818,87.007,87.916,88.267
+sharing,4,31.4364,127.134,128.21,128.782
+sharing,6,35.7818,167.663,168.774,169.415
+sharing,8,37.0727,216.124,218.566,220.189
+sharing,10,39.4545,252.96,255.62,256.948
+no_sharing,2,24.4727,81.665,82.375,83.011
+no_sharing,4,27.3455,146.117,149.657,151.452
+no_sharing,6,27.4545,218.243,222.28,224.05
+no_sharing,8,27.4,291.396,296.404,299.248
+sharing_no_adapter,2,42.0909,47.502,48.261,48.666
+sharing_no_adapter,4,58.8182,67.998,70.319,71.604
+sharing_no_adapter,6,66.0909,90.864,93.117,94.302
+sharing_no_adapter,8,66.0364,121.153,124.056,125.421
+sharing_no_adapter,10,72.7273,137.401,140.172,141.589

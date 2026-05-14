@@ -1,0 +1,3 @@
+task,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms
+ecgclass,632,11.4909,87.005,86.966,87.878,88.242,46.518
+ecgclass__app1,632,11.4909,87.009,86.957,87.932,88.34,46.53

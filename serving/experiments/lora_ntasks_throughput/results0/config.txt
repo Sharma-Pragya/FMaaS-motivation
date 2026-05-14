@@ -1,0 +1,8 @@
+Experiment config - Thu May 14 00:42:34 UTC 2026
+Backbone           : momentlarge + LoRA
+Base task          : ecgclass
+Sweep N            : 2 4 6 8 10
+Concurrency / task : 1
+Duration           : 60s (warmup=5s)
+Scheduler          : stfq (bsize=32, bwait=0ms)
+Results base       : experiments/lora_ntasks_throughput/results

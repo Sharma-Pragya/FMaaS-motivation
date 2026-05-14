@@ -1,0 +1,23 @@
+{
+  "backbone": "momentlarge",
+  "base_task": "ecgclass",
+  "num_tasks": 10,
+  "num_adapted": 0,
+  "num_plain": 10,
+  "concurrency_per_task": 1,
+  "duration_s": 60.0,
+  "warmup_s": 5.0,
+  "n_requests_total": 4009,
+  "n_requests_pre_warmup": 351,
+  "aggregate_throughput_rps": 72.8909,
+  "avg_latency_ms_all": 137.317,
+  "p50_latency_ms_all": 137.271,
+  "p95_latency_ms_all": 140.641,
+  "p99_latency_ms_all": 142.037,
+  "avg_latency_ms_adapted": null,
+  "avg_latency_ms_plain": 137.317,
+  "p99_latency_ms_adapted": null,
+  "p99_latency_ms_plain": 142.037,
+  "throughput_rps_adapted": 0.0,
+  "throughput_rps_plain": 72.8909
+}

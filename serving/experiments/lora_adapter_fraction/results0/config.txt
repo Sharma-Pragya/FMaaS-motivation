@@ -1,0 +1,9 @@
+Experiment config - Wed May 13 23:12:47 UTC 2026
+Backbone           : momentlarge
+Base task          : ecgclass
+Total tasks (N)    : 10
+Adapted (K) sweep  : 0 2 4 6 8 10
+Concurrency / task : 1
+Duration           : 60s (warmup=5s)
+Scheduler          : stfq (bsize=32, bwait=0ms)
+Results base       : experiments/lora_adapter_fraction/results
