@@ -59,7 +59,7 @@ export DECODER_DIR="${DECODER_DIR:-${FMTK_DIR}/models/vision/finetuned}"
 export NYUDEPTH_PATH="${NYUDEPTH_PATH:-../../FMTK/dataset/nyu-depth-v2}"
 export PASCALVOC_PATH="${PASCALVOC_PATH:-../../FMTK/dataset/PASCAL-VOC}"
 
-BACKBONE="${BACKBONE:-swinbase}"
+BACKBONE="${BACKBONE:-swintiny}"
 VICTIM_TASK="${VICTIM_TASK:-nyudepth}"
 AGGRESSOR_TASK="${AGGRESSOR_TASK:-vocseg}"
 

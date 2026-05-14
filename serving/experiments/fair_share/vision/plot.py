@@ -582,7 +582,7 @@ BASELINES = ["fcfs", "no_sharing"]
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--results-base", default="experiments/fair_share/vision/results_t4")
+    ap.add_argument("--results-base", default="experiments/fair_share/vision/results_t4_swintiny")
     ap.add_argument("--plot-dir",     default=None,
                     help="Output dir (default: <results-base>/plots)")
     ap.add_argument("--victim-task",    default="nyudepth")

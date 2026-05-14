@@ -1,5 +1,5 @@
-Experiment config - Wed May 13 00:37:13 UTC 2026
-Backbone: swinbase
+Experiment config - Thu May 14 05:29:59 UTC 2026
+Backbone: swintiny
 Client A (priority/victim): nyudepth
 Client B (other/aggressor): vocseg
 Number of phases: 3
