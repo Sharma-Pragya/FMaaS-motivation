@@ -1,9 +1,22 @@
 """Profiler inference pipeline.
 
-TSFM / CV paths use `PyTorchRuntime.run_batch` (same codepath as
+Uses `PyTorchRuntime.run_batch` (same codepath as
 `serving/experiments/batching_profiles/tsfm/run.py`) so backbone/decoder
-timings match production numbers. VLM and LLM paths are currently not
-supported in this profiler.
+timings match production numbers. Dispatches on `task_info['task_type']`:
+
+  - TSFM / CV     : numpy `x` (+ optional `mask`) → run_batch(x, tasks, mask=...)
+  - VLM           : image tensor + prompt string → run_batch(x, tasks, questions=...)
+  - LLM (HF-text) : prompt string only          → run_batch(None, tasks, questions=...)
+
+vLLM-backed LLM backbones (QwenVLLMModel, Phi3VLLMModel, phi-vllm) are
+skipped for now — those need VLLMRuntime + asyncio and will be added
+later. Anything not in `_VLLM_BACKED_BACKBONES` is run through
+PyTorchRuntime.
+
+Adapter handling mirrors `ModelLoader.load_models`: a path entry like
+`{'adapter': 'lora_vlm', 'path': '<saved_adapter_dir>'}` is forwarded as
+`{'task': ..., 'adapter': 'lora_vlm', 'path': '...'}` so the runtime
+loads the LoRA weights and `pipeline.set_adapter` fires during inference.
 """
 
 import csv
@@ -27,6 +40,28 @@ if str(_SERVING_DIR) not in sys.path:
     sys.path.insert(0, str(_SERVING_DIR))
 
 
+# Backbones that require VLLMRuntime (async) — skipped in this profiler scope.
+_VLLM_BACKED_BACKBONES = {
+    "qwen2.5-0.5b", "qwen2.5-1.5b", "qwen2.5-7b",
+    "phi3-mini", "phi3-small", "phi3-medium",
+    "phi-vllm",
+}
+
+_LLM_TASK_TYPES = {
+    'sentiment', 'text_classification', 'ner', 'qa',
+    'summarization', 'translation', 'math_reasoning',
+    'code_generation', 'reading_comprehension', 'fact_verification',
+}
+
+
+def _llm_collate_fn(batch):
+    """List-based collate for LLM datasets (`question` is str, `y` is anything)."""
+    return {
+        "question": [b["question"] for b in batch],
+        "y":        [b["y"]        for b in batch],
+    }
+
+
 class InferencePipeline:
     def __init__(self, task_name, task_info, pipeline, log_file,
                  tpc_count=None, cuda_stream=None):
@@ -44,20 +79,21 @@ class InferencePipeline:
 
         task_type = task_info.get('task_type')
         self.is_vlm = task_type == 'vlm'
-        self.is_llm = task_type in (
-            'sentiment', 'text_classification', 'ner', 'qa',
-            'summarization', 'translation', 'math_reasoning',
-            'code_generation', 'reading_comprehension', 'fact_verification',
-        )
-        if self.is_vlm or self.is_llm:
-            raise NotImplementedError(
-                "VLM/LLM profiling not supported in the runtime-based profiler. "
-                "Use the fmtk-based path if accuracy metrics are required."
-            )
+        self.is_llm = task_type in _LLM_TASK_TYPES
+
+        # VLM: resolve the task-specific prompt and pull in the VLM collate.
+        self._collate_fn = None
+        if self.is_vlm:
+            from fmtk.tasks.vlm_utils import TASK_REGISTRY
+            from fmtk.datasetloaders.vlm_dataset import vlm_collate_fn
+            vlm_task_key = self.task_cfg['vlm_task_key']
+            self.task_cfg['prompt'] = TASK_REGISTRY[vlm_task_key]['prompt']
+            self._collate_fn = vlm_collate_fn
+        elif self.is_llm:
+            self._collate_fn = _llm_collate_fn
 
         control_randomness(13)
 
-        # Normalize batch_size to a list so we can sweep.
         raw_bs = self.task_cfg['inference_config']['batch_size']
         self.inference_batch_sizes = raw_bs if isinstance(raw_bs, list) else [raw_bs]
 
@@ -70,35 +106,60 @@ class InferencePipeline:
             batch_size=batch_size,
             shuffle=self.task_cfg['inference_config'].get('shuffle', False),
             drop_last=True,
+            collate_fn=self._collate_fn,
         )
+
+    def _build_task_specs(self, path):
+        """Build ModelLoader-compatible task_specs from a config path entry.
+
+        Returns [] when the path has neither a decoder nor an adapter
+        (e.g. LLM `{'path': ''}`), which means load_models loads only the
+        backbone with an empty decoder/adapter map.
+        """
+        spec = {"task": self.task_name, "path": path.get('path', '')}
+        has_load = False
+        if path.get('decoder') is not None:
+            spec["type"] = self.task_cfg['task_type']
+            has_load = True
+        if path.get('adapter') is not None:
+            spec["adapter"] = path['adapter']
+            has_load = True
+        return [spec] if has_load else []
 
     def run(self):
         # Import here so CUDA_DEVICE env + TPC partition are applied before
         # ModelLoader picks up the device.
         from device.runtime import PyTorchRuntime
 
+        backbone_name = self.pipeline['backbone']
+        if backbone_name in _VLLM_BACKED_BACKBONES:
+            print(f"[profiler] Skipping vLLM-backed backbone={backbone_name}: "
+                  f"PyTorchRuntime-only profiler scope. Requires VLLMRuntime; add later.")
+            return
+
         os.environ.setdefault("CUDA_DEVICE", str(self.device))
         gpu_name = torch.cuda.get_device_name(0) if torch.cuda.is_available() else ''
-        backbone_name = self.pipeline['backbone']
+        modality = 'VLM' if self.is_vlm else ('LLM' if self.is_llm else 'TSFM/CV')
+        print(f"[profiler] task={self.task_name} backbone={backbone_name} modality={modality}")
 
         for path in self.pipeline['paths']:
             decoder_key = path.get('decoder')
             decoder_type = decoders[decoder_key]['decoder_type'] if decoder_key else None
-            # path=None is intentional for timing-only runs: fmtk Pipeline.add_decoder
+            encoder_key = path.get('encoder')
+            adapter_key = path.get('adapter')
+            # path=None is intentional for timing-only TSFM runs: fmtk Pipeline.add_decoder
             # will random-init the decoder. The CSV 'decoder' column uses the real
             # decoder identity from the profiler config, not a synthesized path.
-            decoder_path = path.get('path')
+            saved_path = path.get('path', '')
 
-            # Fresh runtime per pipeline path so backbone/decoder load timings
-            # are attributable.
             runtime = PyTorchRuntime(cuda_stream=self.cuda_stream)
-            decoder_specs = [{
-                "task": self.task_name,
-                "type": self.task_cfg['task_type'],
-                "path": decoder_path,
-            }]
-            print(f"[profiler] Loading backbone={backbone_name} decoder={decoder_path}")
-            op_log = runtime.load(backbone_name, decoder_specs)
+            task_specs = self._build_task_specs(path)
+            model_config = self.backbone_cfg.get('model_config')
+
+            print(f"[profiler] Loading backbone={backbone_name} "
+                  f"decoder={decoder_key} encoder={encoder_key} adapter={adapter_key} "
+                  f"path={saved_path!r}")
+            op_log = runtime.load(backbone_name, task_specs, model_config=model_config)
             load_summary = op_log.summary()
 
             def _s(section, metric):
@@ -106,8 +167,12 @@ class InferencePipeline:
 
             backbone_load_ms   = _s("load_backbone", "wall time")
             backbone_load_mem  = _s("load_backbone", "gpu peak")
-            decoder_load_ms    = _s(f"add_decoder_{decoder_path}", "wall time")
-            decoder_load_mem   = _s(f"add_decoder_{decoder_path}", "gpu peak")
+            encoder_load_ms    = _s(f"add_encoder_{saved_path}", "wall time") if encoder_key else None
+            encoder_load_mem   = _s(f"add_encoder_{saved_path}", "gpu peak") if encoder_key else None
+            decoder_load_ms    = _s(f"add_decoder_{saved_path}", "wall time") if decoder_key else None
+            decoder_load_mem   = _s(f"add_decoder_{saved_path}", "gpu peak") if decoder_key else None
+            adapter_load_ms    = _s(f"add_adapter_{saved_path}", "wall time") if adapter_key else None
+            adapter_load_mem   = _s(f"add_adapter_{saved_path}", "gpu peak") if adapter_key else None
 
             for batch_size in self.inference_batch_sizes:
                 print(f"  -- inference batch_size={batch_size} tpc={self.tpc_count}")
@@ -126,8 +191,8 @@ class InferencePipeline:
                 metrics = {
                     "backbone":              backbone_name,
                     "decoder":               decoder_type,
-                    "encoder":               path.get('encoder'),
-                    "adapter":               path.get('adapter'),
+                    "encoder":               encoder_key,
+                    "adapter":               adapter_key,
                     "dataset_name":          self.task_cfg['datasets'][0],
                     "device":                gpu_name,
                     "tpc_count":             self.tpc_count,
@@ -136,8 +201,12 @@ class InferencePipeline:
                     "n_requests":            len(latencies_ms),
                     "backbone_load_time_ms": backbone_load_ms,
                     "backbone_load_mem_mb":  backbone_load_mem,
+                    "encoder_load_time_ms":  encoder_load_ms,
+                    "encoder_load_mem_mb":   encoder_load_mem,
                     "decoder_load_time_ms":  decoder_load_ms,
                     "decoder_load_mem_mb":   decoder_load_mem,
+                    "adapter_load_time_ms":  adapter_load_ms,
+                    "adapter_load_mem_mb":   adapter_load_mem,
                     "avg_latency_ms":        round(float(lat_arr.mean()), 4),
                     "p50_latency_ms":        round(float(np.percentile(lat_arr, 50)), 4),
                     "p95_latency_ms":        round(float(np.percentile(lat_arr, 95)), 4),
@@ -169,10 +238,20 @@ class InferencePipeline:
                 data_iter = iter(loader)
                 batch = next(data_iter)
 
-            x_i = batch["x"].numpy().astype(np.float32)
-            m_i = batch["mask"].numpy().astype(np.float32) if "mask" in batch else None
+            tasks = [self.task_name] * batch_size
 
-            result = runtime.run_batch(x_i, [self.task_name] * batch_size, mask=m_i)
+            if self.is_vlm:
+                x_i = batch["x"].numpy().astype(np.float32)
+                questions = batch["question"]
+                result = runtime.run_batch(x_i, tasks, questions=questions)
+            elif self.is_llm:
+                questions = batch["question"]
+                result = runtime.run_batch(None, tasks, questions=questions)
+            else:
+                x_i = batch["x"].numpy().astype(np.float32)
+                m_i = batch["mask"].numpy().astype(np.float32) if "mask" in batch else None
+                result = runtime.run_batch(x_i, tasks, mask=m_i)
+
             latencies_ms.append((result.end_time_ns - result.start_time_ns) / 1e6)
             backbone_ms.append(result.proc_time_ns / 1e6)
             decoder_ms.append(sum(result.decoder_time_ns) / 1e6)

@@ -1,3 +1,8 @@
+import os
+DATASET_DIR = os.path.abspath(os.path.join(
+    os.path.dirname(__file__), "..", "..", "..", "..", "FMTK", "dataset"
+))
+
 
 device="cuda:0"
 Train=False #set it to False for inference only
@@ -916,85 +921,85 @@ adapters={
 datasets={
     'PPG-data': 
     {
-        'dataset_path': '../../dataset/PPG-data',
+        'dataset_path': f"{DATASET_DIR}/PPG-data",
         'dataset_type': 'PPG-data',
         'seq_len': 512,
         'num_channels':1
     },
     'ecg5000':{
-        'dataset_path': '../../dataset/ECG5000',
+        'dataset_path': f"{DATASET_DIR}/ECG5000",
         'dataset_type': 'ECG5000',
         'seq_len': 512,
     },
     'ETTh1':{
-        'dataset_path': '../../dataset/ETTh1',
+        'dataset_path': f"{DATASET_DIR}/ETTh1",
         'dataset_type': 'ETTh1',   
     },
     'UWaveGestureLibraryAll':{
-        'dataset_path': '../../dataset/UWaveGestureLibraryAll',
+        'dataset_path': f"{DATASET_DIR}/UWaveGestureLibraryAll",
         'dataset_type': 'UWaveGestureLibraryAll',
         'seq_len': 512},
     'ecl':{
-        'dataset_path': '../../dataset/ElectricityLoad-data',
+        'dataset_path': f"{DATASET_DIR}/ElectricityLoad-data",
         'dataset_type': 'ecl',},
     'weather':{
-        'dataset_path': '../../dataset/Weather',
+        'dataset_path': f"{DATASET_DIR}/Weather",
         'dataset_type': 'weather',},
     'traffic':{
-        'dataset_path': '../../dataset/Traffic',
+        'dataset_path': f"{DATASET_DIR}/Traffic",
         'dataset_type': 'traffic',},
     'exchange':{    
-        'dataset_path': '../../dataset/Exchange',
+        'dataset_path': f"{DATASET_DIR}/Exchange",
         'dataset_type': 'exchange',},
     'illness':{
-        'dataset_path': '../../dataset/ILLNESS',
+        'dataset_path': f"{DATASET_DIR}/ILLNESS",
         'dataset_type': 'illness',
     },
 
     # ── VLM datasets ──────────────────────────────────────────────────
     # Paths are relative to experiments/run_all/ (where inference_pipeline.py runs).
     'vlm_activity_recognition': {
-        'dataset_path': '../../dataset/vlm/activity_recognition',
+        'dataset_path': f"{DATASET_DIR}/vlm/activity_recognition",
         'dataset_type': 'vlm',
         'json_file': 'labels.json',
     },
     'vlm_crowd_counting': {
-        'dataset_path': '../../dataset/vlm/crowd_counting',
+        'dataset_path': f"{DATASET_DIR}/vlm/crowd_counting",
         'dataset_type': 'vlm',
         'json_file': 'labels.json',
     },
     'vlm_gesture_recognition': {
-        'dataset_path': '../../dataset/vlm/gesture_recognition',
+        'dataset_path': f"{DATASET_DIR}/vlm/gesture_recognition",
         'dataset_type': 'vlm',
         'json_file': 'labels.json',
     },
     'vlm_image_classification': {
-        'dataset_path': '../../dataset/vlm/image_classification',
+        'dataset_path': f"{DATASET_DIR}/vlm/image_classification",
         'dataset_type': 'vlm',
         'json_file': 'labels.json',
     },
     'vlm_object_detection': {
-        'dataset_path': '../../dataset/vlm/object_detection',
+        'dataset_path': f"{DATASET_DIR}/vlm/object_detection",
         'dataset_type': 'vlm',
         'json_file': 'annotations.json',
     },
     'vlm_ocr': {
-        'dataset_path': '../../dataset/vlm/ocr',
+        'dataset_path': f"{DATASET_DIR}/vlm/ocr",
         'dataset_type': 'vlm',
         'json_file': 'labels.json',
     },
     'vlm_scene_classification': {
-        'dataset_path': '../../dataset/vlm/scene_classification',
+        'dataset_path': f"{DATASET_DIR}/vlm/scene_classification",
         'dataset_type': 'vlm',
         'json_file': 'labels.json',
     },
     'vlm_traffic_classification': {
-        'dataset_path': '../../dataset/vlm/traffic_classification',
+        'dataset_path': f"{DATASET_DIR}/vlm/traffic_classification",
         'dataset_type': 'vlm',
         'json_file': 'labels.json',
     },
     'vlm_vqa': {
-        'dataset_path': '../../dataset/vlm/vqa',
+        'dataset_path': f"{DATASET_DIR}/vlm/vqa",
         'dataset_type': 'vlm',
         'json_file': 'val.json',
         'image_subdir': 'val2014',
@@ -1002,27 +1007,27 @@ datasets={
 
     # ── Vision datasets ────────────────────────────────────────────────
     'VOC12': {
-        'dataset_path': '../../../../FMTK/dataset/PASCAL-VOC',
+        'dataset_path': f"{DATASET_DIR}/PASCAL-VOC",
         'dataset_type': 'VOC12',
         'target_size': 224,
     },
     'NYUDepthV2': {
-        'dataset_path': '../../../../FMTK/dataset/nyu-depth-v2',
+        'dataset_path': f"{DATASET_DIR}/nyu-depth-v2",
         'dataset_type': 'NYUDepthV2',
         'target_size': 224,
         'max_depth': 10.0,
         'normalize_depth': True,
     },
     'EuroSAT': {
-        'dataset_path': '../../../../FMTK/dataset/EuroSAT',
+        'dataset_path': f"{DATASET_DIR}/EuroSAT",
         'dataset_type': 'EuroSAT',
     },
     'CIFAR10': {
-        'dataset_path': '../../../../FMTK/dataset/cifar-10',
+        'dataset_path': f"{DATASET_DIR}/cifar-10",
         'dataset_type': 'CIFAR10',
     },
     'ShanghaiTech': {
-        'dataset_path': '../../../../FMTK/dataset/ShanghaiTech',
+        'dataset_path': f"{DATASET_DIR}/ShanghaiTech",
         'dataset_type': 'ShanghaiTech',
     },
     # ── LLM (text-only) datasets ───────────────────────────────────────
@@ -1339,57 +1344,57 @@ tasks = {
     # 'datasets': ['ecg5000'],
     # 'train': Train,
     # 'pipelines':[
-    #         {
-    #         'backbone':'momentlarge',
-    #         'paths':[
-    #             {'decoder':'mlp_momentlarge_class','parts_to_train':['decoder'],'path':'ecgclass_momentlarge_mlp'},
-    #             ]
-    #         },
-    #         {
-    #         'backbone':'momentsmall',
-    #         'paths':[
-    #             {'decoder':'mlp_momentsmall_class','parts_to_train':['decoder'],'path':'ecgclass_momentsmall_mlp'},
-    #             ]
-    #         },
-    #         {
-    #         'backbone':'momentbase',
-    #         'paths':[
-    #             # {'decoder':'mlp_momentbase_class','parts_to_train':['decoder'],'path':'ecgclass_momentbase_mlp'},
-    #             # {'decoder':'mlp_momentbase_class','encoder':'linear','parts_to_train':['decoder','encoder'],'path':'ecgclass_momentbase_mlp_linear'},
-    #             # {'decoder':'mlp_momentbase_class','encoder':'linear','adapter':'lora','parts_to_train':['decoder','encoder','adapter'],'path':'ecgclass_momentbase_mlp_linear_lora'},
-    #             {'decoder':'mlp_momentbase_class','adapter':'lora','parts_to_train':['decoder','adapter'],'path':'ecgclass_momentbase_mlp_lora'},
-    #             ]
-    #         },
-    #         # {
-    #         # 'backbone':'chronostiny',
-    #         # 'paths':[
-    #         #     {'decoder':'mlp_chronostiny_class','parts_to_train':['decoder'],'path':'ecgclass_chronostiny_mlp'},
-    #         #     ]
-    #         # },
-    #         # {
-    #         # 'backbone':'chronosmini',
-    #         # 'paths':[
-    #         #     {'decoder':'mlp_chronosmini_class','parts_to_train':['decoder'],'path':'ecgclass_chronosmini_mlp'},
-    #         #     ]
-    #         # },
-    #         # {
-    #         # 'backbone':'chronossmall',
-    #         # 'paths':[
-    #         #     {'decoder':'mlp_chronossmall_class','parts_to_train':['decoder'],'path':'ecgclass_chronossmall_mlp'},
-    #         #     ]
-    #         # },
-    #         # {
-    #         # 'backbone':'chronosbase',
-    #         # 'paths':[
-    #         #     {'decoder':'mlp_chronosbase_class','parts_to_train':['decoder'],'path':'ecgclass_chronosbase_mlp'},
-    #         #     ]
-    #         # },
-    #         # {
-    #         # 'backbone':'chronoslarge',
-    #         # 'paths':[
-    #         #     {'decoder':'mlp_chronoslarge_class','parts_to_train':['decoder'],'path':'ecgclass_chronoslarge_mlp'},
-    #         #     ]
-    #         # },
+            # {
+            # 'backbone':'momentlarge',
+            # 'paths':[
+            #     {'decoder':'mlp_momentlarge_class','parts_to_train':['decoder'],'path':'ecgclass_momentlarge_mlp'},
+            #     ]
+            # },
+            # {
+            # 'backbone':'momentsmall',
+            # 'paths':[
+            #     {'decoder':'mlp_momentsmall_class','parts_to_train':['decoder'],'path':'ecgclass_momentsmall_mlp'},
+            #     ]
+            # },
+            # {
+            # 'backbone':'momentbase',
+            # 'paths':[
+            #     # {'decoder':'mlp_momentbase_class','parts_to_train':['decoder'],'path':'ecgclass_momentbase_mlp'},
+            #     # {'decoder':'mlp_momentbase_class','encoder':'linear','parts_to_train':['decoder','encoder'],'path':'ecgclass_momentbase_mlp_linear'},
+            #     # {'decoder':'mlp_momentbase_class','encoder':'linear','adapter':'lora','parts_to_train':['decoder','encoder','adapter'],'path':'ecgclass_momentbase_mlp_linear_lora'},
+            #     {'decoder':'mlp_momentbase_class','adapter':'lora','parts_to_train':['decoder','adapter'],'path':'ecgclass_momentbase_mlp_lora'},
+            #     ]
+            # },
+            # {
+            # 'backbone':'chronostiny',
+            # 'paths':[
+            #     {'decoder':'mlp_chronostiny_class','parts_to_train':['decoder'],'path':'ecgclass_chronostiny_mlp'},
+            #     ]
+            # },
+            # {
+            # 'backbone':'chronosmini',
+            # 'paths':[
+            #     {'decoder':'mlp_chronosmini_class','parts_to_train':['decoder'],'path':'ecgclass_chronosmini_mlp'},
+            #     ]
+            # },
+            # {
+            # 'backbone':'chronossmall',
+            # 'paths':[
+            #     {'decoder':'mlp_chronossmall_class','parts_to_train':['decoder'],'path':'ecgclass_chronossmall_mlp'},
+            #     ]
+            # },
+            # {
+            # 'backbone':'chronosbase',
+            # 'paths':[
+            #     {'decoder':'mlp_chronosbase_class','parts_to_train':['decoder'],'path':'ecgclass_chronosbase_mlp'},
+            #     ]
+            # },
+            # {
+            # 'backbone':'chronoslarge',
+            # 'paths':[
+            #     {'decoder':'mlp_chronoslarge_class','parts_to_train':['decoder'],'path':'ecgclass_chronoslarge_mlp'},
+            #     ]
+            # },
     #         {
     #         'backbone':'papageis',
     #         'paths':[
@@ -1668,7 +1673,7 @@ tasks = {
     #         },
     # },
 
-    # # # ── VLM tasks ──────────────────────────────────────────────────────
+    # # # # ── VLM tasks ──────────────────────────────────────────────────────
     # 'vlm_crowd': {
     #     'task_type': 'vlm',
     #     'vlm_task_key': 'crowd',
@@ -1731,14 +1736,14 @@ tasks = {
             #  [{}]},
             # {'backbone': 'phi-3.5-vision-instruct', 'paths': [
             #     {},
-                # {'adapter': 'lora_vlm', 'parts_to_train': ['adapter'], 'path': 'vlm_ocr_phi_lora'},
+            #     {'adapter': 'lora_vlm', 'parts_to_train': ['adapter'], 'path': 'vlm_ocr_phi_lora'},
             # ]},
             # {'backbone': 'phi-vllm', 'paths': [
             #     {},
             #     # {'adapter': 'lora_vlm', 'path': 'vlm_ocr_phi_lora'},
             # ]},
     #     ],
-    #     'inference_config': {'batch_size': 1, 'shuffle': False,'max_samples': 100},
+    #     'inference_config': {'batch_size': [1], 'shuffle': False,'max_samples': 100},
     # },
     # 'vlm_vqa': {
     #     'task_type': 'vlm',
@@ -1836,51 +1841,51 @@ tasks = {
     # },
 
     # ── Vision tasks ───────────────────────────────────────────────────
-    'eurosatclass': {
-        'task_type': 'linear_classification',
-        'datasets': ['EuroSAT'],
-        'train': Train,
-        'pipelines': [
-            {'backbone': 'dinosmall',  'paths': [{'decoder': 'linear_dinosmall_eurosatclass',  'parts_to_train': ['decoder'], 'path': None}]},
-            {'backbone': 'dinobase',   'paths': [{'decoder': 'linear_dinobase_eurosatclass',   'parts_to_train': ['decoder'], 'path': None}]},
-            {'backbone': 'dinolarge',  'paths': [{'decoder': 'linear_dinolarge_eurosatclass',  'parts_to_train': ['decoder'], 'path': None}]},
-            {'backbone': 'dinogiant',  'paths': [{'decoder': 'linear_dinogiant_eurosatclass',  'parts_to_train': ['decoder'], 'path': None}]},
-            {'backbone': 'swintiny',   'paths': [{'decoder': 'linear_swintiny_eurosatclass',   'parts_to_train': ['decoder'], 'path': None}]},
-            {'backbone': 'swinsmall',  'paths': [{'decoder': 'linear_swinsmall_eurosatclass',  'parts_to_train': ['decoder'], 'path': None}]},
-            {'backbone': 'swinbase',   'paths': [{'decoder': 'linear_swinbase_eurosatclass',   'parts_to_train': ['decoder'], 'path': None}]},
-            {'backbone': 'swinlarge',  'paths': [{'decoder': 'linear_swinlarge_eurosatclass',  'parts_to_train': ['decoder'], 'path': None}]},
-        ],
-        'inference_config': {'batch_size': [1], 'shuffle': False},
-        'train_config': {
-            'batch_size': 32,
-            'shuffle': True,
-            'epochs': 20,
-            'lr': 1e-3,
-            'scheduler': {'type': 'cosine', 'T_max': 10, 'eta_min': 0},
-        },
-    },
-    'imgclass10': {
-        'task_type': 'linear_classification',
-        'datasets': ['CIFAR10'],
-        'train': Train,
-        'pipelines': [
-            {'backbone': 'dinosmall', 'paths': [{'decoder': 'linear_dinosmall_imgclass10', 'parts_to_train': ['decoder'], 'path': None}]},
-            {'backbone': 'dinobase',  'paths': [{'decoder': 'linear_dinobase_imgclass10',  'parts_to_train': ['decoder'], 'path': None}]},
-            {'backbone': 'dinolarge', 'paths': [{'decoder': 'linear_dinolarge_imgclass10', 'parts_to_train': ['decoder'], 'path': None}]},
-            {'backbone': 'dinogiant', 'paths': [{'decoder': 'linear_dinogiant_imgclass10', 'parts_to_train': ['decoder'], 'path': None}]},
-            {'backbone': 'swintiny',  'paths': [{'decoder': 'linear_swintiny_imgclass10',  'parts_to_train': ['decoder'], 'path': None}]},
-            {'backbone': 'swinsmall', 'paths': [{'decoder': 'linear_swinsmall_imgclass10', 'parts_to_train': ['decoder'], 'path': None}]},
-            {'backbone': 'swinbase',  'paths': [{'decoder': 'linear_swinbase_imgclass10',  'parts_to_train': ['decoder'], 'path': None}]},
-            {'backbone': 'swinlarge', 'paths': [{'decoder': 'linear_swinlarge_imgclass10', 'parts_to_train': ['decoder'], 'path': None}]},
-        ],
-        'inference_config': {'batch_size': 1, 'shuffle': False},
-        'train_config': {
-            'batch_size': 32,
-            'shuffle': False,
-            'epochs': 50,
-            'lr': 1e-2,
-        },
-    },
+    # 'eurosatclass': {
+    #     'task_type': 'linear_classification',
+    #     'datasets': ['EuroSAT'],
+    #     'train': Train,
+    #     'pipelines': [
+    #         {'backbone': 'dinosmall',  'paths': [{'decoder': 'linear_dinosmall_eurosatclass',  'parts_to_train': ['decoder'], 'path': None}]},
+    #         {'backbone': 'dinobase',   'paths': [{'decoder': 'linear_dinobase_eurosatclass',   'parts_to_train': ['decoder'], 'path': None}]},
+    #         {'backbone': 'dinolarge',  'paths': [{'decoder': 'linear_dinolarge_eurosatclass',  'parts_to_train': ['decoder'], 'path': None}]},
+    #         {'backbone': 'dinogiant',  'paths': [{'decoder': 'linear_dinogiant_eurosatclass',  'parts_to_train': ['decoder'], 'path': None}]},
+    #         {'backbone': 'swintiny',   'paths': [{'decoder': 'linear_swintiny_eurosatclass',   'parts_to_train': ['decoder'], 'path': None}]},
+    #         {'backbone': 'swinsmall',  'paths': [{'decoder': 'linear_swinsmall_eurosatclass',  'parts_to_train': ['decoder'], 'path': None}]},
+    #         {'backbone': 'swinbase',   'paths': [{'decoder': 'linear_swinbase_eurosatclass',   'parts_to_train': ['decoder'], 'path': None}]},
+    #         {'backbone': 'swinlarge',  'paths': [{'decoder': 'linear_swinlarge_eurosatclass',  'parts_to_train': ['decoder'], 'path': None}]},
+    #     ],
+    #     'inference_config': {'batch_size': [1], 'shuffle': False},
+    #     'train_config': {
+    #         'batch_size': 32,
+    #         'shuffle': True,
+    #         'epochs': 20,
+    #         'lr': 1e-3,
+    #         'scheduler': {'type': 'cosine', 'T_max': 10, 'eta_min': 0},
+    #     },
+    # },
+    # 'imgclass10': {
+    #     'task_type': 'linear_classification',
+    #     'datasets': ['CIFAR10'],
+    #     'train': Train,
+    #     'pipelines': [
+    #         {'backbone': 'dinosmall', 'paths': [{'decoder': 'linear_dinosmall_imgclass10', 'parts_to_train': ['decoder'], 'path': None}]},
+    #         {'backbone': 'dinobase',  'paths': [{'decoder': 'linear_dinobase_imgclass10',  'parts_to_train': ['decoder'], 'path': None}]},
+    #         {'backbone': 'dinolarge', 'paths': [{'decoder': 'linear_dinolarge_imgclass10', 'parts_to_train': ['decoder'], 'path': None}]},
+    #         {'backbone': 'dinogiant', 'paths': [{'decoder': 'linear_dinogiant_imgclass10', 'parts_to_train': ['decoder'], 'path': None}]},
+    #         {'backbone': 'swintiny',  'paths': [{'decoder': 'linear_swintiny_imgclass10',  'parts_to_train': ['decoder'], 'path': None}]},
+    #         {'backbone': 'swinsmall', 'paths': [{'decoder': 'linear_swinsmall_imgclass10', 'parts_to_train': ['decoder'], 'path': None}]},
+    #         {'backbone': 'swinbase',  'paths': [{'decoder': 'linear_swinbase_imgclass10',  'parts_to_train': ['decoder'], 'path': None}]},
+    #         {'backbone': 'swinlarge', 'paths': [{'decoder': 'linear_swinlarge_imgclass10', 'parts_to_train': ['decoder'], 'path': None}]},
+    #     ],
+    #     'inference_config': {'batch_size': 1, 'shuffle': False},
+    #     'train_config': {
+    #         'batch_size': 32,
+    #         'shuffle': False,
+    #         'epochs': 50,
+    #         'lr': 1e-2,
+    #     },
+    # },
     # 'shanghaitech_count': {
     #     'task_type': 'regression',
     #     'datasets': ['ShanghaiTech'],
@@ -1899,30 +1904,30 @@ tasks = {
     #         'scheduler': {'type': 'cosine', 'T_max': 10, 'eta_min': 0},
     #     },
     # },
-    'nyudepth': {
-        'task_type': 'monocular',
-        'datasets': ['NYUDepthV2'],
-        'train': Train,
-        'pipelines': [
-            {'backbone': 'dinosmall',  'paths': [{'decoder': 'monodepth_dinosmall',  'parts_to_train': ['decoder'], 'path': None}]},
-            {'backbone': 'dinobase',   'paths': [{'decoder': 'monodepth_dinobase',   'parts_to_train': ['decoder'], 'path': None}]},
-            {'backbone': 'dinolarge',  'paths': [{'decoder': 'monodepth_dinolarge',  'parts_to_train': ['decoder'], 'path': None}]},
-            {'backbone': 'dinogiant',  'paths': [{'decoder': 'monodepth_dinogiant',  'parts_to_train': ['decoder'], 'path': None}]},
-            {'backbone': 'swintiny',   'paths': [{'decoder': 'monodepth_swintiny',   'parts_to_train': ['decoder'], 'path': None}]},
-            {'backbone': 'swinsmall',  'paths': [{'decoder': 'monodepth_swinsmall',  'parts_to_train': ['decoder'], 'path': None}]},
-            {'backbone': 'swinbase',   'paths': [{'decoder': 'monodepth_swinbase',   'parts_to_train': ['decoder'], 'path': None}]},
-            {'backbone': 'swinlarge',  'paths': [{'decoder': 'monodepth_swinlarge',  'parts_to_train': ['decoder'], 'path': None}]},
-        ],
-        'inference_config': {'batch_size': [1], 'shuffle': False},
-        'train_config': {
-            'batch_size': 16,
-            'shuffle': True,
-            'epochs': 10,
-            'lr': 1e-3,
-            'scheduler': {'type': 'cosine', 'T_max': 10, 'eta_min': 0},
-            'use_cache': True,
-        },
-    },
+    # 'nyudepth': {
+    #     'task_type': 'monocular',
+    #     'datasets': ['NYUDepthV2'],
+    #     'train': Train,
+    #     'pipelines': [
+    #         {'backbone': 'dinosmall',  'paths': [{'decoder': 'monodepth_dinosmall',  'parts_to_train': ['decoder'], 'path': None}]},
+    #         {'backbone': 'dinobase',   'paths': [{'decoder': 'monodepth_dinobase',   'parts_to_train': ['decoder'], 'path': None}]},
+    #         {'backbone': 'dinolarge',  'paths': [{'decoder': 'monodepth_dinolarge',  'parts_to_train': ['decoder'], 'path': None}]},
+    #         {'backbone': 'dinogiant',  'paths': [{'decoder': 'monodepth_dinogiant',  'parts_to_train': ['decoder'], 'path': None}]},
+    #         {'backbone': 'swintiny',   'paths': [{'decoder': 'monodepth_swintiny',   'parts_to_train': ['decoder'], 'path': None}]},
+    #         {'backbone': 'swinsmall',  'paths': [{'decoder': 'monodepth_swinsmall',  'parts_to_train': ['decoder'], 'path': None}]},
+    #         {'backbone': 'swinbase',   'paths': [{'decoder': 'monodepth_swinbase',   'parts_to_train': ['decoder'], 'path': None}]},
+    #         {'backbone': 'swinlarge',  'paths': [{'decoder': 'monodepth_swinlarge',  'parts_to_train': ['decoder'], 'path': None}]},
+    #     ],
+    #     'inference_config': {'batch_size': [1], 'shuffle': False},
+    #     'train_config': {
+    #         'batch_size': 16,
+    #         'shuffle': True,
+    #         'epochs': 10,
+    #         'lr': 1e-3,
+    #         'scheduler': {'type': 'cosine', 'T_max': 10, 'eta_min': 0},
+    #         'use_cache': True,
+    #     },
+    # },
     # 'vocseg': {
     #     'task_type': 'linear_seg',
     #     'datasets': ['VOC12'],
@@ -1949,22 +1954,22 @@ tasks = {
     # },
 
     # # ── LLM (text-only) tasks ──────────────────────────────────────────
-    # 'llm_sst2': {
-    #     'task_type': 'sentiment',
-    #     'datasets': ['sst2'],
-    #     'train': False,
-    #     'train_config': {'batch_size': 1, 'shuffle': False},
-    #     'inference_config': {'batch_size': [1,2,4,6,8,10], 'shuffle': False},
-    #     'pipelines': [
+    'llm_sst2': {
+        'task_type': 'sentiment',
+        'datasets': ['sst2'],
+        'train': False,
+        'train_config': {'batch_size': 1, 'shuffle': False},
+        'inference_config': {'batch_size': [1], 'shuffle': False},
+        'pipelines': [
             # {'backbone': 'phi3-mini',    'paths': [{'path': ''}]},
             # {'backbone': 'qwen2.5-0.5b', 'paths': [{'path': ''}]},
             # {'backbone': 'qwen2.5-1.5b',   'paths': [{'path': ''}]},
             # {'backbone': 'qwen2.5-3b',   'paths': [{'path': ''}]},
             # {'backbone': 'llama-3.1-8b', 'paths': [{'path': ''}]},
-            # {'backbone': 'mistral-7b',   'paths': [{'path': ''}]},
+            {'backbone': 'mistral-7b',   'paths': [{'path': ''}]},
             # {'backbone': 'qwen2.5-7b',   'paths': [{'path': ''}]},
-    #     ],
-    # },
+        ],
+    },
     # 'llm_ag_news': {
     #     'task_type': 'text_classification',
     #     'datasets': ['ag_news'],
