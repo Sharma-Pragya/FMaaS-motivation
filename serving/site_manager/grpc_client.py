@@ -101,6 +101,7 @@ class EdgeRuntimeClient:
             "proc_time_ns": response.proc_time_ns,
             "swap_time_ns": response.swap_time_ns,
             "decoder_time_ns": response.decoder_time_ns,
+            "server_time_ns": response.server_time_ns,
             "status": response.status,
             "gpu_alloc_peak_mb": response.gpu_alloc_peak_mb,
         }
