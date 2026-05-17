@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1f\x64\x65vice/proto/edge_runtime.proto\x12\x0eserving.device\";\n\rTensorPayload\x12\r\n\x05shape\x18\x01 \x03(\x05\x12\r\n\x05\x64type\x18\x02 \x01(\t\x12\x0c\n\x04\x64\x61ta\x18\x03 \x01(\x0c\"\xb5\x01\n\x0cInferRequest\x12\x0e\n\x06req_id\x18\x01 \x01(\x03\x12\x0c\n\x04task\x18\x02 \x01(\t\x12(\n\x01x\x18\x03 \x01(\x0b\x32\x1d.serving.device.TensorPayload\x12\x30\n\x04mask\x18\x04 \x01(\x0b\x32\x1d.serving.device.TensorPayloadH\x00\x88\x01\x01\x12\x15\n\x08question\x18\x05 \x01(\tH\x01\x88\x01\x01\x42\x07\n\x05_maskB\x0b\n\t_question\"\xe6\x01\n\rInferResponse\x12\x0e\n\x06output\x18\x01 \x03(\x02\x12\x14\n\x0coutput_shape\x18\x02 \x03(\x05\x12\x15\n\rstart_time_ns\x18\x03 \x01(\x03\x12\x13\n\x0b\x65nd_time_ns\x18\x04 \x01(\x03\x12\x14\n\x0cproc_time_ns\x18\x05 \x01(\x03\x12\x14\n\x0cswap_time_ns\x18\x06 \x01(\x03\x12\x17\n\x0f\x64\x65\x63oder_time_ns\x18\x07 \x01(\x03\x12\x0e\n\x06status\x18\x08 \x01(\t\x12\x13\n\x0btext_output\x18\t \x01(\t\x12\x19\n\x11gpu_alloc_peak_mb\x18\n \x01(\x02\"7\n\x0e\x43ontrolRequest\x12\x0f\n\x07\x63ommand\x18\x01 \x01(\t\x12\x14\n\x0cpayload_json\x18\x02 \x01(\t\"9\n\x0f\x43ontrolResponse\x12\x0e\n\x06status\x18\x01 \x01(\t\x12\x16\n\x0elogger_summary\x18\x02 \x01(\t2\x9f\x01\n\x0b\x45\x64geRuntime\x12\x44\n\x05Infer\x12\x1c.serving.device.InferRequest\x1a\x1d.serving.device.InferResponse\x12J\n\x07\x43ontrol\x12\x1e.serving.device.ControlRequest\x1a\x1f.serving.device.ControlResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1f\x64\x65vice/proto/edge_runtime.proto\x12\x0eserving.device\";\n\rTensorPayload\x12\r\n\x05shape\x18\x01 \x03(\x05\x12\r\n\x05\x64type\x18\x02 \x01(\t\x12\x0c\n\x04\x64\x61ta\x18\x03 \x01(\x0c\"\xb5\x01\n\x0cInferRequest\x12\x0e\n\x06req_id\x18\x01 \x01(\x03\x12\x0c\n\x04task\x18\x02 \x01(\t\x12(\n\x01x\x18\x03 \x01(\x0b\x32\x1d.serving.device.TensorPayload\x12\x30\n\x04mask\x18\x04 \x01(\x0b\x32\x1d.serving.device.TensorPayloadH\x00\x88\x01\x01\x12\x15\n\x08question\x18\x05 \x01(\tH\x01\x88\x01\x01\x42\x07\n\x05_maskB\x0b\n\t_question\"\xfe\x01\n\rInferResponse\x12\x0e\n\x06output\x18\x01 \x03(\x02\x12\x14\n\x0coutput_shape\x18\x02 \x03(\x05\x12\x15\n\rstart_time_ns\x18\x03 \x01(\x03\x12\x13\n\x0b\x65nd_time_ns\x18\x04 \x01(\x03\x12\x14\n\x0cproc_time_ns\x18\x05 \x01(\x03\x12\x14\n\x0cswap_time_ns\x18\x06 \x01(\x03\x12\x17\n\x0f\x64\x65\x63oder_time_ns\x18\x07 \x01(\x03\x12\x0e\n\x06status\x18\x08 \x01(\t\x12\x13\n\x0btext_output\x18\t \x01(\t\x12\x19\n\x11gpu_alloc_peak_mb\x18\n \x01(\x02\x12\x16\n\x0eserver_time_ns\x18\x0b \x01(\x03\"7\n\x0e\x43ontrolRequest\x12\x0f\n\x07\x63ommand\x18\x01 \x01(\t\x12\x14\n\x0cpayload_json\x18\x02 \x01(\t\"9\n\x0f\x43ontrolResponse\x12\x0e\n\x06status\x18\x01 \x01(\t\x12\x16\n\x0elogger_summary\x18\x02 \x01(\t2\x9f\x01\n\x0b\x45\x64geRuntime\x12\x44\n\x05Infer\x12\x1c.serving.device.InferRequest\x1a\x1d.serving.device.InferResponse\x12J\n\x07\x43ontrol\x12\x1e.serving.device.ControlRequest\x1a\x1f.serving.device.ControlResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -36,11 +36,11 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_INFERREQUEST']._serialized_start=113
   _globals['_INFERREQUEST']._serialized_end=294
   _globals['_INFERRESPONSE']._serialized_start=297
-  _globals['_INFERRESPONSE']._serialized_end=527
-  _globals['_CONTROLREQUEST']._serialized_start=529
-  _globals['_CONTROLREQUEST']._serialized_end=584
-  _globals['_CONTROLRESPONSE']._serialized_start=586
-  _globals['_CONTROLRESPONSE']._serialized_end=643
-  _globals['_EDGERUNTIME']._serialized_start=646
-  _globals['_EDGERUNTIME']._serialized_end=805
+  _globals['_INFERRESPONSE']._serialized_end=551
+  _globals['_CONTROLREQUEST']._serialized_start=553
+  _globals['_CONTROLREQUEST']._serialized_end=608
+  _globals['_CONTROLRESPONSE']._serialized_start=610
+  _globals['_CONTROLRESPONSE']._serialized_end=667
+  _globals['_EDGERUNTIME']._serialized_start=670
+  _globals['_EDGERUNTIME']._serialized_end=829
 # @@protoc_insertion_point(module_scope)

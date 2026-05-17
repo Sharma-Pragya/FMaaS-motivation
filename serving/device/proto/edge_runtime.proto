@@ -32,6 +32,7 @@ message InferResponse {
   string status = 8;
   string text_output = 9;
   float gpu_alloc_peak_mb = 10;
+  int64 server_time_ns = 11;   // total time inside the gRPC handler (recv → return)
 }
 
 message ControlRequest {

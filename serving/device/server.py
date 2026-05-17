@@ -306,6 +306,7 @@ class EdgeRuntimeServicer(edge_runtime_pb2_grpc.EdgeRuntimeServicer):
         self._app = app
 
     async def Infer(self, request, context):
+        t_recv_ns = time.time_ns()
         try:
             response = await self._app.infer(request)
         except RuntimeError as exc:
@@ -334,6 +335,7 @@ class EdgeRuntimeServicer(edge_runtime_pb2_grpc.EdgeRuntimeServicer):
             status="ok",
             text_output=text_output,
             gpu_alloc_peak_mb=float(response.get("gpu_alloc_peak_mb", 0.0) or 0.0),
+            server_time_ns=time.time_ns() - t_recv_ns,
         )
 
     async def Control(self, request, context):
