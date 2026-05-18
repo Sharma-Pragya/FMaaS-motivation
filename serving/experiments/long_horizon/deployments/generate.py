@@ -400,10 +400,11 @@ def build_fmaas_place(
     state   = DeploymentState(servers)
     for task_name, task_spec in sorted(tasks_slo.items(), key=lambda x: task_arrive[x[0]]):
         task = scheduler._create_task_spec(task_name, task_spec)
-        temp_plan, demand_left = scheduler._deploy_task(state, task)
+        temp_plan, demand_left, bottleneck = scheduler._deploy_task(state, task)
         if demand_left is not None and demand_left > config.demand_epsilon:
             print(f"FMaaSPlacement: task '{task_name}' has {demand_left:.4f} rps "
-                  f"unsatisfied demand out of {task.peak_workload:.4f} rps")
+                  f"unsatisfied demand out of {task.peak_workload:.4f} rps "
+                  f"(bottleneck: {bottleneck})")
         if temp_plan:
             for deployment in temp_plan.values():
                 key = (deployment.server_name, deployment.backbone)
