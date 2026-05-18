@@ -87,10 +87,10 @@ fi
 # Experiment configuration
 # ---------------------------------------------------------------------------
 CUDA_DEVICE=${CUDA_DEVICE:-"cuda:0"}
-BACKBONE=${BACKBONE:-"momentbase"}
+BACKBONE=${BACKBONE:-"momentlarge"}
 DECODER_DIR=${DECODER_DIR:-"${FMTK_DIR}/models/tsfm/finetuned"}
-N_TASKS=${N_TASKS:-"1,2,4,6,8,10"}
-PHASE_DURATION=${PHASE_DURATION:-10}
+N_TASKS=${N_TASKS:-"1,2,4,6,8"}
+PHASE_DURATION=${PHASE_DURATION:-"60"}
 STRATEGIES=${STRATEGIES:-"task_sharing,deploy_sharing"}
 EXP_DIR=${EXP_DIR:-"experiments/motivation1/tsfm/results"}
 

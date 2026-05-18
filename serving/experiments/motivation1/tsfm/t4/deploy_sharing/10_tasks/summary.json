@@ -1,0 +1,13 @@
+{
+  "backbone": "momentlarge",
+  "strategy": "deploy_sharing",
+  "n_tasks": 10,
+  "model_load_mem_mb": 1636.746,
+  "peak_gpu_mem_mb": 1636.746,
+  "avg_gpu_mem_mb": 1719.315,
+  "throughput_rps": 82.5,
+  "avg_latency_ms": 121.382,
+  "avg_batch_size": 10.0,
+  "mixed_batch_fraction": 1.0,
+  "batch_count": 495
+}
