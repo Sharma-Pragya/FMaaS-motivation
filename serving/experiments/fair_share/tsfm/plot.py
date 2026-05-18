@@ -477,41 +477,47 @@ def plot_fairness_summary(
                              labelsize=TICK_LABEL_FS,
                              labelcolor=(0, 0, 0, hidden_alpha))
 
-    # Headroom above the tallest bar so the vertical (rotated) value
-    # annotations have somewhere to grow without colliding with anything.
-    ymax_fair = 1.35
+    # y-limits: fairness is nominally [0,1]; throughput uses a nice ceiling of
+    # the observed max. A little extra headroom above bar tops keeps rotated
+    # value labels inside the panel when the PDF is scaled in Overleaf.
     sys_rps_top = _nice_ceil(max(sys_rps, default=1.0))
-    ymax_tput = tput_ymax if tput_ymax is not None \
-        else sys_rps_top * 1.35
-    ax_left.set_ylim(0, ymax_fair)
-    ax_right.set_ylim(0, ymax_tput)
-    # Explicit y-ticks so the axis labels stop at the data ceiling (1.0
-    # for fairness, ``sys_rps_top`` for throughput) — the area above is
-    # reserved for the rotated value annotations and should not have
-    # extra unlabelled tick marks.
-    ax_left.set_yticks(np.linspace(0, 1.0, 5))
+    ymax_fair = 1.0
+    ymax_tput = tput_ymax if tput_ymax is not None else sys_rps_top
+    # Headroom above bar tops so rotated value labels (offset in points) do
+    # not paint outside the axes after tight_layout / PDF embedding.
+    fair_y_top = min(ymax_fair * 1.08, 1.12)
+    tput_y_top = ymax_tput * 1.06
+    ax_left.set_ylim(0, fair_y_top)
+    ax_right.set_ylim(0, tput_y_top)
+    ax_left.set_yticks(np.linspace(0, ymax_fair, 5))
     ax_right.set_yticks(np.linspace(0, sys_rps_top, 5))
     ax_left.set_xticks(x)
     ax_left.set_xticklabels(labels, rotation=30, ha="right",
                             fontsize=TICK_LABEL_FS)
     ax_left.grid(axis="y", zorder=0)
 
-    # Vertical bar value annotations — the two bars in each method group
-    # sit only ``bar_w`` data units apart, so horizontal labels collide.
-    # Rotating 90° makes the labels as narrow as one glyph height, and the
-    # extra ymax headroom above gives them room to grow vertically.
+    # Vertical labels: anchor at bar top, nudge upward in *points* so
+    # ``ylim`` can stay at the logical max without empty data space above.
     for xi, v in zip(x, fairness):
         if v > 0:
-            ax_left.text(xi - bar_w / 2, v + 0.015 * ymax_fair,
-                         f"{v:.2f}",
-                         ha="center", va="bottom",
-                         fontsize=ANNOT_FS, rotation=90)
+            ax_left.annotate(
+                f"{v:.2f}",
+                xy=(xi - bar_w / 2, v),
+                xytext=(0, 5),
+                textcoords="offset points",
+                ha="center", va="bottom",
+                fontsize=ANNOT_FS, rotation=90, color=FAIR_COLOR,
+            )
     for xi, v in zip(x, sys_rps):
         if v > 0:
-            ax_right.text(xi + bar_w / 2, v + ymax_tput * 0.015,
-                          f"{v:.0f}",
-                          ha="center", va="bottom",
-                          fontsize=ANNOT_FS, rotation=90)
+            ax_right.annotate(
+                f"{v:.0f}",
+                xy=(xi + bar_w / 2, v),
+                xytext=(0, 5),
+                textcoords="offset points",
+                ha="center", va="bottom",
+                fontsize=ANNOT_FS, rotation=90, color=TPUT_COLOR,
+            )
 
     fig.tight_layout(pad=0.2)
     save_figure(fig, out_path)
@@ -578,10 +584,11 @@ def plot_fairness_row(
     if not panel_data:
         return
 
-    # Generous headroom so the vertical bar value annotations have room
-    # above the tallest bar without colliding with the per-panel title.
-    ymax_fair = 1.35
-    ymax_tput = _nice_ceil(sys_rps_max * 1.4) if sys_rps_max > 0 else 1.0
+    # Shared y-limits; small headroom above bar tops for annotations (see
+    # ``plot_fairness_summary``).
+    sys_rps_top = _nice_ceil(sys_rps_max) if sys_rps_max > 0 else 1.0
+    ymax_fair = 1.0
+    ymax_tput = sys_rps_top
 
     FAIR_COLOR    = "#34495E"
     TPUT_COLOR    = "#E67E22"
@@ -621,8 +628,12 @@ def plot_fairness_row(
                      color=TPUT_COLOR, edgecolor="black",
                      linewidth=0.6, zorder=3)
 
-        ax_left.set_ylim(0, ymax_fair)
-        ax_right.set_ylim(0, ymax_tput)
+        fair_y_top = min(ymax_fair * 1.08, 1.12)
+        tput_y_top = ymax_tput * 1.06
+        ax_left.set_ylim(0, fair_y_top)
+        ax_right.set_ylim(0, tput_y_top)
+        ax_left.set_yticks(np.linspace(0, ymax_fair, 5))
+        ax_right.set_yticks(np.linspace(0, sys_rps_top, 5))
         ax_left.set_xticks(x)
         ax_left.set_xticklabels(labels, rotation=30, ha="right",
                                 fontsize=TICK_LABEL_FS)
@@ -653,22 +664,27 @@ def plot_fairness_row(
             ax_right.tick_params(axis="y", colors=TPUT_COLOR,
                                  labelsize=TICK_LABEL_FS, labelright=False)
 
-        # Vertical annotations — the two bars in each method group sit only
-        # 0.38 data units apart, so horizontal labels collide. Rotating 90°
-        # makes them as narrow as one glyph height (~the font size) and the
-        # extra ymax headroom above gives them room to grow vertically.
+        # Vertical labels: point offset from bar top (no extra ylim headroom).
         for xi, v in zip(x, fairness):
             if v > 0:
-                ax_left.text(xi - bar_w / 2, v + 0.015 * ymax_fair,
-                             f"{v:.2f}",
-                             ha="center", va="bottom",
-                             fontsize=ANNOT_FS, rotation=90)
+                ax_left.annotate(
+                    f"{v:.2f}",
+                    xy=(xi - bar_w / 2, v),
+                    xytext=(0, 5),
+                    textcoords="offset points",
+                    ha="center", va="bottom",
+                    fontsize=ANNOT_FS, rotation=90, color=FAIR_COLOR,
+                )
         for xi, v in zip(x, sys_rps):
             if v > 0:
-                ax_right.text(xi + bar_w / 2, v + ymax_tput * 0.015,
-                              f"{v:.0f}",
-                              ha="center", va="bottom",
-                              fontsize=ANNOT_FS, rotation=90)
+                ax_right.annotate(
+                    f"{v:.0f}",
+                    xy=(xi + bar_w / 2, v),
+                    xytext=(0, 5),
+                    textcoords="offset points",
+                    ha="center", va="bottom",
+                    fontsize=ANNOT_FS, rotation=90, color=TPUT_COLOR,
+                )
 
     fig.tight_layout(pad=0.3, w_pad=0.6)
     save_figure(fig, out_path)
@@ -830,7 +846,7 @@ def plot_throughput_timeseries(
     fig.tight_layout(rect=(0.05, 0, 1, 0.90), pad=0.3, h_pad=1.4)
     # Single shared y-axis label spanning both panels — done via fig.text
     # rather than fig.supylabel for compatibility with older matplotlib.
-    fig.text(0.01, 0.45, "Throughput (rps)",
+    fig.text(0.01, 0.45, "Throughput (RPS)",
              fontsize=AXIS_LABEL_FS, fontweight='bold',
              rotation=90, va="center", ha="left")
     fig.legend(dedup_h, dedup_l, loc="upper center",
@@ -941,7 +957,7 @@ BASELINES = ["fcfs", "no_sharing"]
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--results-base", default="experiments/fair_share/tsfm/results_t4")
+    ap.add_argument("--results-base", default="experiments/fair_share/tsfm/results_noisy_neighbour")
     ap.add_argument("--plot-dir",     default=None,
                     help="Output dir (default: <results-base>/plots)")
     ap.add_argument("--victim-task",    default="ecgclass")
