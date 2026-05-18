@@ -349,7 +349,7 @@ def plot_response_time(ts: pd.DataFrame, event_offsets, out_path: Path,
     ax_p99.set_xlabel(f"trace time (s)  [bin = {bin_s:g}s]")
     handles, labels = ax_mean.get_legend_handles_labels()
     fig.legend(handles, labels, loc="center right", bbox_to_anchor=(1.13, 0.5),
-               fontsize=8, frameon=False)
+               fontsize=11, frameon=False)
     fig.suptitle(f"Per-task response time vs. time{title_suffix}", fontsize=12)
     fig.tight_layout(rect=(0, 0, 0.88, 0.96))
     fig.savefig(out_path, bbox_inches="tight")
@@ -429,7 +429,7 @@ def _plot_bumped_task_mean_response_time_case_ax(
         )
 
     ax.set_xlabel("Time (sec)")
-    ax.set_ylabel("Mean RT (ms)")
+    ax.set_ylabel("Latency (ms)")
     ax.set_xlim(0, x_max)
     ax.set_ylim(0, y_max)
     ax.xaxis.set_major_locator(ticker.MultipleLocator(_time_tick_step(x_max)))
@@ -469,6 +469,12 @@ def _draw_duration_arrow(
         ax.text((x_start + x_end) / 2.0, y_frac + 0.03, label,
                 transform=transform,
                 ha="center", va="bottom",
+                color=color, fontsize=17, fontweight="bold",
+                clip_on=False)
+    elif label_side == "left":
+        ax.text(x_start - 0.6, y_frac, label,
+                transform=transform,
+                ha="right", va="center",
                 color=color, fontsize=17, fontweight="bold",
                 clip_on=False)
     else:  # right of arrow end
@@ -573,7 +579,7 @@ def plot_bumped_task_mean_response_time_comparison(
         ax.set_ylim(paper_y_min, paper_y_max)
         ax.set_yscale("log")
         ax.set_xlabel("Time (sec)")
-        ax.set_ylabel("Mean RT (ms)")
+        ax.set_ylabel("Latency (ms)")
         ax.xaxis.set_major_locator(ticker.MultipleLocator(10))
         ax.yaxis.set_major_locator(ticker.LogLocator(base=10, numticks=8))
         ax.yaxis.set_major_formatter(ticker.LogFormatterMathtext(base=10))
@@ -599,8 +605,8 @@ def plot_bumped_task_mean_response_time_comparison(
                 color=c1_color,
                 label=f"{(x_e - x_s):.1f}s",
                 # Span is <1s — centering the label inside is unreadable, so
-                # place it just to the right of the arrow head.
-                label_side="right",
+                # place it just to the left of the arrow start.
+                label_side="left",
             )
         if bump_t is not None and backbone_done_t is not None:
             c5_color = CASE_STYLES["case5"]["color"]
@@ -619,12 +625,12 @@ def plot_bumped_task_mean_response_time_comparison(
         # extra spacing so the larger fonts don't run into the y-axis label.
         ax.legend(
             loc="lower center",
-            bbox_to_anchor=(0.5, 1.06),
+            bbox_to_anchor=(0.5, 1.02),
             ncol=3,
             frameon=False,
-            handlelength=2.2,
-            columnspacing=1.5,
-            handletextpad=0.6,
+            handlelength=1.6,
+            columnspacing=1.0,
+            handletextpad=0.4,
             labelspacing=0.3,
             borderaxespad=0.0,
         )
