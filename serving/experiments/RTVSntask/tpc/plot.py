@@ -92,6 +92,18 @@ SERIES_MARKER = {
     "sharing":        "o",
 }
 
+# Condition line geometry — keep RTVSntask/tpc/plot.py and vision/plot.py in lockstep
+# (same numbers as sharing_benefit/tpc line plots: markersize 2.6, mew 0.25, lw 0.9).
+COND_LINE_MARKERSIZE = 2.6
+COND_LINE_MARKEREDGEWIDTH = 0.25
+COND_LINE_MARKER_EDGECOLOR = "black"
+COND_LINE_LINEWIDTH = 0.9
+# Per-task curves: same marker cycle and sizes in both RTVS plotters.
+PER_TASK_MARKER_CYCLE = ("o", "s", "^", "D", "v", "P", "*", "X", "h", "p")
+PER_TASK_MARKERSIZE = 3.5
+PER_TASK_MARKEREDGEWIDTH = 0.25
+PER_TASK_LINEWIDTH = 1.2
+
 SINGLE_CONDITIONS_BY_TASK_SET = {
     "tsfm":   ["single_ecgclass", "single_gestureclass"],
     "vision": ["single_nyudepth", "single_vocseg"],
@@ -650,10 +662,17 @@ def _plot_cdf_on_ax(
             arr = 1000.0 / arr
         sorted_arr = np.sort(arr)
         cdf = np.arange(1, len(sorted_arr) + 1) / len(sorted_arr)
+        me = max(1, len(sorted_arr) // 30)
         ax.plot(sorted_arr, cdf,
                 color=SERIES_COLORS[s],
                 linestyle=SERIES_LINESTYLE[s],
-                linewidth=1.0,
+                linewidth=COND_LINE_LINEWIDTH,
+                marker=SERIES_MARKER[s],
+                markersize=COND_LINE_MARKERSIZE,
+                markerfacecolor=SERIES_COLORS[s],
+                markeredgecolor=COND_LINE_MARKER_EDGECOLOR,
+                markeredgewidth=COND_LINE_MARKEREDGEWIDTH,
+                markevery=me,
                 label=SERIES_LABELS[s])
         all_vals.extend(sorted_arr.tolist())
     x_max = 100.0 if metric == "latency" else (
@@ -661,6 +680,7 @@ def _plot_cdf_on_ax(
     )
     _set_linear_axis_with_endpoint(ax, axis="x", lower=0.0, upper=x_max, target_ticks=5, decimals=0)
     _set_linear_axis_with_endpoint(ax, axis="y", lower=0.0, upper=1.0, target_ticks=5, decimals=2)
+    ax.margins(x=0.04, y=0.12)
     ax.grid(axis="both", zorder=0)
     ax.set_axisbelow(True)
 
@@ -677,15 +697,23 @@ def _plot_throughput_cdf_on_ax(
             continue
         sorted_vals = np.sort(vals)
         cdf = np.arange(1, len(sorted_vals) + 1) / len(sorted_vals)
+        me = max(1, len(sorted_vals) // 30)
         ax.plot(sorted_vals, cdf,
                 color=SERIES_COLORS[s],
                 linestyle=SERIES_LINESTYLE[s],
-                linewidth=1.0,
+                linewidth=COND_LINE_LINEWIDTH,
+                marker=SERIES_MARKER[s],
+                markersize=COND_LINE_MARKERSIZE,
+                markerfacecolor=SERIES_COLORS[s],
+                markeredgecolor=COND_LINE_MARKER_EDGECOLOR,
+                markeredgewidth=COND_LINE_MARKEREDGEWIDTH,
+                markevery=me,
                 label=SERIES_LABELS[s])
         all_vals.extend(sorted_vals.tolist())
     x_max = x_upper if x_upper is not None else _nice_upper(float(np.max(all_vals)) if all_vals else 1.0)
     _set_linear_axis_with_endpoint(ax, axis="x", lower=0.0, upper=x_max, target_ticks=5, decimals=0)
     _set_linear_axis_with_endpoint(ax, axis="y", lower=0.0, upper=1.0, target_ticks=5, decimals=2)
+    ax.margins(x=0.04, y=0.12)
     ax.grid(axis="both", zorder=0)
     ax.set_axisbelow(True)
 
@@ -700,7 +728,12 @@ def _legend_handles(series_keys: Optional[List[str]] = None) -> List:
         plt.Line2D([0], [0],
                    color=SERIES_COLORS[s],
                    linestyle=SERIES_LINESTYLE[s],
-                   linewidth=1.0,
+                   marker=SERIES_MARKER[s],
+                   markersize=COND_LINE_MARKERSIZE,
+                   markerfacecolor=SERIES_COLORS[s],
+                   markeredgecolor=COND_LINE_MARKER_EDGECOLOR,
+                   markeredgewidth=COND_LINE_MARKEREDGEWIDTH,
+                   linewidth=COND_LINE_LINEWIDTH,
                    label=SERIES_LABELS[s])
         for s in keys
     ]
@@ -983,6 +1016,7 @@ def _plot_ntasks_line_sweep(
     for rps in rps_with_data:
         fig, ax = plt.subplots(figsize=(1.8, fig_h))
         rps_data = data.get(rps, {})
+        ymax_data = 0.0
         for s in present:
             xs, ys = [], []
             for n in ntasks_list:
@@ -991,14 +1025,17 @@ def _plot_ntasks_line_sweep(
                     xs.append(n)
                     ys.append(v)
             if xs:
+                ymax_data = max(ymax_data, max(ys))
                 ax.plot(
                     xs, ys,
                     color=SERIES_COLORS[s],
                     linestyle=SERIES_LINESTYLE[s],
                     marker=SERIES_MARKER[s],
-                    markersize=2.8,
-                    markeredgewidth=0.5,
-                    linewidth=1.1,
+                    markersize=COND_LINE_MARKERSIZE,
+                    markerfacecolor=SERIES_COLORS[s],
+                    markeredgecolor=COND_LINE_MARKER_EDGECOLOR,
+                    markeredgewidth=COND_LINE_MARKEREDGEWIDTH,
+                    linewidth=COND_LINE_LINEWIDTH,
                 )
 
         ax.set_title(f"{rps} req/s", pad=2)
@@ -1007,9 +1044,48 @@ def _plot_ntasks_line_sweep(
         ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{int(v)}"))
         ax.grid(axis="both", zorder=0)
         ax.set_axisbelow(True)
-        rps_y_max = (y_max_per_rps or {}).get(rps, y_max)
-        _set_linear_axis_with_endpoint(ax, "y", 0.0, rps_y_max, target_ticks=5)
+        rps_y_cap = (y_max_per_rps or {}).get(rps, y_max)
+        # Hard ceiling at rps_y_cap (default y_max, e.g. 300 ms); never expand the axis above it.
+        if ymax_data > 0:
+            y_need = ymax_data * 1.02 * 1.045
+            y_top = min(rps_y_cap, y_need)
+        else:
+            y_top = rps_y_cap
+        _set_linear_axis_with_endpoint(ax, "y", 0.0, y_top, target_ticks=5)
+        n_lo, n_hi = min(ntasks_list), max(ntasks_list)
+        ax.set_xlim(n_lo - 0.55, n_hi + 0.55)
         ax.set_ylabel(ylabel)
+
+        # Annotate "OOM" at ntasks=10 for BE (no_sharing) when data is missing there,
+        # aligned with the y-value of BE's last available data point so it reads as
+        # a continuation of the BE curve. If that point is above the axis cap,
+        # clamp the label just below the top of the plot.
+        if (
+            "no_sharing" in present
+            and 10 in ntasks_list
+            and rps_data.get(10, {}).get("no_sharing") is None
+        ):
+            be_xy = [
+                (n, rps_data.get(n, {}).get("no_sharing"))
+                for n in ntasks_list
+                if rps_data.get(n, {}).get("no_sharing") is not None
+            ]
+            if be_xy:
+                _, last_y = be_xy[-1]
+                y_lo, y_hi = ax.get_ylim()
+                if last_y >= y_hi:
+                    text_y = y_hi - 0.02 * (y_hi - y_lo)
+                    va = "top"
+                else:
+                    text_y = last_y
+                    va = "center"
+                ax.text(
+                    10, text_y, "OOM",
+                    ha="center", va=va,
+                    fontsize=5.5, fontweight="bold",
+                    color=SERIES_COLORS["no_sharing"],
+                    zorder=3,
+                )
 
         # File name with RPS suffix
         rps_out_path = out_path.parent / f"{out_path.stem}_rps{rps}{out_path.suffix}"
@@ -1025,9 +1101,8 @@ def plot_ntasks_mean_latency(
 ) -> None:
     _plot_ntasks_line_sweep(
         data, rps_list, ntasks_list, out_path,
-        ylabel="Response Time (ms)",
+        ylabel="Latency (ms)",
         warn_label="ntasks mean latency",
-        y_max_per_rps={7: 500.0},
         fig_w=3.7,
         fig_h=1.25,
     )
@@ -1117,6 +1192,11 @@ def plot_p99_vs_rps(
             if not np.isnan(v):
                 ax.text(bar.get_x() + bar.get_width() / 2, v * 1.01,
                         f"{v:.0f}", ha="center", va="bottom", fontsize=3.4, rotation=90)
+            elif ntasks == 10 and series == "no_sharing":
+                ax.text(bar.get_x() + bar.get_width() / 2, 1.0,
+                        "OOM", ha="center", va="bottom",
+                        fontsize=3.4, rotation=90,
+                        color=SERIES_COLORS[series], zorder=3)
 
     # title = "P99 Latency vs Request Rate"
     # if ntasks is not None:
@@ -1330,7 +1410,7 @@ def plot_per_task_latency(
         ax.set_axisbelow(True)
         _set_nice_ylim(ax)
         if ax is axes[0]:
-            ax.set_ylabel("Mean Response Time (ms)")
+            ax.set_ylabel("Latency (ms)")
 
     fig.tight_layout()
     save_figure(fig, out_path)
@@ -1597,8 +1677,6 @@ def plot_tpc_count_sweep(
     # Color each task distinctly
     cmap = plt.cm.get_cmap("tab10", len(tasks))
     task_colors = {t: cmap(i) for i, t in enumerate(tasks)}
-    task_markers = ["o", "s", "^", "D", "v", "P", "*", "X", "h", "p"]
-
     n_panels = len(rps_list)
     fig_w = max(2.8 * n_panels, 3.3)
     fig, axes = plt.subplots(1, n_panels, figsize=(fig_w, 2.2),
@@ -1617,23 +1695,40 @@ def plot_tpc_count_sweep(
             if xs:
                 ax.plot(xs, ys,
                         color=task_colors[task],
-                        marker=task_markers[i % len(task_markers)],
-                        markersize=3.5,
-                        linewidth=1.2,
+                        marker=PER_TASK_MARKER_CYCLE[i % len(PER_TASK_MARKER_CYCLE)],
+                        markersize=PER_TASK_MARKERSIZE,
+                        markerfacecolor=task_colors[task],
+                        markeredgecolor=COND_LINE_MARKER_EDGECOLOR,
+                        markeredgewidth=PER_TASK_MARKEREDGEWIDTH,
+                        linewidth=PER_TASK_LINEWIDTH,
                         label=task)
         ax.set_title(f"RPS = {rps}", pad=3)
         ax.set_xlabel("Number of TPCs")
         ax.set_xticks(n_tpcs_list)
         ax.grid(axis="both", zorder=0)
         ax.set_axisbelow(True)
+        n_lo, n_hi = min(n_tpcs_list), max(n_tpcs_list)
+        ax.set_xlim(n_lo - 0.55, n_hi + 0.55)
+        y_hi = 0.0
+        for ln in ax.get_lines():
+            yd = ln.get_ydata()
+            if len(yd):
+                y_hi = max(y_hi, float(np.nanmax(yd)))
+        if y_hi <= 0:
+            y_hi = 1.0
+        ax.set_ylim(0.0, y_hi * 1.12)
         if ax is axes[0]:
-            ax.set_ylabel("Mean Response Time (ms)")
+            ax.set_ylabel("Latency (ms)")
 
     # Shared legend
     handles = [
         plt.Line2D([0], [0], color=task_colors[t],
-                   marker=task_markers[i % len(task_markers)],
-                   markersize=3.5, linewidth=1.2, label=t)
+                   marker=PER_TASK_MARKER_CYCLE[i % len(PER_TASK_MARKER_CYCLE)],
+                   markersize=PER_TASK_MARKERSIZE,
+                   markerfacecolor=task_colors[t],
+                   markeredgecolor=COND_LINE_MARKER_EDGECOLOR,
+                   markeredgewidth=PER_TASK_MARKEREDGEWIDTH,
+                   linewidth=PER_TASK_LINEWIDTH, label=t)
         for i, t in enumerate(tasks)
     ]
     fig.legend(handles=handles, loc="upper center",
