@@ -1,0 +1,15 @@
+{
+  "condition": "no_sharing_tpc",
+  "task_set": "vision",
+  "tasks": ["nyudepth","vocseg"],
+  "num_tasks": 2,
+  "backbone": "swinlarge",
+  "cuda_device": "cuda:0",
+  "max_batch_size": 32,
+  "max_batch_wait_ms": 0,
+  "phase_duration_s": 600,
+  "rps_per_task": 2,
+  "tpc_mode": "libsmctrl",
+  "device_port_base": 8000,
+  "device_startup_wait_s": 5
+}

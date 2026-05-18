@@ -24,7 +24,8 @@ Sweep plots (when multiple RPS values):
 
 NEW — ntasks sweep (when multiple ntasks values):
   tpc_ntasks_mean_latency.pdf
-    x-axis: number of tasks, y-axis: mean response time
+  tpc_ntasks_p99_latency.pdf
+    x-axis: number of tasks, y-axis: mean/p99 response time
     one line per condition; one subplot per RPS if multiple RPS values
 
 Usage:
@@ -93,14 +94,21 @@ SINGLE_CONDITIONS_BY_TASK_SET = {
     "vision": ["single_nyudepth", "single_vocseg"],
 }
 
+# Default figure sizes (width, height) in inches. Height must be set here — savefig
+# uses bbox_inches='tight', so legends placed above the axes (bbox_to_anchor y>1)
+# ignore figsize height and inflate the saved PDF.
+DEFAULT_LINE_RPS_FIGSIZE = (1.35, 1.0)
+NTASKS_SWEEP_FIG_H = 1.35
+
 # Optional per-task-set styling for ntasks line plots (mean/p99 vs RPS).
 # Omit ymax to keep the data-driven tight upper bound.
 LINE_RPS_PLOT_OVERRIDES: Dict[str, Dict[int, Dict[str, object]]] = {
     "tsfm": {
-        2: {"mean_ymax": 120.0, "p99_ymax": 400.0, "legend_inside": True},
+        2: {"mean_ymax": 120.0, "p99_ymax": 400.0, "legend_inside": True,
+            "figsize": DEFAULT_LINE_RPS_FIGSIZE},
     },
     "vision": {
-        2: {"legend_inside": True},
+        2: {"legend_inside": True, "figsize": DEFAULT_LINE_RPS_FIGSIZE},
     },
 }
 
@@ -147,9 +155,9 @@ def apply_paper_style() -> None:
     })
 
 
-def save_figure(fig: plt.Figure, out_path: Path) -> None:
+def save_figure(fig: plt.Figure, out_path: Path, *, pad_inches: float = 0.02) -> None:
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(out_path, dpi=300, bbox_inches="tight")
+    fig.savefig(out_path, dpi=300, bbox_inches="tight", pad_inches=pad_inches)
     print(f"[Plot] Saved: {out_path}")
 
 
@@ -1077,25 +1085,21 @@ def plot_sweep_cdf(
 #   One subplot per RPS value; one line per condition.
 # ---------------------------------------------------------------------------
 
-def plot_ntasks_mean_latency(
+def _plot_ntasks_latency_sweep(
     data: Dict[int, Dict[int, Dict[str, float]]],
     rps_list: List[int],
     ntasks_list: List[int],
     out_path: Path,
+    ylabel: str,
+    warn_label: str,
+    y_max: Optional[float] = 200.0,
 ) -> None:
-    # Filter to RPS values that actually have data
+    """Line plot: x=ntasks, y=latency stat; one panel per RPS; legend inside axes."""
     rps_with_data = [r for r in rps_list if any(data.get(r, {}).values())]
     if not rps_with_data:
-        print("[Warn] No ntasks sweep data, skipping ntasks mean latency plot")
+        print(f"[Warn] No ntasks sweep data, skipping {warn_label} plot")
         return
 
-    n_panels = len(rps_with_data)
-    fig_w = max(2.8 * n_panels, 3.3)
-    fig, axes = plt.subplots(1, n_panels, figsize=(fig_w, 2.0),
-                             sharey=False, squeeze=False)
-    axes = axes[0]  # flatten to 1-D
-
-    # Collect all series that appear across all panels
     present: List[str] = []
     for s in SERIES_ORDER:
         if any(
@@ -1105,6 +1109,13 @@ def plot_ntasks_mean_latency(
         ):
             present.append(s)
 
+    n_panels = len(rps_with_data)
+    fig_w = max(2.8 * n_panels, 3.3)
+    fig, axes = plt.subplots(1, n_panels, figsize=(fig_w, NTASKS_SWEEP_FIG_H),
+                             sharey=False, squeeze=False)
+    axes = axes[0]
+
+    all_vals: List[float] = []
     for ax, rps in zip(axes, rps_with_data):
         rps_data = data.get(rps, {})
         for s in present:
@@ -1115,6 +1126,7 @@ def plot_ntasks_mean_latency(
                     xs.append(n)
                     ys.append(v)
             if xs:
+                all_vals.extend(ys)
                 ax.plot(
                     xs, ys,
                     color=SERIES_COLORS[s],
@@ -1122,32 +1134,69 @@ def plot_ntasks_mean_latency(
                     marker=SERIES_MARKER[s],
                     markersize=3.5,
                     linewidth=1.2,
-                    label=SERIES_LABELS[s],
                 )
 
-        ax.set_title(f"RPS = {rps}", pad=3)
+        ax.set_title(f"RPS = {rps}", pad=2)
         ax.set_xlabel("Number of Tasks")
         ax.set_xticks(ntasks_list)
         ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{int(v)}"))
         ax.grid(axis="both", zorder=0)
-        ax.set_ylim(0,200)
         ax.set_axisbelow(True)
         if ax is axes[0]:
-            ax.set_ylabel("Mean Response Time (ms)")
+            ax.set_ylabel(ylabel)
 
-    fig.legend(
-        handles=_legend_handles(present),
-        loc="upper center",
-        bbox_to_anchor=(0.5, 1.12),
-        ncol=max(1, len(present)),
-        frameon=False,
-        handlelength=1.5,
-        columnspacing=0.8,
-        handletextpad=0.3,
-    )
-    fig.tight_layout(rect=(0, 0, 1, 1.0))
+    if y_max is not None:
+        for ax in axes:
+            ax.set_ylim(0, y_max)
+    elif all_vals:
+        y_top = _tight_linear_upper(max(all_vals))
+        for ax in axes:
+            _set_linear_axis_with_endpoint(ax, axis="y", lower=0.0, upper=y_top,
+                                           target_ticks=5, decimals=0)
+
+    if present:
+        axes[0].legend(
+            handles=_legend_handles(present),
+            loc="upper left",
+            fontsize=5.4,
+            frameon=False,
+            handlelength=1.2,
+            handletextpad=0.25,
+            labelspacing=0.12,
+            borderpad=0.1,
+        )
+
+    fig.tight_layout(pad=0.15)
     save_figure(fig, out_path)
     plt.close(fig)
+
+
+def plot_ntasks_mean_latency(
+    data: Dict[int, Dict[int, Dict[str, float]]],
+    rps_list: List[int],
+    ntasks_list: List[int],
+    out_path: Path,
+) -> None:
+    _plot_ntasks_latency_sweep(
+        data, rps_list, ntasks_list, out_path,
+        ylabel="Mean Response Time (ms)",
+        warn_label="ntasks mean latency",
+        y_max=200.0,
+    )
+
+
+def plot_ntasks_p99_latency(
+    data: Dict[int, Dict[int, Dict[str, float]]],
+    rps_list: List[int],
+    ntasks_list: List[int],
+    out_path: Path,
+) -> None:
+    _plot_ntasks_latency_sweep(
+        data, rps_list, ntasks_list, out_path,
+        ylabel="P99 Response Time (ms)",
+        warn_label="ntasks p99 latency",
+        y_max=None,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1275,25 +1324,54 @@ def _plot_latency_stat_vs_rps_line(
     if not present:
         return
 
-    fig, ax = plt.subplots(figsize=(1.35, 1.35))
+    figsize = _line_rps_plot_override(ntasks, "figsize", DEFAULT_LINE_RPS_FIGSIZE)
+    if not isinstance(figsize, (tuple, list)) or len(figsize) != 2:
+        figsize = DEFAULT_LINE_RPS_FIGSIZE
+    fig, ax = plt.subplots(figsize=(float(figsize[0]), float(figsize[1])))
 
     all_vals: List[float] = []
+    series_ys: Dict[str, List[float]] = {}
     for series in present:
         ys = [stat_data.get(r, {}).get(series, float("nan")) for r in rps_with_data]
         all_vals.extend(v for v in ys if np.isfinite(v))
+        series_ys[series] = ys
+
+    # Compute upper bound before plotting so markers can be filtered to [0, upper]
+    pos_vals = [v for v in all_vals if v > 0]
+    upper: Optional[float] = None
+    if not log_y and all_vals:
+        upper = ymax if ymax is not None else _tight_linear_upper(max(all_vals))
+
+    for series in present:
+        ys = series_ys[series]
         ax.plot(
             rps_with_data, ys,
             color=SERIES_COLORS[series],
             linestyle=SERIES_LINESTYLE[series],
-            marker=SERIES_MARKER[series],
-            markersize=2.6,
-            markeredgecolor="black",
-            markeredgewidth=0.25,
+            marker="None",
             linewidth=0.9,
             label=SERIES_LABELS[series],
             zorder=3,
-            clip_on=False,
+            clip_on=True,
         )
+        # Draw markers unclipped so they aren't half-cut at the axes boundary,
+        # but only for points within the visible y range.
+        xs_m = [x for x, y in zip(rps_with_data, ys)
+                if np.isfinite(y) and (upper is None or y <= upper)]
+        ys_m = [y for y in ys
+                if np.isfinite(y) and (upper is None or y <= upper)]
+        if xs_m:
+            ax.plot(
+                xs_m, ys_m,
+                color=SERIES_COLORS[series],
+                linestyle="None",
+                marker=SERIES_MARKER[series],
+                markersize=2.6,
+                markeredgecolor="black",
+                markeredgewidth=0.25,
+                zorder=3,
+                clip_on=False,
+            )
 
     ax.set_xlabel("RPS/task")
     ax.set_ylabel(ylabel)
@@ -1305,11 +1383,9 @@ def _plot_latency_stat_vs_rps_line(
     ax.grid(axis="y", zorder=0)
     ax.set_axisbelow(True)
 
-    pos_vals = [v for v in all_vals if v > 0]
     if log_y and pos_vals:
         _set_log_y_axis_with_endpoint(ax, pos_vals)
-    elif all_vals:
-        upper = ymax if ymax is not None else _tight_linear_upper(max(all_vals))
+    elif upper is not None:
         _set_linear_axis_with_endpoint(ax, axis="y", lower=0.0, upper=upper,
                                        target_ticks=4, decimals=0)
 
@@ -1848,7 +1924,7 @@ def main() -> int:
     parser.add_argument("--task-set",        default=os.environ.get("TASK_SET", "tsfm"),
                         choices=["tsfm", "vision"])
     parser.add_argument("--exp-dir",         default=os.environ.get("EXP_DIR",
-                        "experiments/sharing_benefit/tpc/t4/results_vision"))
+                        "experiments/sharing_benefit/tpc/t4/results_tsfm"))
     parser.add_argument("--rps-sweep",       default=None,
                         help="Comma-separated RPS values (auto-detected if omitted)")
     parser.add_argument("--num-tasks-sweep", default=None,
@@ -1906,6 +1982,7 @@ def main() -> int:
         all_throughput_by_rps: Dict[int, Dict[str, List[float]]] = {}
         # ntasks sweep data: {rps: {ntasks: {series: mean_lat}}}
         ntasks_sweep_data: Dict[int, Dict[int, Dict[str, float]]] = {}
+        ntasks_sweep_p99_data: Dict[int, Dict[int, Dict[str, float]]] = {}
         # p99 data per ntasks: {ntasks: {rps: {series: p99_ms}}}
         p99_by_ntasks: Dict[int, Dict[int, Dict[str, float]]] = {}
         # mean latency per ntasks: {ntasks: {rps: {series: mean_ms}}}
@@ -1945,6 +2022,7 @@ def main() -> int:
                 p99 = load_p99_for_dir(rps_root)
                 if p99:
                     p99_by_ntasks.setdefault(n, {})[rps] = p99
+                    ntasks_sweep_p99_data.setdefault(rps, {})[n] = p99
 
                 # latency overhead
                 overhead = load_latency_overhead_series(rps_root, args.warmup_secs,
@@ -1979,12 +2057,17 @@ def main() -> int:
             out_dir / "tpc_sharing_p99_latency_overhead.pdf",
         )
 
-        # NEW: ntasks sweep plot
+        # NEW: ntasks sweep plots
         if len(ntasks_list) > 0:
             plot_ntasks_mean_latency(
                 ntasks_sweep_data, rps_list, ntasks_list,
                 out_dir / "tpc_ntasks_mean_latency.pdf",
             )
+            if ntasks_sweep_p99_data:
+                plot_ntasks_p99_latency(
+                    ntasks_sweep_p99_data, rps_list, ntasks_list,
+                    out_dir / "tpc_ntasks_p99_latency.pdf",
+                )
 
         # P99 vs RPS grouped bar chart — one plot per ntasks value
         for n, p99_data in p99_by_ntasks.items():
