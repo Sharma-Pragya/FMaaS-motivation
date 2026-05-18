@@ -49,6 +49,20 @@ CONDITION_LABELS = {
 # Baseline first, proposed second — standard paper convention.
 PAPER_METHODS = ["no_sharing", "fmaas"]
 
+# Markers and linestyles match sharing_benefit/tpc/plot.py (BE ≈ no_sharing,
+# FMVisor ≈ sharing).
+CONDITION_MARKER = {
+    "no_sharing": "D",
+    "fmaas":      "o",
+}
+CONDITION_LINESTYLE = {
+    "no_sharing": "-.",
+    "fmaas":      "-",
+}
+PAPER_TS_MARKER_EVERY_SEC = 25.0  # markevery ≈ one marker per this many seconds
+PAPER_TS_MARKERSIZE = 4.0
+PAPER_TS_MARKEREDGE = 0.35
+
 
 def _color(cond: str) -> str:
     return CONDITION_COLORS.get(cond, None) or "#555555"
@@ -173,15 +187,16 @@ def _timeseries_response_time(cond_data: Dict[str, Dict], out_path: Path,
         x, mean_v = _binned(d["req_time"], d["e2e_ms"], t_max, bin_sec, np.mean)
         _,  p99_v = _binned(d["req_time"], d["e2e_ms"], t_max, bin_sec,
                             lambda a: np.percentile(a, 99))
-        axes[0].plot(x, mean_v, label=_label(c), color=col, lw=1.5)
-        axes[1].plot(x, p99_v,  label=_label(c), color=col, lw=1.5)
-    axes[0].set_ylabel("Mean latency (ms)")
+        axes[0].plot(x, mean_v, label=_label(c), color=col, lw=1.0)
+        axes[1].plot(x, p99_v,  label=_label(c), color=col, lw=1.0)
+    axes[0].set_ylabel("Latency (ms)")
     axes[0].set_title(title)
     axes[0].grid(alpha=0.3)
-    axes[0].legend()
-    axes[1].set_ylabel("P99 latency (ms)")
+    axes[0].legend(loc="upper right")
+    axes[1].set_ylabel("P99 Latency (ms)")
     axes[1].set_xlabel("Time since start (s)")
     axes[1].grid(alpha=0.3)
+    axes[1].legend(loc="upper right")
     fig.tight_layout()
     fig.savefig(out_path)
     plt.close(fig)
@@ -192,12 +207,12 @@ def _timeseries_offered_load(cond_data: Dict[str, Dict], out_path: Path,
     fig, ax = plt.subplots(figsize=(9, 4))
     for c, d in cond_data.items():
         x, rate = _binned_counts(d["req_time"], t_max, bin_sec)
-        ax.plot(x, rate, label=_label(c), color=_color(c), lw=1.5)
+        ax.plot(x, rate, label=_label(c), color=_color(c), lw=1.0)
     ax.set_xlabel("Time since start (s)")
     ax.set_ylabel("Offered load (req/s)")
     ax.set_title(title)
     ax.grid(alpha=0.3)
-    ax.legend()
+    ax.legend(loc="upper right")
     fig.tight_layout()
     fig.savefig(out_path)
     plt.close(fig)
@@ -209,12 +224,12 @@ def _timeseries_throughput(cond_data: Dict[str, Dict], out_path: Path,
     for c, d in cond_data.items():
         completion_time = d["req_time"] + d["e2e_ms"] / 1000.0
         x, rate = _binned_counts(completion_time, t_max, bin_sec)
-        ax.plot(x, rate, label=_label(c), color=_color(c), lw=1.5)
+        ax.plot(x, rate, label=_label(c), color=_color(c), lw=1.0)
     ax.set_xlabel("Time since start (s)")
     ax.set_ylabel("Throughput (completions/s)")
     ax.set_title(title)
     ax.grid(alpha=0.3)
-    ax.legend()
+    ax.legend(loc="upper right")
     fig.tight_layout()
     fig.savefig(out_path)
     plt.close(fig)
@@ -263,12 +278,12 @@ def _timeseries_batch_size(cond_data: Dict[str, Dict], out_path: Path,
         if len(sizes) == 0:
             continue
         x, mean_v = _binned(times, sizes, t_max, bin_sec, np.mean)
-        ax.plot(x, mean_v, label=_label(c), color=_color(c), lw=1.5)
+        ax.plot(x, mean_v, label=_label(c), color=_color(c), lw=1.0)
     ax.set_xlabel("Time since start (s)")
     ax.set_ylabel("Mean batch size")
     ax.set_title(title)
     ax.grid(alpha=0.3)
-    ax.legend()
+    ax.legend(loc="upper right")
     fig.tight_layout()
     fig.savefig(out_path)
     plt.close(fig)
@@ -439,10 +454,10 @@ def _plot_per_task_mean_latency(per_task: Dict[str, Dict[str, float]],
 # Paper-ready plots
 # ---------------------------------------------------------------------------
 
-# Default time-series window: 100s ≤ t < 150s (50s) — re-zeroed to 0–50 on
-# the displayed x-axis so the plot reads independently of the trace offset.
+# Paper time-series window: trace time in [PAPER_TS_START, PAPER_TS_END) (s).
+# X-axis is re-zeroed to 0 … (end − start) so e.g. 100–400 s reads as 0–300 s.
 PAPER_TS_START = 100.0
-PAPER_TS_END   = 150.0
+PAPER_TS_END   = 400.0
 PAPER_TS_BIN_S = 1.0
 
 
@@ -480,6 +495,7 @@ def _paper_style() -> None:
         "legend.frameon":     False,
         "lines.linewidth":    1.8,
         "lines.markersize":   5,
+        "hatch.linewidth":    0.85,
         "pdf.fonttype":       42,
         "ps.fonttype":        42,
         "figure.dpi":         300,
@@ -497,10 +513,10 @@ def _bar_vals(cond_data: Dict[str, Dict], conds: List[str], metric: str
               ) -> Tuple[List[float], str]:
     if metric == "mean":
         vals = [float(np.mean(cond_data[c]["e2e_ms"])) for c in conds]
-        ylabel = "Mean RT (ms)"
+        ylabel = "Latency (ms)"
     elif metric == "p99":
         vals = [float(np.percentile(cond_data[c]["e2e_ms"], 99)) for c in conds]
-        ylabel = "P99 RT (ms)"
+        ylabel = "P99 Latency (ms)"
     else:
         raise ValueError(metric)
     return vals, ylabel
@@ -510,7 +526,7 @@ _NICE_STEPS = (1.0, 2.0, 2.5, 5.0, 10.0)
 
 
 def _nice_top_and_step(value: float, target_ticks: int = 5,
-                        min_ticks: int = 4, max_ticks: int = 7
+                        min_ticks: int = 4, max_ticks: int = 9
                         ) -> Tuple[float, float]:
     """Return (top, step) such that:
       • `step` is an integer-friendly value in {1, 2, 2.5, 5, 10} × 10^k
@@ -552,10 +568,12 @@ def _nice_top_and_step(value: float, target_ticks: int = 5,
     return top, step
 
 
-def _set_y_endpoint(ax, value: float, target_ticks: int = 5) -> float:
+def _set_y_endpoint(ax, value: float, target_ticks: int = 5,
+                    max_ticks: int = 9) -> float:
     """Set y-axis to [0, top] with integer-friendly ticks so the last visible
     tick lands exactly on `top`. Returns the chosen `top`."""
-    top, step = _nice_top_and_step(value, target_ticks=target_ticks)
+    top, step = _nice_top_and_step(value, target_ticks=target_ticks,
+                                    max_ticks=max_ticks)
     ax.set_ylim(0, top)
     n = int(round(top / step))
     ax.set_yticks([i * step for i in range(n + 1)])
@@ -570,11 +588,14 @@ def _draw_paper_bars(ax, cond_data: Dict[str, Dict], metric: str) -> None:
     vals, ylabel = _bar_vals(cond_data, conds, metric)
 
     x = np.arange(len(conds))
-    ax.bar(
+    bars = ax.bar(
         x, vals, width=0.6,
         color=[_color(c) for c in conds],
         edgecolor="black", linewidth=0.7, zorder=2,
     )
+    for bar, c in zip(bars, conds):
+        if c == "fmaas":
+            bar.set_hatch("//")
     ax.set_xticks(x)
     ax.set_xticklabels([_label(c) for c in conds])
     ax.set_ylabel(ylabel)
@@ -585,10 +606,9 @@ def _draw_paper_bars(ax, cond_data: Dict[str, Dict], metric: str) -> None:
     if not vals:
         return
     vmax = max(vals)
-    # Axis top is a clean round number; gives 25–30% headroom for labels.
-    # _set_y_endpoint guarantees the last labeled tick lands exactly on
-    # the axis limit.
-    y_top = _set_y_endpoint(ax, vmax * 1.32, target_ticks=5)
+    # Axis top is a clean round number; ~18-22% headroom is enough to fit
+    # the value labels and the improvement arrow without dead whitespace.
+    y_top = _set_y_endpoint(ax, vmax * 1.08, target_ticks=5, max_ticks=8)
 
     # Numerical value just above each bar.
     for xi, v in zip(x, vals):
@@ -630,6 +650,7 @@ def _paper_binned(times: np.ndarray, values: np.ndarray, start: float,
                   end: float, bin_sec: float, reducer):
     n_bins = int(round((end - start) / bin_sec))
     edges = start + np.arange(n_bins + 1) * bin_sec
+    # Re-zero to 0 … (end − start) on the plot x-axis (data still from [start,end)).
     centers = edges[:-1] + bin_sec / 2.0 - start
     out = np.full(n_bins, np.nan)
     mask = (times >= start) & (times < end)
@@ -648,16 +669,20 @@ def _paper_binned(times: np.ndarray, values: np.ndarray, start: float,
 def _draw_paper_timeseries(ax, cond_data: Dict[str, Dict], metric: str,
                            start: float, end: float, bin_sec: float,
                            ylabel: str = None) -> None:
-    """Render the binned response-time series on `ax`. X-axis is re-zeroed
-    so `start` is displayed as 0; both axes end on labeled tick marks."""
+    """Render the binned response-time series on `ax`. Data are taken from
+    trace time [start, end); the x-axis is re-zeroed to 0 … (end − start).
+    Markers and linestyles follow sharing_benefit/tpc/plot.py (BE: diamond
+    + dash-dot; FMVisor: circle + solid)."""
     if metric == "mean":
         reducer = np.mean
-        default_ylabel = "Mean RT (ms)"
+        default_ylabel = "Latency (ms)"
     elif metric == "p99":
         reducer = lambda a: np.percentile(a, 99)
-        default_ylabel = "P99 RT (ms)"
+        default_ylabel = "P99 Latency (ms)"
     else:
         raise ValueError(metric)
+
+    markevery = max(1, int(round(PAPER_TS_MARKER_EVERY_SEC / max(bin_sec, 1e-9))))
 
     series_max = 0.0
     for c in PAPER_METHODS:
@@ -667,26 +692,29 @@ def _draw_paper_timeseries(ax, cond_data: Dict[str, Dict], metric: str,
             cond_data[c]["req_time"], cond_data[c]["e2e_ms"],
             start, end, bin_sec, reducer,
         )
-        ax.plot(x, y, label=_label(c), color=_color(c),
-                linewidth=2.2)
-        valid = y[np.isfinite(y)]
-        if valid.size:
-            series_max = max(series_max, float(valid.max()))
+        col = _color(c)
+        valid = np.isfinite(y)
+        ax.plot(
+            x, y,
+            label=_label(c),
+            color=col,
+            linestyle=CONDITION_LINESTYLE.get(c, "-"),
+            linewidth=1.2,
+            zorder=3,
+            clip_on=False,
+        )
+        if valid.any():
+            series_max = max(series_max, float(np.nanmax(y[valid])))
 
     x_span = end - start
     ax.set_xlim(0, x_span)
-    # x-axis ticks every 10 s so the last one lands on x_span; if x_span isn't
-    # a multiple of 10 we fall back to 5 ticks linearly spaced.
-    if abs(x_span - round(x_span / 10.0) * 10.0) < 1e-6:
-        ax.set_xticks(np.arange(0, x_span + 0.5, 10))
-    else:
-        ax.set_xticks(np.linspace(0, x_span, 6))
+    ax.set_xticks(np.linspace(0, x_span, 7 if x_span >= 200 else 6))
 
     # y-axis: clean upper bound with the top tick landing on the limit.
     # Use a tight 2% pad above the peak so the data fills the panel — the
     # nice-step rounding will round up to the next clean tick from there.
     if series_max > 0:
-        _set_y_endpoint(ax, series_max * 1.02, target_ticks=5)
+        _set_y_endpoint(ax, series_max * 1.02, target_ticks=5, max_ticks=8)
 
     ax.set_xlabel("Time (s)")
     ax.set_ylabel(ylabel if ylabel is not None else default_ylabel)
@@ -717,11 +745,7 @@ def _paper_timeseries(cond_data: Dict[str, Dict], metric: str, out_path: Path,
     }):
         fig, ax = plt.subplots(figsize=(4.2, 2.6))
         _draw_paper_timeseries(ax, cond_data, metric, start, end, bin_sec)
-        # Mean RT lives near the top of its axis, so the legend goes bottom
-        # left to stay out of the data; p99 has spikes throughout, keep it
-        # at upper-left where the curves are typically lowest.
-        legend_loc = "lower left" if metric == "mean" else "upper left"
-        ax.legend(loc=legend_loc, handlelength=1.8,
+        ax.legend(loc="upper right", handlelength=1.8,
                   labelspacing=0.3, borderaxespad=0.4)
         fig.tight_layout(pad=0.3)
         _paper_save(fig, out_path)
@@ -758,12 +782,13 @@ def _paper_combined(cond_data: Dict[str, Dict], out_path: Path,
         _draw_paper_timeseries(ax_mean_ts, cond_data, "mean", start, end, bin_sec)
         _draw_paper_timeseries(ax_p99_ts,  cond_data, "p99",  start, end, bin_sec)
 
-        # Legend lives inside the mean-RT TS panel at bottom-left, where the
-        # curves are well above the floor of the axis. Both TS panels share
-        # the same color/style mapping, so a single legend on the upper
-        # panel is enough and keeps the figure top free of clutter.
         ax_mean_ts.legend(
-            loc="lower left", frameon=False,
+            loc="upper right", frameon=False,
+            handlelength=2.0, labelspacing=0.3,
+            borderaxespad=0.4, handletextpad=0.5,
+        )
+        ax_p99_ts.legend(
+            loc="upper right", frameon=False,
             handlelength=2.0, labelspacing=0.3,
             borderaxespad=0.4, handletextpad=0.5,
         )
@@ -775,8 +800,7 @@ def _paper_combined(cond_data: Dict[str, Dict], out_path: Path,
 
 def _paper_plots(cond_data: Dict[str, Dict], out_dir: Path) -> None:
     _paper_style()
-    # Filename reflects the (start, end) time window so older 100–200 files
-    # don't shadow the new 100–160 ones.
+    # Filename reflects the (start, end) time window on the trace timeline.
     s, e = int(PAPER_TS_START), int(PAPER_TS_END)
     _paper_bar(cond_data, "mean", out_dir / "paper_mean_bar.pdf")
     _paper_bar(cond_data, "p99",  out_dir / "paper_p99_bar.pdf")

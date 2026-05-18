@@ -6,7 +6,7 @@ plots:
     x-axis: number of LoRA-adapted tasks (N)
     y-axis: aggregate closed-loop throughput (req/s)
 
-Style mirrors experiments/sharing_benefit/tsfm/plot.py.
+Style mirrors experiments/sharing_benefit/tpc/plot.py (markers / linestyles).
 
 Usage (from serving/):
     python experiments/lora_ntasks_throughput/plot.py \
@@ -31,29 +31,38 @@ import numpy as np
 
 
 # ---------------------------------------------------------------------------
-# Paper style (matches experiments/sharing_benefit/tsfm/plot.py)
+# Paper style — markers / dashes aligned with sharing_benefit/tpc/plot.py:
+#   sharing            ≈ FMVisor  (SERIES_MARKER/LINESTYLE "sharing")
+#   sharing_no_adapter ≈ SP       ("no_sharing_tpc")
+#   no_sharing         ≈ BE       ("no_sharing")
 # ---------------------------------------------------------------------------
 
 SERIES_COLORS = {
     "sharing":            "#E06C75",   # pink-red  — FMVisor (Adapter)
-    "sharing_no_adapter": "#4C9AC4",   # teal-blue — FMVisor (No Adapter)
+    "sharing_no_adapter": "#6B9AC4",   # muted blue — FMVisor (No Adapter), TPC SP tone
     "no_sharing":         "#888888",   # mid gray  — BE (Adapter)
 }
 SERIES_LABELS = {
-    "sharing":            "FMVisor (Adapter)",
+    "sharing":            "FMVisor",
     "sharing_no_adapter": "FMVisor (No Adapter)",
-    "no_sharing":         "BE (Adapter)",
+    "no_sharing":         "BE",
 }
 SERIES_MARKER = {
     "sharing":            "o",
     "sharing_no_adapter": "^",
-    "no_sharing":         "s",
+    "no_sharing":         "D",
 }
 SERIES_LINESTYLE = {
     "sharing":            "-",
     "sharing_no_adapter": "--",
     "no_sharing":         "-.",
 }
+# Marker size bumped for Overleaf / \columnwidth embedding (TPC uses ~2.6 pt
+# on a 1.35" panel; here the figure is wider but scaling still shrinks markers).
+SERIES_MARKERSIZE = 8.0
+SERIES_MARKER_EDGECOLOR = "black"
+SERIES_MARKER_EDGEWIDTH = 0.55
+SERIES_LINEWIDTH = 2.6
 # Plot order also fixes the legend order.
 SERIES_ORDER = ["sharing_no_adapter", "no_sharing", "sharing"]
 
@@ -88,9 +97,10 @@ def apply_paper_style() -> None:
         "axes.labelsize":     18,
         "xtick.labelsize":    16,
         "ytick.labelsize":    16,
-        "legend.fontsize":    14,
+        "legend.fontsize":    17,
         "legend.frameon":     False,
-        "lines.linewidth":    2.4,
+        "lines.linewidth":    2.6,
+        "lines.markersize":   8.0,
         "pdf.fonttype":       42,
         "ps.fonttype":        42,
         "figure.dpi":         300,
@@ -210,13 +220,14 @@ def _draw_series(ax, by_mode: Dict[str, List], y_idx: int
             ns, ys,
             color=color,
             marker=SERIES_MARKER[mode],
-            markersize=6,
-            markerfacecolor="white",
-            markeredgecolor=color,
-            markeredgewidth=1.4,
+            markersize=SERIES_MARKERSIZE,
+            markerfacecolor=color,
+            markeredgecolor=SERIES_MARKER_EDGECOLOR,
+            markeredgewidth=SERIES_MARKER_EDGEWIDTH,
             linestyle=SERIES_LINESTYLE[mode],
-            linewidth=2.0,
+            linewidth=SERIES_LINEWIDTH,
             label=SERIES_LABELS[mode],
+            clip_on=False,
         )
     return all_ns, all_y
 
@@ -228,8 +239,9 @@ def _legend_on_top(ax) -> None:
     ax.legend(
         loc="lower center", bbox_to_anchor=(0.5, 1.02),
         ncol=len(SERIES_ORDER), frameon=False,
-        handlelength=1.4, columnspacing=0.9, handletextpad=0.4,
+        handlelength=3.0, columnspacing=1.15, handletextpad=0.45,
         borderaxespad=0.0,
+        fontsize=plt.rcParams["legend.fontsize"],
     )
 
 
@@ -240,7 +252,7 @@ def plot_throughput(by_mode: Dict[str, List], out_path: Path,
     all_ns, all_y = _draw_series(ax, by_mode, y_idx=1)
 
     ax.set_xlabel("#Tasks")
-    ax.set_ylabel("Throughput (req/s)")
+    ax.set_ylabel("Throughput (RPS)")
     if all_ns:
         ax.set_xticks(sorted(set(all_ns)))
     if all_y:
