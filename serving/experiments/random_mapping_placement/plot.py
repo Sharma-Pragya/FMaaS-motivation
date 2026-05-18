@@ -36,8 +36,13 @@ CONDITION_LABELS = {
     "fmaas":      "FMVisor",
     "no_sharing": "BE",
 }
-CONDITION_ORDER = ["fmaas", "no_sharing"]
+# Plot / legend order: BE (baseline) first, then FMVisor
+CONDITION_ORDER = ["no_sharing", "fmaas"]
 REGIME_ORDER = {"low": 0, "medium": 1, "high": 2}
+CONDITION_HATCH = {
+    "no_sharing": None,
+    "fmaas":      "//",
+}
 
 
 def _paper_style() -> None:
@@ -65,14 +70,15 @@ def _paper_style() -> None:
         "text.color":         "black",
         "font.family":        "sans-serif",
         "font.sans-serif":    ["Arial", "Helvetica", "DejaVu Sans"],
-        "font.size":          14,
-        "axes.titlesize":     15,
-        "axes.labelsize":     15,
-        "xtick.labelsize":    14,
-        "ytick.labelsize":    14,
-        "legend.fontsize":    14,
+        "font.size":          20,
+        "axes.titlesize":     22,
+        "axes.labelsize":     22,
+        "xtick.labelsize":    20,
+        "ytick.labelsize":    20,
+        "legend.fontsize":    20,
         "legend.frameon":     False,
         "lines.linewidth":    1.8,
+        "hatch.linewidth":    0.85,
         "pdf.fonttype":       42,
         "ps.fonttype":        42,
         "figure.dpi":         300,
@@ -126,7 +132,7 @@ def plot_placement_results(summary_path: Path, mode: str,
 
     # Wide-aspect single-column layout: ~ full text-column width with room
     # for the bigger fonts.
-    fig, ax = plt.subplots(figsize=(7.0, 3.2))
+    fig, ax = plt.subplots(figsize=(7.0, 2.6))
 
     x_positions = np.arange(len(regimes))
     width = 0.36
@@ -149,11 +155,13 @@ def plot_placement_results(summary_path: Path, mode: str,
 
         offset = width * (i - 0.5)
         xs = x_positions + offset
+        hatch = CONDITION_HATCH.get(cond)
         bars = ax.bar(
             xs, means, width,
             label=CONDITION_LABELS[cond],
             color=CONDITION_COLORS[cond],
             edgecolor="black", linewidth=0.7,
+            hatch=hatch,
             yerr=[err_lo, err_hi],
             capsize=4,
             error_kw={"linewidth": 1.2, "ecolor": "black"},
@@ -168,23 +176,25 @@ def plot_placement_results(summary_path: Path, mode: str,
             label_y = (m + eh) * 1.15
             ax.text(xi, label_y, _format_count(m),
                     ha="center", va="bottom",
-                    fontsize=12, color="black")
+                    fontsize=16, color="black")
             all_means.append(m)
 
-    ax.set_ylabel("# Tasks Placed")
+    ax.set_ylabel("# Tasks Placed", labelpad=6)
     ax.set_xticks(x_positions)
     ax.set_xticklabels([r.capitalize() for r in regimes])
 
     ax.set_yscale("log")
     if all_means:
         ymin = min(all_means) * 0.4
-        ymax = max(all_means) * 3.0
+        ymax = max(all_means) * 5.0
         # Snap limits onto integer decades for a clean look.
         lo_exp = int(np.floor(np.log10(max(ymin, 1e-6))))
         hi_exp = int(np.ceil(np.log10(max(ymax, 1e-6))))
         ax.set_ylim(10 ** lo_exp, 10 ** hi_exp)
-        ax.yaxis.set_major_locator(
-            mticker.LogLocator(base=10.0, numticks=hi_exp - lo_exp + 1))
+        # Every full decade in range (e.g. 10^2, 10^3, …); LogLocator numticks
+        # can omit an end tick like 10^2.
+        major_ticks = [10 ** k for k in range(lo_exp, hi_exp + 1)]
+        ax.yaxis.set_major_locator(mticker.FixedLocator(major_ticks))
         ax.yaxis.set_minor_locator(
             mticker.LogLocator(base=10.0,
                                subs=np.arange(2, 10) * 0.1,
@@ -195,19 +205,17 @@ def plot_placement_results(summary_path: Path, mode: str,
     ax.set_axisbelow(True)
     ax.margins(x=0.08)
 
-    # Legend ABOVE the axes (single column figure → headroom rather than
-    # in-plot real estate).
     ax.legend(
-        loc="lower center", bbox_to_anchor=(0.5, 1.02),
+        loc="lower center", bbox_to_anchor=(0.5, 0.85),
         ncol=len(CONDITION_ORDER), frameon=False,
-        handlelength=1.6, columnspacing=2.0, handletextpad=0.5,
+        handlelength=2.0, columnspacing=2.0, handletextpad=0.5,
         borderaxespad=0.0,
     )
 
-    fig.subplots_adjust(top=0.86, bottom=0.18, left=0.12, right=0.98)
+    fig.subplots_adjust(top=0.96, bottom=0.22, left=0.12, right=0.98)
 
     if output_path:
-        fig.savefig(output_path, bbox_inches="tight", pad_inches=0.04)
+        fig.savefig(output_path, bbox_inches="tight", pad_inches=0.12)
         plt.close(fig)
         print(f"Plot saved to {output_path}")
     else:
