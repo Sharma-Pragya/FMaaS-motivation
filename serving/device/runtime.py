@@ -498,6 +498,14 @@ class VLLMRuntime(BaseRuntime):
         self._loader.device = "cuda:0"
         self.logger = Logger("cuda:0", "runtime")
         self._loader.logger = self.logger
+        # Multi-LoRA: if any task spec requests an adapter, flip enable_lora on
+        # the vLLM engine so per-request LoRARequest routing works downstream.
+        if any((spec or {}).get("adapter") for spec in (decoders or [])):
+            mc = dict(model_config or {})
+            mc.setdefault("enable_lora", True)
+            mc.setdefault("max_loras", max(4, len(decoders)))
+            mc.setdefault("max_lora_rank", 64)
+            model_config = mc
         op_log = self._loader.load_models(backbone, decoders, model_config=model_config)
         self.pipeline = self._loader.pipeline
         self.backbone = backbone
@@ -515,17 +523,27 @@ class VLLMRuntime(BaseRuntime):
         return Logger(self._loader.device, "noop")
 
     def add_adapters(self, adapters: list) -> Logger:
-        # LLMs managed by vLLM don't use hot-added LoRA adapters here — no-op
-        return Logger(self._loader.device, "noop")
+        """Hot-add LoRA adapters to a loaded vLLM backbone. The engine must
+        have been built with enable_lora=True (set automatically when adapter
+        specs were present at load time). Each spec:
+            {"task": "...", "adapter": "lora", "path": "<adapter-dir-name>"}
+        """
+        return self._loader.add_adapter(adapters)
 
-    async def infer(self, req_id: int, prompt: str) -> dict:
+    async def infer(self, req_id: int, prompt: str, task: str | None = None) -> dict:
         """Single prompt → generated text. Multiple concurrent calls are
         batched at the iteration level by vLLM's AsyncLLMEngine — true
-        continuous batching with no extra logic needed here."""
+        continuous batching with no extra logic needed here. If `task` maps
+        to a registered LoRA adapter, the request is routed through it."""
         if self.pipeline is None:
             raise RuntimeError("vllm_model_not_loaded")
+        adapter_name = None
+        if task and self._loader.adapters:
+            adapter_name = self._loader.adapters.get(task)
         start_ns = time.time_ns()
-        text = await self.pipeline.model_instance.async_forward(prompt)
+        text = await self.pipeline.model_instance.async_forward(
+            prompt, adapter_name=adapter_name,
+        )
         end_ns = time.time_ns()
         return {
             "output": [],

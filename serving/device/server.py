@@ -13,6 +13,7 @@ from device.batcher import DeviceBatcher
 from device.proto import edge_runtime_pb2, edge_runtime_pb2_grpc
 from device.runtime import PyTorchRuntime, VLLMRuntime
 from device.scheduler import FifoPolicy, RequestEnvelope, RoundRobinPolicy, WFQPolicy, STFQPolicy, TokenBucketPolicy, SABAPolicy, DeadlineSplitPolicy
+from device.vllm_admission import VLLMAdmissionScheduler
 
 
 LOGGER = logging.getLogger(__name__)
@@ -66,9 +67,23 @@ class EdgeRuntimeApplication:
         self.isolation_mode = config.isolation_mode
         if config.isolation_mode == "process":
             raise ValueError("Use IsolatedRuntimeApplication for isolation_mode=process")
+        # Admission scheduler in front of vLLM (STFQ/WFQ). For runtime_type=vllm
+        # we never construct a DeviceBatcher; the admission scheduler — when
+        # active — reuses STFQPolicy to order requests before they enter the
+        # AsyncLLMEngine. vLLM keeps doing its own continuous batching across
+        # the in-flight set bounded by max_batch_size.
+        self.admission: VLLMAdmissionScheduler | None = None
         if config.runtime_type == "vllm":
             self.runtime = VLLMRuntime()
             self.batcher = None
+            task_rates = config.task_rates or {}
+            if config.scheduler_policy in ("stfq", "wfq") and task_rates:
+                weights = {t: 1.0/r if r > 0 else 1.0 for t, r in task_rates.items()}
+                self.admission = VLLMAdmissionScheduler(
+                    runtime=self.runtime,
+                    weights=weights,
+                    max_in_flight=max(1, config.max_batch_size),
+                )
         else:
             cuda_stream = self._setup_tpc(config)
             self.runtime = PyTorchRuntime(cuda_stream=cuda_stream)
@@ -199,10 +214,14 @@ class EdgeRuntimeApplication:
             ) 
         if self.runtime_type == "pytorch" and self.batcher is not None and self._batch_task is None:
             self._batch_task = asyncio.create_task(self.batcher.run_forever())
+        if self.admission is not None:
+            await self.admission.start()
         print("[Device] Runtime application started")
 
     async def stop(self):
         print("[Device] Stopping runtime application")
+        if self.admission is not None:
+            await self.admission.stop()
         if self.batcher is not None:
             await self.batcher.stop()
         if self._batch_task is not None:
@@ -214,7 +233,9 @@ class EdgeRuntimeApplication:
         # print(f"[Device] Received infer req_id={request.req_id} task={request.task}")
         if self.runtime_type == "vllm":
             prompt = request.question if request.HasField("question") else ""
-            return await self.runtime.infer(request.req_id, prompt)
+            if self.admission is not None:
+                return await self.admission.submit(request.req_id, prompt, request.task)
+            return await self.runtime.infer(request.req_id, prompt, request.task)
         if self.isolation_mode == "none":
             # Direct path: no queue, call runtime.run_batch() inline
             x        = _decode_tensor(request.x)
