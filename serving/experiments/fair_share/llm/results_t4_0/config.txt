@@ -1,0 +1,15 @@
+Experiment config - Fri May 22 04:25:51 UTC 2026
+Backbone: qwen2.5-1.5b
+Client A (priority/victim): qwenA
+Client B (other/aggressor): qwenB
+Number of phases: 3
+  Phase 1 (60s): A @ 1 rps, B @ 8 rps
+  Phase 2 (60s): A @ 8 rps, B @ 8 rps
+  Phase 3 (60s): A @ 1 rps, B @ 8 rps
+Total duration: 180s
+Sharing runs:
+  vllm_baseline: scheduler=vllm rates=qwenA:1,qwenB:1
+  bfq_1_1: scheduler=stfq rates=qwenA:1,qwenB:1
+  bfq_2_1: scheduler=stfq rates=qwenA:1,qwenB:2
+  bfq_3_1: scheduler=stfq rates=qwenA:1,qwenB:3
+Results base: experiments/fair_share/llm/results_t4
