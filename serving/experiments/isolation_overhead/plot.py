@@ -56,7 +56,7 @@ BAR_VALUE_FS = 17
 # Pretty backbone names for x-axis tick labels
 BACKBONE_LABELS = {
     "momentlarge": "MOMENT-Large",
-    "papageip": "Papageip",
+    "papageip": "PaPaGeiP",
     "dinobase": "DINOv2-Base",
     "swinlarge":"Swin-Large"
 
