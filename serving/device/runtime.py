@@ -465,13 +465,80 @@ class VLLMRuntime(BaseRuntime):
     decoders is always [] for LLMs — accepted for interface compatibility.
     """
 
-    def __init__(self):
+    def __init__(self, cuda_stream=None):
         self._loader  = ModelLoader()
         self.logger   = Logger(self._loader.device, "runtime")
         self._loader.logger = self.logger
         self.pipeline = None
         self.backbone: str | None = None
         self.model_weights_bytes: int = 0  # set by load(), weights only (no KV cache)
+        # TPC-masked stream (EdgeRuntimeApplication._setup_tpc). vLLM launches
+        # kernels from two places, and load() hooks both — see
+        # _mask_graph_capture() and _mask_execute_model(). Nothing about the
+        # mask is visible to the backbone (fmtk's qwen_vllm.py): it is applied
+        # entirely from here, against vLLM's own internals.
+        self._cuda_stream = cuda_stream
+
+    def _mask_graph_capture(self) -> None:
+        """Capture CUDA graphs on the TPC-masked stream.
+
+        libsmctrl bakes the SM mask into a graph at *capture* time; replaying an
+        unmasked graph on a masked stream does nothing. vLLM ignores the current
+        stream and unconditionally allocates a fresh, unmasked one for capture
+        (vllm/distributed/parallel_state.py:291-293), so the capture context has
+        to be handed in explicitly.
+
+        Must run *before* the engine is constructed — capture_model() runs during
+        engine init, right after the KV cache is allocated. Raises if vLLM's
+        internals have moved; a silent fallback here would mean no isolation.
+        """
+        from contextlib import contextmanager
+        import vllm.worker.model_runner as _model_runner
+        from vllm.distributed.parallel_state import (
+            GraphCaptureContext, get_pp_group, get_tp_group,
+        )
+
+        stream = self._cuda_stream
+
+        @contextmanager
+        def masked_graph_capture():
+            context = GraphCaptureContext(stream)
+            with get_tp_group().graph_capture(context), \
+                    get_pp_group().graph_capture(context):
+                yield context
+
+        _model_runner.graph_capture = masked_graph_capture
+        print(f"[TPC] vLLM graph capture pinned to stream "
+              f"{hex(stream.cuda_stream)}", flush=True)
+
+    def _mask_execute_model(self) -> None:
+        """Run vLLM's eager forward passes on the TPC-masked stream.
+
+        AsyncLLMEngine.generate() only queues a request — it launches no kernels.
+        The forward runs on a ThreadPoolExecutor thread, via
+        GPUExecutorAsync.execute_model_async -> make_async (vllm/executor/
+        gpu_executor.py:139-145). PyTorch's current stream is thread-local, so
+        wrapping the *call site* has no effect; the wrap has to travel with the
+        callable vLLM hands to that thread.
+
+        Covers every batch that is not a captured-graph replay: all prefills,
+        plus decodes outside the captured sizes (vllm/worker/model_runner.py:
+        759-762). Raises if vLLM's internals have moved.
+        """
+        import torch
+
+        worker = (self.pipeline.model_instance._async_engine
+                  .engine.model_executor.driver_worker)
+        inner = worker.execute_model
+        stream = self._cuda_stream
+
+        def execute_model_on_masked_stream(*args, **kwargs):
+            with torch.cuda.stream(stream):
+                return inner(*args, **kwargs)
+
+        worker.execute_model = execute_model_on_masked_stream
+        print(f"[TPC] vLLM eager execute_model pinned to stream "
+              f"{hex(stream.cuda_stream)}", flush=True)
 
     def _read_vllm_weights_bytes(self) -> int:
         """Read model weights memory from vLLM's internal model_runner.
@@ -482,6 +549,37 @@ class VLLMRuntime(BaseRuntime):
             return int(engine.model_executor.driver_worker.model_runner.model_memory_usage)
         except Exception:
             return 0
+
+    def _read_vllm_kv_cache_bytes(self) -> int:
+        """Bytes vLLM preallocated for the KV cache: num_gpu_blocks x block bytes.
+
+        This is a deployment cost, not a model cost — it is governed by
+        gpu_memory_utilization, and it is what actually caps how many engines
+        fit on a card, since it dwarfs the weights. Reported separately from
+        model_weights_bytes for that reason. Returns 0 on a vLLM version
+        whose internals have moved.
+        """
+        try:
+            # Imported lazily: runtime.py is imported by torch-only callers too.
+            from vllm.worker.cache_engine import CacheEngine
+
+            engine = self.pipeline.model_instance._async_engine.engine
+            cache_config = engine.cache_config
+            num_blocks = int(cache_config.num_gpu_blocks or 0)
+            if not num_blocks:
+                return 0
+            model_config = engine.model_config
+            parallel_config = engine.parallel_config
+            block_bytes = CacheEngine.get_cache_block_size(
+                cache_config, model_config, parallel_config,
+            )
+            return num_blocks * int(block_bytes)
+        except Exception:
+            return 0
+
+    @property
+    def kv_cache_bytes(self) -> int:
+        return self._read_vllm_kv_cache_bytes()
 
     def load(self, backbone: str, decoders: list, device: str = None,
              model_config: dict | None = None) -> Logger:
@@ -506,8 +604,15 @@ class VLLMRuntime(BaseRuntime):
             mc.setdefault("max_loras", max(4, len(decoders)))
             mc.setdefault("max_lora_rank", 64)
             model_config = mc
+        # TPC isolation hooks. vLLM launches kernels from two sites and both
+        # must be on the masked stream; this one has to precede engine
+        # construction, the other needs the built engine.
+        if self._cuda_stream is not None:
+            self._mask_graph_capture()
         op_log = self._loader.load_models(backbone, decoders, model_config=model_config)
         self.pipeline = self._loader.pipeline
+        if self._cuda_stream is not None:
+            self._mask_execute_model()
         self.backbone = backbone
         self.model_weights_bytes = self._read_vllm_weights_bytes()
         return op_log
@@ -530,20 +635,29 @@ class VLLMRuntime(BaseRuntime):
         """
         return self._loader.add_adapter(adapters)
 
-    async def infer(self, req_id: int, prompt: str, task: str | None = None) -> dict:
+    async def infer(self, req_id: int, prompt: str, task: str | None = None,
+                    x=None) -> dict:
         """Single prompt → generated text. Multiple concurrent calls are
         batched at the iteration level by vLLM's AsyncLLMEngine — true
         continuous batching with no extra logic needed here. If `task` maps
-        to a registered LoRA adapter, the request is routed through it."""
+        to a registered LoRA adapter, the request is routed through it.
+
+        `x` is the optional image for VLM backbones. LLM backbones take a bare
+        prompt string; VLM backbones take an (image, question) pair, so the
+        call shape is chosen from the backbone's own model_category rather
+        than from whether x happens to be present."""
         if self.pipeline is None:
             raise RuntimeError("vllm_model_not_loaded")
         adapter_name = None
         if task and self._loader.adapters:
             adapter_name = self._loader.adapters.get(task)
+        model = self.pipeline.model_instance
+        is_vlm = getattr(model, "model_category", "llm") == "vlm"
+        if is_vlm and x is None:
+            raise RuntimeError("vlm_request_missing_image")
+        payload = (x, prompt) if is_vlm else prompt
         start_ns = time.time_ns()
-        text = await self.pipeline.model_instance.async_forward(
-            prompt, adapter_name=adapter_name,
-        )
+        text = await model.async_forward(payload, adapter_name=adapter_name)
         end_ns = time.time_ns()
         return {
             "output": [],

@@ -74,13 +74,15 @@ class VLLMAdmissionScheduler:
                 self._coordinator_task.cancel()
             self._coordinator_task = None
 
-    async def submit(self, req_id: int, prompt: str, task: str) -> dict:
+    async def submit(self, req_id: int, prompt: str, task: str, x=None) -> dict:
         # Unknown tasks bypass the scheduler entirely.
         if task not in self._queues._queues:
-            return await self._runtime.infer(req_id, prompt, task)
+            return await self._runtime.infer(req_id, prompt, task, x=x)
         fut: asyncio.Future = asyncio.get_event_loop().create_future()
+        # `x` carries the image for VLM backbones; RequestEnvelope already has
+        # the field, so the STFQ path needs no structural change.
         env = RequestEnvelope(
-            req_id=req_id, task=task, x=None, mask=None,
+            req_id=req_id, task=task, x=x, mask=None,
             question=prompt, enqueued_at=time.time(), future=fut,
         )
         async with self._condition:
@@ -124,7 +126,7 @@ class VLLMAdmissionScheduler:
         per-request share but is conservative for fairness."""
         t0 = time.time()
         try:
-            result = await self._runtime.infer(env.req_id, env.question, env.task)
+            result = await self._runtime.infer(env.req_id, env.question, env.task, x=env.x)
             if not env.future.done():
                 env.future.set_result(result)
         except Exception as e:

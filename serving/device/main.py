@@ -15,9 +15,25 @@ except ImportError:
 _pre_parser = argparse.ArgumentParser(add_help=False)
 _pre_parser.add_argument("--cuda", type=str, default=None)
 _pre_parser.add_argument("--mps-thread-pct", type=int, default=None)
+_pre_parser.add_argument("--runtime-type", type=str, default="pytorch")
 _pre_args, _ = _pre_parser.parse_known_args()
 if _pre_args.cuda:
     os.environ["CUDA_DEVICE"] = _pre_args.cuda
+    # vLLM 0.6.x only selects its GPU via CUDA_VISIBLE_DEVICES, read once at
+    # first CUDA init — set it here, before anything (including _setup_tpc's
+    # torch.cuda calls) touches CUDA, so device selection can't race with it.
+    # PyTorch path is untouched: device/config.py's DEVICE uses CUDA_DEVICE
+    # directly, unrestricted (e.g. "cuda:1" on a multi-GPU box), so applying
+    # this there would make that device index invalid inside the restricted
+    # process. Skipped if CUDA_VISIBLE_DEVICES is already set externally
+    # (e.g. by an SSH launcher).
+    if _pre_args.runtime_type == "vllm" and "CUDA_VISIBLE_DEVICES" not in os.environ:
+        _gpu_index = int(_pre_args.cuda.split(":")[-1]) if ":" in _pre_args.cuda else 0
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(_gpu_index)
+        # Re-point CUDA_DEVICE at the now-restricted logical index (always
+        # cuda:0 after this) so shared code reading it downstream — device/
+        # config.py's DEVICE, _setup_tpc() — stays valid in this process.
+        os.environ["CUDA_DEVICE"] = "cuda:0"
 if _pre_args.mps_thread_pct is not None:
     os.environ["CUDA_MPS_ACTIVE_THREAD_PERCENTAGE"] = str(_pre_args.mps_thread_pct)
     print(f"[Device] MPS thread percentage set to {_pre_args.mps_thread_pct}%")
@@ -56,6 +72,9 @@ def main():
     parser.add_argument("--isolation-mode", choices=["shared", "process", "none"], default="shared", help="Isolation mode: shared (default, all tasks in one process) or process (one process per task).")
     parser.add_argument("--gpu-memory-utilization", type=float, default=0.9, help="Fraction of GPU memory vLLM may use for KV cache (0.0–1.0). Lower values allow multiple engines on one GPU.")
     parser.add_argument("--max-model-len", type=int, default=None, help="vLLM max sequence length. Set to a small value (e.g. 256) to reduce KV cache size and allow multiple engines on one GPU.")
+    parser.add_argument("--max-new-tokens", type=int, default=None, help="vLLM SamplingParams.max_tokens (per-request output length cap). None = backbone default (qwen_vllm.py uses 64).")
+    parser.add_argument("--max-num-seqs", type=int, default=None, help="vLLM max concurrent sequences in the running batch (engine batch-size cap). None = vLLM default (256). Raise it so KV memory/compute, not this policy cap, is the binding constraint — a per-engine cap silently hands N-server deployments an Nx concurrency budget.")
+    parser.add_argument("--ignore-eos", action="store_true", help="Force every request to emit exactly --max-new-tokens (vLLM ignore_eos). Makes output length an experimental constant; use for timing runs, not accuracy.")
     parser.add_argument("--tpc-mode", choices=["none", "libsmctrl", "green"], default="none", help="TPC isolation: none, libsmctrl (driver<=528), or green (CUDA 12.4+).")
     parser.add_argument("--tpc-partition", type=int, nargs="+", default=None, help="TPC IDs to pin this server to (e.g. --tpc-partition 0 1 2 3).")
     parser.add_argument("--mps-thread-pct", type=int, default=None, help="CUDA MPS active thread percentage (0-100). Requires MPS daemon running. Set via pre-parser so it takes effect before CUDA init.")
@@ -83,6 +102,9 @@ def main():
                 task_rates=task_rates,
                 gpu_memory_utilization=args.gpu_memory_utilization,
                 max_model_len=args.max_model_len,
+                max_new_tokens=args.max_new_tokens,
+                max_num_seqs=args.max_num_seqs,
+                ignore_eos=args.ignore_eos,
                 tpc_mode=args.tpc_mode,
                 tpc_partition=args.tpc_partition,
                 worker_mode=args.worker_mode,

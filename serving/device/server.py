@@ -52,6 +52,9 @@ class RuntimeServerConfig:
     task_rates: dict = None          # {task: rps} — used by WFQ/TokenBucket
     gpu_memory_utilization: float = 0.9  # vLLM GPU memory fraction (0.0–1.0)
     max_model_len: int = None            # vLLM max sequence length (None = vLLM default)
+    max_new_tokens: int = None           # vLLM SamplingParams.max_tokens (None = backbone default)
+    max_num_seqs: int = None             # vLLM max concurrent sequences in the batch (None = vLLM default 256)
+    ignore_eos: bool = False             # vLLM SamplingParams.ignore_eos (force exactly max_tokens)
     tpc_mode: str = "none"               # "none" | "libsmctrl" | "green"
     tpc_partition: list = None           # list of TPC IDs to pin this server to
     worker_mode: str = "threaded"        # "threaded" | "inline" — per-task pipeline worker mode
@@ -73,8 +76,13 @@ class EdgeRuntimeApplication:
         # AsyncLLMEngine. vLLM keeps doing its own continuous batching across
         # the in-flight set bounded by max_batch_size.
         self.admission: VLLMAdmissionScheduler | None = None
+        # TPC pinning applies to both runtimes: it masks a CUDA stream to a
+        # subset of SMs/TPCs before any model code runs on it. Safe to call
+        # here for vllm too now that CUDA_VISIBLE_DEVICES is fixed up front
+        # in main.py's pre-parser, before this constructor's first CUDA call.
+        cuda_stream = self._setup_tpc(config)
         if config.runtime_type == "vllm":
-            self.runtime = VLLMRuntime()
+            self.runtime = VLLMRuntime(cuda_stream=cuda_stream)
             self.batcher = None
             task_rates = config.task_rates or {}
             if config.scheduler_policy in ("stfq", "wfq") and task_rates:
@@ -85,7 +93,6 @@ class EdgeRuntimeApplication:
                     max_in_flight=max(1, config.max_batch_size),
                 )
         else:
-            cuda_stream = self._setup_tpc(config)
             self.runtime = PyTorchRuntime(cuda_stream=cuda_stream)
             if config.isolation_mode == "none":
                 # No batcher — requests go directly to runtime.run_batch()
@@ -155,8 +162,16 @@ class EdgeRuntimeApplication:
             if not so_path.exists():
                 raise FileNotFoundError(f"libsmctrl.so not found at {so_path}")
             lib = ctypes.CDLL(str(so_path))
-            lib.libsmctrl_set_stream_mask.argtypes = [ctypes.c_void_p, ctypes.c_uint64]
-            lib.libsmctrl_set_stream_mask.restype = None
+            # Use the _ext (128-bit) entry point: this GPU has 71 TPCs, and the
+            # plain uint64 libsmctrl_set_stream_mask() unconditionally disables
+            # every TPC with ID >= 64 (libsmctrl.c:276-282), which would silently
+            # shrink any partition reaching above 63. `unsigned __int128` is
+            # passed in a register pair on x86-64 SysV, so declaring it as two
+            # consecutive uint64 args (low, high) matches the C ABI.
+            lib.libsmctrl_set_stream_mask_ext.argtypes = [
+                ctypes.c_void_p, ctypes.c_uint64, ctypes.c_uint64
+            ]
+            lib.libsmctrl_set_stream_mask_ext.restype = None
             lib.libsmctrl_get_tpc_info_cuda.argtypes = [
                 ctypes.POINTER(ctypes.c_uint32), ctypes.c_int
             ]
@@ -170,10 +185,12 @@ class EdgeRuntimeApplication:
             enable_bits = 0
             for tid in config.tpc_partition:
                 enable_bits |= (1 << tid)
-            disable_mask = (~enable_bits) & 0xFFFFFFFFFFFFFFFF
-            lib.libsmctrl_set_stream_mask(
+            # A *set* bit means the TPC is disabled, so invert over 128 bits.
+            disable_mask = (~enable_bits) & ((1 << 128) - 1)
+            lib.libsmctrl_set_stream_mask_ext(
                 ctypes.c_void_p(stream.cuda_stream),
-                ctypes.c_uint64(disable_mask),
+                ctypes.c_uint64(disable_mask & 0xFFFFFFFFFFFFFFFF),
+                ctypes.c_uint64((disable_mask >> 64) & 0xFFFFFFFFFFFFFFFF),
             )
             print(f"[TPC] libsmctrl: pinned stream to TPCs {config.tpc_partition} "
                   f"(total={total_tpcs})")
@@ -206,6 +223,12 @@ class EdgeRuntimeApplication:
             model_config = {"gpu_memory_utilization": self.config.gpu_memory_utilization}
             if self.config.max_model_len is not None:
                 model_config["max_model_len"] = self.config.max_model_len
+            if self.config.max_new_tokens is not None:
+                model_config["max_new_tokens"] = self.config.max_new_tokens
+            if self.config.max_num_seqs is not None:
+                model_config["max_num_seqs"] = self.config.max_num_seqs
+            if self.config.ignore_eos:
+                model_config["ignore_eos"] = True
             await asyncio.to_thread(
                 self.runtime.load,
                 payload["backbone"],
@@ -233,9 +256,12 @@ class EdgeRuntimeApplication:
         # print(f"[Device] Received infer req_id={request.req_id} task={request.task}")
         if self.runtime_type == "vllm":
             prompt = request.question if request.HasField("question") else ""
+            # x is the image for VLM backbones (None for text LLMs). The
+            # runtime decides how to use it from the backbone's model_category.
+            x = _decode_tensor(request.x)
             if self.admission is not None:
-                return await self.admission.submit(request.req_id, prompt, request.task)
-            return await self.runtime.infer(request.req_id, prompt, request.task)
+                return await self.admission.submit(request.req_id, prompt, request.task, x=x)
+            return await self.runtime.infer(request.req_id, prompt, request.task, x=x)
         if self.isolation_mode == "none":
             # Direct path: no queue, call runtime.run_batch() inline
             x        = _decode_tensor(request.x)
@@ -280,6 +306,12 @@ class EdgeRuntimeApplication:
                 model_config = {"gpu_memory_utilization": self.config.gpu_memory_utilization}
                 if self.config.max_model_len is not None:
                     model_config["max_model_len"] = self.config.max_model_len
+                if self.config.max_new_tokens is not None:
+                    model_config["max_new_tokens"] = self.config.max_new_tokens
+                if self.config.max_num_seqs is not None:
+                    model_config["max_num_seqs"] = self.config.max_num_seqs
+                if self.config.ignore_eos:
+                    model_config["ignore_eos"] = True
                 logger = await asyncio.to_thread(
                             self.runtime.load, payload["backbone"], payload.get("decoders", []),
                             model_config=model_config

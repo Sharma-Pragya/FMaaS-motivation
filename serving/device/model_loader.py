@@ -79,12 +79,15 @@ def _build_pipeline(backbone: str, device, logger: Logger | None, model_config: 
         return Pipeline(Phi3VLLMModel(device, backbone, model_config=model_config), logger=logger)
     elif backbone == "phi-3.5-vision-instruct":
         return Pipeline(PhiModel(device, backbone, model_config=model_config), logger=logger)
-    elif backbone == "qwen2.5-3b":
-        from fmtk.components.backbones.qwen import QwenTextModel
-        return Pipeline(QwenTextModel(device, backbone, model_config=model_config), logger=logger)
-    elif backbone in ("qwen2.5-0.5b", "qwen2.5-1.5b", "qwen2.5-7b"):
+    elif backbone in ("qwen2.5-0.5b", "qwen2.5-1.5b", "qwen2.5-3b", "qwen2.5-7b"):
         from fmtk.components.backbones.qwen_vllm import QwenVLLMModel
         return Pipeline(QwenVLLMModel(device, backbone, model_config=model_config, async_only=True), logger=logger)
+    elif backbone in ("qwen2-vl-2b", "qwen2-vl-7b"):
+        # VLM on vLLM with per-request multi-LoRA. Distinct from the "qwen-2B"
+        # entry above, which is the HF-transformers QwenModel used by the
+        # PyTorch runtime; this one needs VLLMRuntime.
+        from fmtk.components.backbones.qwen2_vl_vllm import Qwen2VLVLLMModel
+        return Pipeline(Qwen2VLVLLMModel(device, backbone, model_config=model_config, async_only=True), logger=logger)
     elif backbone in ("llama-3.1-8b", "llama-3.2-3b", "llama-3.2-1b"):
         from fmtk.components.backbones.llama import LlamaModel
         return Pipeline(LlamaModel(device, backbone, model_config=model_config), logger=logger)
