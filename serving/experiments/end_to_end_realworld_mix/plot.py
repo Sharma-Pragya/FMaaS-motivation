@@ -30,6 +30,7 @@ from typing import Dict, List, Tuple
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import numpy as np
 
 EXP_DIR = Path(__file__).resolve().parent
@@ -461,6 +462,75 @@ PAPER_TS_END   = 400.0
 PAPER_TS_BIN_S = 1.0
 
 
+# Printed figure geometry. ACM sigconf, measured from the compiled paper --
+# the same constants as experiments/paper_style.py. A figure is generated at
+# exactly the width it occupies on the page and included with no width= key,
+# so the point sizes below are the point sizes that appear in the PDF.
+COLUMN_WIDTH_IN = 241.14 / 72.27   # 3.336 in, \columnwidth
+TEXT_WIDTH_IN   = 506.61 / 72.27   # 7.010 in, \textwidth (figure*)
+
+# Height of one panel's axes box. The \columnwidth panels in Figures 7/8 are
+# 0.515in tall (3.33x1.30in canvas, tight_layout rect (0.055,0.28,0.985,0.885));
+# matching that is what makes a \textwidth figure sit at the same visual weight
+# on the page. Before this was set, the 2x2 drew 1.17in panels -- 2.3x taller
+# than every other figure in the paper.
+PANEL_AXES_H_IN   = 0.55   # axes box per panel
+_ROW_GAP_IN       = 0.11   # between the two rows (they share the x scale)
+_BOTTOM_CHROME_IN = 0.34   # x tick labels + x-label, bottom row only
+_LEGEND_STRIP_IN  = 0.17   # shared legend above the top row
+COMBINED_FIG_H_IN = (2 * PANEL_AXES_H_IN + _ROW_GAP_IN
+                     + _BOTTOM_CHROME_IN + _LEGEND_STRIP_IN + 0.02)
+
+# The mean bar and the mean time series are typeset side by side as two
+# subfigures filling one \columnwidth. They are generated as a matched pair:
+# same height, widths summing to just under the column so \subfloat has slack.
+# Height matches the house half-column single panel (1.63x1.10in, 0.702in of
+# axes) rather than the 3-panel rows, which is the closer analogue.
+# The bar takes the smaller share but cannot go much below 1.40in: its x tick
+# labels are "BE" and "FMVisor", and "FMVisor" is ~0.40in wide at 7.5pt.
+PAIR_H_IN     = 1.10
+PAIR_BAR_W_IN = 1.40
+PAIR_TS_W_IN  = 1.90   # 1.40 + 1.90 = 3.30in, 0.036in inside \columnwidth
+
+# Equal canvas height is not enough to make the pair line up: tight_layout
+# fits each panel's chrome independently, and the time series spends ~0.32in
+# below its axes on tick labels plus "Time (s)" while the bar spends ~0.14in on
+# tick labels alone. Fitted separately, the bar's plot box is the taller of the
+# two and the pair reads as mismatched. Both therefore reserve the SAME bottom
+# band -- the time series' requirement, the larger of the two -- so the two
+# axes boxes are identical. The bar simply leaves the extra space empty.
+# Measured from tight_layout at the sizes and fonts above: the time series
+# needs 0.374in below its axes (tick labels + "Time (s)"), the bar only 0.209in
+# (tick labels alone); both want 0.062in of overhang above for the top tick
+# label. Taking the larger bottom gives both panels a 0.664in axes box. Re-run
+# the measurement if PAIR_H_IN or the point sizes change.
+_PAIR_BOTTOM_IN = 0.375
+_PAIR_TOP_IN    = 0.062
+
+
+def _pair_vertical(fig) -> None:
+    """Pin top and bottom to the shared band, keeping tight_layout's left/right.
+
+    Call after tight_layout. Only ever grows the reserved chrome, never shrinks
+    it: if a panel genuinely needs more room than the shared band, it keeps its
+    own and the pair is merely misaligned rather than clipped.
+    """
+    pos = fig.axes[0].get_position()
+    fig.subplots_adjust(
+        bottom=max(pos.y0, _PAIR_BOTTOM_IN / PAIR_H_IN),
+        top=min(pos.y1, 1.0 - _PAIR_TOP_IN / PAIR_H_IN),
+    )
+
+# Printed point sizes, matched to the \columnwidth Evaluation panels
+# (sharing_benefit/tpc/plot.py). Do not override these per-plot: a local bump
+# only makes sense when the canvas is not the printed size, which is exactly
+# the bug this block fixes.
+BASE_FONT_PT  = 8.0
+TICK_FONT_PT  = 7.5
+VALUE_FONT_PT = 7.0   # in-axes bar value labels
+ANNOT_FONT_PT = 7.5   # improvement arrow label
+
+
 def _paper_style() -> None:
     """Publication-ready rcParams mirroring sharing_benefit/*/plot.py."""
     plt.rcParams.update({
@@ -468,33 +538,33 @@ def _paper_style() -> None:
         "axes.facecolor":     "white",
         "axes.edgecolor":     "black",
         "axes.labelcolor":    "black",
-        "axes.linewidth":     0.8,
+        "axes.linewidth":     0.6,
         "axes.spines.top":    False,
         "axes.spines.right":  False,
         "grid.color":         "#cccccc",
         "grid.linestyle":     ":",
-        "grid.linewidth":     0.5,
+        "grid.linewidth":     0.4,
         "grid.alpha":         1.0,
         "xtick.color":        "black",
         "ytick.color":        "black",
         "xtick.direction":    "out",
         "ytick.direction":    "out",
-        "xtick.major.width":  0.8,
-        "ytick.major.width":  0.8,
-        "xtick.major.size":   3.0,
-        "ytick.major.size":   3.0,
+        "xtick.major.width":  0.5,
+        "ytick.major.width":  0.5,
+        "xtick.major.size":   2.5,
+        "ytick.major.size":   2.5,
         "text.color":         "black",
         "font.family":        "sans-serif",
         "font.sans-serif":    ["Arial", "Helvetica", "DejaVu Sans"],
-        "font.size":          11,
-        "axes.titlesize":     12,
-        "axes.labelsize":     11,
-        "xtick.labelsize":    10,
-        "ytick.labelsize":    10,
-        "legend.fontsize":    10,
+        "font.size":          BASE_FONT_PT,
+        "axes.titlesize":     BASE_FONT_PT,
+        "axes.labelsize":     BASE_FONT_PT,
+        "xtick.labelsize":    TICK_FONT_PT,
+        "ytick.labelsize":    TICK_FONT_PT,
+        "legend.fontsize":    TICK_FONT_PT,
         "legend.frameon":     False,
-        "lines.linewidth":    1.8,
-        "lines.markersize":   5,
+        "lines.linewidth":    1.2,
+        "lines.markersize":   3,
         "hatch.linewidth":    0.85,
         "pdf.fonttype":       42,
         "ps.fonttype":        42,
@@ -505,8 +575,23 @@ def _paper_style() -> None:
 
 
 def _paper_save(fig, out_path: Path) -> None:
-    fig.savefig(out_path, bbox_inches="tight", pad_inches=0.04)
+    """Save at exactly `fig`'s figsize.
+
+    Deliberately no bbox_inches="tight": a tight bbox crops to the drawn
+    content, so the saved width depends on how long the tick labels happen to
+    be, and \includegraphics[width=...] then rescales the fonts by a factor
+    that differs per figure. The layout call has already fitted the labels
+    inside the canvas, so saving the canvas as-is keeps printed pt == rcParams pt.
+    """
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path, dpi=300)
+    print(f"[Plot] Saved: {out_path} ({fig.get_size_inches()[0]:.2f}in exact)")
     plt.close(fig)
+
+
+# Rotated at 8pt, "P99 Latency (ms)" is ~1.0in long and does not fit beside a
+# 0.70in-tall panel. The subcaption already says which statistic the panel is.
+SHORT_YLABEL = {"mean": "Mean (ms)", "p99": "P99 (ms)"}
 
 
 def _bar_vals(cond_data: Dict[str, Dict], conds: List[str], metric: str
@@ -580,12 +665,16 @@ def _set_y_endpoint(ax, value: float, target_ticks: int = 5,
     return top
 
 
-def _draw_paper_bars(ax, cond_data: Dict[str, Dict], metric: str) -> None:
+def _draw_paper_bars(ax, cond_data: Dict[str, Dict], metric: str,
+                     ylabel: str = None, target_ticks: int = 5,
+                     max_ticks: int = 8, headroom: float = 1.35,
+                     arrow: bool = True) -> None:
     """Render a 2-bar comparison (BE vs FMVisor) on `ax` with per-bar value
     labels and a single downward-arrow improvement annotation above the
     FMVisor bar."""
     conds = [c for c in PAPER_METHODS if c in cond_data]
-    vals, ylabel = _bar_vals(cond_data, conds, metric)
+    vals, default_ylabel = _bar_vals(cond_data, conds, metric)
+    ylabel = default_ylabel if ylabel is None else ylabel
 
     x = np.arange(len(conds))
     bars = ax.bar(
@@ -606,14 +695,19 @@ def _draw_paper_bars(ax, cond_data: Dict[str, Dict], metric: str) -> None:
     if not vals:
         return
     vmax = max(vals)
-    # Axis top is a clean round number; ~18-22% headroom is enough to fit
-    # the value labels and the improvement arrow without dead whitespace.
-    y_top = _set_y_endpoint(ax, vmax * 1.08, target_ticks=5, max_ticks=8)
+    # Axis top is a clean round number. The headroom has to clear the value
+    # label AND the improvement arrow stacked above it; at PANEL_AXES_H_IN the
+    # old 1.08 put the arrow head inside the "28" and the % label on the tail.
+    y_top = _set_y_endpoint(ax, vmax * headroom, target_ticks=target_ticks,
+                            max_ticks=max_ticks)
 
-    # Numerical value just above each bar.
+    # Numerical value just above each bar. Offset in POINTS, not in data
+    # units: the axis top comes from _nice_top_and_step, so a data-unit offset
+    # is a different physical gap on every panel.
     for xi, v in zip(x, vals):
-        ax.text(xi, v + y_top * 0.015, f"{v:.0f}",
-                ha="center", va="bottom", fontsize=11)
+        ax.annotate(f"{v:.0f}", xy=(xi, v), xytext=(0, 1.5),
+                    textcoords="offset points",
+                    ha="center", va="bottom", fontsize=VALUE_FONT_PT)
 
     # Improvement (or regression) of FMVisor relative to BE. A short vertical
     # arrow points DOWN at the top of the FMVisor bar with the % label
@@ -627,23 +721,41 @@ def _draw_paper_bars(ax, cond_data: Dict[str, Dict], metric: str) -> None:
             arrow_char = "↓" if delta_pct >= 0 else "↑"
             ann_color = _color("fmaas")
 
-            # Vertical arrow above the FMVisor bar, from y_top*0.92 down to
-            # just above the bar value label.
-            y_tail = y_top * 0.95
-            y_head = fm_v + y_top * 0.08
-            ax.annotate(
-                "",
-                xy=(x[i_fm], y_head),
-                xytext=(x[i_fm], y_tail),
-                arrowprops=dict(arrowstyle="-|>", color=ann_color,
-                                lw=1.6, mutation_scale=14),
-            )
-            ax.text(
-                x[i_fm], y_top * 0.99,
-                f"{arrow_char} {abs(delta_pct):.0f}%",
-                ha="center", va="top",
-                fontsize=12, fontweight="bold", color=ann_color,
-            )
+            # The arrow only survives where there is real vertical room between
+            # the bar's value label and the % label. On a 1.10in panel the axis
+            # top is whatever _nice_top_and_step lands on, so that gap is not
+            # under our control -- at top=40 the arrow came out inverted. There
+            # the down-glyph in the label carries the direction on its own.
+            if arrow:
+                y_tail = y_top * 0.85
+                y_head = fm_v + y_top * 0.16
+                ax.annotate(
+                    "",
+                    xy=(x[i_fm], y_head),
+                    xytext=(x[i_fm], y_tail),
+                    arrowprops=dict(arrowstyle="-|>", color=ann_color,
+                                    lw=1.0, mutation_scale=8),
+                )
+            if arrow:
+                # Pinned to the axis top, with the arrow spanning the gap.
+                ax.text(
+                    x[i_fm], y_top * 0.99,
+                    f"{arrow_char} {abs(delta_pct):.0f}%",
+                    ha="center", va="top",
+                    fontsize=ANNOT_FONT_PT, fontweight="bold", color=ann_color,
+                )
+            else:
+                # No arrow to connect it, so the label has to sit ON the bar it
+                # describes: directly above the bar's own value label, a fixed
+                # 10pt up. Parked at the axis top it floated in white space with
+                # nothing tying it to the FMVisor bar.
+                ax.annotate(
+                    f"{arrow_char} {abs(delta_pct):.0f}%",
+                    xy=(x[i_fm], fm_v), xytext=(0, 10),
+                    textcoords="offset points",
+                    ha="center", va="bottom",
+                    fontsize=ANNOT_FONT_PT, fontweight="bold", color=ann_color,
+                )
 
 
 def _paper_binned(times: np.ndarray, values: np.ndarray, start: float,
@@ -668,7 +780,8 @@ def _paper_binned(times: np.ndarray, values: np.ndarray, start: float,
 
 def _draw_paper_timeseries(ax, cond_data: Dict[str, Dict], metric: str,
                            start: float, end: float, bin_sec: float,
-                           ylabel: str = None) -> None:
+                           ylabel: str = None, headroom: float = 1.02,
+                           target_ticks: int = 5, max_ticks: int = 8) -> None:
     """Render the binned response-time series on `ax`. Data are taken from
     trace time [start, end); the x-axis is re-zeroed to 0 … (end − start).
     Markers and linestyles follow sharing_benefit/tpc/plot.py (BE: diamond
@@ -714,7 +827,8 @@ def _draw_paper_timeseries(ax, cond_data: Dict[str, Dict], metric: str,
     # Use a tight 2% pad above the peak so the data fills the panel — the
     # nice-step rounding will round up to the next clean tick from there.
     if series_max > 0:
-        _set_y_endpoint(ax, series_max * 1.02, target_ticks=5, max_ticks=8)
+        _set_y_endpoint(ax, series_max * headroom,
+                        target_ticks=target_ticks, max_ticks=max_ticks)
 
     ax.set_xlabel("Time (s)")
     ax.set_ylabel(ylabel if ylabel is not None else default_ylabel)
@@ -723,10 +837,15 @@ def _draw_paper_timeseries(ax, cond_data: Dict[str, Dict], metric: str,
 
 
 def _paper_bar(cond_data: Dict[str, Dict], metric: str, out_path: Path) -> None:
-    """Standalone bar PDF (kept for cases where individual plots are useful)."""
-    fig, ax = plt.subplots(figsize=(2.8, 2.4))
-    _draw_paper_bars(ax, cond_data, metric)
-    fig.tight_layout(pad=0.3)
+    """The bar half of the side-by-side \columnwidth pair."""
+    fig, ax = plt.subplots(figsize=(PAIR_BAR_W_IN, PAIR_H_IN))
+    # 1.22 headroom still clears the value label and the arrow stacked above
+    # it, but lands on a top of 50 rather than 60 for the mean panel -- at 1.35
+    # with at most 5 ticks the axis wasted 40% of its height on empty space.
+    _draw_paper_bars(ax, cond_data, metric, ylabel=SHORT_YLABEL[metric],
+                     target_ticks=5, max_ticks=6, headroom=1.30, arrow=False)
+    fig.tight_layout(pad=0.2)
+    _pair_vertical(fig)
     _paper_save(fig, out_path)
 
 
@@ -734,21 +853,25 @@ def _paper_timeseries(cond_data: Dict[str, Dict], metric: str, out_path: Path,
                       start: float = PAPER_TS_START,
                       end:   float = PAPER_TS_END,
                       bin_sec: float = PAPER_TS_BIN_S) -> None:
-    """Standalone time-series PDF (kept for individual use). Slightly larger
-    canvas than the combined 2×2 panels so the fonts stay legible."""
-    with plt.rc_context({
-        "font.size":       13,
-        "axes.labelsize":  13,
-        "xtick.labelsize": 12,
-        "ytick.labelsize": 12,
-        "legend.fontsize": 12,
-    }):
-        fig, ax = plt.subplots(figsize=(4.2, 2.6))
-        _draw_paper_timeseries(ax, cond_data, metric, start, end, bin_sec)
-        ax.legend(loc="upper right", handlelength=1.8,
-                  labelspacing=0.3, borderaxespad=0.4)
-        fig.tight_layout(pad=0.3)
-        _paper_save(fig, out_path)
+    """The time-series half of the side-by-side \columnwidth pair.
+
+    Carries the only BE/FMVisor legend: the bar panel's x-axis already names
+    both, and the two panels share the palette. No font overrides -- the canvas
+    is the printed size, so the rcParams point sizes are the printed ones.
+    """
+    fig, ax = plt.subplots(figsize=(PAIR_TS_W_IN, PAIR_H_IN))
+    # The default 1.02 headroom leaves the legend sitting on the peaks. 1.28
+    # opens a clear band above the data for it without a separate legend strip,
+    # which a 1.10in-tall panel cannot spare.
+    _draw_paper_timeseries(ax, cond_data, metric, start, end, bin_sec,
+                           ylabel=SHORT_YLABEL[metric], headroom=1.28,
+                           target_ticks=5, max_ticks=6)
+    ax.legend(loc="upper right", ncol=2, handlelength=1.2,
+              labelspacing=0.2, columnspacing=0.8, handletextpad=0.4,
+              borderaxespad=0.2)
+    fig.tight_layout(pad=0.2)
+    _pair_vertical(fig)
+    _paper_save(fig, out_path)
 
 
 def _paper_combined(cond_data: Dict[str, Dict], out_path: Path,
@@ -762,40 +885,54 @@ def _paper_combined(cond_data: Dict[str, Dict], out_path: Path,
     if not any(c in cond_data for c in PAPER_METHODS):
         return
 
-    # Bumped fonts so the four subplots remain legible at column-width.
-    with plt.rc_context({
-        "font.size":       13,
-        "axes.labelsize":  13,
-        "xtick.labelsize": 12,
-        "ytick.labelsize": 12,
-        "legend.fontsize": 13,
-        "lines.linewidth": 2.2,
-    }):
-        fig, axes = plt.subplots(
-            2, 2, figsize=(8.0, 5.0),
-            gridspec_kw={"width_ratios": [1.0, 1.8]},
-        )
-        (ax_mean_bar, ax_mean_ts), (ax_p99_bar, ax_p99_ts) = axes
+    # Generated at exactly \textwidth and included with no width= key, so the
+    # rcParams point sizes are what appears on the page -- the same 8pt/7.5pt
+    # as the \columnwidth panels in Figures 7/8. The previous version drew an
+    # 8.0in canvas with 13pt fonts and saved it with a tight bbox (7.96in on
+    # disk); scaled to \textwidth that printed ~11.4pt text, half again larger
+    # than every neighbouring figure.
+    fig, axes = plt.subplots(
+        2, 2, figsize=(TEXT_WIDTH_IN, COMBINED_FIG_H_IN),
+        gridspec_kw={"width_ratios": [1.0, 1.8]},
+    )
+    (ax_mean_bar, ax_mean_ts), (ax_p99_bar, ax_p99_ts) = axes
 
-        _draw_paper_bars(ax_mean_bar, cond_data, "mean")
-        _draw_paper_bars(ax_p99_bar,  cond_data, "p99")
-        _draw_paper_timeseries(ax_mean_ts, cond_data, "mean", start, end, bin_sec)
-        _draw_paper_timeseries(ax_p99_ts,  cond_data, "p99",  start, end, bin_sec)
+    # Short y-labels: rotated 90 deg, "P99 Latency (ms)" at 8pt is ~1.0in long
+    # and does not fit beside a PANEL_AXES_H_IN-tall panel. The row already says
+    # which statistic it is. Four y-ticks, as in the columnwidth panels -- the
+    # default five to eight crowd into 0.55in.
+    _draw_paper_bars(ax_mean_bar, cond_data, "mean", ylabel="Mean (ms)",
+                     target_ticks=4, max_ticks=5)
+    _draw_paper_bars(ax_p99_bar,  cond_data, "p99",  ylabel="P99 (ms)",
+                     target_ticks=4, max_ticks=5)
+    _draw_paper_timeseries(ax_mean_ts, cond_data, "mean", start, end, bin_sec,
+                           ylabel="Mean (ms)")
+    _draw_paper_timeseries(ax_p99_ts,  cond_data, "p99",  start, end, bin_sec,
+                           ylabel="P99 (ms)")
+    for ax in (ax_mean_ts, ax_p99_ts):
+        ax.yaxis.set_major_locator(ticker.MaxNLocator(4))
 
-        ax_mean_ts.legend(
-            loc="upper right", frameon=False,
-            handlelength=2.0, labelspacing=0.3,
-            borderaxespad=0.4, handletextpad=0.5,
-        )
-        ax_p99_ts.legend(
-            loc="upper right", frameon=False,
-            handlelength=2.0, labelspacing=0.3,
-            borderaxespad=0.4, handletextpad=0.5,
-        )
+    # The two rows share the x scale, so only the bottom row carries tick
+    # labels and an x-label -- one chrome strip for the figure instead of two.
+    for ax in (ax_mean_bar, ax_mean_ts):
+        ax.set_xlabel("")
+        ax.tick_params(axis="x", labelbottom=False)
 
-        fig.subplots_adjust(left=0.10, right=0.985, top=0.97, bottom=0.10,
-                            hspace=0.48, wspace=0.34)
-        _paper_save(fig, out_path)
+    # One shared legend above the row, as in the \columnwidth panels. Two
+    # in-axes legends would cover a third of a PANEL_AXES_H_IN-tall panel.
+    handles, labels = ax_mean_ts.get_legend_handles_labels()
+    fig.legend(handles, labels, loc="upper center", ncol=len(labels),
+               frameon=False, borderaxespad=0.0,
+               bbox_to_anchor=(0.5, 1.005))
+
+    # left leaves room for the 3-digit p99 ticks plus the y-label; right for the
+    # last x tick label ("300"), which a tight bbox used to absorb for free.
+    # bottom/top/hspace are derived from the target panel height above.
+    bottom = _BOTTOM_CHROME_IN / COMBINED_FIG_H_IN
+    top    = 1.0 - (_LEGEND_STRIP_IN + 0.02) / COMBINED_FIG_H_IN
+    fig.subplots_adjust(left=0.075, right=0.985, top=top, bottom=bottom,
+                        hspace=_ROW_GAP_IN / PANEL_AXES_H_IN, wspace=0.19)
+    _paper_save(fig, out_path)
 
 
 def _paper_plots(cond_data: Dict[str, Dict], out_dir: Path) -> None:
