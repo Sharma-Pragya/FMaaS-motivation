@@ -57,12 +57,23 @@ SERIES_LINESTYLE = {
     "sharing_no_adapter": "--",
     "no_sharing":         "-.",
 }
-# Marker size bumped for Overleaf / \columnwidth embedding (TPC uses ~2.6 pt
-# on a 1.35" panel; here the figure is wider but scaling still shrinks markers).
-SERIES_MARKERSIZE = 8.0
+SERIES_MARKERSIZE = 2.6
 SERIES_MARKER_EDGECOLOR = "black"
-SERIES_MARKER_EDGEWIDTH = 0.55
-SERIES_LINEWIDTH = 2.6
+SERIES_MARKER_EDGEWIDTH = 0.25
+SERIES_LINEWIDTH = 0.9
+
+# Printed size, matched to the other \columnwidth Evaluation panels (Figures
+# 7-9 at 1.30in, Figure 10 at 1.20in) so the whole section prints at one scale.
+# The earlier 1.60in bought vertical room for a three-row legend sitting inside
+# the axes, which also forced 25% headroom on top of the data. Moving the legend
+# above the axes buys back most of that, but not all: the curves span 46.5pt
+# here against 61.1pt at 1.60in, so the FMVisor-vs-no-adapter gap is ~24% flatter
+# than it was. It stays legible, and matching the section beats the extra pt.
+# Generated at exactly this size, included with no \includegraphics width key.
+CUSTOMIZATION_FIG_W = 3.33
+CUSTOMIZATION_FIG_H = 1.30
+# Fraction of the figure left to the axes; the rest is the one-row legend strip.
+LEGEND_STRIP_RECT_TOP = 0.88
 # Plot order also fixes the legend order.
 SERIES_ORDER = ["sharing_no_adapter", "no_sharing", "sharing"]
 
@@ -74,33 +85,33 @@ def apply_paper_style() -> None:
         "axes.facecolor":     "white",
         "axes.edgecolor":     "black",
         "axes.labelcolor":    "black",
-        "axes.linewidth":     0.9,
+        "axes.linewidth":     0.6,
         "axes.spines.top":    False,
         "axes.spines.right":  False,
         "grid.color":         "#cccccc",
         "grid.linestyle":     ":",
-        "grid.linewidth":     0.6,
+        "grid.linewidth":     0.4,
         "grid.alpha":         1.0,
         "xtick.color":        "black",
         "ytick.color":        "black",
         "xtick.direction":    "out",
         "ytick.direction":    "out",
-        "xtick.major.width":  0.9,
-        "ytick.major.width":  0.9,
-        "xtick.major.size":   3.5,
-        "ytick.major.size":   3.5,
+        "xtick.major.width":  0.5,
+        "ytick.major.width":  0.5,
+        "xtick.major.size":   2.5,
+        "ytick.major.size":   2.5,
         "text.color":         "black",
         "font.family":        "sans-serif",
         "font.sans-serif":    ["Arial", "Helvetica", "DejaVu Sans"],
-        "font.size":          17,
-        "axes.titlesize":     18,
-        "axes.labelsize":     18,
-        "xtick.labelsize":    16,
-        "ytick.labelsize":    16,
-        "legend.fontsize":    17,
+        "font.size":           8,
+        "axes.titlesize":      8,
+        "axes.labelsize":      8,
+        "xtick.labelsize":     7.5,
+        "ytick.labelsize":     7.5,
+        "legend.fontsize":     7.5,
         "legend.frameon":     False,
-        "lines.linewidth":    2.6,
-        "lines.markersize":   8.0,
+        "lines.linewidth":    0.9,
+        "lines.markersize":   2.6,
         "pdf.fonttype":       42,
         "ps.fonttype":        42,
         "figure.dpi":         300,
@@ -232,37 +243,45 @@ def _draw_series(ax, by_mode: Dict[str, List], y_idx: int
     return all_ns, all_y
 
 
-def _legend_on_top(ax) -> None:
-    """Single-row legend just above the axes — keeps the data area clean.
-    The labels are long, so we use a tight column spacing and short handles
-    so the row stays inside the figure width."""
-    ax.legend(
-        loc="lower center", bbox_to_anchor=(0.5, 1.02),
-        ncol=len(SERIES_ORDER), frameon=False,
-        handlelength=3.0, columnspacing=1.15, handletextpad=0.45,
-        borderaxespad=0.0,
+def _legend_above(fig, ax) -> None:
+    """One-row legend above the axes, as in Figures 8-10.
+
+    Stacked three-deep inside the upper left it forced the y-axis 25% past the
+    topmost curve just to clear it, which is what made this figure taller than
+    every other columnwidth panel. Above the axes the strip costs ~0.12in once
+    and the data gets the whole box.
+    """
+    handles, labels = ax.get_legend_handles_labels()
+    fig.legend(
+        handles, labels, loc="upper center", ncol=len(handles), frameon=False,
         fontsize=plt.rcParams["legend.fontsize"],
+        handlelength=1.4, handletextpad=0.35, columnspacing=1.0,
+        borderaxespad=0.0, bbox_to_anchor=(0.5, 1.005),
     )
 
 
 def plot_throughput(by_mode: Dict[str, List], out_path: Path,
                     *, backbone: str, base_task: str) -> None:
-    fig, ax = plt.subplots(figsize=(6.5, 3.6))
+    fig, ax = plt.subplots(figsize=(CUSTOMIZATION_FIG_W, CUSTOMIZATION_FIG_H))
 
     all_ns, all_y = _draw_series(ax, by_mode, y_idx=1)
 
     ax.set_xlabel("#Tasks")
-    ax.set_ylabel("Throughput (RPS)")
+    # Lowercase "rps" renders 0.824in against 0.860in for "RPS", which is what
+    # brings the rotated label inside a 1.05in panel — uppercase gets clipped.
+    ax.set_ylabel("Throughput (rps)")
     if all_ns:
         ax.set_xticks(sorted(set(all_ns)))
     if all_y:
-        _set_y_endpoint(ax, max(all_y) * 1.08, target_ticks=5)
+        # Just enough to round up to a tick; the legend is no longer in the box.
+        _set_y_endpoint(ax, max(all_y) * 1.06, target_ticks=5)
     ax.grid(axis="y", zorder=0)
     ax.set_axisbelow(True)
-    _legend_on_top(ax)
+    _legend_above(fig, ax)
 
-    fig.subplots_adjust(top=0.86, bottom=0.18, left=0.13, right=0.98)
-    fig.savefig(out_path, bbox_inches="tight", pad_inches=0.04)
+    fig.tight_layout(pad=0.2, rect=(0.0, 0.0, 1.0, LEGEND_STRIP_RECT_TOP))
+    with plt.rc_context({"savefig.bbox": "standard"}):
+        fig.savefig(out_path, dpi=300)
     plt.close(fig)
     print(f"[Plot] Saved: {out_path}")
 
@@ -271,7 +290,7 @@ def plot_latency(by_mode: Dict[str, List], out_path: Path,
                  *, backbone: str, base_task: str, percentile: str = "p99") -> None:
     """Side-by-side latency comparison; one line per mode at the chosen percentile."""
     idx = {"avg": 2, "p95": 3, "p99": 4}[percentile]
-    fig, ax = plt.subplots(figsize=(6.5, 3.6))
+    fig, ax = plt.subplots(figsize=(CUSTOMIZATION_FIG_W, CUSTOMIZATION_FIG_H))
 
     all_ns, all_y = _draw_series(ax, by_mode, y_idx=idx)
 
@@ -281,13 +300,14 @@ def plot_latency(by_mode: Dict[str, List], out_path: Path,
     if all_ns:
         ax.set_xticks(sorted(set(all_ns)))
     if all_y:
-        _set_y_endpoint(ax, max(all_y) * 1.08, target_ticks=5)
+        _set_y_endpoint(ax, max(all_y) * 1.06, target_ticks=5)
     ax.grid(axis="y", zorder=0)
     ax.set_axisbelow(True)
-    _legend_on_top(ax)
+    _legend_above(fig, ax)
 
-    fig.subplots_adjust(top=0.86, bottom=0.18, left=0.13, right=0.98)
-    fig.savefig(out_path, bbox_inches="tight", pad_inches=0.04)
+    fig.tight_layout(pad=0.2, rect=(0.0, 0.0, 1.0, LEGEND_STRIP_RECT_TOP))
+    with plt.rc_context({"savefig.bbox": "standard"}):
+        fig.savefig(out_path, dpi=300)
     plt.close(fig)
     print(f"[Plot] Saved: {out_path}")
 
