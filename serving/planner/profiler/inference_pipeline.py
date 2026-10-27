@@ -8,10 +8,19 @@ timings match production numbers. Dispatches on `task_info['task_type']`:
   - VLM           : image tensor + prompt string → run_batch(x, tasks, questions=...)
   - LLM (HF-text) : prompt string only          → run_batch(None, tasks, questions=...)
 
-vLLM-backed LLM backbones (QwenVLLMModel, Phi3VLLMModel, phi-vllm) are
-skipped for now — those need VLLMRuntime + asyncio and will be added
-later. Anything not in `_VLLM_BACKED_BACKBONES` is run through
-PyTorchRuntime.
+vLLM-backed backbones (`_VLLM_BACKED_BACKBONES`) instead go through
+`VLLMRuntime.infer`, driven **strictly sequentially** under `asyncio.run`:
+one awaited request at a time, never overlapping. That is deliberate. The
+serving experiments (RTVSntask) drive vLLM open-loop with Poisson arrivals,
+where requests overlap and get continuously batched, so their per-request
+latency includes self-interference — at N=1/2 RPS the measured in-flight
+concurrency is 1.06 (Qwen2.5-3B) and 2.25 (Qwen2-VL-7B), inflating mean
+latency ~35% over an isolated request. The other rows of the paper's
+backbone-cost table are closed-loop batch-1 costs, so the vLLM rows have to
+be measured the same way to belong in the same column.
+
+The `runtime` CSV column records which path produced each row; do not
+aggregate across runtimes without it.
 
 Adapter handling mirrors `ModelLoader.load_models`: a path entry like
 `{'adapter': 'lora_vlm', 'path': '<saved_adapter_dir>'}` is forwarded as
@@ -19,6 +28,7 @@ Adapter handling mirrors `ModelLoader.load_models`: a path entry like
 loads the LoRA weights and `pipeline.set_adapter` fires during inference.
 """
 
+import asyncio
 import csv
 import os
 import sys
@@ -40,9 +50,13 @@ if str(_SERVING_DIR) not in sys.path:
     sys.path.insert(0, str(_SERVING_DIR))
 
 
-# Backbones that require VLLMRuntime (async) — skipped in this profiler scope.
+# Backbones that ModelLoader._build_pipeline routes to a vLLM class. These run
+# through VLLMRuntime instead of PyTorchRuntime. Keep in sync with
+# serving/device/model_loader.py::_build_pipeline — a name here that the loader
+# sends to a torch backbone (or vice versa) silently mismatches the runtime.
 _VLLM_BACKED_BACKBONES = {
-    "qwen2.5-0.5b", "qwen2.5-1.5b", "qwen2.5-7b",
+    "qwen2.5-0.5b", "qwen2.5-1.5b", "qwen2.5-3b", "qwen2.5-7b",
+    "qwen2-vl-2b", "qwen2-vl-7b",
     "phi3-mini", "phi3-small", "phi3-medium",
     "phi-vllm",
 }
@@ -52,6 +66,24 @@ _LLM_TASK_TYPES = {
     'summarization', 'translation', 'math_reasoning',
     'code_generation', 'reading_comprehension', 'fact_verification',
 }
+
+
+def _lora_weights_mb(runtime, task_name):
+    """Size of the registered LoRA's weight file, in MB.
+
+    Under vLLM the adapter is never materialised on the GPU at load time
+    (register_adapter only builds a LoRARequest), so there is no allocator
+    reading to take. The safetensors file is the same quantity the PyTorch
+    path reports as adapter memory.
+    """
+    try:
+        loras = runtime.pipeline.model_instance._loras
+        name = runtime._loader.adapters.get(task_name) or next(iter(loras))
+        weights = Path(loras[name].lora_path) / "adapter_model.safetensors"
+        return round(weights.stat().st_size / 1e6, 3)
+    except Exception as exc:
+        print(f"     [warn] could not size LoRA for task {task_name!r}: {exc}")
+        return None
 
 
 def _llm_collate_fn(batch):
@@ -129,18 +161,17 @@ class InferencePipeline:
     def run(self):
         # Import here so CUDA_DEVICE env + TPC partition are applied before
         # ModelLoader picks up the device.
-        from device.runtime import PyTorchRuntime
+        from device.runtime import PyTorchRuntime, VLLMRuntime
 
         backbone_name = self.pipeline['backbone']
-        if backbone_name in _VLLM_BACKED_BACKBONES:
-            print(f"[profiler] Skipping vLLM-backed backbone={backbone_name}: "
-                  f"PyTorchRuntime-only profiler scope. Requires VLLMRuntime; add later.")
-            return
+        is_vllm = backbone_name in _VLLM_BACKED_BACKBONES
+        runtime_name = "vllm" if is_vllm else "pytorch"
 
         os.environ.setdefault("CUDA_DEVICE", str(self.device))
         gpu_name = torch.cuda.get_device_name(0) if torch.cuda.is_available() else ''
         modality = 'VLM' if self.is_vlm else ('LLM' if self.is_llm else 'TSFM/CV')
-        print(f"[profiler] task={self.task_name} backbone={backbone_name} modality={modality}")
+        print(f"[profiler] task={self.task_name} backbone={backbone_name} "
+              f"modality={modality} runtime={runtime_name}")
 
         for path in self.pipeline['paths']:
             decoder_key = path.get('decoder')
@@ -152,7 +183,8 @@ class InferencePipeline:
             # decoder identity from the profiler config, not a synthesized path.
             saved_path = path.get('path', '')
 
-            runtime = PyTorchRuntime(cuda_stream=self.cuda_stream)
+            runtime = (VLLMRuntime(cuda_stream=self.cuda_stream) if is_vllm
+                       else PyTorchRuntime(cuda_stream=self.cuda_stream))
             task_specs = self._build_task_specs(path)
             model_config = self.backbone_cfg.get('model_config')
 
@@ -174,11 +206,34 @@ class InferencePipeline:
             adapter_load_ms    = _s(f"add_adapter_{saved_path}", "wall time") if adapter_key else None
             adapter_load_mem   = _s(f"add_adapter_{saved_path}", "gpu peak") if adapter_key else None
 
+            kv_cache_mem_mb = None
+            if is_vllm:
+                # vLLM allocates weights and the KV pool outside torch's caching
+                # allocator, so the Logger's "gpu peak" reads near zero. Take the
+                # engine's own accounting instead. Weights and pool are reported
+                # separately: weights are the model's cost, the pool is a
+                # deployment knob (gpu_memory_utilization) and is what actually
+                # sets how many replicas fit on a card.
+                backbone_load_mem = round(runtime.model_weights_bytes / 1e6, 3) or None
+                kv_cache_mem_mb = runtime.kv_cache_bytes / 1e6
+                kv_cache_mem_mb = round(kv_cache_mem_mb, 3) if kv_cache_mem_mb else None
+                # register_adapter() only builds a LoRARequest; vLLM loads the
+                # adapter lazily on first use, so there is no eager load to time.
+                if adapter_key:
+                    adapter_load_ms = None
+                    adapter_load_mem = _lora_weights_mb(runtime, self.task_name)
+
             for batch_size in self.inference_batch_sizes:
                 print(f"  -- inference batch_size={batch_size} tpc={self.tpc_count}")
-                latencies_ms, backbone_ms, decoder_ms, gpu_peaks_mb = self._run_one(
+                runner = self._run_one_vllm if is_vllm else self._run_one
+                latencies_ms, backbone_ms, decoder_ms, gpu_peaks_mb = runner(
                     runtime, batch_size, n_requests,
                 )
+                # _run_one_vllm always measures isolated single requests, so the
+                # per-sample and throughput derivations below must divide by 1
+                # regardless of what the config asked for.
+                if is_vllm:
+                    batch_size = 1
 
                 if not latencies_ms:
                     print(f"     [warn] no samples collected for bs={batch_size}")
@@ -190,6 +245,7 @@ class InferencePipeline:
 
                 metrics = {
                     "backbone":              backbone_name,
+                    "runtime":               runtime_name,
                     "decoder":               decoder_type,
                     "encoder":               encoder_key,
                     "adapter":               adapter_key,
@@ -199,8 +255,15 @@ class InferencePipeline:
                     "task_name":             self.task_name,
                     "inference_batch_size":  batch_size,
                     "n_requests":            len(latencies_ms),
+                    # Generation length dominates decode-bound latency, so a
+                    # latency here is uninterpretable without these two. Record
+                    # them rather than leaving them to be reconstructed from
+                    # logs later.
+                    "max_new_tokens":        (model_config or {}).get('max_new_tokens'),
+                    "ignore_eos":            (model_config or {}).get('ignore_eos'),
                     "backbone_load_time_ms": backbone_load_ms,
                     "backbone_load_mem_mb":  backbone_load_mem,
+                    "kv_cache_mem_mb":       kv_cache_mem_mb,
                     "encoder_load_time_ms":  encoder_load_ms,
                     "encoder_load_mem_mb":   encoder_load_mem,
                     "decoder_load_time_ms":  decoder_load_ms,
@@ -214,8 +277,10 @@ class InferencePipeline:
                     "backbone_mean_ms":      round(float(np.mean(backbone_ms)), 4),
                     "decoder_mean_ms":       round(float(np.mean(decoder_ms)), 4),
                     "backbone_ms_per_sample": round(float(np.mean(backbone_ms)) / batch_size, 4),
-                    "peak_gpu_mem_mb":       round(float(np.max(gpu_peaks_mb)), 3),
-                    "avg_gpu_mem_mb":        round(float(np.mean(gpu_peaks_mb)), 3),
+                    # Empty under vLLM: per-request torch peak is not meaningful
+                    # once the KV pool is preallocated. See kv_cache_mem_mb.
+                    "peak_gpu_mem_mb":       round(float(np.max(gpu_peaks_mb)), 3) if gpu_peaks_mb else None,
+                    "avg_gpu_mem_mb":        round(float(np.mean(gpu_peaks_mb)), 3) if gpu_peaks_mb else None,
                     "throughput_rps":        round(float(throughput), 3),
                 }
 
@@ -258,3 +323,48 @@ class InferencePipeline:
             gpu_peaks_mb.append(result.gpu_alloc_peak_mb)
 
         return latencies_ms, backbone_ms, decoder_ms, gpu_peaks_mb
+
+    def _run_one_vllm(self, runtime, batch_size, n_requests_local):
+        """Closed-loop, strictly sequential vLLM measurement.
+
+        `batch_size` is forced to 1 and each request is awaited to completion
+        before the next is issued, so nothing is ever co-batched. This is what
+        makes the resulting latency comparable to the PyTorch rows, which run
+        one batch at a time. Do NOT convert this to asyncio.gather() to "speed
+        it up" — overlapping requests is precisely the effect being excluded;
+        see the module docstring.
+        """
+        if batch_size != 1:
+            print(f"     [warn] vLLM path measures isolated requests; "
+                  f"forcing batch_size {batch_size} -> 1")
+        loader = self._build_loader(1)
+
+        async def _drive():
+            data_iter = iter(loader)
+            latencies_ms, backbone_ms = [], []
+            for req_id in range(n_requests_local):
+                try:
+                    batch = next(data_iter)
+                except StopIteration:
+                    data_iter = iter(loader)
+                    batch = next(data_iter)
+
+                prompt = batch["question"][0]
+                # VLLMRuntime.infer picks the (image, prompt) vs bare-prompt
+                # call shape from the backbone's model_category; x is ignored
+                # for LLMs. Qwen2VLVLLMModel._to_pil accepts the (C,H,W) tensor.
+                x = batch["x"][0] if self.is_vlm else None
+
+                result = await runtime.infer(
+                    req_id, prompt, task=self.task_name, x=x,
+                )
+                latencies_ms.append(
+                    (result["end_time_ns"] - result["start_time_ns"]) / 1e6)
+                backbone_ms.append(result["proc_time_ns"] / 1e6)
+            return latencies_ms, backbone_ms
+
+        latencies_ms, backbone_ms = asyncio.run(_drive())
+        # No separable decoder stage (LoRA compute is fused into the forward),
+        # and no per-request torch peak once the KV pool is preallocated.
+        decoder_ms = [0.0] * len(latencies_ms)
+        return latencies_ms, backbone_ms, decoder_ms, []

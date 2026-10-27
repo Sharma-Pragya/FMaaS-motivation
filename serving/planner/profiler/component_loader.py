@@ -57,6 +57,12 @@ def get_model_class(model_type):
     elif model_type == 'qwen_text':
         from fmtk.components.backbones.qwen import QwenTextModel
         return QwenTextModel
+    elif model_type == 'qwen_vllm':
+        from fmtk.components.backbones.qwen_vllm import QwenVLLMModel
+        return QwenVLLMModel
+    elif model_type == 'qwen2_vl_vllm':
+        from fmtk.components.backbones.qwen2_vl_vllm import Qwen2VLVLLMModel
+        return Qwen2VLVLLMModel
     raise ValueError(f"Unknown model type: {model_type}")
 
 def get_decoder_class(task_type,decoder_type):

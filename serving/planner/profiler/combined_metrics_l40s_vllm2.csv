@@ -1,0 +1,10 @@
+backbone,runtime,decoder,encoder,adapter,dataset_name,device,tpc_count,task_name,inference_batch_size,n_requests,max_new_tokens,ignore_eos,backbone_load_time_ms,backbone_load_mem_mb,kv_cache_mem_mb,encoder_load_time_ms,encoder_load_mem_mb,decoder_load_time_ms,decoder_load_mem_mb,adapter_load_time_ms,adapter_load_mem_mb,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,backbone_mean_ms,decoder_mean_ms,backbone_ms_per_sample,peak_gpu_mem_mb,avg_gpu_mem_mb,throughput_rps
+qwen2-vl-7b,vllm,,,lora_vlm,vlm_ocr,NVIDIA L40S,71,vlm_ocr_vllm,1,200,32,True,88120.9954269998,16651.958,21431.976,,,,,,10.107,876.8689,861.4118,906.2901,919.271,876.8689,0.0,876.8689,,,1.14
+qwen2.5-3b,vllm,,,lora,sst2,NVIDIA L40S,71,llm_sst2,1,200,32,True,55786.30329599991,6218.539,31522.554,,,,,,3.705,461.7539,458.6482,470.8869,520.5262,461.7539,0.0,461.7539,,,2.166
+mistral-7b,pytorch,,,,sst2,NVIDIA L40S,71,llm_sst2,1,200,10,,358082.3139849999,14496.047616,,,,,,,,122.5291,83.9875,267.9018,272.7887,122.2166,0.0127,122.2166,13832.633,13832.633,8.161
+qwen2-vl-7b,vllm,,,lora_vlm,vlm_ocr,NVIDIA L40S,71,vlm_ocr_vllm,1,200,32,True,75572.2176270001,16651.958,21431.976,,,,,,10.107,867.6759,853.1426,907.0491,951.4529,867.6759,0.0,867.6759,,,1.153
+qwen2.5-3b,vllm,,,lora,sst2,NVIDIA L40S,71,llm_sst2,1,200,32,True,62222.1033830001,6218.539,31522.554,,,,,,3.705,468.687,462.6536,500.8543,543.6891,468.687,0.0,468.687,,,2.134
+mistral-7b,pytorch,,,,sst2,NVIDIA L40S,71,llm_sst2,1,200,10,,3744.720805000725,14496.047616,,,,,,,,96.0514,82.0885,260.1583,266.2299,95.7519,0.0126,95.7519,13832.633,13832.633,10.411
+qwen2-vl-7b,vllm,,,lora_vlm,vlm_ocr,NVIDIA L40S,71,vlm_ocr_vllm,1,200,32,True,71836.27922100003,16651.958,21431.976,,,,,,10.107,857.7186,847.0568,861.0881,867.4669,857.7186,0.0,857.7186,,,1.166
+qwen2.5-3b,vllm,,,lora,sst2,NVIDIA L40S,71,llm_sst2,1,200,32,True,60413.5422749996,6218.539,31522.554,,,,,,3.705,466.6597,459.4599,514.2988,534.6678,466.6597,0.0,466.6597,,,2.143
+mistral-7b,pytorch,,,,sst2,NVIDIA L40S,71,llm_sst2,1,200,10,,3790.193833000558,14496.047616,,,,,,,,98.2097,84.3369,266.2547,276.4149,97.8775,0.0137,97.8775,13832.633,13832.633,10.182

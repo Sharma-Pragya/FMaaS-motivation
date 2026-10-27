@@ -23,7 +23,15 @@ def _default_tpc_counts():
         return [None]
 
 tpc_counts = _default_tpc_counts()
-tpc_mode = "libsmctrl"  # "none" or "libsmctrl"
+# "none" or "libsmctrl". Set to "none" for the L40S vLLM rows, for two reasons:
+#   1. Parity. Those rows exist to characterise the Figure 10 'sharing'
+#      condition, which runs one engine on the whole GPU with no partition.
+#   2. Correctness. worker.py builds the mask as a uint64 (1 << tid for each
+#      tid in range(tpc_count)). An L40S has 142 SMs -> 71 TPCs, so tid >= 64
+#      shifts past the width of the mask and is silently dropped. On the T4
+#      (40 SMs -> 20 TPCs) this never came up.
+# Restore "libsmctrl" for T4/L4/A10 partition sweeps.
+tpc_mode = "none"
 
 # Number of run_batch calls per (batch_size, config) cell, matching the
 # batching_profiles experiments. Larger = more stable means, longer runs.
@@ -158,6 +166,20 @@ backbones={
             'max_model_len': 2048,
         },
     },
+    # VLM on the vLLM runtime. Distinct from 'qwen-2B'/'qwen-7B' above, which
+    # are the HF-transformers QwenModel used by PyTorchRuntime. model_config
+    # mirrors RTVSntask/vlm/run.sh so Table 3 matches the Figure 10 deployment.
+    'qwen2-vl-7b': {
+        'model_type': 'qwen2_vl_vllm',
+        'model_name': 'qwen2-vl-7b',
+        'model_id': 'Qwen/Qwen2-VL-7B-Instruct',
+        'model_config': {
+            'max_new_tokens': 32,
+            'max_model_len': 512,
+            'gpu_memory_utilization': 0.85,
+            'ignore_eos': True,
+        },
+    },
     'molmo': {
         'model_type': 'molmo',
         'model_name': 'molmo',
@@ -285,25 +307,32 @@ backbones={
         'model_name': 'phi3-mini',
         'model_config': {'max_new_tokens': 10},
     },
+    # ModelLoader._build_pipeline routes every qwen2.5-* name to QwenVLLMModel,
+    # so these run on vLLM regardless of what 'model_type' says. model_config
+    # mirrors RTVSntask/llm/run.sh so Table 3 matches the Figure 10 deployment.
     'qwen2.5-0.5b': {
-        'model_type': 'qwen_text',
+        'model_type': 'qwen_vllm',
         'model_name': 'qwen2.5-0.5b',
-        'model_config': {'max_new_tokens': 10},
+        'model_config': {'max_new_tokens': 32, 'max_model_len': 512,
+                         'gpu_memory_utilization': 0.85, 'ignore_eos': True},
     },
     'qwen2.5-1.5b': {
-        'model_type': 'qwen_text',
+        'model_type': 'qwen_vllm',
         'model_name': 'qwen2.5-1.5b',
-        'model_config': {'max_new_tokens': 10},
+        'model_config': {'max_new_tokens': 32, 'max_model_len': 512,
+                         'gpu_memory_utilization': 0.85, 'ignore_eos': True},
     },
     'qwen2.5-3b': {
-            'model_type': 'qwen_text',
-            'model_name': 'qwen2.5-3b',
-            'model_config': {'max_new_tokens': 10},
-        },
+        'model_type': 'qwen_vllm',
+        'model_name': 'qwen2.5-3b',
+        'model_config': {'max_new_tokens': 32, 'max_model_len': 512,
+                         'gpu_memory_utilization': 0.85, 'ignore_eos': True},
+    },
     'qwen2.5-7b': {
-        'model_type': 'qwen_text',
+        'model_type': 'qwen_vllm',
         'model_name': 'qwen2.5-7b',
-        'model_config': {'max_new_tokens': 10},
+        'model_config': {'max_new_tokens': 32, 'max_model_len': 512,
+                         'gpu_memory_utilization': 0.85, 'ignore_eos': True},
     },
     }
 decoders={
@@ -1706,6 +1735,25 @@ tasks = {
     #     ],
     #     'inference_config': {'batch_size': 1, 'shuffle': False},
     # },
+    # VLM on the vLLM runtime, matching the Figure 10 deployment
+    # (RTVSntask/vlm, results_vlm_l40s_qwen2vl7b_eos32). 'qwenvl7A' is the same
+    # LoRA that run used. Requires an L40S; on a smaller card the 0.85
+    # gpu_memory_utilization in the backbone entry will not fit.
+    'vlm_ocr_vllm': {
+        'task_type': 'vlm',
+        'vlm_task_key': 'ocr',
+        'datasets': ['vlm_ocr'],
+        'train': False,
+        'parser': 'parse_ocr_digit',
+        'evaluator': 'evaluate_ocr',
+        'train_ratio': 0.8,
+        'train_config': {'batch_size': 1, 'shuffle': False},
+        'inference_config': {'batch_size': [1], 'shuffle': False, 'max_samples': 100},
+        'pipelines': [
+            {'backbone': 'qwen2-vl-7b',
+             'paths': [{'adapter': 'lora_vlm', 'path': 'qwenvl7A'}]},
+        ],
+    },
     # 'vlm_ocr': {
     #     'task_type': 'vlm',
     #     'vlm_task_key': 'ocr',
@@ -1964,7 +2012,9 @@ tasks = {
             # {'backbone': 'phi3-mini',    'paths': [{'path': ''}]},
             # {'backbone': 'qwen2.5-0.5b', 'paths': [{'path': ''}]},
             # {'backbone': 'qwen2.5-1.5b',   'paths': [{'path': ''}]},
-            # {'backbone': 'qwen2.5-3b',   'paths': [{'path': ''}]},
+            # qwen2.5-3b routes to QwenVLLMModel (vLLM); adapter 'qwenA' is the
+            # same LoRA the Figure 10 run used, so the Task column matches.
+            {'backbone': 'qwen2.5-3b',   'paths': [{'adapter': 'lora', 'path': 'qwenA'}]},
             # {'backbone': 'llama-3.1-8b', 'paths': [{'path': ''}]},
             {'backbone': 'mistral-7b',   'paths': [{'path': ''}]},
             # {'backbone': 'qwen2.5-7b',   'paths': [{'path': ''}]},
@@ -2101,7 +2151,11 @@ tasks = {
 #eurosat, cifar,
 #vgg, resnet, swin, mae, dinov2
 
-log_file= "combined_metrics_1.csv"
+# NOTE: rows carry a 'runtime' column and (for vLLM) 'kv_cache_mem_mb' as of the
+# vLLM profiling support. Do not append to combined_metrics_1.csv / _2.csv --
+# those predate both columns, and DictWriter only emits a header for a new file,
+# so appending would write the new field order under the old header.
+log_file= "combined_metrics_l40s_vllm2.csv"
 vlm_log_file= "vlm_metrics.csv"
 vlm_csv_columns = [
     "model_name", "dataset_name", "device", "model_load_duration_sec",
