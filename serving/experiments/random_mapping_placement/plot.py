@@ -44,6 +44,12 @@ CONDITION_HATCH = {
     "fmaas":      "//",
 }
 
+# Printed size. A single panel spanning a full \columnwidth, generated at exactly
+# this size and included with no \includegraphics width key. Shorter than the
+# other full-width figure (Figure 12) because it carries no x-axis label.
+PLACEMENT_FIG_W = 3.33
+PLACEMENT_FIG_H = 1.20
+
 
 def _paper_style() -> None:
     """Publication-ready rcParams matching the other paper plots."""
@@ -52,33 +58,33 @@ def _paper_style() -> None:
         "axes.facecolor":     "white",
         "axes.edgecolor":     "black",
         "axes.labelcolor":    "black",
-        "axes.linewidth":     0.9,
+        "axes.linewidth":     0.6,
         "axes.spines.top":    False,
         "axes.spines.right":  False,
         "grid.color":         "#cccccc",
         "grid.linestyle":     ":",
-        "grid.linewidth":     0.6,
+        "grid.linewidth":     0.4,
         "grid.alpha":         1.0,
         "xtick.color":        "black",
         "ytick.color":        "black",
         "xtick.direction":    "out",
         "ytick.direction":    "out",
-        "xtick.major.width":  0.9,
-        "ytick.major.width":  0.9,
-        "xtick.major.size":   3.5,
-        "ytick.major.size":   3.5,
+        "xtick.major.width":  0.5,
+        "ytick.major.width":  0.5,
+        "xtick.major.size":   2.5,
+        "ytick.major.size":   2.5,
         "text.color":         "black",
         "font.family":        "sans-serif",
         "font.sans-serif":    ["Arial", "Helvetica", "DejaVu Sans"],
-        "font.size":          20,
-        "axes.titlesize":     22,
-        "axes.labelsize":     22,
-        "xtick.labelsize":    20,
-        "ytick.labelsize":    20,
-        "legend.fontsize":    20,
+        "font.size":          8,
+        "axes.titlesize":     8,
+        "axes.labelsize":     8,
+        "xtick.labelsize":    7.5,
+        "ytick.labelsize":    7.5,
+        "legend.fontsize":    7.5,
         "legend.frameon":     False,
-        "lines.linewidth":    1.8,
-        "hatch.linewidth":    0.85,
+        "lines.linewidth":    0.9,
+        "hatch.linewidth":    0.35,
         "pdf.fonttype":       42,
         "ps.fonttype":        42,
         "figure.dpi":         300,
@@ -130,9 +136,7 @@ def plot_placement_results(summary_path: Path, mode: str,
 
     _paper_style()
 
-    # Wide-aspect single-column layout: ~ full text-column width with room
-    # for the bigger fonts.
-    fig, ax = plt.subplots(figsize=(7.0, 2.6))
+    fig, ax = plt.subplots(figsize=(PLACEMENT_FIG_W, PLACEMENT_FIG_H))
 
     x_positions = np.arange(len(regimes))
     width = 0.36
@@ -160,11 +164,11 @@ def plot_placement_results(summary_path: Path, mode: str,
             xs, means, width,
             label=CONDITION_LABELS[cond],
             color=CONDITION_COLORS[cond],
-            edgecolor="black", linewidth=0.7,
+            edgecolor="black", linewidth=0.4,
             hatch=hatch,
             yerr=[err_lo, err_hi],
-            capsize=4,
-            error_kw={"linewidth": 1.2, "ecolor": "black"},
+            capsize=1.5,
+            error_kw={"linewidth": 0.5, "ecolor": "black"},
             zorder=2,
         )
 
@@ -176,10 +180,10 @@ def plot_placement_results(summary_path: Path, mode: str,
             label_y = (m + eh) * 1.15
             ax.text(xi, label_y, _format_count(m),
                     ha="center", va="bottom",
-                    fontsize=16, color="black")
+                    fontsize=7.5, color="black")
             all_means.append(m)
 
-    ax.set_ylabel("# Tasks Placed", labelpad=6)
+    ax.set_ylabel("# Tasks Placed", labelpad=1.5)
     ax.set_xticks(x_positions)
     ax.set_xticklabels([r.capitalize() for r in regimes])
 
@@ -205,17 +209,20 @@ def plot_placement_results(summary_path: Path, mode: str,
     ax.set_axisbelow(True)
     ax.margins(x=0.08)
 
+    # Counts fall from Low to High, so the upper right of the axes is empty.
+    # Putting the legend there means the panel height only has to cover the bars
+    # rather than a separate legend strip above them.
     ax.legend(
-        loc="lower center", bbox_to_anchor=(0.5, 0.85),
-        ncol=len(CONDITION_ORDER), frameon=False,
-        handlelength=2.0, columnspacing=2.0, handletextpad=0.5,
-        borderaxespad=0.0,
+        loc="upper right", ncol=1, frameon=False,
+        handlelength=1.2, handletextpad=0.4, labelspacing=0.15,
+        borderpad=0.0, borderaxespad=0.3,
     )
 
-    fig.subplots_adjust(top=0.96, bottom=0.22, left=0.12, right=0.98)
+    fig.tight_layout(pad=0.2)
 
     if output_path:
-        fig.savefig(output_path, bbox_inches="tight", pad_inches=0.12)
+        with plt.rc_context({"savefig.bbox": "standard"}):
+            fig.savefig(output_path, dpi=300)
         plt.close(fig)
         print(f"Plot saved to {output_path}")
     else:
