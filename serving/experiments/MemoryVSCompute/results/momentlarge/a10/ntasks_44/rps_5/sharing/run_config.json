@@ -1,0 +1,16 @@
+{
+  "condition": "sharing",
+  "task_set": "tsfm",
+  "tasks": ["ecgclass__app1","gestureclass__app1","heartrate__app1","diasbp__app1","sysbp__app1","etth1fore__app1","weatherfore__app1","trafficfore__app1","eclfore__app1","exchangefore__app1","ecgclass__app2","gestureclass__app2","heartrate__app2","diasbp__app2","sysbp__app2","etth1fore__app2","weatherfore__app2","trafficfore__app2","eclfore__app2","exchangefore__app2","ecgclass__app3","gestureclass__app3","heartrate__app3","diasbp__app3","sysbp__app3","etth1fore__app3","weatherfore__app3","trafficfore__app3","eclfore__app3","exchangefore__app3","ecgclass__app4","gestureclass__app4","heartrate__app4","diasbp__app4","sysbp__app4","etth1fore__app4","weatherfore__app4","trafficfore__app4","eclfore__app4","exchangefore__app4","ecgclass__app5","gestureclass__app5","heartrate__app5","diasbp__app5" ],
+  "num_tasks": 44,
+  "backbone": "momentlarge",
+  "cuda_device": "cuda:0",
+  "max_batch_size": 32,
+  "max_batch_wait_ms": 0,
+  "phase_duration_s": 600,
+  "rps_per_task": 5,
+  "rps_single_aggregate": null,
+  "tpc_mode": "libsmctrl",
+  "device_port_base": 8000,
+  "device_startup_wait_s": 5
+}

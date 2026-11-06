@@ -1,0 +1,16 @@
+{
+  "condition": "sharing",
+  "task_set": "tsfm",
+  "tasks": ["ecgclass__app1","gestureclass__app1","heartrate__app1","diasbp__app1","sysbp__app1","etth1fore__app1","weatherfore__app1","trafficfore__app1","eclfore__app1","exchangefore__app1","ecgclass__app2","gestureclass__app2" ],
+  "num_tasks": 12,
+  "backbone": "momentlarge",
+  "cuda_device": "cuda:0",
+  "max_batch_size": 32,
+  "max_batch_wait_ms": 0,
+  "phase_duration_s": 600,
+  "rps_per_task": 5,
+  "rps_single_aggregate": null,
+  "tpc_mode": "libsmctrl",
+  "device_port_base": 8000,
+  "device_startup_wait_s": 5
+}

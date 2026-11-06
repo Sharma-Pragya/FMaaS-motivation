@@ -1,0 +1,47 @@
+{
+  "condition": "no_sharing_tpc",
+  "task_set": "vision",
+  "tasks": [
+    "nyudepth__app1",
+    "vocseg__app1",
+    "nyudepth__app2",
+    "vocseg__app2"
+  ],
+  "num_tasks": 4,
+  "backbone": "swinlarge",
+  "rps_per_task": 5.0,
+  "phase_duration_s": 600.0,
+  "reason": "warmup_failure",
+  "detail": "4/4 slots failed the 15.0s warmup burst (median healthy slot: 0 requests)",
+  "warmup_burst_secs": 15.0,
+  "slots_total": 4,
+  "slots_dead": 4,
+  "median_slot_requests": 0,
+  "min_required_requests": 1.0,
+  "dead_slots": [
+    {
+      "slot": "nyudepth__app1",
+      "task": "nyudepth__app1",
+      "warmup_successes": 0,
+      "last_error": "TimeoutError: "
+    },
+    {
+      "slot": "nyudepth__app2",
+      "task": "nyudepth__app2",
+      "warmup_successes": 0,
+      "last_error": "TimeoutError: "
+    },
+    {
+      "slot": "vocseg__app1",
+      "task": "vocseg__app1",
+      "warmup_successes": 0,
+      "last_error": "TimeoutError: "
+    },
+    {
+      "slot": "vocseg__app2",
+      "task": "vocseg__app2",
+      "warmup_successes": 0,
+      "last_error": "TimeoutError: "
+    }
+  ]
+}
