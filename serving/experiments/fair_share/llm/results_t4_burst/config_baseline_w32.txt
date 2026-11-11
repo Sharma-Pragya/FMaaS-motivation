@@ -1,0 +1,13 @@
+Experiment config - Wed Sep  9 02:41:44 UTC 2026
+Backbone: qwen2.5-3b (max_model_len=512, max_new_tokens=32, gpu_mem_util=0.85)
+Client A (priority/victim): qwenA
+Client B (other/aggressor): qwenB
+Number of phases: 3
+  Phase 1 (40s): A @ 2 rps, B @ 11 rps
+  Phase 2 (60s): A @ 12 rps, B @ 11 rps
+  Phase 3 (60s): A @ 2 rps, B @ 11 rps
+Total duration: 160s
+Sharing runs:
+  vllm_baseline: scheduler=vllm rates=qwenA:1,qwenB:1
+  bfq_3_1: scheduler=stfq rates=qwenA:1,qwenB:3
+Results base: experiments/fair_share/llm/results_t4_burst

@@ -1,0 +1,13 @@
+{
+  "condition": "sharing",
+  "tasks": "qwenA,qwenB",
+  "num_tasks": 2,
+  "backbone": "qwen2.5-3b",
+  "cuda_device": "cuda:0",
+  "rps_per_task": 2,
+  "phase_duration_s": 240,
+  "gpu_memory_utilization_full": 0.85,
+  "max_model_len": 2048,
+  "max_new_tokens": 256,
+  "device_port_base": 8000
+}

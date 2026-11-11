@@ -1,0 +1,3 @@
+task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_client_pre_rpc_ms,avg_non_server_exec_overhead_ms
+qwenA,stfq,352,2.0706,6440.115,6764.307,7839.118,8422.113,5871.641,5871.641,0.0,0.0,567.287,0.0,568.474
+qwenB,stfq,2022,11.8941,214808.803,220218.876,346259.316,357418.532,6331.828,6331.828,0.0,0.0,208475.073,0.0,208476.975

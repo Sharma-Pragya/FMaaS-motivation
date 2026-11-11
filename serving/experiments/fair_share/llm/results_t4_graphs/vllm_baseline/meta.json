@@ -1,0 +1,19 @@
+{
+  "phase_boundaries_s": [
+    60.0,
+    120.0,
+    180.0
+  ],
+  "aggressor_rps_phases": [
+    16.0,
+    16.0,
+    16.0
+  ],
+  "victim_rps_phases": [
+    2.0,
+    2.0,
+    2.0
+  ],
+  "victim_task": "qwenA",
+  "aggressor_task": "qwenB"
+}

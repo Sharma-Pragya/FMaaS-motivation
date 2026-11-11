@@ -97,7 +97,9 @@ SINGLE_CONDITIONS_BY_TASK_SET = {
 # Default figure sizes (width, height) in inches. Height must be set here — savefig
 # uses bbox_inches='tight', so legends placed above the axes (bbox_to_anchor y>1)
 # ignore figsize height and inflate the saved PDF.
-DEFAULT_LINE_RPS_FIGSIZE = (1.35, 1.0)
+# Figures 7/8: two panels side by side in one column, each printed at 1.63in.
+# Generated at that exact size and included with no \includegraphics width key.
+DEFAULT_LINE_RPS_FIGSIZE = (1.63, 1.10)
 NTASKS_SWEEP_FIG_H = 1.35
 
 # Optional per-task-set styling for ntasks line plots (mean/p99 vs RPS).
@@ -139,12 +141,12 @@ def apply_paper_style() -> None:
         "ytick.major.size":   2.5,
         "text.color":         "black",
         "font.family":        "sans-serif",
-        "font.size":          7,
-        "axes.titlesize":     7.5,
-        "axes.labelsize":     7,
-        "xtick.labelsize":    6.5,
-        "ytick.labelsize":    6.5,
-        "legend.fontsize":    6.5,
+        "font.size":           8,
+        "axes.titlesize":      8,
+        "axes.labelsize":      8,
+        "xtick.labelsize":     7.5,
+        "ytick.labelsize":     7.5,
+        "legend.fontsize":     7.5,
         "lines.linewidth":    1.2,
         "pdf.fonttype":       42,
         "ps.fonttype":        42,
@@ -159,6 +161,21 @@ def save_figure(fig: plt.Figure, out_path: Path, *, pad_inches: float = 0.02) ->
     out_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_path, dpi=300, bbox_inches="tight", pad_inches=pad_inches)
     print(f"[Plot] Saved: {out_path}")
+
+
+def save_figure_exact(fig: plt.Figure, out_path: Path) -> None:
+    """Save at exactly the figure's figsize, for panels typeset at a fixed width.
+
+    bbox_inches="tight" crops to the drawn content, so the file comes out wider
+    than figsize by however much the tick labels happen to need, and including it
+    at a fixed \\includegraphics width then rescales the fonts by a factor that
+    differs per panel. tight_layout() has already fitted the labels inside the
+    canvas, so saving the canvas as-is keeps printed pt == rcParams pt.
+    """
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with plt.rc_context({"savefig.bbox": "standard"}):
+        fig.savefig(out_path, dpi=300)
+    print(f"[Plot] Saved: {out_path} ({fig.get_size_inches()[0]:.2f}in exact)")
 
 
 # ---------------------------------------------------------------------------
@@ -1378,8 +1395,8 @@ def _plot_latency_stat_vs_rps_line(
     ax.set_xticks(rps_with_data)
     ax.set_xticklabels([str(r) for r in rps_with_data])
     ax.set_xlim(rps_with_data[0], rps_with_data[-1])
-    ax.tick_params(axis="x", labelsize=6.0, pad=1)
-    ax.tick_params(axis="y", labelsize=6.0, pad=1)
+    ax.tick_params(axis="x", labelsize=7.5, pad=1)
+    ax.tick_params(axis="y", labelsize=7.5, pad=1)
     ax.grid(axis="y", zorder=0)
     ax.set_axisbelow(True)
 
@@ -1405,13 +1422,14 @@ def _plot_latency_stat_vs_rps_line(
         ax.legend(
             handles=legend_handles,
             loc="upper left",
-            ncol=1,
-            fontsize=5.4,
+            ncol=2,
+            fontsize=7.5,
             frameon=False,
-            handlelength=1.8,
-            handletextpad=0.35,
-            labelspacing=0.15,
-            borderpad=0.15,
+            handlelength=1.4,
+            handletextpad=0.3,
+            labelspacing=0.1,
+            columnspacing=0.8,
+            borderpad=0.1,
         )
     else:
         ax.legend(
@@ -1419,7 +1437,7 @@ def _plot_latency_stat_vs_rps_line(
             loc="lower center",
             bbox_to_anchor=(0.5, 1.02),
             ncol=max(1, min(len(present), 3)),
-            fontsize=4.5,
+            fontsize=7.5,
             frameon=False,
             handlelength=1.6,
             handletextpad=0.3,
@@ -1427,8 +1445,8 @@ def _plot_latency_stat_vs_rps_line(
             borderpad=0.1,
             columnspacing=0.5,
         )
-    fig.tight_layout(pad=0.1)
-    save_figure(fig, out_path)
+    fig.tight_layout(pad=0.2)
+    save_figure_exact(fig, out_path)
     plt.close(fig)
 
 
@@ -1447,7 +1465,7 @@ def plot_p99_vs_rps_line(
     """Line plot: P99 latency (ms) vs RPS/task, one line per condition."""
     _plot_latency_stat_vs_rps_line(
         p99_data, rps_list, out_path,
-        ylabel="P99 Latency (ms)",
+        ylabel="Latency (ms)",
         log_y=False,
         ntasks=ntasks,
         ymax=_line_rps_plot_override(ntasks, "p99_ymax"),
@@ -1464,7 +1482,7 @@ def plot_mean_vs_rps_line(
     """Line plot: mean latency (ms) vs RPS/task, one line per condition."""
     _plot_latency_stat_vs_rps_line(
         mean_data, rps_list, out_path,
-        ylabel="Mean Latency (ms)",
+        ylabel="Latency (ms)",
         log_y=False,
         ntasks=ntasks,
         ymax=_line_rps_plot_override(ntasks, "mean_ymax"),

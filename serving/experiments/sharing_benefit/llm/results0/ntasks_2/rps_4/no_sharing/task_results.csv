@@ -1,0 +1,3 @@
+task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_client_pre_rpc_ms,avg_non_server_exec_overhead_ms
+qwenA,no_sharing,2321,3.9339,7458.329,8185.744,10862.826,12651.181,7456.935,7456.935,0.0,0.0,0.997,0.0,1.394
+qwenB,no_sharing,2321,3.9339,7432.445,8178.119,10840.785,12213.277,7431.229,7431.229,0.0,0.0,0.82,0.0,1.217

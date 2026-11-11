@@ -35,27 +35,42 @@ SERVING_DIR = Path(__file__).resolve().parents[3]
 # alongside the TSFM ones in the paper without colour clashes)
 # ---------------------------------------------------------------------------
 
+# Colour/linestyle/marker slots are copied from fair_share/tsfm/plot.py so the
+# LLM and TSFM figures read as one family. `vllm` occupies tsfm's `fcfs` slot:
+# both are shared-model best-effort (S-BE), differing only in how they batch.
 COLORS = {
-    "vllm": "#F0A500",   # amber/orange — baseline
-    "bfq":  "#E06C75",   # pink-red     — FMVisor
+    "no_sharing":     "#888888",   # mid gray     — BE
+    "no_sharing_tpc": "#6B9AC4",   # muted blue   — SP (TPC)
+    "vllm":           "#F0A500",   # amber/orange — S-BE
+    "stfq":           "#A9C7B5",   # sage green   — S-STFQ
+    "bfq":            "#E06C75",   # pink-red     — FMVisor (proposed)
 }
 
 LABELS = {
-    "vllm": "vLLM (Punica-class)",
-    "bfq":  "FMVisor",
+    "no_sharing":     "BE",
+    "no_sharing_tpc": "SP",
+    "vllm":           "S-BE",
+    "stfq":           "S-STFQ",
+    "bfq":            "FMVisor",
 }
 
 LINESTYLES = {
-    "vllm": (0, (3, 1, 1, 1)),  # dash-dot-dot
-    "bfq":  "-",
+    "no_sharing":     "-.",
+    "no_sharing_tpc": "--",
+    "vllm":           (0, (3, 1, 1, 1)),  # dash-dot-dot
+    "stfq":           ":",
+    "bfq":            "-",
 }
 
 MARKERS = {
-    "vllm": "P",  # plus-filled
-    "bfq":  "o",  # circle
+    "no_sharing":     "s",  # square
+    "no_sharing_tpc": "^",  # triangle
+    "vllm":           "P",  # plus-filled
+    "stfq":           "D",  # diamond
+    "bfq":            "o",  # circle
 }
 
-METHOD_ORDER = ["vllm", "bfq"]
+METHOD_ORDER = ["no_sharing", "no_sharing_tpc", "vllm", "stfq", "bfq"]
 
 
 def apply_paper_style() -> None:
@@ -293,14 +308,16 @@ def plot_fairness_summary(method_dirs: Dict[str, Path],
     ax_right.tick_params(axis="y", colors=TPUT_COLOR)
 
     sys_top = _nice_ceil(max(sys_rps, default=1.0))
-    ax_left.set_ylim(0, 1.12)
-    ax_right.set_ylim(0, sys_top * 1.06)
+    # Bar values are annotated rotated above each bar; with five methods the
+    # tallest label runs into the title, so give both axes extra headroom.
+    ax_left.set_ylim(0, 1.30)
+    ax_right.set_ylim(0, sys_top * 1.24)
     ax_left.set_yticks(np.linspace(0, 1.0, 5))
     ax_right.set_yticks(np.linspace(0, sys_top, 5))
     ax_left.set_xticks(x)
     ax_left.set_xticklabels(labels, rotation=20, ha="right")
     ax_left.grid(axis="y", zorder=0)
-    ax_left.set_title(rf"$w_A:w_B = {w_a:g}:{w_b:g}$  (phase 2)", pad=10)
+    ax_left.set_title(rf"$w_A:w_B = {w_a:g}:{w_b:g}$  (phase 2)", pad=16)
 
     for xi, v in zip(x, fairness):
         if v > 0:
@@ -447,18 +464,35 @@ def plot_latency_timeseries(method_dirs: Dict[str, Path],
 # Main
 # ---------------------------------------------------------------------------
 
-# (BFQ dir, w_A, w_B, filename tag)
+# (FMVisor dir, SP dir, S-STFQ dir, w_A, w_B, filename tag)
+# Same 6-tuple shape as fair_share/tsfm/plot.py: the weight-bearing methods
+# (FMVisor, SP, S-STFQ) each have a per-scenario directory, since their run
+# names encode the weight ratio.
 WEIGHT_SCENARIOS = [
-    ("bfq_1_1", 1.0, 1.0, "1to1"),
-    ("bfq_2_1", 2.0, 1.0, "2to1"),
-    ("bfq_3_1", 3.0, 1.0, "3to1"),
+    ("bfq_1_1", "no_sharing_tpc_1_1", "stfq_1_1", 1.0, 1.0, "1to1"),
+    ("bfq_2_1", "no_sharing_tpc_2_1", "stfq_1_2", 2.0, 1.0, "2to1"),
+    ("bfq_3_1", "no_sharing_tpc_3_1", "stfq_1_3", 3.0, 1.0, "3to1"),
+    # Admission-window sweep at fixed 3:1 weights (see fair_share/llm/run.sh).
+    # Same weights, same trace — only max_in_flight differs, so each of these
+    # is the identical 3:1 comparison at a different window size. The
+    # weight-bearing baselines are reused across them.
+    ("bfq_3_1_w64",  "no_sharing_tpc_3_1", "stfq_1_3", 3.0, 1.0, "3to1_w64"),
+    ("bfq_3_1_w128", "no_sharing_tpc_3_1", "stfq_1_3", 3.0, 1.0, "3to1_w128"),
+    ("bfq_3_1_w256", "no_sharing_tpc_3_1", "stfq_1_3", 3.0, 1.0, "3to1_w256"),
 ]
-BASELINE_DIR = "vllm_baseline"
+
+# Weight-agnostic baselines: method key -> directory name. Present in every
+# scenario when the directory exists.
+BASELINE_DIRS = {
+    "vllm":       "vllm_baseline",   # S-BE
+    "no_sharing": "no_sharing",      # BE
+}
+BASELINE_DIR = "vllm_baseline"  # kept for backwards compatibility
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--results-base", default="experiments/fair_share/llm/results_t4")
+    ap.add_argument("--results-base", default="experiments/fair_share/llm/results_l40s_cap")
     ap.add_argument("--plot-dir",     default=None)
     ap.add_argument("--victim-task",    default="qwenA")
     ap.add_argument("--aggressor-task", default="qwenB")
@@ -485,19 +519,29 @@ def main() -> int:
         print(f"[Error] no meta.json found under {base}")
         return 1
 
-    vllm_dir = base / BASELINE_DIR
-
-    for bfq_name, w_a, w_b, tag in WEIGHT_SCENARIOS:
+    for bfq_name, tpc_name, stfq_name, w_a, w_b, tag in WEIGHT_SCENARIOS:
         bfq_dir = base / bfq_name
         if not bfq_dir.exists():
             print(f"[Skip] {bfq_name}: dir not found")
             continue
 
         method_dirs: Dict[str, Path] = {"bfq": bfq_dir}
-        if vllm_dir.exists():
-            method_dirs["vllm"] = vllm_dir
-        else:
-            print(f"[Skip] {BASELINE_DIR}: dir not found — baseline omitted for {tag}")
+
+        # Weight-agnostic baselines (S-BE, BE).
+        for key, dirname in BASELINE_DIRS.items():
+            d = base / dirname
+            if d.exists():
+                method_dirs[key] = d
+            else:
+                print(f"[Skip] {dirname}: dir not found — {LABELS[key]} omitted for {tag}")
+
+        # Weight-bearing baselines (SP, S-STFQ).
+        for key, dirname in (("no_sharing_tpc", tpc_name), ("stfq", stfq_name)):
+            d = base / dirname
+            if d.exists():
+                method_dirs[key] = d
+            else:
+                print(f"[Skip] {dirname}: dir not found — {LABELS[key]} omitted for {tag}")
 
         plot_fairness_summary(method_dirs, args.victim_task, args.aggressor_task,
                               w_a, w_b, meta, plot_dir / f"fairness_{tag}.png")
