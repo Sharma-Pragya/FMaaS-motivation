@@ -1,0 +1,5 @@
+task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_client_pre_rpc_ms,avg_non_server_exec_overhead_ms,avg_gpu_alloc_peak_mb,max_gpu_alloc_peak_mb
+nyudepth__app1,no_sharing_tpc,1424,4.9103,34.174,27.905,56.387,76.26,27.806,26.152,0.002,1.042,3.927,0.0,6.368,753.603,754.17
+vocseg__app1,no_sharing_tpc,1493,5.1483,41.893,35.439,69.993,89.072,33.841,32.104,0.003,1.183,5.409,0.0,8.053,753.725,755.051
+nyudepth__app2,no_sharing_tpc,1493,5.1483,41.699,35.281,69.326,88.187,33.624,31.958,0.002,1.087,5.38,0.0,8.075,753.608,754.934
+vocseg__app2,no_sharing_tpc,1471,5.0724,33.938,28.171,56.083,79.215,27.441,25.877,0.002,1.063,4.053,0.0,6.497,753.721,754.288

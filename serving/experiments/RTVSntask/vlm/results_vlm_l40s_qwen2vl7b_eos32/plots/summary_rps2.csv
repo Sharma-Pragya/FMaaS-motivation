@@ -1,0 +1,16 @@
+rps_per_task,series,condition,num_tasks,status,avg_latency_ms,p95_latency_ms,p99_latency_ms,throughput_rps,n_requests,failure_reason
+2,SP,no_sharing_tpc,1,ok,1094.769,1441.898,1547.134,2.071,352,
+2,SP,no_sharing_tpc,2,ok,2095.768,2938.873,3250.062,3.994,679,
+2,SP,no_sharing_tpc,3,failed,,,,,,CUDA OOM
+2,SP,no_sharing_tpc,4,failed,,,,,,CUDA OOM
+2,SP,no_sharing_tpc,5,failed,,,,,,CUDA OOM
+2,BE,no_sharing,1,ok,1089.693,1407.86,1538.171,2.071,352,
+2,BE,no_sharing,2,ok,2096.299,2951.527,3120.667,3.994,679,
+2,BE,no_sharing,3,failed,,,,,,CUDA OOM
+2,BE,no_sharing,4,failed,,,,,,CUDA OOM
+2,BE,no_sharing,5,failed,,,,,,CUDA OOM
+2,FMVisor,sharing,1,ok,1090.263,1403.177,1534.509,2.071,352,
+2,FMVisor,sharing,2,ok,1398.948,2081.581,2364.673,3.994,679,
+2,FMVisor,sharing,3,ok,2019.347,3532.824,3912.735,6.123,1041,
+2,FMVisor,sharing,4,ok,2851.323,4749.248,5577.596,8.253,1403,
+2,FMVisor,sharing,5,ok,4534.619,7907.925,8744.772,10.341,1758,

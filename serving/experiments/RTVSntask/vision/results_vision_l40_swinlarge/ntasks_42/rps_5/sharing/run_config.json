@@ -1,0 +1,16 @@
+{
+  "condition": "sharing",
+  "task_set": "vision",
+  "tasks": ["nyudepth__app1","vocseg__app1","nyudepth__app2","vocseg__app2","nyudepth__app3","vocseg__app3","nyudepth__app4","vocseg__app4","nyudepth__app5","vocseg__app5","nyudepth__app6","vocseg__app6","nyudepth__app7","vocseg__app7","nyudepth__app8","vocseg__app8","nyudepth__app9","vocseg__app9","nyudepth__app10","vocseg__app10","nyudepth__app11","vocseg__app11","nyudepth__app12","vocseg__app12","nyudepth__app13","vocseg__app13","nyudepth__app14","vocseg__app14","nyudepth__app15","vocseg__app15","nyudepth__app16","vocseg__app16","nyudepth__app17","vocseg__app17","nyudepth__app18","vocseg__app18","nyudepth__app19","vocseg__app19","nyudepth__app20","vocseg__app20","nyudepth__app21","vocseg__app21" ],
+  "num_tasks": 42,
+  "backbone": "swinlarge",
+  "cuda_device": "cuda:0",
+  "max_batch_size": 32,
+  "max_batch_wait_ms": 0,
+  "phase_duration_s": 600,
+  "rps_per_task": 5,
+  "rps_single_aggregate": null,
+  "tpc_mode": "libsmctrl",
+  "device_port_base": 8000,
+  "device_startup_wait_s": 5
+}

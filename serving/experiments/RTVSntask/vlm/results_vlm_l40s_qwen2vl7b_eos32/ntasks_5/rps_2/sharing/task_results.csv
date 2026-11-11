@@ -1,0 +1,6 @@
+task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_client_pre_rpc_ms,avg_non_server_exec_overhead_ms
+qwenvl7A__app1,sharing,352,2.0706,4645.569,4405.414,7907.925,8744.772,4642.21,4642.21,0.0,0.0,2.948,0.0,3.359
+qwenvl7B__app1,sharing,327,1.9235,4623.615,4378.15,7821.313,8572.644,4618.679,4618.679,0.0,0.0,4.562,0.0,4.935
+qwenvl7A__app2,sharing,362,2.1294,4515.585,4177.686,7555.343,8323.208,4514.009,4514.009,0.0,0.0,1.234,0.0,1.575
+qwenvl7B__app2,sharing,362,2.1294,4441.92,4141.07,7552.323,8524.162,4439.083,4439.083,0.0,0.0,2.508,0.0,2.837
+qwenvl7A__app3,sharing,355,2.0882,4456.564,4150.005,7691.854,8679.698,4454.911,4454.911,0.0,0.0,1.345,0.0,1.653

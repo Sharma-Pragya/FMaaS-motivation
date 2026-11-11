@@ -1,0 +1,17 @@
+{
+  "condition": "sharing",
+  "tasks": "qwenvl7A__app1,qwenvl7B__app1,qwenvl7A__app2",
+  "num_tasks": 3,
+  "backbone": "qwen2-vl-7b",
+  "cuda_device": "cuda:0",
+  "rps_per_task": 2,
+  "rps_applied": 2,
+  "rps_single_aggregate": null,
+  "phase_duration_s": 180,
+  "gpu_memory_utilization_full": 0.85,
+  "gpu_memory_utilization_per_server": null,
+  "max_model_len": 512,
+  "max_new_tokens": 32,
+  "ignore_eos": 1,
+  "device_port_base": 8000
+}

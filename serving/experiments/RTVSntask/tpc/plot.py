@@ -98,6 +98,18 @@ COND_LINE_MARKERSIZE = 2.6
 COND_LINE_MARKEREDGEWIDTH = 0.25
 COND_LINE_MARKER_EDGECOLOR = "black"
 COND_LINE_LINEWIDTH = 0.9
+
+# Canvas size for the #Tasks sweep panels. These panels sit side by side in
+# one figure row in the paper, so every script must emit them at the same
+# size or the row comes out ragged.
+NTASKS_SWEEP_FIG_W = 1.33
+
+# "OOM" labels marking where each condition stopped fitting on the GPU.
+OOM_LABEL_FONTSIZE = 5.0
+OOM_MARKER_CLEARANCE = 0.035   # gap above the anchoring marker, in span fractions
+OOM_ROW_GAP = 0.02             # gap between two stacked labels at the same x
+OOM_TOP_PAD = 0.01             # keep the top label inside the axes
+NTASKS_SWEEP_FIG_H = 1.10
 # Per-task curves: same marker cycle and sizes in both RTVS plotters.
 PER_TASK_MARKER_CYCLE = ("o", "s", "^", "D", "v", "P", "*", "X", "h", "p")
 PER_TASK_MARKERSIZE = 3.5
@@ -151,12 +163,12 @@ def apply_paper_style() -> None:
         "ytick.major.size":   2.5,
         "text.color":         "black",
         "font.family":        "sans-serif",
-        "font.size":          7,
-        "axes.titlesize":     7.5,
-        "axes.labelsize":     7,
-        "xtick.labelsize":    6.5,
-        "ytick.labelsize":    6.5,
-        "legend.fontsize":    6.5,
+        "font.size":           8,
+        "axes.titlesize":      8,
+        "axes.labelsize":      8,
+        "xtick.labelsize":     7.5,
+        "ytick.labelsize":     7.5,
+        "legend.fontsize":     7.5,
         "lines.linewidth":    1.2,
         "pdf.fonttype":       42,
         "ps.fonttype":        42,
@@ -171,6 +183,21 @@ def save_figure(fig: plt.Figure, out_path: Path) -> None:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_path, dpi=300, bbox_inches="tight")
     print(f"[Plot] Saved: {out_path}")
+
+
+def save_figure_exact(fig, out_path) -> None:
+    """Save at exactly the figure's figsize, for panels typeset at a fixed width.
+
+    bbox_inches="tight" crops to the drawn content, so the file comes out wider
+    than figsize by however much the tick labels happen to need. Including such a
+    file at a fixed \\includegraphics width then rescales the fonts by a factor
+    that differs per panel. tight_layout() has already fitted the labels inside
+    the canvas, so saving the canvas as-is keeps printed pt == rcParams pt.
+    """
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with plt.rc_context({"savefig.bbox": "standard"}):
+        fig.savefig(out_path, dpi=300)
+    print(f"[Plot] Saved: {out_path} ({fig.get_size_inches()[0]:.2f}in exact)")
 
 
 def _normalize_series_list(series_names: List[str]) -> List[str]:
@@ -984,6 +1011,100 @@ def plot_sweep_cdf(
 #   One subplot per RPS value; one line per condition.
 # ---------------------------------------------------------------------------
 
+def _text_height_frac(ax: plt.Axes) -> float:
+    """Height of one OOM label as a fraction of the y-axis span."""
+    ax_h_px = ax.get_window_extent().height
+    if ax_h_px <= 0:
+        return 0.09
+    return (OOM_LABEL_FONTSIZE * ax.figure.dpi / 72.0) / ax_h_px
+
+
+def _oom_failures(rps_data: Dict[int, Dict[str, float]], present: List[str],
+                  ntasks_list: List[int]) -> Dict[str, List[int]]:
+    """{series: [ntasks it could not be placed at]}.
+
+    A series counts as having died at n when it has no value there but did have
+    one at a smaller n. That distinguishes an OOM (the run was attempted and then
+    dropped by is_condition_complete) from a condition that was simply never
+    swept, which has no earlier points either.
+    """
+    fails: Dict[str, List[int]] = {}
+    for s in present:
+        seen = False
+        missing: List[int] = []
+        for n in ntasks_list:
+            if rps_data.get(n, {}).get(s) is not None:
+                seen = True
+            elif seen:
+                missing.append(n)
+        if missing:
+            fails[s] = missing
+    return fails
+
+
+def _last_plotted(curve_points: Dict[int, Dict[str, float]],
+                  series: str) -> Optional[float]:
+    """Value of `series` at the largest #Tasks it still has a point at."""
+    xs = [x for x, at_x in curve_points.items() if series in at_x]
+    return curve_points[max(xs)][series] if xs else None
+
+
+def _annotate_oom(ax: plt.Axes, fails_by_series: Dict[str, List[int]],
+                  curve_points: Dict[int, Dict[str, float]]) -> None:
+    """Write "OOM" at every #Tasks each series could not be placed at.
+
+    Ported from llm/plot.py so all four modalities use one convention: the word
+    in the series colour at every failing point, anchored just above the FMVisor
+    point at that #Tasks and stacked when several conditions die together.
+
+    A series that was already off-scale when it died is skipped. SP leaves a
+    300ms panel at 35,000ms two points before it fails to place, so its label
+    has no marker to sit above and ends up clamped into the top corner; the
+    curve running off the top already says the condition is unusable.
+    """
+    if not fails_by_series:
+        return
+    y_lo, y_hi = ax.get_ylim()
+    span = y_hi - y_lo
+    if span <= 0:
+        return
+    rows = []
+    for s in ACTIVE_SERIES_ORDER:
+        if not fails_by_series.get(s):
+            continue
+        last = _last_plotted(curve_points, s)
+        if last is not None and last > y_hi:
+            continue
+        rows.append(s)
+    if not rows:
+        return
+
+    th = _text_height_frac(ax)
+    step = th + OOM_ROW_GAP
+
+    for x in sorted({x for s in rows for x in fails_by_series[s]}):
+        at_x = curve_points.get(x, {})
+        if "sharing" in at_x:
+            anchor = at_x["sharing"]
+        elif at_x:
+            anchor = max(at_x.values())
+        else:
+            anchor = y_lo
+        base = (anchor - y_lo) / span + OOM_MARKER_CLEARANCE
+
+        stack = [s for s in rows if x in fails_by_series[s]]
+        # Slide the stack down if it would run off the top of the axes.
+        top = base + step * (len(stack) - 1) + th
+        if top > 1.0 - OOM_TOP_PAD:
+            base -= top - (1.0 - OOM_TOP_PAD)
+
+        for row, series in enumerate(stack):
+            ax.text(x, y_lo + (base + row * step) * span, "OOM",
+                    ha="center", va="bottom",
+                    fontsize=OOM_LABEL_FONTSIZE, fontweight="bold",
+                    color=SERIES_COLORS[series], zorder=6)
+
+
 def _plot_ntasks_line_sweep(
     data: Dict[int, Dict[int, Dict[str, float]]],
     rps_list: List[int],
@@ -993,8 +1114,8 @@ def _plot_ntasks_line_sweep(
     warn_label: str,
     y_max: float = 300.0,
     y_max_per_rps: Optional[Dict[int, float]] = None,
-    fig_w: Optional[float] = None,
-    fig_h: float = 1.55,
+    fig_w: float = NTASKS_SWEEP_FIG_W,
+    fig_h: float = NTASKS_SWEEP_FIG_H,
 ) -> None:
     rps_with_data = [r for r in rps_list if any(data.get(r, {}).values())]
     if not rps_with_data:
@@ -1014,9 +1135,10 @@ def _plot_ntasks_line_sweep(
     plot_standalone_legend(_legend_handles(present), legend_path, ncol=min(len(present), 4))
 
     for rps in rps_with_data:
-        fig, ax = plt.subplots(figsize=(1.8, fig_h))
+        fig, ax = plt.subplots(figsize=(fig_w, fig_h))
         rps_data = data.get(rps, {})
         ymax_data = 0.0
+        curve_points: Dict[int, Dict[str, float]] = {}
         for s in present:
             xs, ys = [], []
             for n in ntasks_list:
@@ -1024,6 +1146,7 @@ def _plot_ntasks_line_sweep(
                 if v is not None:
                     xs.append(n)
                     ys.append(v)
+                    curve_points.setdefault(n, {})[s] = v
             if xs:
                 ymax_data = max(ymax_data, max(ys))
                 ax.plot(
@@ -1038,7 +1161,6 @@ def _plot_ntasks_line_sweep(
                     linewidth=COND_LINE_LINEWIDTH,
                 )
 
-        ax.set_title(f"{rps} req/s", pad=2)
         ax.set_xlabel("#Tasks")
         ax.set_xticks(ntasks_list)
         ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{int(v)}"))
@@ -1056,41 +1178,12 @@ def _plot_ntasks_line_sweep(
         ax.set_xlim(n_lo - 0.55, n_hi + 0.55)
         ax.set_ylabel(ylabel)
 
-        # Annotate "OOM" at ntasks=10 for BE (no_sharing) when data is missing there,
-        # aligned with the y-value of BE's last available data point so it reads as
-        # a continuation of the BE curve. If that point is above the axis cap,
-        # clamp the label just below the top of the plot.
-        if (
-            "no_sharing" in present
-            and 10 in ntasks_list
-            and rps_data.get(10, {}).get("no_sharing") is None
-        ):
-            be_xy = [
-                (n, rps_data.get(n, {}).get("no_sharing"))
-                for n in ntasks_list
-                if rps_data.get(n, {}).get("no_sharing") is not None
-            ]
-            if be_xy:
-                _, last_y = be_xy[-1]
-                y_lo, y_hi = ax.get_ylim()
-                if last_y >= y_hi:
-                    text_y = y_hi - 0.02 * (y_hi - y_lo)
-                    va = "top"
-                else:
-                    text_y = last_y
-                    va = "center"
-                ax.text(
-                    10, text_y, "OOM",
-                    ha="center", va=va,
-                    fontsize=5.5, fontweight="bold",
-                    color=SERIES_COLORS["no_sharing"],
-                    zorder=3,
-                )
+        _annotate_oom(ax, _oom_failures(rps_data, present, ntasks_list), curve_points)
 
         # File name with RPS suffix
         rps_out_path = out_path.parent / f"{out_path.stem}_rps{rps}{out_path.suffix}"
         fig.tight_layout(pad=0.2)
-        save_figure(fig, rps_out_path)
+        save_figure_exact(fig, rps_out_path)
         plt.close(fig)
 
 def plot_ntasks_mean_latency(
@@ -1103,8 +1196,6 @@ def plot_ntasks_mean_latency(
         data, rps_list, ntasks_list, out_path,
         ylabel="Latency (ms)",
         warn_label="ntasks mean latency",
-        fig_w=3.7,
-        fig_h=1.25,
     )
 
 

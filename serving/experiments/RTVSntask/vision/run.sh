@@ -84,12 +84,12 @@ fi
 # ---------------------------------------------------------------------------
 CUDA_DEVICE="${CUDA_DEVICE:-cuda:0}"
 TASK_SET="${TASK_SET:-vision}"  # vision or tsfm
-RPS_SWEEP="${RPS_SWEEP:-2}"
-NUM_TASKS_SWEEP="${NUM_TASKS_SWEEP:-2,4,6,8,10}"
+RPS_SWEEP="${RPS_SWEEP:-5}"
+NUM_TASKS_SWEEP="${NUM_TASKS_SWEEP:-4,5}"
 PHASE_DURATION="${PHASE_DURATION:-600}"
 DEVICE_PORT="${DEVICE_PORT:-8000}"
 MAX_BATCH_SIZE="${MAX_BATCH_SIZE:-32}"
-RESULTS_BASE="${RESULTS_BASE:-experiments/RTVSntask/vision/results_vision_t4_swinlarge}"
+RESULTS_BASE="${RESULTS_BASE:-experiments/RTVSntask/vision/results_vision_a10_swinlarge}"
 DEVICE_STARTUP_WAIT="${DEVICE_STARTUP_WAIT:-5}"
 MAX_BATCH_WAIT_MS="${MAX_BATCH_WAIT_MS:-0}"
 TPC_MODE="${TPC_MODE:-libsmctrl}"
@@ -312,6 +312,14 @@ run_condition() {
     # Skip if results already exist
     if [[ -f "${out_dir}/latencies.csv" ]]; then
         echo "[run.sh] Skipping $condition — results already exist"
+        return 0
+    fi
+
+    # Skip if a previous sweep proved this config cannot run (e.g. N backbone
+    # copies do not fit on the GPU). Delete infeasible.json to force a retry.
+    if [[ -f "${out_dir}/infeasible.json" ]]; then
+        echo "[run.sh] Skipping $condition — marked infeasible by a previous run:"
+        sed -n 's/.*"detail": "\(.*\)",*/    \1/p' "${out_dir}/infeasible.json"
         return 0
     fi
 
@@ -593,8 +601,19 @@ if [[ "$TASK_SET" == "vision" ]]; then
         fi
         tasks_csv=$(IFS=','; echo "${tasks_arr[*]}")
 
-        conditions=()
-        conditions+=("no_sharing_tpc" "sharing" "no_sharing")
+        # Conditions to run. Override with CONDITIONS=sharing,no_sharing to
+        # sweep a subset (e.g. when only some methods need a rerun).
+        IFS=',' read -ra conditions <<< "${CONDITIONS:-no_sharing_tpc,sharing,no_sharing}"
+        # Validate up front: an unrecognised name falls through the case in
+        # run_condition, which silently produces an empty result dir.
+        for _c in "${conditions[@]}"; do
+            case "$_c" in
+                sharing|no_sharing|no_sharing_tpc|no_sharing_mps|single_*) ;;
+                *) echo "[run.sh] ERROR: unknown condition '$_c' in CONDITIONS" >&2
+                   echo "[run.sh] valid: sharing, no_sharing, no_sharing_tpc, no_sharing_mps, single_<task>" >&2
+                   exit 1 ;;
+            esac
+        done
         for rps in "${RPS_LIST[@]}"; do
             echo ""
             echo "################################################################"

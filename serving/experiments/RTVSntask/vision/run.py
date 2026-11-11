@@ -306,7 +306,7 @@ async def deploy(device_url: str, backbone: str, tasks: List[str],
 # Open-loop Poisson sender (gRPC)
 # ---------------------------------------------------------------------------
 
-Record = Tuple[float, float, float, float, float, float, float, float, int]
+Record = Tuple[float, float, float, float, float, float, float, float, int, float, str]
 # (
 #   send_time_relative_s,
 #   client_latency_ms,
@@ -317,7 +317,37 @@ Record = Tuple[float, float, float, float, float, float, float, float, int]
 #   queue_wait_plus_rpc_ms,   # starts at actual gRPC stub call, not client tensor/protobuf encoding
 #   client_pre_rpc_ms,        # client wrapper work before the gRPC stub call
 #   server_start_ns,
+#   gpu_alloc_peak_mb,        # torch allocator peak in the serving process for this batch
+#   device,                   # device server url that served the request
 # )
+
+
+# A warmup slot completing fewer than this fraction of the median slot's requests
+# is treated as failed rather than merely slow. Override with STRAGGLER_FRACTION.
+STRAGGLER_FRACTION = float(os.environ.get("STRAGGLER_FRACTION", "0.05"))
+
+
+class WarmupFailure(RuntimeError):
+    """Raised when one or more slots complete zero requests during the warmup burst.
+
+    Carries enough detail to write an infeasible.json marker so the sweep can
+    record *why* a configuration produced no data instead of leaving a silent gap.
+    """
+
+    def __init__(self, dead: List[str], slot_task: Dict[str, str],
+                 slot_ok: Dict[str, int], slot_err: Dict[str, str],
+                 duration_s: float, median: int = 0, floor: float = 1.0) -> None:
+        self.dead       = dead
+        self.slot_task  = slot_task
+        self.slot_ok    = slot_ok
+        self.slot_err   = slot_err
+        self.duration_s = duration_s
+        self.median     = median
+        self.floor      = floor
+        super().__init__(
+            f"{len(dead)}/{len(slot_ok)} slots failed the {duration_s}s warmup burst "
+            f"(median healthy slot: {median} requests)"
+        )
 
 
 async def run_warmup_burst(
@@ -370,6 +400,9 @@ async def run_warmup_burst(
     t_end = time.time() + duration_s
     total_reqs = 0
 
+    slot_ok:   Dict[str, int] = {sk: 0 for sk in slot_task}
+    slot_err:  Dict[str, str] = {}
+
     async def _slot_loop(slot_key: str) -> None:
         nonlocal total_reqs
         proto = slot_proto[slot_key]
@@ -381,12 +414,35 @@ async def run_warmup_burst(
                     slot_stub[slot_key].Infer(proto), timeout=10.0
                 )
                 total_reqs += 1
-            except Exception:
-                pass
+                slot_ok[slot_key] += 1
+            except Exception as exc:
+                # Keep only the most recent error per slot — enough to report
+                # why the slot never came up without flooding stdout.
+                slot_err[slot_key] = f"{type(exc).__name__}: {exc}"
             req_id += 1
 
     await asyncio.gather(*[_slot_loop(sk) for sk in slot_task])
     print(f"[Warmup] Done ({total_reqs} requests sent).")
+
+    # Feasibility gate. A slot that completed zero requests in the entire burst
+    # is not slow, it is broken (almost always CUDA OOM from too many backbone
+    # copies on one GPU). Running the 600s open-loop phase after this produces a
+    # CSV that looks valid but is missing whole tasks, so refuse to start it.
+    #
+    # Zero is the unambiguous case, but a slot that squeaks out a couple of
+    # requests while its peers complete hundreds is equally unusable — it will
+    # contribute a handful of unrepresentative samples. Treat any slot far below
+    # the median as dead too. The threshold is deliberately loose (5% of median)
+    # so genuinely heterogeneous task costs don't trip it.
+    counts = sorted(slot_ok.values())
+    median = counts[len(counts) // 2] if counts else 0
+    floor  = max(1.0, STRAGGLER_FRACTION * median) if median > 0 else 1.0
+    dead = sorted(sk for sk, n in slot_ok.items() if n == 0 or n < floor)
+    if dead:
+        raise WarmupFailure(dead=dead, slot_task=slot_task, slot_ok=slot_ok,
+                            slot_err=slot_err, duration_s=duration_s,
+                            median=median, floor=floor)
+
     return clients
 
 
@@ -476,6 +532,8 @@ async def run_open_loop(
                 queue_wait_plus_rpc_ms,
                 0.0,  # client_pre_rpc_ms is now 0 — encoding is pre-done
                 response.start_time_ns,
+                float(response.gpu_alloc_peak_mb or 0.0),
+                slot_url[slot_key],
             ))
         except Exception:
             pass
@@ -528,9 +586,11 @@ def save_results(records: Dict[str, List[Record]], out_dir: Path, condition: str
             "server_exec_ms", "server_proc_ms", "server_swap_ms",
             "server_decoder_ms", "queue_wait_plus_rpc_ms",
             "client_pre_rpc_ms", "non_server_exec_overhead_ms", "server_start_ns",
+            "gpu_alloc_peak_mb", "device",
         ])
         for task, recs in records.items():
-            for rel_t, lat, exec_ms, proc_ms, swap_ms, dec_ms, queue_ms, pre_rpc_ms, start_ns in recs:
+            for (rel_t, lat, exec_ms, proc_ms, swap_ms, dec_ms, queue_ms,
+                 pre_rpc_ms, start_ns, gpu_peak_mb, device) in recs:
                 w.writerow([
                     task, condition,
                     round(rel_t, 4), round(lat, 4),
@@ -538,6 +598,7 @@ def save_results(records: Dict[str, List[Record]], out_dir: Path, condition: str
                     round(dec_ms, 4), round(queue_ms, 4), round(pre_rpc_ms, 4),
                     round(max(0.0, lat - exec_ms), 4),
                     start_ns,
+                    round(gpu_peak_mb, 3), device,
                 ])
 
     with (out_dir / "task_results.csv").open("w", newline="") as f:
@@ -547,6 +608,7 @@ def save_results(records: Dict[str, List[Record]], out_dir: Path, condition: str
             "avg_server_exec_ms", "avg_server_proc_ms", "avg_server_swap_ms",
             "avg_server_decoder_ms", "avg_queue_wait_plus_rpc_ms",
             "avg_client_pre_rpc_ms", "avg_non_server_exec_overhead_ms",
+            "avg_gpu_alloc_peak_mb", "max_gpu_alloc_peak_mb",
         ]
         w = csv.DictWriter(f, fieldnames=fields)
         w.writeheader()
@@ -573,6 +635,8 @@ def save_results(records: Dict[str, List[Record]], out_dir: Path, condition: str
                 "avg_client_pre_rpc_ms": round(float(np.mean([rec[7] for rec in trimmed])), 3),
                 "avg_non_server_exec_overhead_ms": round(
                     float(np.mean([max(0.0, rec[1] - rec[2]) for rec in trimmed])), 3),
+                "avg_gpu_alloc_peak_mb": round(float(np.mean([rec[9] for rec in trimmed])), 3),
+                "max_gpu_alloc_peak_mb": round(float(np.max([rec[9] for rec in trimmed])), 3),
             })
 
     for task, recs in records.items():
@@ -734,7 +798,51 @@ def main() -> int:
             warm_clients=warm_clients,
         )
 
-    records = asyncio.run(_warmup_then_run())
+    try:
+        records = asyncio.run(_warmup_then_run())
+    except WarmupFailure as exc:
+        dead_desc = [
+            {
+                "slot": sk,
+                "task": exc.slot_task.get(sk, sk),
+                "warmup_successes": exc.slot_ok.get(sk, 0),
+                "last_error": exc.slot_err.get(sk, "no response, no exception recorded"),
+            }
+            for sk in exc.dead
+        ]
+        print("", file=sys.stderr)
+        print("=" * 65, file=sys.stderr)
+        print(f"  ABORT: {exc}", file=sys.stderr)
+        print(f"  condition={args.condition}  ntasks={len(tasks)}  rps={args.rps}", file=sys.stderr)
+        print(f"  median slot completed {exc.median} requests; "
+              f"threshold was {exc.floor:.1f}", file=sys.stderr)
+        print("  Dead slots (zero successful warmup requests):", file=sys.stderr)
+        for d in dead_desc:
+            print(f"    {d['slot']:<24} {d['task']:<20} {d['last_error'][:120]}", file=sys.stderr)
+        print("  Skipping the open-loop phase — it would produce partial results.", file=sys.stderr)
+        print("=" * 65, file=sys.stderr)
+
+        out_dir.mkdir(parents=True, exist_ok=True)
+        marker = {
+            "condition":        args.condition,
+            "task_set":         args.task_set,
+            "tasks":            tasks,
+            "num_tasks":        len(tasks),
+            "backbone":         args.backbone,
+            "rps_per_task":     args.rps,
+            "phase_duration_s": args.duration,
+            "reason":           "warmup_failure",
+            "detail":           str(exc),
+            "warmup_burst_secs": exc.duration_s,
+            "slots_total":      len(exc.slot_ok),
+            "slots_dead":       len(exc.dead),
+            "median_slot_requests": exc.median,
+            "min_required_requests": exc.floor,
+            "dead_slots":       dead_desc,
+        }
+        (out_dir / "infeasible.json").write_text(json.dumps(marker, indent=2))
+        print(f"[Run] Wrote {out_dir / 'infeasible.json'}", file=sys.stderr)
+        return 1
 
     save_results(records, out_dir, args.condition, args.duration, args.warmup_secs)
     return 0

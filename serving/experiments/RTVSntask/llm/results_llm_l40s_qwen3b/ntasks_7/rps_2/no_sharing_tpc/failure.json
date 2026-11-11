@@ -1,0 +1,11 @@
+{
+  "condition": "no_sharing_tpc",
+  "num_tasks": 7,
+  "rps_per_task": 2,
+  "stage": "workload",
+  "reason": "cuda_oom",
+  "gpu_memory_utilization_full": 0.85,
+  "gpu_memory_utilization_per_server": 0.121,
+  "device_log": "experiments/RTVSntask/llm/results_llm_l40s_qwen3b/logs/device_no_sharing_tpc_6_rps2_n7.log",
+  "log_tail": "Traceback (most recent call last):\n  File \"src/python/grpcio/grpc/_cython/_cygrpc/aio/server.pyx.pxi\", line 689, in grpc._cython.cygrpc._handle_exceptions\n  File \"src/python/grpcio/grpc/_cython/_cygrpc/aio/server.pyx.pxi\", line 831, in _handle_rpc\n  File \"src/python/grpcio/grpc/_cython/_cygrpc/aio/server.pyx.pxi\", line 554, in _handle_unary_unary_rpc\n  File \"src/python/grpcio/grpc/_cython/_cygrpc/aio/server.pyx.pxi\", line 408, in _finish_handler_with_unary_response\n  File \"/NFS/FMaaS-motivation/serving/device/server.py\", line 351, in Infer\n    response = await self._app.infer(request)\n  File \"/NFS/FMaaS-motivation/serving/device/server.py\", line 255, in infer\n    return await self.runtime.infer(request.req_id, prompt, request.task)\n  File \"/NFS/FMaaS-motivation/serving/device/runtime.py\", line 613, in infer\n    raise RuntimeError(\"vllm_model_not_loaded\")\nRuntimeError: vllm_model_not_loaded\n2026-08-30 03:56:10,124 ERROR Unexpected [RuntimeError] raised by servicer method [/serving.device.EdgeRuntime/Infer]\nTraceback (most recent call last):\n  File \"src/python/grpcio/grpc/_cython/_cygrpc/aio/server.pyx.pxi\", line 689, in grpc._cython.cygrpc._handle_exceptions\n  File \"src/python/grpcio/grpc/_cython/_cygrpc/aio/server.pyx.pxi\", line 831, in _handle_rpc\n  File \"src/python/grpcio/grpc/_cython/_cygrpc/aio/server.pyx.pxi\", line 554, in _handle_unary_unary_rpc\n  File \"src/python/grpcio/grpc/_cython/_cygrpc/aio/server.pyx.pxi\", line 408, in _finish_handler_with_unary_response\n  File \"/NFS/FMaaS-motivation/serving/device/server.py\", line 351, in Infer\n    response = await self._app.infer(request)\n  File \"/NFS/FMaaS-motivation/serving/device/server.py\", line 255, in infer\n    return await self.runtime.infer(request.req_id, prompt, request.task)\n  File \"/NFS/FMaaS-motivation/serving/device/runtime.py\", line 613, in infer\n    raise RuntimeError(\"vllm_model_not_loaded\")\nRuntimeError: vllm_model_not_loaded\n"
+}

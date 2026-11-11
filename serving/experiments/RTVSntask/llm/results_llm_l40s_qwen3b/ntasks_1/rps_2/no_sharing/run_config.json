@@ -1,0 +1,16 @@
+{
+  "condition": "no_sharing",
+  "tasks": "qwenA",
+  "num_tasks": 1,
+  "backbone": "qwen2.5-3b",
+  "cuda_device": "cuda:0",
+  "rps_per_task": 2,
+  "rps_applied": 2,
+  "rps_single_aggregate": null,
+  "phase_duration_s": 300,
+  "gpu_memory_utilization_full": 0.85,
+  "gpu_memory_utilization_per_server": 0.850,
+  "max_model_len": 512,
+  "max_new_tokens": 32,
+  "device_port_base": 8000
+}

@@ -1,0 +1,4 @@
+task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_client_pre_rpc_ms,avg_non_server_exec_overhead_ms
+qwenA__app1,no_sharing,577,1.9897,1262.73,1277.939,1660.157,1834.144,1261.731,1261.731,0.0,0.0,0.617,0.0,0.999
+qwenB__app1,no_sharing,583,2.0103,1246.035,1258.967,1642.635,1772.237,1245.105,1245.105,0.0,0.0,0.557,0.0,0.93
+qwenA__app2,no_sharing,622,2.1448,1278.463,1288.087,1681.486,1833.272,1277.111,1277.111,0.0,0.0,0.97,0.0,1.353

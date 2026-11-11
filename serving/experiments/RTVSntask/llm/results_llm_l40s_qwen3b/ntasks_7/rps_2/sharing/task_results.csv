@@ -1,0 +1,8 @@
+task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_client_pre_rpc_ms,avg_non_server_exec_overhead_ms
+qwenA__app1,sharing,577,1.9897,2463.039,2312.824,3974.154,5383.548,2460.895,2460.895,0.0,0.0,1.773,0.0,2.144
+qwenB__app1,sharing,583,2.0103,2409.018,2301.471,3906.426,5208.396,2407.361,2407.361,0.0,0.0,1.307,0.0,1.657
+qwenA__app2,sharing,622,2.1448,2503.581,2376.743,4127.965,5464.002,2501.981,2501.981,0.0,0.0,1.259,0.0,1.6
+qwenB__app2,sharing,571,1.969,2335.581,2191.144,3835.351,4661.877,2334.361,2334.361,0.0,0.0,0.893,0.0,1.22
+qwenA__app3,sharing,603,2.0793,2421.927,2282.823,3897.027,5257.992,2420.129,2420.129,0.0,0.0,1.484,0.0,1.798
+qwenB__app3,sharing,551,1.9,2438.398,2351.889,3931.14,5308.414,2437.265,2437.265,0.0,0.0,0.822,0.0,1.132
+qwenA__app4,sharing,601,2.0724,2369.122,2277.285,3847.416,5149.526,2367.744,2367.744,0.0,0.0,1.075,0.0,1.378

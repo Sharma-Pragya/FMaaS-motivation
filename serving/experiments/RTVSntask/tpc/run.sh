@@ -315,6 +315,14 @@ run_condition() {
         return 0
     fi
 
+    # Skip if a previous sweep proved this config cannot run (e.g. N backbone
+    # copies do not fit on the GPU). Delete infeasible.json to force a retry.
+    if [[ -f "${out_dir}/infeasible.json" ]]; then
+        echo "[run.sh] Skipping $condition — marked infeasible by a previous run:"
+        sed -n 's/.*"detail": "\(.*\)",*/    \1/p' "${out_dir}/infeasible.json"
+        return 0
+    fi
+
     stop_devices
     DEVICE_PIDS=()
     ACTIVE_PORTS=()
@@ -560,27 +568,49 @@ fi
 IFS=',' read -ra RPS_LIST <<< "$RPS_SWEEP"
 
 if [[ "$TASK_SET" == "vision" ]]; then
-    # Vision: NUM_TASKS_SWEEP selects first N from ALL_VISION_TASKS (default: all 2)
+    # Vision: cycle through ALL_VISION_TASKS using modulo (mirrors tsfm).
+    # When ntasks > pool size, suffix names with __appN so task IDs stay unique
+    # across slots (run.py strips the suffix to resolve types/decoders/loaders).
     if [[ -z "$NUM_TASKS_SWEEP" ]]; then
-        NUM_TASKS_SWEEP="${#ALL_VISION_TASKS[@]}"
+        echo "[run.sh] NUM_TASKS_SWEEP is empty — skipping ntasks sweep"
+        echo "[run.sh] (tip: set NUM_TASKS_SWEEP=2,3 or similar to enable)"
     fi
     IFS=',' read -ra NTASKS_LIST <<< "$NUM_TASKS_SWEEP"
     for ntasks in "${NTASKS_LIST[@]:-}"; do
         [[ -z "$ntasks" ]] && continue
-        if [[ $ntasks -lt 1 || $ntasks -gt ${#ALL_VISION_TASKS[@]} ]]; then
-            echo "[run.sh] ERROR: NUM_TASKS=$ntasks out of range (1..${#ALL_VISION_TASKS[@]})"
+        if [[ $ntasks -lt 1 ]]; then
+            echo "[run.sh] ERROR: NUM_TASKS=$ntasks must be >= 1"
             exit 1
         fi
 
-        tasks_arr=("${ALL_VISION_TASKS[@]:0:$ntasks}")
+        pool_size=${#ALL_VISION_TASKS[@]}
+        tasks_arr=()
+        if [[ $ntasks -le $pool_size ]]; then
+            for ((i=0; i<ntasks; i++)); do
+                tasks_arr+=("${ALL_VISION_TASKS[$i]}")
+            done
+        else
+            for ((i=0; i<ntasks; i++)); do
+                base="${ALL_VISION_TASKS[$((i % pool_size))]}"
+                app_idx=$((i / pool_size + 1))
+                tasks_arr+=("${base}__app${app_idx}")
+            done
+        fi
         tasks_csv=$(IFS=','; echo "${tasks_arr[*]}")
 
-        conditions=()
-        for t in "${tasks_arr[@]}"; do
-            conditions+=("single_${t}")
+        # Conditions to run. Override with CONDITIONS=sharing,no_sharing to
+        # sweep a subset (e.g. when only some methods need a rerun).
+        IFS=',' read -ra conditions <<< "${CONDITIONS:-no_sharing_tpc,sharing,no_sharing}"
+        # Validate up front: an unrecognised name falls through the case in
+        # run_condition, which silently produces an empty result dir.
+        for _c in "${conditions[@]}"; do
+            case "$_c" in
+                sharing|no_sharing|no_sharing_tpc|no_sharing_mps|single_*) ;;
+                *) echo "[run.sh] ERROR: unknown condition '$_c' in CONDITIONS" >&2
+                   echo "[run.sh] valid: sharing, no_sharing, no_sharing_tpc, no_sharing_mps, single_<task>" >&2
+                   exit 1 ;;
+            esac
         done
-        # conditions+=("no_sharing" "no_sharing_tpc" "no_sharing_mps" "sharing")
-        conditions+=("no_sharing_tpc" "sharing")
         for rps in "${RPS_LIST[@]}"; do
             echo ""
             echo "################################################################"
@@ -608,28 +638,39 @@ else
             exit 1
         fi
 
-        # Build task list: cycle through ALL_TSFM_TASKS using modulo
+        # Build task list: cycle through ALL_TSFM_TASKS using modulo.
+        # If ntasks exceeds the pool, suffix every slot with __appN so task IDs
+        # stay unique across slots — otherwise two slots share one task name and
+        # the device cannot tell their decoders apart. run.py strips the suffix
+        # to resolve types/decoders/loaders.
         pool_size=${#ALL_TSFM_TASKS[@]}
         tasks_arr=()
-        for ((i=0; i<ntasks; i++)); do
-            tasks_arr+=("${ALL_TSFM_TASKS[$((i % pool_size))]}")
-        done
+        if [[ $ntasks -le $pool_size ]]; then
+            for ((i=0; i<ntasks; i++)); do
+                tasks_arr+=("${ALL_TSFM_TASKS[$i]}")
+            done
+        else
+            for ((i=0; i<ntasks; i++)); do
+                base="${ALL_TSFM_TASKS[$((i % pool_size))]}"
+                app_idx=$((i / pool_size + 1))
+                tasks_arr+=("${base}__app${app_idx}")
+            done
+        fi
         tasks_csv=$(IFS=','; echo "${tasks_arr[*]}")
 
-        # Build single conditions for unique tasks only (no point re-running the same task)
-        conditions=()
-        # declare -A _seen_tasks=()
-        # for t in "${tasks_arr[@]}"; do
-        #     if [[ -z "${_seen_tasks[$t]+x}" ]]; then
-        #         conditions+=("single_${t}")
-        #         _seen_tasks[$t]=1
-        #     fi
-        # done
-        # unset _seen_tasks
-        # conditions+=("no_sharing" "no_sharing_tpc" "no_sharing_mps" "sharing")
-        # conditions+=("no_sharing_tpc" "sharing")
-        conditions+=("no_sharing_tpc" "sharing" "no_sharing" )
-        # conditions+=("single_${ALL_TSFM_TASKS[0]}")
+        # Conditions to run. Override with CONDITIONS=sharing,no_sharing to
+        # sweep a subset (e.g. when only some methods need a rerun).
+        IFS=',' read -ra conditions <<< "${CONDITIONS:-no_sharing_tpc,sharing,no_sharing}"
+        # Validate up front: an unrecognised name falls through the case in
+        # run_condition, which silently produces an empty result dir.
+        for _c in "${conditions[@]}"; do
+            case "$_c" in
+                sharing|no_sharing|no_sharing_tpc|no_sharing_mps|single_*) ;;
+                *) echo "[run.sh] ERROR: unknown condition '$_c' in CONDITIONS" >&2
+                   echo "[run.sh] valid: sharing, no_sharing, no_sharing_tpc, no_sharing_mps, single_<task>" >&2
+                   exit 1 ;;
+            esac
+        done
         for rps in "${RPS_LIST[@]}"; do
             echo ""
             echo "################################################################"
