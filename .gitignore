@@ -19,3 +19,5 @@ serving/**/*.log
 serving/experiments/SystemInAction/results/
 serving/experiments/end_to_end_realworld/deployments/*/trace.json
 serving/traces/azurefunctions/*.csv
+serving/experiments/lora_cost_attribution/adapters/
+*.safetensors
