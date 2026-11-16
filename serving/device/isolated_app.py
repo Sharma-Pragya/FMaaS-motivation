@@ -68,8 +68,10 @@ class IsolatedRuntimeApplication:
         self._down_tasks: set[str] = set()
         self._backbone_down = False
 
-        # asyncio future registry: req_id → (Future, task)
+        # asyncio future registry: internal request id → (Future, task).
+        # Keyed by our own id, not the client's req_id, which need not be unique.
         self._futures: dict[int, tuple] = {}
+        self._next_rid = 0
         self._futures_lock = threading.Lock()
 
         # Sequence counter for control message seq matching
@@ -167,7 +169,9 @@ class IsolatedRuntimeApplication:
             if task not in self._task_lane:
                 raise RuntimeError(f"task_not_deployed:{task}")
             lane = self._task_lane[task]
-            self._futures[request.req_id] = (future, task)
+            rid = self._next_rid
+            self._next_rid += 1
+            self._futures[rid] = (future, task)
 
         x_array = _decode_tensor_to_numpy(request.x)
         mask_array = (
@@ -177,7 +181,7 @@ class IsolatedRuntimeApplication:
         )
 
         self._req_qs[lane].put(TaskInferMsg(
-            req_id=request.req_id,
+            req_id=rid,
             x_bytes=x_array.tobytes(),
             x_shape=x_array.shape,
             x_dtype=str(x_array.dtype),

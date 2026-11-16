@@ -149,6 +149,7 @@ def task_proc_main(
             pass
         dummy = _DummyModelInstance()
         dummy.model_category = model_category
+        dummy.device = device   # Pipeline.__init__ reads model_instance.device
 
         if cuda:
             torch.cuda.reset_peak_memory_stats()

@@ -402,9 +402,11 @@ async def run_open_loop(
             await c.wait_ready()
             clients[url] = c
 
-    # Pre-encode one InferRequest proto per slot (task + tensors serialized once).
-    # Only req_id changes per request; everything else is fixed for the whole run.
-    # Each slot gets its own proto object — safe because one coroutine owns each slot.
+    # Pre-encode one InferRequest proto per slot (task + tensors encoded once).
+    # Only req_id changes per request. Each request sends its own copy: many
+    # requests of a slot are in flight at once, and grpc.aio serializes a
+    # request only when its call task runs, so setting req_id on the shared
+    # proto could send two requests with the same req_id.
     slot_proto = {
         sk: encode_infer_request(
             task=slot_task[sk],
@@ -418,9 +420,11 @@ async def run_open_loop(
     slot_stub = {sk: clients[slot_url[sk]]._stub for sk in slot_task}
 
     records: Dict[str, List[Record]] = {sk: [] for sk in slot_task}
+    failures: Dict[str, int] = {}   # "task: cause" -> count
 
     async def _fire(slot_key: str, req_id: int, t_scheduled: float, t_start: float) -> None:
-        proto = slot_proto[slot_key]
+        proto = type(slot_proto[slot_key])()
+        proto.CopyFrom(slot_proto[slot_key])
         proto.req_id = req_id  # only field that varies; set before timing starts
         try:
             t_send_abs = time.time()
@@ -429,6 +433,8 @@ async def run_open_loop(
             )
             t_done_abs = time.time()
             if response.status and response.status != "ok":
+                key = f"{slot_task[slot_key]}: status={response.status}"
+                failures[key] = failures.get(key, 0) + 1
                 return
             client_lat_ms  = (t_done_abs - t_send_abs) * 1000
             server_exec_ms = (response.end_time_ns - response.start_time_ns) / 1e6
@@ -450,8 +456,9 @@ async def run_open_loop(
                 0.0,  # client_pre_rpc_ms is now 0 — encoding is pre-done
                 response.start_time_ns,
             ))
-        except Exception:
-            pass
+        except Exception as exc:
+            key = f"{slot_task[slot_key]}: {type(exc).__name__}"
+            failures[key] = failures.get(key, 0) + 1
 
     t_start = time.time()
 
@@ -477,6 +484,12 @@ async def run_open_loop(
 
     for c in clients.values():
         await c.close()
+
+    if failures:
+        for key, n in sorted(failures.items()):
+            print(f"[Run] FAILED requests  {key}: {n}")
+    else:
+        print("[Run] No failed requests")
 
     # Merge records back to task-level (combine all slots for the same task)
     merged: Dict[str, List[Record]] = {}

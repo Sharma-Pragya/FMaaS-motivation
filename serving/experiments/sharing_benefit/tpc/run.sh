@@ -617,6 +617,10 @@ if [[ "$TASK_SET" == "vision" ]]; then
         done
         # conditions+=("no_sharing" "no_sharing_tpc" "no_sharing_mps" "sharing")
         conditions+=("no_sharing" "no_sharing_tpc" "sharing" "sharing_process")
+        # CONDITIONS="sharing,sharing_process" runs only those conditions.
+        if [[ -n "${CONDITIONS:-}" ]]; then
+            IFS=',' read -ra conditions <<< "$CONDITIONS"
+        fi
         for rps in "${RPS_LIST[@]}"; do
             echo ""
             echo "################################################################"
@@ -664,6 +668,10 @@ else
         unset _seen_tasks
         # conditions+=("no_sharing" "no_sharing_tpc" "no_sharing_mps" "sharing")
         conditions+=("no_sharing" "no_sharing_tpc" "sharing" "sharing_process")
+        # CONDITIONS="sharing,sharing_process" runs only those conditions.
+        if [[ -n "${CONDITIONS:-}" ]]; then
+            IFS=',' read -ra conditions <<< "$CONDITIONS"
+        fi
         for rps in "${RPS_LIST[@]}"; do
             echo ""
             echo "################################################################"
