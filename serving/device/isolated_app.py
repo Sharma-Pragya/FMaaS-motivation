@@ -3,27 +3,34 @@
 Drop-in replacement for EdgeRuntimeApplication. Same public interface:
     start(bootstrap_json), stop(), infer(request), control(command, payload_json)
 
-Queue topology:
-    raw_q[task]            : gRPC process → task_proc  (TaskInferMsg / TaskControlMsg)
-    task_sched_queues[task]: task_proc → backbone_proc (PreprocessedMsg, one queue per task)
-    ctrl_q                 : isolated_app → backbone_proc (ControlMsg / SentinelMsg)
-    feat_q[task]           : backbone_proc → task_proc (feat result dicts)
-    result_q               : ALL task_procs → gRPC process (inference result dicts)
+This process never touches CUDA. At start it creates every queue (spawn
+context, torch.multiprocessing, so CUDA tensors can cross them) and starts the
+backbone process; it starts one task process per task as tasks are deployed.
 
-Process roles:
-    task_proc[task] — preprocess raw tensor → SharedMemory → task_sched_queues[task]
-                      run decoder on features from feat_q → result_q
-    backbone_proc   — polls each task_sched_queues[task] independently
-                      feeds TenantQueues, applies FifoPolicy/RoundRobinPolicy
-                      backbone forward, fans features to feat_q[task]
+Lanes: a queue can only be handed to a process when that process starts, so
+config.max_tasks lanes are created up front and the backbone gets them all.
+Each task process takes the next unused lane; a lane is never reused (a
+process that dies can leave a lane's queue locks held), so max_tasks bounds
+the task processes ever started, restarts included.
+
+Queue topology:
+    req_q[lane]         : gRPC process → task_proc   (TaskInferMsg / TaskControlMsg)
+    task_reply_q[lane]  : task_proc → gRPC process   (control replies)
+    sched_q[lane]       : task_proc → backbone_proc  (chunks, filled slots)
+    done_q[lane]        : backbone_proc → task_proc  (ring, batches)
+    dying[lane]         : Event, set by a failing task_proc
+    ctrl_q / bb_reply_q : gRPC process ↔ backbone_proc (ControlMsg / SentinelMsg)
+    ack_q               : ALL task_procs → backbone_proc (ring entries read)
+    result_q            : ALL task_procs → gRPC process (inference result dicts)
 """
 
 import asyncio
 import json
 import threading
-from multiprocessing import Queue
+import time
 
 import numpy as np
+import torch.multiprocessing as tmp
 
 from device.backbone_proc import ControlMsg, SentinelMsg, start_backbone_process
 from device.task_proc import TaskControlMsg, TaskInferMsg, start_task_process
@@ -34,27 +41,35 @@ class IsolatedRuntimeApplication:
     def __init__(self, config):
         self.config = config
         self._device = _get_device()
-        self._scheduler_policy = getattr(config, "scheduler_policy", "fifo")
+        self._ctx = tmp.get_context("spawn")
+        ctx, k = self._ctx, config.max_tasks
 
-        # ctrl_q: isolated_app → backbone_proc (control messages)
-        self._ctrl_q: Queue = Queue()
-        # ctrl_reply_q: backbone_proc → isolated_app (control replies)
-        self._bb_ctrl_reply_q: Queue = Queue()
-        # Single result_q: all task_procs → gRPC result reader thread
-        self._result_q: Queue = Queue()
+        # Shared queues
+        self._ctrl_q = ctx.Queue()
+        self._bb_ctrl_reply_q = ctx.Queue()
+        self._ack_q = ctx.Queue()
+        self._result_q = ctx.Queue()
+        self._run_stop = ctx.Event()
 
-        # Per-task queues — populated at deployment time
-        self._raw_queues: dict[str, Queue] = {}         # gRPC → task_proc
-        self._task_ctrl_reply_queues: dict[str, Queue] = {}  # task_proc → isolated_app
-        self._task_sched_queues: dict[str, Queue] = {}  # task_proc → backbone_proc (one per task)
-        self._feat_queues: dict[str, Queue] = {}        # backbone_proc → task_proc
+        # Lanes, all created before any process starts
+        self._req_qs = [ctx.Queue() for _ in range(k)]
+        self._task_reply_qs = [ctx.Queue() for _ in range(k)]
+        self._sched_qs = [ctx.Queue() for _ in range(k)]
+        self._done_qs = [ctx.Queue() for _ in range(k)]
+        self._dyings = [ctx.Event() for _ in range(k)]
+        self._next_lane = 0
 
         # Process handles
         self._backbone_proc = None
-        self._task_procs: dict[str, object] = {}
+        self._task_procs: dict[int, object] = {}   # lane → process
+        self._lane_task: dict[int, str] = {}       # lane → task
+        self._task_lane: dict[str, int] = {}       # task → its current lane
+        self._dead_lanes: set[int] = set()
+        self._down_tasks: set[str] = set()
+        self._backbone_down = False
 
-        # asyncio future registry: req_id → Future
-        self._futures: dict[int, asyncio.Future] = {}
+        # asyncio future registry: req_id → (Future, task)
+        self._futures: dict[int, tuple] = {}
         self._futures_lock = threading.Lock()
 
         # Sequence counter for control message seq matching
@@ -63,6 +78,7 @@ class IsolatedRuntimeApplication:
 
         self._loop: asyncio.AbstractEventLoop | None = None
         self._reader_thread: threading.Thread | None = None
+        self._monitor_thread: threading.Thread | None = None
         self._stopped = False
         self._current_backbone: str | None = None
         self._model_category: str = "tsfm"  # updated from backbone_proc reply
@@ -84,6 +100,16 @@ class IsolatedRuntimeApplication:
         )
         self._reader_thread.start()
 
+        self._backbone_proc = start_backbone_process(
+            self._ctx, self.config, self._device, self._sched_qs, self._done_qs,
+            self._dyings, self._ctrl_q, self._bb_ctrl_reply_q, self._ack_q, self._run_stop,
+        )
+
+        self._monitor_thread = threading.Thread(
+            target=self._monitor_loop, daemon=True, name="proc_monitor"
+        )
+        self._monitor_thread.start()
+
         if bootstrap_json:
             payload = json.loads(bootstrap_json)
             print(
@@ -97,17 +123,26 @@ class IsolatedRuntimeApplication:
     async def stop(self):
         print("[IsolatedApp] Stopping")
         self._stopped = True
+        self._run_stop.set()
 
-        # Stop each task process
-        for task, q in self._raw_queues.items():
-            q.put(TaskControlMsg(type="stop"))
-        for proc in self._task_procs.values():
-            proc.join(timeout=5)
+        for lane in self._task_procs:
+            self._req_qs[lane].put(TaskControlMsg(type="stop"))
+        self._ctrl_q.put(SentinelMsg())
 
-        # Stop backbone process
-        if self._backbone_proc is not None:
-            self._ctrl_q.put(SentinelMsg())
-            self._backbone_proc.join(timeout=10)
+        procs = list(self._task_procs.values()) + [self._backbone_proc]
+        deadline = time.time() + 10.0
+        for proc in procs:
+            if proc is not None:
+                proc.join(timeout=max(0.0, deadline - time.time()))
+        for proc in procs:
+            if proc is not None and proc.is_alive():
+                print(f"[IsolatedApp] {proc.name} did not stop; killing")
+                proc.kill()
+                proc.join(timeout=2)
+        # A dead process leaves messages in its queues that nobody will read;
+        # without this, exit waits forever to flush them.
+        for q in self._req_qs + [self._ctrl_q]:
+            q.cancel_join_thread()
 
         # Stop result reader thread
         self._result_q.put({"req_id": -1, "__stop__": True})
@@ -122,13 +157,17 @@ class IsolatedRuntimeApplication:
 
     async def infer(self, request):
         task = request.task
-        if task not in self._raw_queues:
-            raise RuntimeError(f"task_not_deployed:{task}")
-
         loop = asyncio.get_running_loop()
         future = loop.create_future()
         with self._futures_lock:
-            self._futures[request.req_id] = future
+            if self._backbone_down:
+                raise RuntimeError("backbone_down")
+            if task in self._down_tasks:
+                raise RuntimeError(f"task_down:{task}")
+            if task not in self._task_lane:
+                raise RuntimeError(f"task_not_deployed:{task}")
+            lane = self._task_lane[task]
+            self._futures[request.req_id] = (future, task)
 
         x_array = _decode_tensor_to_numpy(request.x)
         mask_array = (
@@ -137,8 +176,7 @@ class IsolatedRuntimeApplication:
             else None
         )
 
-        import time
-        self._raw_queues[task].put(TaskInferMsg(
+        self._req_qs[lane].put(TaskInferMsg(
             req_id=request.req_id,
             x_bytes=x_array.tobytes(),
             x_shape=x_array.shape,
@@ -168,23 +206,16 @@ class IsolatedRuntimeApplication:
             elif command == "swap_backbone":
                 backbone = payload["backbone"]
                 decoders = payload.get("decoders", [])
-                seq = self._next_seq()
-                self._ctrl_q.put(ControlMsg(
-                    command="swap_backbone",
-                    payload_json=json.dumps({"backbone": backbone}),
-                    seq=seq,
-                ))
-                resp = await asyncio.to_thread(
-                    _wait_for_seq, self._bb_ctrl_reply_q, seq, 60.0
-                )
+                resp = await self._backbone_control("swap_backbone", {"backbone": backbone}, 60.0)
                 logger_summary = resp.get("logger_summary", "")
+                self._current_backbone = backbone
                 await self._reload_decoders(backbone, decoders)
                 status = f"swapped_{backbone}"
 
             elif command == "add_decoder":
                 for dec in payload.get("decoders", []):
                     task = dec["task"]
-                    if task not in self._raw_queues:
+                    if not self._task_alive(task):
                         await self._spawn_task_proc(task, dec, self._current_backbone)
                 status = f"added_{len(payload.get('decoders', []))}_decoders"
 
@@ -201,42 +232,21 @@ class IsolatedRuntimeApplication:
     # Internal helpers
     # ------------------------------------------------------------------
 
+    async def _backbone_control(self, command: str, payload: dict, timeout: float) -> dict:
+        seq = self._next_seq()
+        self._ctrl_q.put(ControlMsg(command=command, payload_json=json.dumps(payload), seq=seq))
+        return await asyncio.to_thread(_wait_for_seq, self._bb_ctrl_reply_q, seq, timeout)
+
+    def _task_alive(self, task: str) -> bool:
+        lane = self._task_lane.get(task)
+        return lane is not None and lane not in self._dead_lanes
+
     async def _deploy(self, backbone: str, decoder_specs: list) -> str:
         """Returns logger_summary string with backbone + decoder memory appended."""
         self._current_backbone = backbone
 
-        # Create per-task queues before spawning any process
-        for dec in decoder_specs:
-            task = dec["task"]
-            if task not in self._raw_queues:
-                self._raw_queues[task] = Queue()
-                self._task_ctrl_reply_queues[task] = Queue()
-                self._task_sched_queues[task] = Queue()
-                self._feat_queues[task] = Queue()
-
-        # Spawn backbone process if not already running
-        if self._backbone_proc is None or not self._backbone_proc.is_alive():
-            self._backbone_proc = start_backbone_process(
-                task_sched_queues=self._task_sched_queues,
-                ctrl_q=self._ctrl_q,
-                ctrl_reply_q=self._bb_ctrl_reply_q,
-                feat_queues=self._feat_queues,
-                max_batch_size=self.config.max_batch_size,
-                max_batch_wait_ms=self.config.max_batch_wait_ms,
-                device=self._device,
-                scheduler_policy=self._scheduler_policy,
-            )
-
         # Tell backbone proc to load the backbone weights
-        seq = self._next_seq()
-        self._ctrl_q.put(ControlMsg(
-            command="load",
-            payload_json=json.dumps({"backbone": backbone}),
-            seq=seq,
-        ))
-        resp = await asyncio.to_thread(
-            _wait_for_seq, self._bb_ctrl_reply_q, seq, 120.0
-        )
+        resp = await self._backbone_control("load", {"backbone": backbone}, 120.0)
         logger_summary = resp.get("logger_summary", "")
         self._model_category = resp.get("model_category", "tsfm")
         print(f"[IsolatedApp] Backbone load: {resp['status']}  model_category={self._model_category}")
@@ -245,7 +255,7 @@ class IsolatedRuntimeApplication:
         total_decoder_mem_mb = 0.0
         for dec in decoder_specs:
             task = dec["task"]
-            if task not in self._task_procs or not self._task_procs[task].is_alive():
+            if not self._task_alive(task):
                 total_decoder_mem_mb += await self._spawn_task_proc(task, dec, backbone)
 
         # Append decoder memory into logger_summary so run.py can parse it
@@ -258,52 +268,95 @@ class IsolatedRuntimeApplication:
         return str(summary_dict)
 
     async def _spawn_task_proc(self, task: str, dec_spec: dict, backbone: str):
-        if task not in self._raw_queues:
-            self._raw_queues[task] = Queue()
-            self._task_ctrl_reply_queues[task] = Queue()
-            self._task_sched_queues[task] = Queue()
-            self._feat_queues[task] = Queue()
+        if self._next_lane >= len(self._req_qs):
+            raise RuntimeError(f"no_free_lane (max_tasks={len(self._req_qs)})")
+        lane = self._next_lane
+        self._next_lane += 1
 
+        await self._backbone_control("attach", {"lane": lane, "task": task}, 30.0)
         proc = start_task_process(
-            task=task,
-            raw_q=self._raw_queues[task],
-            ctrl_reply_q=self._task_ctrl_reply_queues[task],
-            task_sched_q=self._task_sched_queues[task],
-            feat_q=self._feat_queues[task],
-            result_q=self._result_q,
-            device=self._device,
+            self._ctx, task, lane, self._device, self.config.slot_chunk,
+            self._req_qs[lane], self._task_reply_qs[lane], self._sched_qs[lane],
+            self._done_qs[lane], self._ack_q, self._result_q, self._dyings[lane],
+            self._run_stop,
         )
-        self._task_procs[task] = proc
+        self._task_procs[lane] = proc
+        self._lane_task[lane] = task
 
         # Tell task proc to load its decoder
         seq = self._next_seq()
-        self._raw_queues[task].put(TaskControlMsg(
+        self._req_qs[lane].put(TaskControlMsg(
             command="load_decoder",
             payload_json=json.dumps({**dec_spec, "backbone": backbone,
                                      "model_category": self._model_category}),
             seq=seq,
         ))
         resp = await asyncio.to_thread(
-            _wait_for_seq, self._task_ctrl_reply_queues[task], seq, 60.0
+            _wait_for_seq, self._task_reply_qs[lane], seq, 60.0
         )
         mem_mb = resp.get("gpu_decoder_mem_mb", 0.0)
-        print(f"[IsolatedApp] Task proc {task} decoder: {resp['status']}  gpu_alloc={mem_mb:.1f} MB")
+        print(f"[IsolatedApp] Task proc {task} (lane {lane}) decoder: {resp['status']}  "
+              f"gpu_alloc={mem_mb:.1f} MB")
+
+        # Requests are accepted only once the decoder is loaded.
+        with self._futures_lock:
+            self._task_lane[task] = lane
+            self._down_tasks.discard(task)
         return mem_mb
 
     async def _reload_decoders(self, backbone: str, decoder_specs: list):
         for dec in decoder_specs:
             task = dec["task"]
-            if task in self._raw_queues:
+            if self._task_alive(task):
+                lane = self._task_lane[task]
                 seq = self._next_seq()
-                self._raw_queues[task].put(TaskControlMsg(
+                self._req_qs[lane].put(TaskControlMsg(
                     command="load_decoder",
                     payload_json=json.dumps({**dec, "backbone": backbone, "model_category": self._model_category}),
                     seq=seq,
                 ))
                 resp = await asyncio.to_thread(
-                    _wait_for_seq, self._task_ctrl_reply_queues[task], seq, 60.0
+                    _wait_for_seq, self._task_reply_qs[lane], seq, 60.0
                 )
                 print(f"[IsolatedApp] Task proc {task} decoder reload: {resp['status']}")
+
+    def _fail_futures(self, task: str | None, why: str):
+        """Fail pending futures of task (None: every task). Called with
+        _futures_lock held."""
+        for req_id, (future, t) in list(self._futures.items()):
+            if task is None or t == task:
+                del self._futures[req_id]
+                self._loop.call_soon_threadsafe(
+                    _set_exception_if_pending, future, RuntimeError(why)
+                )
+
+    def _monitor_loop(self):
+        """Background thread: a task process that exits is detached from the
+        backbone and its task's pending requests fail; the backbone process
+        exiting fails every pending request."""
+        while not self._stopped:
+            time.sleep(0.5)
+            if self._stopped:
+                return
+            for lane, proc in list(self._task_procs.items()):
+                if lane in self._dead_lanes or proc.exitcode is None:
+                    continue
+                self._dead_lanes.add(lane)
+                task = self._lane_task[lane]
+                print(f"[IsolatedApp] Task proc {task} (lane {lane}) exited "
+                      f"code={proc.exitcode}")
+                self._ctrl_q.put(ControlMsg(command="detach",
+                                            payload_json=json.dumps({"lane": lane})))
+                with self._futures_lock:
+                    if self._task_lane.get(task) == lane:
+                        self._down_tasks.add(task)
+                        self._fail_futures(task, f"task_down:{task}")
+            if (not self._backbone_down and self._backbone_proc is not None
+                    and self._backbone_proc.exitcode is not None):
+                print(f"[IsolatedApp] Backbone proc exited code={self._backbone_proc.exitcode}")
+                with self._futures_lock:
+                    self._backbone_down = True
+                    self._fail_futures(None, "backbone_down")
 
     def _result_reader_loop(self):
         """Background thread: result_q → asyncio futures."""
@@ -316,10 +369,11 @@ class IsolatedRuntimeApplication:
                 break
             req_id = result["req_id"]
             with self._futures_lock:
-                future = self._futures.pop(req_id, None)
-            if future is None:
+                entry = self._futures.pop(req_id, None)
+            if entry is None:
                 print(f"[IsolatedApp] No future for req_id={req_id}")
                 continue
+            future = entry[0]
             if "error" in result:
                 self._loop.call_soon_threadsafe(
                     _set_exception_if_pending, future, RuntimeError(result["error"])
@@ -354,9 +408,8 @@ def _set_exception_if_pending(future: asyncio.Future, exc: Exception):
         future.set_exception(exc)
 
 
-def _wait_for_seq(reply_q: Queue, seq: int, timeout: float) -> dict:
+def _wait_for_seq(reply_q, seq: int, timeout: float) -> dict:
     """Block until a reply with matching seq arrives. Stash out-of-order replies."""
-    import time
     stash: list = []
     deadline = time.time() + timeout
     while True:

@@ -59,13 +59,14 @@ import numpy as np
 # Styles
 # ---------------------------------------------------------------------------
 
-SERIES_ORDER  = ["single", "no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing"]
+SERIES_ORDER  = ["single", "no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing", "sharing_process"]
 SERIES_COLORS = {
     "single":         "#A9C7B5",   # sage green
     "no_sharing_tpc": "#6B9AC4",   # muted blue
     "no_sharing_mps": "#F0A500",   # amber/orange
     "no_sharing":     "#888888",   # mid gray
     "sharing":        "#E06C75",   # pink-red
+    "sharing_process": "#8E3B46",  # dark red (same family as FMVisor)
 }
 SERIES_LABELS = {
     "single":         "ST",
@@ -73,6 +74,7 @@ SERIES_LABELS = {
     "no_sharing_tpc": "SP",
     "no_sharing_mps": "NS (MPS)",
     "sharing":        "FMVisor",
+    "sharing_process": "FMVisor (process)",
 }
 SERIES_LINESTYLE = {
     "single":         ":",
@@ -80,6 +82,7 @@ SERIES_LINESTYLE = {
     "no_sharing_mps": (0, (3, 1, 1, 1)),  # dash-dot-dot
     "no_sharing":     "-.",
     "sharing":        "-",
+    "sharing_process": "--",
 }
 SERIES_MARKER = {
     "single":         "s",
@@ -87,6 +90,7 @@ SERIES_MARKER = {
     "no_sharing_mps": "P",   # plus-filled
     "no_sharing":     "D",
     "sharing":        "o",
+    "sharing_process": "X",
 }
 
 SINGLE_CONDITIONS_BY_TASK_SET = {
@@ -116,7 +120,7 @@ LINE_RPS_PLOT_OVERRIDES: Dict[str, Dict[int, Dict[str, object]]] = {
 
 # Set in main() — used only by legacy per-dir loaders
 SINGLE_CONDITIONS: List[str] = SINGLE_CONDITIONS_BY_TASK_SET["tsfm"]
-CONDITION_ORDER:   List[str] = SINGLE_CONDITIONS + ["no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing"]
+CONDITION_ORDER:   List[str] = SINGLE_CONDITIONS + ["no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing", "sharing_process"]
 CURRENT_TASK_SET: str = "tsfm"
 
 
@@ -289,7 +293,7 @@ def load_series_latencies(
     warmup_requests: int = 180,
 ) -> Dict[str, List[float]]:
     single_conds = detect_single_conditions(result_root) or SINGLE_CONDITIONS
-    cond_order   = single_conds + ["no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing"]
+    cond_order   = single_conds + ["no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing", "sharing_process"]
     raw: Dict[str, List[float]] = {}
     for cond in cond_order:
         lats = _read_condition_latencies(result_root, cond, warmup_secs, warmup_requests)
@@ -301,7 +305,7 @@ def load_series_latencies(
         single_lats.extend(raw.get(cond, []))
     if single_lats:
         series["single"] = single_lats
-    for cond in ("no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing"):
+    for cond in ("no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing", "sharing_process"):
         if cond in raw:
             series[cond] = raw[cond]
     return series
@@ -319,7 +323,7 @@ def _resolve_cond_file(result_root: Path, cond: str, filename: str) -> Path:
 
 def load_task_results(result_root: Path) -> Dict[str, List[Dict]]:
     single_conds = detect_single_conditions(result_root) or SINGLE_CONDITIONS
-    cond_order   = single_conds + ["no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing"]
+    cond_order   = single_conds + ["no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing", "sharing_process"]
     data: Dict[str, List[Dict]] = {}
     for cond in cond_order:
         path = _resolve_cond_file(result_root, cond, "task_results.csv")
@@ -368,7 +372,7 @@ def load_series_throughput(
         counts = _bin_throughput(single_completions)
         series["single"] = [c / n_tasks for c in counts]
 
-    for cond in ("no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing"):
+    for cond in ("no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing", "sharing_process"):
         completions = _completion_times(cond)
         if completions:
             counts = _bin_throughput(completions)
@@ -397,7 +401,7 @@ def load_batch_sizes(
     warmup_secs: float = 10.0,
 ) -> Dict[str, float]:
     single_conds = detect_single_conditions(result_root) or SINGLE_CONDITIONS
-    cond_order   = single_conds + ["no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing"]
+    cond_order   = single_conds + ["no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing", "sharing_process"]
     raw: Dict[str, float] = {}
     for cond in cond_order:
         lat_file = _resolve_cond_file(result_root, cond, "latencies.csv")
@@ -414,7 +418,7 @@ def load_batch_sizes(
     single_vals = [raw[c] for c in single_conds if c in raw]
     if single_vals:
         series["single"] = float(np.mean(single_vals))
-    for cond in ("no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing"):
+    for cond in ("no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing", "sharing_process"):
         if cond in raw:
             series[cond] = raw[cond]
     return series
@@ -442,7 +446,7 @@ def load_p99_for_dir(rps_root: Path) -> Dict[str, float]:
     if single_p99s:
         result["single"] = float(np.mean(single_p99s))
 
-    for cond in ("no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing"):
+    for cond in ("no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing", "sharing_process"):
         path = rps_root / cond / "task_results.csv"
         if not path.exists():
             continue
@@ -476,7 +480,7 @@ def load_mean_latency_for_dir(rps_root: Path) -> Dict[str, float]:
     if single_lats:
         result["single"] = float(np.mean(single_lats))
 
-    for cond in ("no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing"):
+    for cond in ("no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing", "sharing_process"):
         path = rps_root / cond / "task_results.csv"
         if not path.exists():
             continue
@@ -699,7 +703,7 @@ def plot_summary_bars(task_results: Dict[str, List[Dict]], out_path: Path) -> No
         single_p99s.extend(float(r["p99_latency_ms"]) for r in rows if "p99_latency_ms" in r)
     if single_p99s:
         p99["single"] = float(np.mean(single_p99s))
-    for cond in ("no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing"):
+    for cond in ("no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing", "sharing_process"):
         rows = task_results.get(cond, [])
         vals = [float(r["p99_latency_ms"]) for r in rows if "p99_latency_ms" in r]
         if vals:
@@ -742,7 +746,7 @@ def plot_mean_service_time_bars(task_results: Dict[str, List[Dict]], out_path: P
         single_means.extend(float(r["avg_server_exec_ms"]) for r in rows if "avg_server_exec_ms" in r)
     if single_means:
         mean_service_time["single"] = float(np.mean(single_means))
-    for cond in ("no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing"):
+    for cond in ("no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing", "sharing_process"):
         rows = task_results.get(cond, [])
         vals = [float(r["avg_server_exec_ms"]) for r in rows if "avg_server_exec_ms" in r]
         if vals:
@@ -865,7 +869,7 @@ def load_latency_overhead_series(
         return {}
 
     result: Dict[str, List[float]] = {}
-    for cond in ("no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing"):
+    for cond in ("no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing", "sharing_process"):
         per_task = _read_per_task_latencies(result_root, cond, warmup_secs, warmup_requests)
         if not per_task:
             continue
@@ -1498,7 +1502,7 @@ def _active_tasks_for_dir(rps_root: Path) -> List[str]:
     """Determine the active task set for this rps_root by reading whichever
     multi-task condition exists first (sharing > no_sharing > no_sharing_tpc).
     Falls back to all single_* dirs if none found."""
-    for cond in ("sharing", "no_sharing", "no_sharing_mps", "no_sharing_tpc"):
+    for cond in ("sharing", "sharing_process", "no_sharing", "no_sharing_mps", "no_sharing_tpc"):
         path = rps_root / cond / "task_results.csv"
         if path.exists():
             tasks = []
@@ -1531,7 +1535,7 @@ def _load_per_task_metric(rps_root: Path, column: str) -> Dict[str, Dict[str, fl
                 if column in row and "task" in row:
                     result.setdefault("single", {})[row["task"]] = float(row[column])
 
-    for cond in ("no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing"):
+    for cond in ("no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing", "sharing_process"):
         path = _resolve_cond_file(rps_root, cond, "task_results.csv")
         if not path.exists():
             continue
@@ -1954,7 +1958,7 @@ def main() -> int:
     args = parser.parse_args()
 
     SINGLE_CONDITIONS = SINGLE_CONDITIONS_BY_TASK_SET[args.task_set]
-    CONDITION_ORDER   = SINGLE_CONDITIONS + ["no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing"]
+    CONDITION_ORDER   = SINGLE_CONDITIONS + ["no_sharing_tpc", "no_sharing_mps", "no_sharing", "sharing", "sharing_process"]
     CURRENT_TASK_SET  = args.task_set
 
     result_root = (SERVING_DIR / args.exp_dir).resolve()

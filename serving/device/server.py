@@ -59,6 +59,9 @@ class RuntimeServerConfig:
     tpc_partition: list = None           # list of TPC IDs to pin this server to
     worker_mode: str = "threaded"        # "threaded" | "inline" — per-task pipeline worker mode
     verbose_batch_logs: bool = False      # high-frequency per-batch request logging
+    max_tasks: int = 16                  # isolation_mode=process: task lanes created at start
+    slot_chunk: int = 1                  # isolation_mode=process: input slots a task allocates at a time
+    ring_size: int = 4                   # isolation_mode=process: feature-ring batches in flight
 
 
 class EdgeRuntimeApplication:
@@ -98,35 +101,7 @@ class EdgeRuntimeApplication:
                 # No batcher — requests go directly to runtime.run_batch()
                 self.batcher = None
             else:
-                task_rates = config.task_rates or {}
-                if config.scheduler_policy == "round_robin":
-                    policy = RoundRobinPolicy()
-                elif config.scheduler_policy == "stfq":
-                    # STFQ weight = 1/rps so low-RPS victim gets high weight
-                    # (slow VFT advance = stays near front = served promptly)
-                    inv_weights = {t: 1.0/r for t, r in task_rates.items()} if task_rates else None
-                    policy = STFQPolicy(weights=inv_weights)
-                elif config.scheduler_policy == "wfq":
-                    # WFQ weight = 1/rps so low-RPS victim gets high weight
-                    # (slow VFT advance = higher priority = served promptly)
-                    inv_weights = {t: 1.0/r for t, r in task_rates.items()} if task_rates else None
-                    policy = WFQPolicy(weights=inv_weights)
-                elif config.scheduler_policy == "token_bucket":
-                    # TokenBucket: accrue at 1/rps so victim accrues faster
-                    # → victim always has more credit → served first when present
-                    policy = TokenBucketPolicy()
-                    for task, rate in task_rates.items():
-                        policy.set_rate(task, 1.0 / rate if rate > 0 else 1.0)
-                elif config.scheduler_policy == "saba":
-                    # SABA: allocate batch slots proportional to arrival rate
-                    policy = SABAPolicy(rates=task_rates)
-                elif config.scheduler_policy == "deadline_split":
-                    # DeadlineSplit: fire small dedicated batches for low-rate
-                    # protected tasks on a per-task deadline timer; high-rate
-                    # tasks get full batches in between.
-                    policy = DeadlineSplitPolicy(rates=task_rates)
-                else:
-                    policy = FifoPolicy()
+                policy = self._make_policy(config)
                 self.batcher = DeviceBatcher(
                     runtime=self.runtime,
                     max_batch_size=config.max_batch_size,
@@ -138,6 +113,41 @@ class EdgeRuntimeApplication:
                 )
         self._batch_task: asyncio.Task | None = None
         self._green_partition = None  # held for cleanup
+
+    @staticmethod
+    def _make_policy(config: RuntimeServerConfig):
+        """Batch scheduling policy from config. Also used by the backbone
+        process in isolation_mode=process (backbone_proc.py)."""
+        task_rates = config.task_rates or {}
+        if config.scheduler_policy == "round_robin":
+            policy = RoundRobinPolicy()
+        elif config.scheduler_policy == "stfq":
+            # STFQ weight = 1/rps so low-RPS victim gets high weight
+            # (slow VFT advance = stays near front = served promptly)
+            inv_weights = {t: 1.0/r for t, r in task_rates.items()} if task_rates else None
+            policy = STFQPolicy(weights=inv_weights)
+        elif config.scheduler_policy == "wfq":
+            # WFQ weight = 1/rps so low-RPS victim gets high weight
+            # (slow VFT advance = higher priority = served promptly)
+            inv_weights = {t: 1.0/r for t, r in task_rates.items()} if task_rates else None
+            policy = WFQPolicy(weights=inv_weights)
+        elif config.scheduler_policy == "token_bucket":
+            # TokenBucket: accrue at 1/rps so victim accrues faster
+            # → victim always has more credit → served first when present
+            policy = TokenBucketPolicy()
+            for task, rate in task_rates.items():
+                policy.set_rate(task, 1.0 / rate if rate > 0 else 1.0)
+        elif config.scheduler_policy == "saba":
+            # SABA: allocate batch slots proportional to arrival rate
+            policy = SABAPolicy(rates=task_rates)
+        elif config.scheduler_policy == "deadline_split":
+            # DeadlineSplit: fire small dedicated batches for low-rate
+            # protected tasks on a per-task deadline timer; high-rate
+            # tasks get full batches in between.
+            policy = DeadlineSplitPolicy(rates=task_rates)
+        else:
+            policy = FifoPolicy()
+        return policy
 
     @staticmethod
     def _setup_tpc(config: RuntimeServerConfig):

@@ -219,13 +219,15 @@ ensure_mps_running() {
     echo "[run.sh] MPS control daemon is responsive" >&2
 }
 
-# start_device PORT SCHEDULER LOG RPS TASK_RATES [TPC_MODE [TPC_PARTITION [MPS_PCT [WORKER_MODE]]]]
+# start_device PORT SCHEDULER LOG RPS TASK_RATES [TPC_MODE [TPC_PARTITION [MPS_PCT [WORKER_MODE [ISOLATION_MODE]]]]]
 # MPS_PCT: if non-empty, passes --mps-thread-pct to the device server (set before CUDA init).
 # WORKER_MODE: "threaded" (default) | "inline" — per-task pipeline worker mode.
+# ISOLATION_MODE: "shared" (default) | "process" — process: one process per task's decoder.
 # Prints the PID of the started server on stdout; all other output goes to stderr.
 start_device() {
     local port="$1" scheduler="$2" log="$3" rps="$4" task_rates="$5"
     local tpc_mode="${6:-none}" tpc_partition="${7:-}" mps_pct="${8:-}" worker_mode="${9:-threaded}"
+    local isolation_mode="${10:-shared}"
 
     pkill -f "device/main.py.*--port ${port}" 2>/dev/null || true
     sleep 1
@@ -254,7 +256,7 @@ start_device() {
     if [[ -n "$mps_pct" ]]; then
         echo "[run.sh] Starting device server port=$port scheduler=$scheduler mps_pct=${mps_pct}% ..." >&2
     else
-        echo "[run.sh] Starting device server port=$port scheduler=$scheduler tpc=$tpc_mode ..." >&2
+        echo "[run.sh] Starting device server port=$port scheduler=$scheduler tpc=$tpc_mode isolation=$isolation_mode ..." >&2
     fi
 
     # shellcheck disable=SC2086
@@ -269,6 +271,7 @@ start_device() {
         $tpc_args \
         $mps_args \
         $worker_args \
+        --isolation-mode    "$isolation_mode" \
         > "$log" 2>&1 &
     local pid=$!
     echo "[run.sh] PID=$pid  log=$log" >&2
@@ -443,6 +446,22 @@ print(sm // 2)  # TPCs ~ SMs/2
             DEVICE_PIDS+=("$pid")
             run_py --condition sharing --device-urls "localhost:${port}"
             ;;
+
+        sharing_process)
+            # As sharing, with each task's decoder in its own process / CUDA
+            # context (device --isolation-mode process).
+            local task_rates=""
+            for t in "${TASKS[@]}"; do
+                task_rates+="${task_rates:+,}${t}:${rps}"
+            done
+            local port="$DEVICE_PORT"
+            local pid
+            pid=$(start_device "$port" "stfq" \
+                  "$LOG_DIR/device_sharing_process_rps${rps}_n${ntasks}.log" \
+                  "$rps" "$task_rates" "none" "" "" "threaded" "process")
+            DEVICE_PIDS+=("$pid")
+            run_py --condition sharing_process --device-urls "localhost:${port}"
+            ;;
     esac
 
     local run_tasks_json
@@ -597,7 +616,7 @@ if [[ "$TASK_SET" == "vision" ]]; then
             conditions+=("single_${t}")
         done
         # conditions+=("no_sharing" "no_sharing_tpc" "no_sharing_mps" "sharing")
-        conditions+=("no_sharing" "no_sharing_tpc" "sharing")
+        conditions+=("no_sharing" "no_sharing_tpc" "sharing" "sharing_process")
         for rps in "${RPS_LIST[@]}"; do
             echo ""
             echo "################################################################"
@@ -644,7 +663,7 @@ else
         done
         unset _seen_tasks
         # conditions+=("no_sharing" "no_sharing_tpc" "no_sharing_mps" "sharing")
-        conditions+=("no_sharing" "no_sharing_tpc" "sharing")
+        conditions+=("no_sharing" "no_sharing_tpc" "sharing" "sharing_process")
         for rps in "${RPS_LIST[@]}"; do
             echo ""
             echo "################################################################"

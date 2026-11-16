@@ -80,6 +80,9 @@ def main():
     parser.add_argument("--mps-thread-pct", type=int, default=None, help="CUDA MPS active thread percentage (0-100). Requires MPS daemon running. Set via pre-parser so it takes effect before CUDA init.")
     parser.add_argument("--worker-mode", choices=["threaded", "inline"], default="threaded", help="Per-task pipeline worker mode. threaded: each task gets its own thread + CUDA stream. inline: synchronous on the backbone worker thread, no per-task thread/stream.")
     parser.add_argument("--verbose-batch-logs", action="store_true", help="Enable high-frequency per-batch request logs. Disabled by default for benchmark stability.")
+    parser.add_argument("--max-tasks", type=int, default=16, help="isolation_mode=process: task lanes created at start; each task process ever started (restarts included) uses one.")
+    parser.add_argument("--slot-chunk", type=int, default=1, help="isolation_mode=process: input slots a task process allocates at a time (1 = one per request as it arrives).")
+    parser.add_argument("--ring-size", type=int, default=4, help="isolation_mode=process: batches of features the backbone can have out at once.")
     args = parser.parse_args()
     # Parse task rates: "ecgclass:10,gestureclass:100" -> {"ecgclass": 10.0, ...}
     task_rates: dict[str, float] = {}
@@ -109,6 +112,9 @@ def main():
                 tpc_partition=args.tpc_partition,
                 worker_mode=args.worker_mode,
                 verbose_batch_logs=args.verbose_batch_logs,
+                max_tasks=args.max_tasks,
+                slot_chunk=args.slot_chunk,
+                ring_size=args.ring_size,
             ),
             bootstrap_json=_resolve_bootstrap_json(args),
         )
