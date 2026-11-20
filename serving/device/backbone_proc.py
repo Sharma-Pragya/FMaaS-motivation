@@ -1,30 +1,41 @@
-"""backbone_proc.py — Backbone process for process-isolation mode.
+"""backbone_proc.py — Backbone process for process-isolation mode (design 3).
 
-As fmvisor's backbone process (experiments/memory_isolation_vision/run.py:
-fm_backbone_main), with the input slots in the task processes' host memory.
+Ownership rule: every piece of GPU memory that crosses a process boundary is
+OWNED by this (trusted) process and LENT to exactly one task process through
+CUDA IPC. This process never maps memory a task owns, so a task that dies
+cannot leave the backbone holding a dangling pointer.
 
 Owns:
   - FM backbone weights (GPU), run on bb_stream: the TPC-masked stream from
     EdgeRuntimeApplication._setup_tpc when --tpc-mode is set, as shared mode
   - TenantQueues + the scheduling policy from EdgeRuntimeApplication._make_policy,
     driven as batch_former.py / batcher.py drive it
-  - The feature ring: ring_size batches of features in VRAM, shared with the
-    task processes through CUDA IPC
+  - One POOL per lane (= per vFM), allocated when the task asks for it:
+        x[N, *in_shape]      inputs, written by the task
+        mask[N, *m_shape]    masks (time-series backbones), written by the task
+        feat[N, *feat_shape] features, written here, read by the task
+    N = config.slots_per_task. Slot j of a lane holds one request from input
+    to features; it belongs to the task until the task sends it again.
+
+Messages on sched_q[i] (task i -> here):
+    ("alloc", x_shape, x_dtype, m_shape, m_dtype)  first request of the task:
+        allocate lane i's pool (one dry-run forward gives the feature shape),
+        answer ("pool", x, mask, feat) or ("pool_error", why) on done_q[i].
+    ("slot", j, enqueued_at)  x[j] (and mask[j]) hold a request, already
+        copied and synchronized by the task: queue it.
+Messages on done_q[i] (here -> task i):
+    ("pool", x, mask, feat) / ("pool_error", why)
+    ("feat", feat)                after swap_backbone: new feature pool
+    ("done", [j, ...], start_ns, proc_ns)   features of slots j are in feat[j]
+    ("error", [j, ...], why)                the batch with slots j failed
 
 Loop:
-  1. Poll each attached lane's sched_q: ("chunk", cid, x, mask) maps a task's
-     slots; ("slot", cid, j, enqueued_at) becomes a RequestEnvelope whose x /
-     mask are that slot's tensors.
-  2. Wait until ring[next_r] has been read by every task it was sent to and
-     the batch window has passed; policy.select picks a cross-task batch.
-  3. Stack the batch's slots, one copy to the GPU, backbone forward, features
-     into ring[r], bb_stream.synchronize().
-  4. Tell each task in the batch which rows of ring[r] are its:
-     ("batch", r, [((cid, j), row), ...], start_ns, proc_ns) on its done_q.
-
-The ring is allocated on the first batch (the feature shape is known then),
-and again, once every task has read it, when a batch's feature shape differs
-(after swap_backbone); each attached lane gets ("ring", ring) first.
+  1. poll(): read every attached lane's sched_q. A malformed message, or a
+     slot number the lane does not own, drops that lane, never the backbone.
+  2. Wait for the batch window; policy.select picks a cross-task batch.
+  3. Gather the batch's inputs from the lanes' pools into backbone-owned
+     memory (index_select), forward, scatter each row into its lane's feat
+     pool (index_copy_), bb_stream.synchronize(), tell each lane.
 
 Control messages arrive on ctrl_q: load / swap_backbone (replied on
 ctrl_reply_q), attach (a lane now carries a task; replied) and detach (the
@@ -67,7 +78,6 @@ def backbone_proc_main(
     dyings: list,              # lane i: set when its task proc fails
     ctrl_q,                    # ControlMsg / SentinelMsg from isolated_app
     ctrl_reply_q,              # backbone_proc → isolated_app (control replies)
-    ack_q,                     # task procs → backbone: (ring entry, lane) read
     run_stop,                  # set when the server stops
 ):
     import gc
@@ -90,7 +100,7 @@ def backbone_proc_main(
 
     max_b = config.max_batch_size
     window_s = config.max_batch_wait_ms / 1000.0
-    ring_size = config.ring_size
+    n_slots = config.slots_per_task or 2 * max_b
     n = len(sched_qs)
 
     # Same stream as shared mode: TPC-masked if configured, else a dedicated one.
@@ -102,23 +112,27 @@ def backbone_proc_main(
 
     print(f"[BackboneProc] Started device={device} policy={type(policy).__name__} "
           f"max_batch_size={max_b} max_batch_wait_ms={config.max_batch_wait_ms} "
-          f"lanes={n} ring_size={ring_size}")
+          f"lanes={n} slots_per_task={n_slots}")
 
     pipeline = None
     logger = Logger(device, "backbone_proc")
 
-    task_of = [None] * n                    # lane -> task name (None: not attached)
-    chunks = [dict() for _ in range(n)]     # lane -> cid -> (x chunk, mask chunk)
-    ring = None
-    next_r = 0
-    unread = [set() for _ in range(ring_size)]  # ring entry -> lanes yet to read it
+    task_of = [None] * n        # lane -> task name (None: not attached)
+    pools = [None] * n          # lane -> {"key", "x", "mask", "feat", "n"}
+    # Pools of dropped lanes, kept for reuse by a later lane with the same
+    # input shape. A dead task may never release its CUDA IPC mapping, so the
+    # memory is not freed; reusing it keeps a restarting task from leaking.
+    spare_pools: dict = {}      # key -> [pool, ...]
+
+    def stream_ctx():
+        return torch.cuda.stream(bb_stream) if cuda else nullcontext()
 
     # -----------------------------------------------------------------------
-    # Lanes
+    # Lanes and pools
     # -----------------------------------------------------------------------
 
     def drop_lane(i: int, why: str) -> None:
-        """Lane i's task is gone: never batch it again, release its memory."""
+        """Lane i's task is gone or misbehaved: never batch it again."""
         task = task_of[i]
         if task is None:
             return
@@ -128,10 +142,73 @@ def backbone_proc_main(
             # Only this lane's requests: a re-deployed task may be on another lane.
             for env in [e for e in q if e.req_id[0] == i]:
                 q.remove(env)
-        chunks[i].clear()
-        for u in unread:
-            u.discard(i)
+        if pools[i] is not None:
+            spare_pools.setdefault(pools[i]["key"], []).append(pools[i])
+            pools[i] = None
         print(f"[BackboneProc] Dropped lane {i} (task={task}): {why}")
+
+    def feature_spec(x_shape, x_dtype, m_shape, m_dtype):
+        """(shape, dtype) of one request's features, from a dry-run forward."""
+        with stream_ctx(), torch.no_grad():
+            x = torch.zeros((1, *x_shape), dtype=x_dtype, device=dev)
+            m = (torch.ones((1, *m_shape), dtype=m_dtype, device=dev)
+                 if m_shape is not None else None)
+            f = pipeline.model_instance.forward(x, m)
+        if cuda:
+            bb_stream.synchronize()
+        return tuple(f.shape[1:]), f.dtype
+
+    def alloc_pool(i: int, x_shape, x_dtype, m_shape, m_dtype) -> None:
+        """Allocate (or reuse) lane i's pool and lend it to the task."""
+        if pools[i] is not None:
+            raise RuntimeError("pool already allocated")
+        if pipeline is None:
+            raise RuntimeError("backbone_not_loaded")
+        key = (tuple(x_shape), x_dtype, tuple(m_shape) if m_shape is not None else None, m_dtype)
+        f_shape, f_dtype = feature_spec(*key)
+        spares = spare_pools.get(key)
+        if spares:
+            pool = spares.pop()
+            if tuple(pool["feat"].shape[1:]) != f_shape or pool["feat"].dtype != f_dtype:
+                pool["feat"] = torch.empty((pool["n"], *f_shape), dtype=f_dtype, device=dev)
+        else:
+            pool = {
+                "key": key,
+                "n": n_slots,
+                "x": torch.empty((n_slots, *key[0]), dtype=key[1], device=dev),
+                "mask": (torch.empty((n_slots, *key[2]), dtype=key[3], device=dev)
+                         if key[2] is not None else None),
+                "feat": torch.empty((n_slots, *f_shape), dtype=f_dtype, device=dev),
+            }
+        pools[i] = pool
+        done_qs[i].put(("pool", pool["x"], pool["mask"], pool["feat"]))
+        mb = sum(t.numel() * t.element_size() for t in (pool["x"], pool["mask"], pool["feat"])
+                 if t is not None) / 2**20
+        print(f"[BackboneProc] Lane {i} (task={task_of[i]}) pool: {pool['n']} slots, "
+              f"x{tuple(pool['x'].shape[1:])} feat{f_shape}, {mb:.1f} MB")
+
+    def handle_lane_msg(i: int, msg) -> None:
+        kind = msg[0]
+        if kind == "alloc":
+            _, x_shape, x_dtype, m_shape, m_dtype = msg
+            try:
+                alloc_pool(i, x_shape, x_dtype, m_shape, m_dtype)
+            except Exception as exc:        # OOM included: this lane only
+                done_qs[i].put(("pool_error", f"{type(exc).__name__}: {str(exc)[:200]}"))
+            return
+        if kind == "slot":
+            _, j, enqueued_at = msg
+            pool = pools[i]
+            if pool is None or not isinstance(j, int) or not 0 <= j < pool["n"]:
+                raise ValueError(f"slot {j!r} not owned by lane")
+            env = RequestEnvelope(req_id=(i, j), task=task_of[i], x=pool["x"][j],
+                                  mask=pool["mask"][j] if pool["mask"] is not None else None,
+                                  question=None, enqueued_at=enqueued_at, future=None)
+            tenant_queues.push(env)
+            if isinstance(policy, STFQPolicy):
+                policy.assign_start_time(env)
+            return
+        raise ValueError(f"unknown message {kind!r}")
 
     def poll() -> None:
         for i in range(n):
@@ -140,54 +217,19 @@ def backbone_proc_main(
             if dyings[i].is_set():
                 drop_lane(i, "task process failed")
                 continue
-            while True:
+            while task_of[i] is not None:
                 try:
                     msg = sched_qs[i].get_nowait()
                 except queue.Empty:
                     break
-                except RuntimeError as exc:
-                    # Opening a chunk of a task that has just died: drop the
-                    # task, not the backbone.
-                    drop_lane(i, f"task's memory unavailable: {str(exc)[:80]}")
+                except Exception as exc:
+                    drop_lane(i, f"unreadable message: {str(exc)[:80]}")
                     break
-                if msg[0] == "chunk":
-                    chunks[i][msg[1]] = (msg[2], msg[3])
-                else:
-                    _, cid, j, enqueued_at = msg
-                    xc, mc = chunks[i][cid]
-                    env = RequestEnvelope(req_id=(i, cid, j), task=task_of[i], x=xc[j],
-                                          mask=mc[j] if mc is not None else None,
-                                          question=None, enqueued_at=enqueued_at,
-                                          future=None)
-                    tenant_queues.push(env)
-                    if isinstance(policy, STFQPolicy):
-                        policy.assign_start_time(env)
-
-    def drain_acks() -> None:
-        while True:
-            try:
-                r, i = ack_q.get_nowait()
-            except queue.Empty:
-                return
-            unread[r].discard(i)
-
-    def new_ring(feats) -> None:
-        """Wait until every task has read the current ring, then allocate one
-        for feats' shape and hand it to every attached lane."""
-        nonlocal ring, next_r
-        while any(unread):
-            drain_acks()
-            for i in range(n):
-                if task_of[i] is not None and dyings[i].is_set():
-                    drop_lane(i, "task process failed")
-            time.sleep(0.0002)
-        ring = torch.zeros((ring_size, max_b, *feats.shape[1:]), dtype=feats.dtype, device=dev)
-        next_r = 0
-        for i in range(n):
-            if task_of[i] is not None:
-                done_qs[i].put(("ring", ring))
-        print(f"[BackboneProc] Feature ring {tuple(ring.shape)} "
-              f"{ring.numel() * ring.element_size() / 2**20:.1f} MB")
+                try:
+                    handle_lane_msg(i, msg)
+                except Exception as exc:
+                    # A task sending garbage loses its lane; the backbone goes on.
+                    drop_lane(i, f"bad message: {str(exc)[:80]}")
 
     # -----------------------------------------------------------------------
     # Control
@@ -206,6 +248,19 @@ def backbone_proc_main(
             if t == "control":
                 handle_control(msg)
 
+    def refresh_feature_pools() -> None:
+        """After a backbone swap the feature shape may change: give every lane
+        a new feature pool. Inputs are unchanged, so queued requests stay."""
+        for i in range(n):
+            pool = pools[i]
+            if task_of[i] is None or pool is None:
+                continue
+            f_shape, f_dtype = feature_spec(*pool["key"])
+            if tuple(pool["feat"].shape[1:]) != f_shape or pool["feat"].dtype != f_dtype:
+                pool["feat"] = torch.empty((pool["n"], *f_shape), dtype=f_dtype, device=dev)
+                done_qs[i].put(("feat", pool["feat"]))
+        spare_pools.clear()
+
     def handle_control(msg: ControlMsg) -> None:
         nonlocal pipeline
         payload = json.loads(msg.payload_json) if msg.payload_json else {}
@@ -213,9 +268,7 @@ def backbone_proc_main(
         if msg.command == "attach":
             i, task = payload["lane"], payload["task"]
             task_of[i] = task
-            chunks[i].clear()
-            if ring is not None:
-                done_qs[i].put(("ring", ring))
+            pools[i] = None
             print(f"[BackboneProc] Attached lane {i} to task={task}")
             ctrl_reply_q.put({"seq": msg.seq, "status": f"attached_{task}"})
             return
@@ -252,6 +305,7 @@ def backbone_proc_main(
                 if cuda:
                     torch.cuda.synchronize(dev)
                     gpu_backbone_mem_mb = torch.cuda.max_memory_allocated(dev) / (1024 ** 2)
+                refresh_feature_pools()
                 status = f"swapped_{backbone}"
             else:
                 status = f"unknown_command_{msg.command}"
@@ -272,33 +326,38 @@ def backbone_proc_main(
     # -----------------------------------------------------------------------
 
     def by_lane(batch: list) -> dict:
+        """lane -> slot numbers, in batch order."""
         lanes: dict = {}
-        for k, env in enumerate(batch):
-            i, cid, j = env.req_id
-            lanes.setdefault(i, []).append(((cid, j), k))
+        for env in batch:
+            i, j = env.req_id
+            lanes.setdefault(i, []).append(j)
         return lanes
 
     def fail_batch(batch: list, why: str) -> None:
-        for i, items in by_lane(batch).items():
-            done_qs[i].put(("error", [s for s, _ in items], why))
+        for i, js in by_lane(batch).items():
+            if task_of[i] is not None:
+                done_qs[i].put(("error", js, why))
 
     def run_batch(batch: list) -> None:
-        nonlocal next_r
         start_ns = time.time_ns()
         t0 = time.monotonic()
-        stream_ctx = torch.cuda.stream(bb_stream) if cuda else nullcontext()
-        with stream_ctx, torch.no_grad():
-            bx = torch.stack([env.x for env in batch]).to(dev, non_blocking=True)
-            masks = [env.mask for env in batch]
-            bmask = (torch.stack(masks).to(dev, non_blocking=True)
-                     if all(m is not None for m in masks) else None)
+        lanes = by_lane(batch)
+        with stream_ctx(), torch.no_grad():
+            # Gather inputs from the lanes' pools into backbone-owned memory,
+            # lane by lane; rows of the batch follow the order of `lanes`.
+            idx = {i: torch.tensor(js, dtype=torch.long, device=dev) for i, js in lanes.items()}
+            bx = torch.cat([pools[i]["x"].index_select(0, idx[i]) for i in lanes])
+            if all(pools[i]["mask"] is not None for i in lanes):
+                bmask = torch.cat([pools[i]["mask"].index_select(0, idx[i]) for i in lanes])
+            else:
+                bmask = None
             feats = pipeline.model_instance.forward(bx, bmask)
-            if (ring is None or tuple(ring.shape[2:]) != tuple(feats.shape[1:])
-                    or ring.dtype != feats.dtype):
-                new_ring(feats)
-            r = next_r
-            next_r = (next_r + 1) % ring_size
-            ring[r][:len(batch)].copy_(feats)
+            # Scatter each lane's rows into its own feature pool.
+            row = 0
+            for i, js in lanes.items():
+                k = len(js)
+                pools[i]["feat"].index_copy_(0, idx[i], feats[row:row + k].to(pools[i]["feat"].dtype))
+                row += k
             # Features must be written before any task reads them (host-side
             # queues do not order kernels across CUDA contexts).
             if cuda:
@@ -314,11 +373,9 @@ def backbone_proc_main(
             policy.update_after_execution([env.task for env in batch], duration_s,
                                           tenant_queues._queues)
 
-        lanes = by_lane(batch)
-        unread[r] = {i for i in lanes if task_of[i] is not None}
-        for i, items in lanes.items():
+        for i, js in lanes.items():
             if task_of[i] is not None:
-                done_qs[i].put(("batch", r, items, start_ns, proc_ns))
+                done_qs[i].put(("done", js, start_ns, proc_ns))
 
         if config.verbose_batch_logs:
             print(f"[BackboneProc] Batch done size={len(batch)} "
@@ -331,9 +388,8 @@ def backbone_proc_main(
         if poll_ctrl_q():
             print("[BackboneProc] Received stop, exiting")
             break
-        drain_acks()
         poll()
-        if tenant_queues.pending_count() == 0 or unread[next_r]:
+        if tenant_queues.pending_count() == 0:
             time.sleep(0.0002)
             continue
 
@@ -343,10 +399,11 @@ def backbone_proc_main(
             time.sleep(0.0002)
             poll()
 
-        # Last look before touching the tasks' memory.
+        # Last look before reading the tasks' slots.
         for i in range(n):
             if task_of[i] is not None and dyings[i].is_set():
                 drop_lane(i, "task process failed")
+
         batch = tenant_queues.select_batch(policy, max_b)
         if not batch:
             continue
@@ -368,11 +425,10 @@ def backbone_proc_main(
 # ---------------------------------------------------------------------------
 
 def start_backbone_process(ctx, config, device: str, sched_qs: list, done_qs: list,
-                           dyings: list, ctrl_q, ctrl_reply_q, ack_q, run_stop):
+                           dyings: list, ctrl_q, ctrl_reply_q, run_stop):
     p = ctx.Process(
         target=backbone_proc_main,
-        args=(config, device, sched_qs, done_qs, dyings, ctrl_q, ctrl_reply_q,
-              ack_q, run_stop),
+        args=(config, device, sched_qs, done_qs, dyings, ctrl_q, ctrl_reply_q, run_stop),
         daemon=True,
         name="backbone_proc",
     )

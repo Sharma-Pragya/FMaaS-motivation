@@ -60,8 +60,8 @@ class RuntimeServerConfig:
     worker_mode: str = "threaded"        # "threaded" | "inline" — per-task pipeline worker mode
     verbose_batch_logs: bool = False      # high-frequency per-batch request logging
     max_tasks: int = 16                  # isolation_mode=process: task lanes created at start
-    slot_chunk: int = 1                  # isolation_mode=process: input slots a task allocates at a time
-    ring_size: int = 4                   # isolation_mode=process: feature-ring batches in flight
+    slots_per_task: int = None           # isolation_mode=process: GPU slots per vFM pool (None = 2 x max_batch_size)
+    task_backlog_cap: int = 10000        # isolation_mode=process: requests a vFM may hold waiting on the CPU
 
 
 class EdgeRuntimeApplication:

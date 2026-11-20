@@ -81,8 +81,8 @@ def main():
     parser.add_argument("--worker-mode", choices=["threaded", "inline"], default="threaded", help="Per-task pipeline worker mode. threaded: each task gets its own thread + CUDA stream. inline: synchronous on the backbone worker thread, no per-task thread/stream.")
     parser.add_argument("--verbose-batch-logs", action="store_true", help="Enable high-frequency per-batch request logs. Disabled by default for benchmark stability.")
     parser.add_argument("--max-tasks", type=int, default=16, help="isolation_mode=process: task lanes created at start; each task process ever started (restarts included) uses one.")
-    parser.add_argument("--slot-chunk", type=int, default=1, help="isolation_mode=process: input slots a task process allocates at a time (1 = one per request as it arrives).")
-    parser.add_argument("--ring-size", type=int, default=4, help="isolation_mode=process: batches of features the backbone can have out at once.")
+    parser.add_argument("--slots-per-task", type=int, default=None, help="isolation_mode=process: GPU slots in each vFM's pool (backbone-owned, lent to the task). Default: 2 x --max-batch-size.")
+    parser.add_argument("--task-backlog-cap", type=int, default=10000, help="isolation_mode=process: requests a vFM may hold waiting on the CPU beyond its GPU slots; more fail with queue_full.")
     args = parser.parse_args()
     # Parse task rates: "ecgclass:10,gestureclass:100" -> {"ecgclass": 10.0, ...}
     task_rates: dict[str, float] = {}
@@ -113,8 +113,8 @@ def main():
                 worker_mode=args.worker_mode,
                 verbose_batch_logs=args.verbose_batch_logs,
                 max_tasks=args.max_tasks,
-                slot_chunk=args.slot_chunk,
-                ring_size=args.ring_size,
+                slots_per_task=args.slots_per_task,
+                task_backlog_cap=args.task_backlog_cap,
             ),
             bootstrap_json=_resolve_bootstrap_json(args),
         )

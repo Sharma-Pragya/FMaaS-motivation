@@ -16,12 +16,14 @@ the task processes ever started, restarts included.
 Queue topology:
     req_q[lane]         : gRPC process → task_proc   (TaskInferMsg / TaskControlMsg)
     task_reply_q[lane]  : task_proc → gRPC process   (control replies)
-    sched_q[lane]       : task_proc → backbone_proc  (chunks, filled slots)
-    done_q[lane]        : backbone_proc → task_proc  (ring, batches)
+    sched_q[lane]       : task_proc → backbone_proc  (alloc, filled slots)
+    done_q[lane]        : backbone_proc → task_proc  (pool, feat, done, error)
     dying[lane]         : Event, set by a failing task_proc
     ctrl_q / bb_reply_q : gRPC process ↔ backbone_proc (ControlMsg / SentinelMsg)
-    ack_q               : ALL task_procs → backbone_proc (ring entries read)
     result_q            : ALL task_procs → gRPC process (inference result dicts)
+
+GPU memory crossing processes (design 3): each lane's pool is allocated by the
+backbone process and lent to that lane's task process only (backbone_proc.py).
 """
 
 import asyncio
@@ -47,7 +49,6 @@ class IsolatedRuntimeApplication:
         # Shared queues
         self._ctrl_q = ctx.Queue()
         self._bb_ctrl_reply_q = ctx.Queue()
-        self._ack_q = ctx.Queue()
         self._result_q = ctx.Queue()
         self._run_stop = ctx.Event()
 
@@ -104,7 +105,7 @@ class IsolatedRuntimeApplication:
 
         self._backbone_proc = start_backbone_process(
             self._ctx, self.config, self._device, self._sched_qs, self._done_qs,
-            self._dyings, self._ctrl_q, self._bb_ctrl_reply_q, self._ack_q, self._run_stop,
+            self._dyings, self._ctrl_q, self._bb_ctrl_reply_q, self._run_stop,
         )
 
         self._monitor_thread = threading.Thread(
@@ -279,9 +280,9 @@ class IsolatedRuntimeApplication:
 
         await self._backbone_control("attach", {"lane": lane, "task": task}, 30.0)
         proc = start_task_process(
-            self._ctx, task, lane, self._device, self.config.slot_chunk,
+            self._ctx, task, lane, self._device, self.config.task_backlog_cap,
             self._req_qs[lane], self._task_reply_qs[lane], self._sched_qs[lane],
-            self._done_qs[lane], self._ack_q, self._result_q, self._dyings[lane],
+            self._done_qs[lane], self._result_q, self._dyings[lane],
             self._run_stop,
         )
         self._task_procs[lane] = proc
