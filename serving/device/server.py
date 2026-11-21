@@ -62,6 +62,8 @@ class RuntimeServerConfig:
     max_tasks: int = 16                  # isolation_mode=process: task lanes created at start
     slots_per_task: int = None           # isolation_mode=process: GPU slots per vFM pool (None = 2 x max_batch_size)
     task_backlog_cap: int = 10000        # isolation_mode=process: requests a vFM may hold waiting on the CPU
+    staging: str = "host"                # shared mode: "host" = inputs wait on the CPU, copied at batch time;
+                                         # "gpu" = copied to the GPU on arrival and wait there (like process mode)
 
 
 class EdgeRuntimeApplication:
@@ -113,6 +115,28 @@ class EdgeRuntimeApplication:
                 )
         self._batch_task: asyncio.Task | None = None
         self._green_partition = None  # held for cleanup
+        # staging=gpu: inputs are copied to the GPU when they arrive, on a
+        # separate copy stream so the copy never queues behind backbone work.
+        self._stage_device = None
+        self._copy_stream = None
+        if config.staging == "gpu" and config.runtime_type == "pytorch" and self.batcher is not None:
+            import torch
+            from device.config import DEVICE
+            if str(DEVICE).startswith("cuda"):
+                self._stage_device = DEVICE
+                self._copy_stream = torch.cuda.Stream(device=DEVICE)
+                print(f"[Device] staging=gpu: inputs copied to {DEVICE} on arrival")
+
+    def _stage(self, array: np.ndarray | None):
+        """staging=gpu: copy one input to the GPU and wait for the copy to land
+        before the request is queued. staging=host: return it unchanged."""
+        if array is None or self._copy_stream is None:
+            return array
+        import torch
+        with torch.cuda.stream(self._copy_stream):
+            t = torch.from_numpy(array).to(self._stage_device, non_blocking=False)
+        self._copy_stream.synchronize()
+        return t
 
     @staticmethod
     def _make_policy(config: RuntimeServerConfig):
@@ -293,13 +317,14 @@ class EdgeRuntimeApplication:
             }
         loop = asyncio.get_running_loop()
         future = loop.create_future()
+        enqueued_at = time.time()   # before staging, so the copy counts as queueing time
         envelope = RequestEnvelope(
             req_id=request.req_id,
             task=request.task,
-            x=_decode_tensor(request.x),
-            mask=_decode_tensor(request.mask) if request.HasField("mask") else None,
+            x=self._stage(_decode_tensor(request.x)),
+            mask=self._stage(_decode_tensor(request.mask)) if request.HasField("mask") else None,
             question=request.question if request.HasField("question") else None,
-            enqueued_at=time.time(),
+            enqueued_at=enqueued_at,
             future=future,
         )
         await self.batcher.enqueue(envelope)

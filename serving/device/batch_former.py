@@ -119,9 +119,16 @@ class BatchFormer:
                 f"req_ids={batch_ids} tasks={task_names}"
             )
         xs = [request.x for request in requests]
-        x = None if xs[0] is None else np.concatenate(xs, axis=0)
         masks = [request.mask for request in requests if request.mask is not None]
-        mask = np.concatenate(masks, axis=0) if len(masks) == len(requests) and masks else None
+        keep_mask = len(masks) == len(requests) and masks
+        if xs[0] is not None and not isinstance(xs[0], np.ndarray):
+            # staging=gpu: inputs are already GPU tensors. Pass the lists; the
+            # runtime joins them on its own (possibly TPC-pinned) stream.
+            x = xs
+            mask = masks if keep_mask else None
+        else:
+            x = None if xs[0] is None else np.concatenate(xs, axis=0)
+            mask = np.concatenate(masks, axis=0) if keep_mask else None
         questions_raw = [request.question for request in requests]
         questions = questions_raw if any(q is not None for q in questions_raw) else None
         return PreparedBatch(

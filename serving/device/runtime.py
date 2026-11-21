@@ -197,6 +197,12 @@ class PyTorchRuntime(BaseRuntime):
             if x is None:
                 bx     = None
                 b_mask = None
+            elif isinstance(x, list):
+                # staging=gpu: per-request GPU tensors; join them on this
+                # runtime's stream (stays inside a TPC partition if pinned).
+                with (torch.cuda.stream(self._cuda_stream) if self._cuda_stream else nullcontext()):
+                    bx = torch.cat(x, dim=0)
+                    b_mask = torch.cat(mask, dim=0) if mask is not None else None
             else:
                 bx = torch.from_numpy(x)
                 b_mask = torch.from_numpy(mask) if mask is not None else None

@@ -94,6 +94,7 @@ DEVICE_STARTUP_WAIT="${DEVICE_STARTUP_WAIT:-5}"
 MAX_BATCH_WAIT_MS="${MAX_BATCH_WAIT_MS:-0}"
 TPC_MODE="${TPC_MODE:-libsmctrl}"
 WARMUP_BURST_SECS="${WARMUP_BURST_SECS:-15}"   # closed-loop GPU warmup before each open-loop run
+STAGING="${STAGING:-host}"   # host | gpu: where queued inputs wait in shared mode (gpu = copied on arrival, like process mode)
 
 # Canonical ordered list of all tsfm tasks (NUM_TASKS_SWEEP selects the first N)
 ALL_TSFM_TASKS=(ecgclass gestureclass heartrate diasbp sysbp etth1fore weatherfore trafficfore eclfore exchangefore)
@@ -272,6 +273,7 @@ start_device() {
         $mps_args \
         $worker_args \
         --isolation-mode    "$isolation_mode" \
+        --staging           "$STAGING" \
         > "$log" 2>&1 &
     local pid=$!
     echo "[run.sh] PID=$pid  log=$log" >&2
