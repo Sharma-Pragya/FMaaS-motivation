@@ -42,7 +42,7 @@ FMAAS_DIR="${FMAAS_DIR:-..}"
 [[ "$FMAAS_DIR" = /* ]] || FMAAS_DIR="$(cd "$SERVING_DIR/$FMAAS_DIR" && pwd)"
 export PYTHONPATH="${FMTK_DIR}/src:${FMAAS_DIR}:${PYTHONPATH:-}"
 
-CONDA_ENV="${CONDA_ENV:-fmtk}"
+CONDA_ENV="${CONDA_ENV:-fmtk-bw}"
 if [[ -z "${PYTHON:-}" ]]; then
     if command -v conda &> /dev/null; then
         PYTHON="conda run --no-capture-output -n ${CONDA_ENV} python"
