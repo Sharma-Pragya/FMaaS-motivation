@@ -44,9 +44,12 @@ _spec = importlib.util.spec_from_file_location(
 mp = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(mp)            # rate_per_bin, styles
 
-# Conditions -> memory_isolation_vision styles (mig, s_be, be).
-STYLE_OF = {"mig": "mig", "no_sharing": "be", "shared": "s_be", "partitioned": None}
-LABELS = {"mig": "Partitioned (MIG)", "no_sharing": "Partitioned", "shared": "Shared"}
+# Conditions -> memory_isolation_vision styles (mig, s_be, be), plus Shared + BFQ.
+mp.COLORS["s_bfq"], mp.STYLES["s_bfq"], mp.MARKERS["s_bfq"] = "#7B4F9E", "--", "s"
+STYLE_OF = {"mig": "mig", "no_sharing": "be", "shared": "s_be", "shared_bfq": "s_bfq",
+            "partitioned": None}
+LABELS = {"mig": "Partitioned", "no_sharing": "Partitioned", "shared": "Shared",
+          "shared_bfq": "Shared + BFQ"}
 FIG_W, FIG_H = 7.0, 1.6
 LW, MS, N_MARKERS = 1.3, 3.5, 6
 GRID_S = 0.5
@@ -180,7 +183,7 @@ def main() -> None:
 
     summ = latest_summaries(iso_dir / "summary.jsonl")
     ded = args.partitioned or ("mig" if "mig" in summ else "no_sharing")
-    conds = [c for c in (ded, "shared") if c in summ]
+    conds = [c for c in (ded, "shared", "shared_bfq") if c in summ]
     if not conds:
         raise SystemExit(f"no isolation runs of {ded} / shared in {iso_dir}")
     s0 = summ[conds[0]]

@@ -334,6 +334,22 @@ def isolation(a, task_urls: dict) -> None:
     for t in tasks:
         print(f"[Trace] {t}: {len(times[t])} requests over {a.duration:g} s", flush=True)
 
+    if a.warmup_burst_secs > 0:
+        # As run_warmup_burst in sharing_benefit/tpc, RTVSntask/tpc, colocation:
+        # a closed-loop burst, results discarded. Up to --warmup-concurrency
+        # in flight per task, so batches of every size up to the max batch
+        # run (cuDNN tunes per new batch shape) before the measured run.
+        tw = time.time() + 1.0
+        wkw = {t: dict(task=t, url=task_urls[t], t0=tw, res=a.res, seed=SEED_BASE + i,
+                       duration=a.warmup_burst_secs, concurrency=a.warmup_concurrency,
+                       req_timeout=a.req_timeout)
+               for i, t in enumerate(tasks)}
+        print(f"[Warmup] closed-loop burst for {a.warmup_burst_secs:g} s, "
+              f"{a.warmup_concurrency} in flight per task ...", flush=True)
+        wrows = run_senders("closed", wkw)
+        print("[Warmup] done: " + ", ".join(
+            f"{t}: {sum(r[2] for r in rs)} ok / {len(rs)}" for t, rs in wrows.items()), flush=True)
+
     t0 = time.time() + START_DELAY_S
     end_s = a.duration + a.grace
     kw = {t: dict(task=t, url=task_urls[t], times=times[t], t0=t0, res=a.res,
@@ -463,7 +479,12 @@ def main() -> int:
     ap.add_argument("--grace", type=float, default=10.0,
                     help="isolation: requests still open this long after --duration are cut")
     ap.add_argument("--req-timeout", type=float, default=60.0)
-    ap.add_argument("--concurrency", type=int, default=16, help="efficiency: in flight per task")
+    ap.add_argument("--warmup-burst-secs", type=float, default=15.0,
+                    help="isolation: closed-loop warm-up before the run, discarded (0: none)")
+    ap.add_argument("--warmup-concurrency", type=int, default=32,
+                    help="isolation: warm-up requests in flight per task (the max batch)")
+    ap.add_argument("--concurrency", type=int, default=1,
+                    help="efficiency: requests in flight per task (1, as motivation1)")
     ap.add_argument("--gpu-index", type=int, default=0)
     ap.add_argument("--mig-uuid", default=None, help="a slice in use, for its capacity")
     ap.add_argument("--gpu-total-mb", type=float, default=None)

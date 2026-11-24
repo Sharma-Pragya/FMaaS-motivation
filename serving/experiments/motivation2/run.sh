@@ -9,6 +9,8 @@
 #               RAMP_AT s; victims A1.. stay at RATE_A. Conditions:
 #                 shared      one server, every task, --staging gpu, FIFO,
 #                             cross-task batches (S-BE)
+#                 shared_bfq  shared, with the STFQ (BFQ-style) scheduler, equal
+#                             weights: performance isolation only
 #                 mig         one server per MIG slice (needs N_TASKS slices)
 #                 no_sharing  one server per task on the whole GPU (no MIG)
 #   efficiency  (a): N in EFF_NS tasks, closed loop; shared (one server) vs
@@ -21,8 +23,9 @@
 # Overrides (defaults follow memory_isolation_vision/results_bw_n2_a110):
 #   EXPERIMENTS=isolation,efficiency ISO_CONDITIONS=shared,mig N_TASKS=2
 #   BACKBONE=dinobase-patch DECODER_PATH=nyudepth_dinobase_monocular RES=224 MAX_BATCH=32 STAGING=gpu SCHEDULER=fifo
-#   RATE_A=110 RATE_B=20 RATE_B_MAX=1000 RAMP_AT=60 RAMP_S=15 DURATION=180
-#   EFF_CONDITIONS=shared,partitioned EFF_NS=1,2,4,8 EFF_DURATION=40 EFF_CONC=16
+#   RATE_A=110 RATE_B=20 RATE_B_MAX=1000 RAMP_AT=60 RAMP_S=15 DURATION=180 WARMUP_BURST_SECS=15
+#   EFF_CONDITIONS=shared,partitioned EFF_NS=1,2,4,6,8 EFF_DURATION=60 EFF_CONC=1
+#   (efficiency as motivation1: closed loop, one request in flight per task)
 #   CUDA_DEVICE=cuda:0 MIG_UUIDS=MIG-...,MIG-... EXP_DIR=experiments/motivation2/results
 #
 # MIG: create the slices first (root), e.g. RTX PRO 6000 Blackwell:
@@ -68,10 +71,11 @@ RAMP_AT="${RAMP_AT:-60}"
 RAMP_S="${RAMP_S:-15}"
 DURATION="${DURATION:-180}"
 WARMUP="${WARMUP:-10}"
+WARMUP_BURST_SECS="${WARMUP_BURST_SECS:-15}"   # closed-loop GPU warm-up before each isolation run
 EFF_CONDITIONS="${EFF_CONDITIONS:-shared,partitioned}"
-EFF_NS="${EFF_NS:-1,2,4,8}"
-EFF_DURATION="${EFF_DURATION:-40}"
-EFF_CONC="${EFF_CONC:-16}"
+EFF_NS="${EFF_NS:-1,2,4,6,8}"
+EFF_DURATION="${EFF_DURATION:-60}"
+EFF_CONC="${EFF_CONC:-1}"
 CUDA_DEVICE="${CUDA_DEVICE:-cuda:0}"
 GPU_INDEX="${CUDA_DEVICE##*:}"; [[ "$GPU_INDEX" =~ ^[0-9]+$ ]] || GPU_INDEX=0
 BASE_PORT="${BASE_PORT:-8100}"
@@ -115,16 +119,16 @@ stop_servers() {
 }
 trap stop_servers EXIT
 
-# start_server PORT LOG [CUDA_VISIBLE_DEVICES]
+# start_server PORT LOG [CUDA_VISIBLE_DEVICES] [SCHEDULER]
 start_server() {
-    local port="$1" log="$2" visible="${3:-}" cuda="$CUDA_DEVICE"
+    local port="$1" log="$2" visible="${3:-}" sched="${4:-$SCHEDULER}" cuda="$CUDA_DEVICE"
     pkill -f "device/main.py.*--port ${port}( |$)" 2>/dev/null || true
     local envs=()
     if [[ -n "$visible" ]]; then envs=(env "CUDA_VISIBLE_DEVICES=$visible"); cuda="cuda:0"; fi
     ${envs[@]+"${envs[@]}"} $PYTHON -u "$SERVING_DIR/device/main.py" \
         --port "$port" --runtime-type pytorch --cuda "$cuda" \
         --isolation-mode shared --staging "$STAGING" \
-        --scheduler-policy "$SCHEDULER" \
+        --scheduler-policy "$sched" \
         --max-batch-size "$MAX_BATCH" --max-batch-wait-ms "$MAX_BATCH_WAIT_MS" \
         --queue-capacity "$QUEUE_CAPACITY" \
         > "$log" 2>&1 &
@@ -171,11 +175,14 @@ gpu_total_mb() {
 # Isolation
 # ---------------------------------------------------------------------------
 run_isolation() {
-    local cond="$1" urls="" sep="" i port mig_arg=() uuids=()
+    local cond="$1" urls="" sep="" i port mig_arg=() uuids=() sched="$SCHEDULER"
     stop_servers
     case "$cond" in
-        shared)
-            start_server "$BASE_PORT" "$LOG_DIR/iso_${cond}_p${BASE_PORT}.log"
+        shared|shared_bfq)
+            # shared_bfq: STFQ, the device server's BFQ-style policy; no
+            # --task-rates, so equal weights.
+            [[ "$cond" == shared_bfq ]] && sched=stfq
+            start_server "$BASE_PORT" "$LOG_DIR/iso_${cond}_p${BASE_PORT}.log" "" "$sched"
             for t in "${ISO_TASKS[@]}"; do urls+="${sep}${t}=localhost:${BASE_PORT}"; sep=","; done
             ;;
         no_sharing|mig)
@@ -202,8 +209,9 @@ run_isolation() {
         ${DECODER_PATH:+--decoder-path "$DECODER_PATH"} \
         --rate-a "$RATE_A" --rate-b "$RATE_B" --rate-b-max "$RATE_B_MAX" \
         --ramp-at "$RAMP_AT" --ramp-s "$RAMP_S" --duration "$DURATION" --warmup "$WARMUP" \
+        --warmup-burst-secs "$WARMUP_BURST_SECS" --warmup-concurrency "$MAX_BATCH" \
         --gpu-index "$GPU_INDEX" ${total:+--gpu-total-mb "$total"} ${mig_arg[@]+"${mig_arg[@]}"} \
-        --extra "{\"max_batch\": $MAX_BATCH, \"staging\": \"$STAGING\", \"scheduler\": \"$SCHEDULER\"}" \
+        --extra "{\"max_batch\": $MAX_BATCH, \"staging\": \"$STAGING\", \"scheduler\": \"$sched\"}" \
         --out-dir "$EXP_DIR/isolation" \
         || echo "[run.sh] WARNING: isolation/$cond failed"
     check_servers
