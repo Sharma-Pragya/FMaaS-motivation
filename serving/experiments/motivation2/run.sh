@@ -11,6 +11,10 @@
 #                             cross-task batches (S-BE)
 #                 shared_bfq  shared, with the STFQ (BFQ-style) scheduler, equal
 #                             weights: performance isolation only
+#                 fmvisor     one server in process-isolation mode (a backbone
+#                             process + one process per task), STFQ: each task
+#                             gets FM_SLOTS GPU slots, then waits on the CPU
+#                             (at most FM_BACKLOG_CAP), then is rejected
 #                 mig         one server per MIG slice (needs N_TASKS slices)
 #                 no_sharing  one server per task on the whole GPU (no MIG)
 #   efficiency  (a): N in EFF_NS tasks, closed loop; shared (one server) vs
@@ -64,6 +68,8 @@ MAX_BATCH_WAIT_MS="${MAX_BATCH_WAIT_MS:-0}"
 QUEUE_CAPACITY="${QUEUE_CAPACITY:-10000000}"
 STAGING="${STAGING:-gpu}"
 SCHEDULER="${SCHEDULER:-fifo}"
+FM_SLOTS="${FM_SLOTS:-64}"                 # fmvisor: GPU slots per task (2 x MAX_BATCH)
+FM_BACKLOG_CAP="${FM_BACKLOG_CAP:-500}"    # fmvisor: requests per task waiting on the CPU
 RATE_A="${RATE_A:-110}"
 RATE_B="${RATE_B:-20}"
 RATE_B_MAX="${RATE_B_MAX:-1000}"
@@ -80,6 +86,7 @@ CUDA_DEVICE="${CUDA_DEVICE:-cuda:0}"
 GPU_INDEX="${CUDA_DEVICE##*:}"; [[ "$GPU_INDEX" =~ ^[0-9]+$ ]] || GPU_INDEX=0
 BASE_PORT="${BASE_PORT:-8100}"
 STARTUP_TIMEOUT="${STARTUP_TIMEOUT:-300}"
+STOP_TIMEOUT="${STOP_TIMEOUT:-30}"
 EXP_DIR="${EXP_DIR:-experiments/motivation2/results}"
 LOG_DIR="$EXP_DIR/logs"
 mkdir -p "$LOG_DIR"
@@ -108,8 +115,18 @@ stop_servers() {
     for pid in "${PIDS[@]:-}"; do
         [[ -n "$pid" ]] && kill "$pid" 2>/dev/null || true
     done
+    # Wait up to STOP_TIMEOUT s for each server, then kill it: a process-mode
+    # server can log "Stopped" and still not exit.
+    local deadline=$((SECONDS + STOP_TIMEOUT))
     for pid in "${PIDS[@]:-}"; do
-        [[ -n "$pid" ]] && wait "$pid" 2>/dev/null || true
+        [[ -n "$pid" ]] || continue
+        while kill -0 "$pid" 2>/dev/null && (( SECONDS < deadline )); do sleep 1; done
+        if kill -0 "$pid" 2>/dev/null; then
+            echo "[run.sh] server pid=$pid did not exit after ${STOP_TIMEOUT}s; killing"
+            pkill -9 -P "$pid" 2>/dev/null || true
+            kill -9 "$pid" 2>/dev/null || true
+        fi
+        wait "$pid" 2>/dev/null || true
     done
     for port in "${PORTS[@]:-}"; do
         [[ -n "$port" ]] && pkill -f "device/main.py.*--port ${port}( |$)" 2>/dev/null || true
@@ -119,15 +136,17 @@ stop_servers() {
 }
 trap stop_servers EXIT
 
-# start_server PORT LOG [CUDA_VISIBLE_DEVICES] [SCHEDULER]
+# start_server PORT LOG [CUDA_VISIBLE_DEVICES] [SCHEDULER] [ISOLATION_MODE]
 start_server() {
-    local port="$1" log="$2" visible="${3:-}" sched="${4:-$SCHEDULER}" cuda="$CUDA_DEVICE"
+    local port="$1" log="$2" visible="${3:-}" sched="${4:-$SCHEDULER}" mode="${5:-shared}"
+    local cuda="$CUDA_DEVICE" extra=()
+    [[ "$mode" == process ]] && extra=(--slots-per-task "$FM_SLOTS" --task-backlog-cap "$FM_BACKLOG_CAP")
     pkill -f "device/main.py.*--port ${port}( |$)" 2>/dev/null || true
     local envs=()
     if [[ -n "$visible" ]]; then envs=(env "CUDA_VISIBLE_DEVICES=$visible"); cuda="cuda:0"; fi
     ${envs[@]+"${envs[@]}"} $PYTHON -u "$SERVING_DIR/device/main.py" \
         --port "$port" --runtime-type pytorch --cuda "$cuda" \
-        --isolation-mode shared --staging "$STAGING" \
+        --isolation-mode "$mode" --staging "$STAGING" ${extra[@]+"${extra[@]}"} \
         --scheduler-policy "$sched" \
         --max-batch-size "$MAX_BATCH" --max-batch-wait-ms "$MAX_BATCH_WAIT_MS" \
         --queue-capacity "$QUEUE_CAPACITY" \
@@ -185,6 +204,11 @@ run_isolation() {
             start_server "$BASE_PORT" "$LOG_DIR/iso_${cond}_p${BASE_PORT}.log" "" "$sched"
             for t in "${ISO_TASKS[@]}"; do urls+="${sep}${t}=localhost:${BASE_PORT}"; sep=","; done
             ;;
+        fmvisor)
+            sched=stfq
+            start_server "$BASE_PORT" "$LOG_DIR/iso_${cond}_p${BASE_PORT}.log" "" "$sched" process
+            for t in "${ISO_TASKS[@]}"; do urls+="${sep}${t}=localhost:${BASE_PORT}"; sep=","; done
+            ;;
         no_sharing|mig)
             if [[ "$cond" == mig ]]; then
                 read -ra uuids <<< "$(mig_uuids)"
@@ -211,7 +235,7 @@ run_isolation() {
         --ramp-at "$RAMP_AT" --ramp-s "$RAMP_S" --duration "$DURATION" --warmup "$WARMUP" \
         --warmup-burst-secs "$WARMUP_BURST_SECS" --warmup-concurrency "$MAX_BATCH" \
         --gpu-index "$GPU_INDEX" ${total:+--gpu-total-mb "$total"} ${mig_arg[@]+"${mig_arg[@]}"} \
-        --extra "{\"max_batch\": $MAX_BATCH, \"staging\": \"$STAGING\", \"scheduler\": \"$sched\"}" \
+        --extra "{\"max_batch\": $MAX_BATCH, \"staging\": \"$STAGING\", \"scheduler\": \"$sched\", \"fm_slots\": $FM_SLOTS, \"fm_backlog_cap\": $FM_BACKLOG_CAP}" \
         --out-dir "$EXP_DIR/isolation" \
         || echo "[run.sh] WARNING: isolation/$cond failed"
     check_servers

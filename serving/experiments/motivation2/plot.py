@@ -47,9 +47,10 @@ _spec.loader.exec_module(mp)            # rate_per_bin, styles
 # Conditions -> memory_isolation_vision styles (mig, s_be, be), plus Shared + BFQ.
 mp.COLORS["s_bfq"], mp.STYLES["s_bfq"], mp.MARKERS["s_bfq"] = "#7B4F9E", "--", "s"
 STYLE_OF = {"mig": "mig", "no_sharing": "be", "shared": "s_be", "shared_bfq": "s_bfq",
+            "fmvisor": "fmvisor",
             "partitioned": None}
 LABELS = {"mig": "Partitioned", "no_sharing": "Partitioned", "shared": "Shared",
-          "shared_bfq": "Shared + BFQ"}
+          "shared_bfq": "Shared + BFQ", "fmvisor": "FMVisor"}
 FIG_W, FIG_H = 7.0, 1.6
 LW, MS, N_MARKERS = 1.3, 3.5, 6
 GRID_S = 0.5
@@ -183,7 +184,7 @@ def main() -> None:
 
     summ = latest_summaries(iso_dir / "summary.jsonl")
     ded = args.partitioned or ("mig" if "mig" in summ else "no_sharing")
-    conds = [c for c in (ded, "shared", "shared_bfq") if c in summ]
+    conds = [c for c in dict.fromkeys((ded, "shared", "shared_bfq", "fmvisor")) if c in summ]
     if not conds:
         raise SystemExit(f"no isolation runs of {ded} / shared in {iso_dir}")
     s0 = summ[conds[0]]
@@ -222,8 +223,12 @@ def main() -> None:
             max_thr = max(max_thr, float(np.nanmax(thr)) if len(thr) else 0.0)
             ax_p.plot(mids, thr, **style(key, len(mids)))
             t, yb = noisy_memory_gb(ev, s)
-            max_mem = max(max_mem, float(np.nanmax(yb)) if np.isfinite(yb).any() else 0.0)
-            ax_m.plot(t, yb, **style(key, len(t)))
+            peak = float(np.nanmax(yb)) if np.isfinite(yb).any() else 0.0
+            max_mem = max(max_mem, peak)
+            # Process mode (fmvisor) reports no memory in its responses yet:
+            # draw nothing rather than a line at 0.
+            if peak > 0:
+                ax_m.plot(t, yb, **style(key, len(t)))
             ft = np.sort([r["t_done"] for r in ev if not r["ok"] and r["task"] in V])
             fails[c] = np.searchsorted(ft, mids, side="right")
             max_fail = max(max_fail, len(ft))
