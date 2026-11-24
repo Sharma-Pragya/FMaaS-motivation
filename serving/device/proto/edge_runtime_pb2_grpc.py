@@ -39,6 +39,11 @@ class EdgeRuntimeStub(object):
                 request_serializer=device_dot_proto_dot_edge__runtime__pb2.InferRequest.SerializeToString,
                 response_deserializer=device_dot_proto_dot_edge__runtime__pb2.InferResponse.FromString,
                 _registered_method=True)
+        self.InferStream = channel.stream_stream(
+                '/serving.device.EdgeRuntime/InferStream',
+                request_serializer=device_dot_proto_dot_edge__runtime__pb2.InferRequest.SerializeToString,
+                response_deserializer=device_dot_proto_dot_edge__runtime__pb2.InferResponse.FromString,
+                _registered_method=True)
         self.Control = channel.unary_unary(
                 '/serving.device.EdgeRuntime/Control',
                 request_serializer=device_dot_proto_dot_edge__runtime__pb2.ControlRequest.SerializeToString,
@@ -55,6 +60,15 @@ class EdgeRuntimeServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def InferStream(self, request_iterator, context):
+        """Many requests on one stream (e.g. one per task); responses come back in
+        completion order, matched by req_id. A request read off the stream holds
+        no host copy of its input while it waits (an open Infer call does).
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def Control(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -66,6 +80,11 @@ def add_EdgeRuntimeServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'Infer': grpc.unary_unary_rpc_method_handler(
                     servicer.Infer,
+                    request_deserializer=device_dot_proto_dot_edge__runtime__pb2.InferRequest.FromString,
+                    response_serializer=device_dot_proto_dot_edge__runtime__pb2.InferResponse.SerializeToString,
+            ),
+            'InferStream': grpc.stream_stream_rpc_method_handler(
+                    servicer.InferStream,
                     request_deserializer=device_dot_proto_dot_edge__runtime__pb2.InferRequest.FromString,
                     response_serializer=device_dot_proto_dot_edge__runtime__pb2.InferResponse.SerializeToString,
             ),
@@ -100,6 +119,33 @@ class EdgeRuntime(object):
             request,
             target,
             '/serving.device.EdgeRuntime/Infer',
+            device_dot_proto_dot_edge__runtime__pb2.InferRequest.SerializeToString,
+            device_dot_proto_dot_edge__runtime__pb2.InferResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def InferStream(request_iterator,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.stream_stream(
+            request_iterator,
+            target,
+            '/serving.device.EdgeRuntime/InferStream',
             device_dot_proto_dot_edge__runtime__pb2.InferRequest.SerializeToString,
             device_dot_proto_dot_edge__runtime__pb2.InferResponse.FromString,
             options,

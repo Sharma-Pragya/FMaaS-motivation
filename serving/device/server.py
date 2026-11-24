@@ -315,6 +315,19 @@ class EdgeRuntimeApplication:
                 "decoder_time_ns": result.decoder_time_ns[0],
                 "gpu_alloc_peak_mb": result.gpu_alloc_peak_mb,
             }
+        return await (await self.submit(request))
+
+    async def submit(self, request: edge_runtime_pb2.InferRequest) -> asyncio.Future:
+        """Queue one request and return the future its result lands on.
+
+        Batched path (pytorch, isolation_mode shared): the input is staged
+        and queued now, and the returned future holds no reference to
+        request, so once the caller drops request, the queued request keeps
+        only its staged input (on the GPU with staging=gpu; with
+        staging=host the queued input is a view of request's bytes).
+        InferStream relies on this. Other paths: a task running infer()."""
+        if self.runtime_type == "vllm" or self.isolation_mode == "none":
+            return asyncio.ensure_future(self.infer(request))
         loop = asyncio.get_running_loop()
         future = loop.create_future()
         enqueued_at = time.time()   # before staging, so the copy counts as queueing time
@@ -328,7 +341,7 @@ class EdgeRuntimeApplication:
             future=future,
         )
         await self.batcher.enqueue(envelope)
-        return await future
+        return future
 
     async def control(self, command: str, payload_json: str) -> dict:
         logger = None
@@ -404,7 +417,68 @@ class EdgeRuntimeServicer(edge_runtime_pb2_grpc.EdgeRuntimeServicer):
         except Exception as exc:
             LOGGER.exception("Infer failed")
             await context.abort(grpc.StatusCode.INTERNAL, str(exc))
+        return self._to_response(response, t_recv_ns)
 
+    async def InferStream(self, request_iterator, context):
+        """Many requests on one stream; responses in completion order, each
+        carrying its req_id. A failed request gets a response with status
+        "queue_full" or "error: ..." (the stream goes on).
+
+        Why a stream: gRPC keeps an open unary call's message bytes until the
+        call ends (2-3x the payload in host RAM, measured), so with Infer a
+        request waiting in the queue holds its input in host memory even when
+        staged on the GPU. A message read off a stream is released once read;
+        submit() keeps only the staged input."""
+        out: asyncio.Queue = asyncio.Queue()
+        n_open = 0
+        reading = True
+        submit = getattr(self._app, "submit", None)
+
+        def error_response(req_id: int, exc: BaseException) -> edge_runtime_pb2.InferResponse:
+            status = "queue_full" if str(exc) == "queue_full" else f"error: {exc}"[:500]
+            return edge_runtime_pb2.InferResponse(req_id=req_id, status=status)
+
+        async def finish(req_id: int, future, t_recv_ns: int) -> None:
+            nonlocal n_open
+            try:
+                item = self._to_response(await future, t_recv_ns, req_id)
+            except Exception as exc:
+                item = error_response(req_id, exc)
+            n_open -= 1                     # before the put: the writer checks n_open after a get
+            out.put_nowait(item)
+
+        async def reader() -> None:
+            nonlocal n_open, reading
+            try:
+                async for request in request_iterator:
+                    t_recv_ns, req_id = time.time_ns(), request.req_id
+                    try:
+                        future = (await submit(request) if submit is not None
+                                  else asyncio.ensure_future(self._app.infer(request)))
+                    except Exception as exc:
+                        out.put_nowait(error_response(req_id, exc))
+                        continue
+                    finally:
+                        request = None      # the queued request keeps only its staged input
+                    n_open += 1
+                    asyncio.ensure_future(finish(req_id, future, t_recv_ns))
+            finally:
+                reading = False
+                out.put_nowait(None)        # wake the writer to check for the end
+
+        reader_task = asyncio.ensure_future(reader())
+        try:
+            while True:
+                item = await out.get()
+                if item is not None:
+                    yield item
+                if not reading and n_open == 0 and out.empty():
+                    break
+            await reader_task               # re-raise a stream read error, if any
+        finally:
+            reader_task.cancel()
+
+    def _to_response(self, response: dict, t_recv_ns: int, req_id: int = 0):
         raw_output = response.get("output")
         text_output = response.get("text_output", "")
         # VLM outputs are object-dtype arrays containing the generated text string
@@ -424,6 +498,7 @@ class EdgeRuntimeServicer(edge_runtime_pb2_grpc.EdgeRuntimeServicer):
             text_output=text_output,
             gpu_alloc_peak_mb=float(response.get("gpu_alloc_peak_mb", 0.0) or 0.0),
             server_time_ns=time.time_ns() - t_recv_ns,
+            req_id=req_id,
         )
 
     async def Control(self, request, context):

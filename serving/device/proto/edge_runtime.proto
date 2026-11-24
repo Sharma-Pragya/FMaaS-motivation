@@ -4,6 +4,10 @@ package serving.device;
 
 service EdgeRuntime {
   rpc Infer(InferRequest) returns (InferResponse);
+  // Many requests on one stream (e.g. one per task); responses come back in
+  // completion order, matched by req_id. A request read off the stream holds
+  // no host copy of its input while it waits (an open Infer call does).
+  rpc InferStream(stream InferRequest) returns (stream InferResponse);
   rpc Control(ControlRequest) returns (ControlResponse);
 }
 
@@ -33,6 +37,7 @@ message InferResponse {
   string text_output = 9;
   float gpu_alloc_peak_mb = 10;
   int64 server_time_ns = 11;   // total time inside the gRPC handler (recv → return)
+  int64 req_id = 12;           // the request's req_id (set by InferStream)
 }
 
 message ControlRequest {

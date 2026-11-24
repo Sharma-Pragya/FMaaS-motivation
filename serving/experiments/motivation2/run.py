@@ -17,7 +17,9 @@ Inputs are one random fp32 3 x res x res image per task (the values do not
 matter), encoded once and reused for every request.
 
 Each task sends from its own process, on its own gRPC channel, so a flood
-from one task cannot delay another task's sends in the client.
+from one task cannot delay another task's sends in the client. Isolation
+runs send on one InferStream per task, so a request waiting on the GPU holds
+no host copy of its input (see _open_loop); efficiency runs use Infer.
 
 --experiment isolation   (panels b, c, d)
     B         the noisy task: open-loop Poisson, --rate-b req/s, then from
@@ -149,36 +151,86 @@ def _request(task: str, res: int, seed: int):
 
 async def _open_loop(task: str, url: str, times: list, t0: float, res: int, seed: int,
                      end_s: float, req_timeout: float) -> list:
-    """Send at times[i] (s after t0). Rows: (t_send, t_done, ok, lat_ms, mem_mb, mem_t, code)."""
+    """Send at times[i] (s after t0) on one InferStream; responses come back
+    in completion order, matched by req_id. Rows: (t_send, t_done, ok,
+    lat_ms, mem_mb, mem_t, code).
+
+    A stream, not a call per request: gRPC keeps an open unary call's input
+    bytes in host RAM until it is answered (in the server, 2-3x the payload),
+    so a GPU backlog of unary calls fills host RAM first. A request read off
+    a stream holds no host copy (device/server.py InferStream).
+
+    A request the server fails gets its status as code ("queue_full",
+    "error: ..."). Requests still open at end_s are cut (UNFINISHED). If the
+    stream breaks, open requests fail then and the rest fail at their send
+    times, as sent while the server is down."""
     import grpc
     from device.proto import edge_runtime_pb2_grpc
     ch = _channel(url)
     stub = edge_runtime_pb2_grpc.EdgeRuntimeStub(ch)
     req = _request(task, res, seed)
     rows: list = []
+    sent: dict = {}                 # req_id -> t_send, until answered
+    n_written = 0
+    call = stub.InferStream()
 
-    async def fire(ts: float) -> None:
-        timeout = max(1.0, min(req_timeout, end_s - ts))
-        try:
-            r = await stub.Infer(req, timeout=timeout)
+    def code_of(exc: BaseException) -> str:
+        return exc.code().name if isinstance(exc, grpc.aio.AioRpcError) else type(exc).__name__
+
+    async def receive() -> None:
+        async for r in call:
+            ts = sent.pop(r.req_id, None)
+            if ts is None:
+                continue
             now = time.time() - t0
             ok = not r.status or r.status == "ok"
-            rows.append((ts, now, ok, 1e3 * (now - ts), r.gpu_alloc_peak_mb,
-                         r.end_time_ns / 1e9 - t0 if r.end_time_ns else now,
-                         "" if ok else r.status))
-        except grpc.aio.AioRpcError as exc:
-            rows.append((ts, time.time() - t0, False, None, None, None, exc.code().name))
-        except Exception as exc:
-            rows.append((ts, time.time() - t0, False, None, None, None, type(exc).__name__))
+            rows.append((ts, now, ok, 1e3 * (now - ts) if ok else None,
+                         r.gpu_alloc_peak_mb if ok else None,
+                         (r.end_time_ns / 1e9 - t0 if r.end_time_ns else now) if ok else None,
+                         "" if ok else r.status[:80]))
 
-    pending = []
-    for ts in times:
-        wait = t0 + ts - time.time()
-        if wait > 0:
-            await asyncio.sleep(wait)
-        pending.append(asyncio.create_task(fire(ts)))
-    if pending:
-        await asyncio.gather(*pending)
+    async def send_all() -> None:
+        nonlocal n_written
+        for i, ts in enumerate(times):
+            wait = t0 + ts - time.time()
+            if wait > 0:
+                await asyncio.sleep(wait)
+            if recv_task.done():        # the stream ended early
+                return
+            req.req_id = i              # serialized by write(), so reusing req is safe
+            sent[i] = ts
+            await call.write(req)
+            n_written = i + 1
+        await call.done_writing()
+        await asyncio.shield(recv_task)
+
+    recv_task = asyncio.create_task(receive())
+    broken = None                       # (t, code): the stream failed at t
+    try:
+        await asyncio.wait_for(send_all(), timeout=max(0.1, t0 + end_s - time.time()))
+    except asyncio.TimeoutError:
+        pass
+    except Exception as exc:
+        broken = (time.time() - t0, code_of(exc))
+    if broken is None and recv_task.done() and not recv_task.cancelled() \
+            and recv_task.exception() is not None:
+        broken = (time.time() - t0, code_of(recv_task.exception()))
+    if broken is None and n_written < len(times) and recv_task.done():
+        broken = (time.time() - t0, "STREAM_ENDED")
+    call.cancel()
+    recv_task.cancel()
+
+    # Open requests: failed when the stream broke, else cut at end_s.
+    t_cut, code_open = broken if broken else (end_s, "UNFINISHED")
+    for ts in sent.values():
+        rows.append((ts, max(ts, t_cut), False, None, None, None, code_open))
+    # Never written: the stream broke, or writes were held back (the server
+    # stopped reading) until end_s.
+    for i in range(n_written, len(times)):
+        if i not in sent:
+            ts = times[i]
+            rows.append((ts, max(ts, broken[0]) if broken else ts, False, None, None, None,
+                         broken[1] if broken else "NOT_SENT"))
     await ch.close()
     return rows
 
