@@ -77,6 +77,7 @@ def main():
     parser.add_argument("--ignore-eos", action="store_true", help="Force every request to emit exactly --max-new-tokens (vLLM ignore_eos). Makes output length an experimental constant; use for timing runs, not accuracy.")
     parser.add_argument("--tpc-mode", choices=["none", "libsmctrl", "green"], default="none", help="TPC isolation: none, libsmctrl (driver<=528), or green (CUDA 12.4+).")
     parser.add_argument("--tpc-partition", type=int, nargs="+", default=None, help="TPC IDs to pin this server to (e.g. --tpc-partition 0 1 2 3).")
+    parser.add_argument("--tpc-share", type=str, default=None, help="libsmctrl: 'i/k' pins this server to the i-th of k equal TPC ranges of the device it sees (e.g. one of k servers on a MIG slice). Overrides --tpc-partition.")
     parser.add_argument("--mps-thread-pct", type=int, default=None, help="CUDA MPS active thread percentage (0-100). Requires MPS daemon running. Set via pre-parser so it takes effect before CUDA init.")
     parser.add_argument("--worker-mode", choices=["threaded", "inline"], default="threaded", help="Per-task pipeline worker mode. threaded: each task gets its own thread + CUDA stream. inline: synchronous on the backbone worker thread, no per-task thread/stream.")
     parser.add_argument("--verbose-batch-logs", action="store_true", help="Enable high-frequency per-batch request logs. Disabled by default for benchmark stability.")
@@ -111,6 +112,7 @@ def main():
                 ignore_eos=args.ignore_eos,
                 tpc_mode=args.tpc_mode,
                 tpc_partition=args.tpc_partition,
+                tpc_share=args.tpc_share,
                 worker_mode=args.worker_mode,
                 verbose_batch_logs=args.verbose_batch_logs,
                 max_tasks=args.max_tasks,

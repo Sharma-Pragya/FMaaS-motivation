@@ -57,6 +57,9 @@ class RuntimeServerConfig:
     ignore_eos: bool = False             # vLLM SamplingParams.ignore_eos (force exactly max_tokens)
     tpc_mode: str = "none"               # "none" | "libsmctrl" | "green"
     tpc_partition: list = None           # list of TPC IDs to pin this server to
+    tpc_share: str = None                # "i/k": the i-th of k equal TPC ranges of the
+                                         # device this process sees (libsmctrl), e.g. one
+                                         # of k servers sharing a MIG slice
     worker_mode: str = "threaded"        # "threaded" | "inline" — per-task pipeline worker mode
     verbose_batch_logs: bool = False      # high-frequency per-batch request logging
     max_tasks: int = 16                  # isolation_mode=process: task lanes created at start
@@ -176,7 +179,7 @@ class EdgeRuntimeApplication:
     @staticmethod
     def _setup_tpc(config: RuntimeServerConfig):
         """Create and TPC-pin a CUDA stream if configured. Returns stream or None."""
-        if config.tpc_mode == "none" or not config.tpc_partition:
+        if config.tpc_mode == "none" or not (config.tpc_partition or config.tpc_share):
             return None
 
         import ctypes
@@ -214,6 +217,12 @@ class EdgeRuntimeApplication:
             num_tpcs = ctypes.c_uint32()
             ret = lib.libsmctrl_get_tpc_info_cuda(ctypes.byref(num_tpcs), device_id)
             total_tpcs = num_tpcs.value if ret == 0 else sm_count // 2
+            if config.tpc_share:
+                # --tpc-share i/k: TPCs [i*T/k, (i+1)*T/k) of the T this process
+                # sees (under MIG, the slice's).
+                i, k = (int(v) for v in config.tpc_share.split("/"))
+                lo, hi = i * total_tpcs // k, (i + 1) * total_tpcs // k
+                config.tpc_partition = list(range(lo, max(hi, lo + 1)))
 
             stream = torch.cuda.Stream(device=cuda_device)
             enable_bits = 0
@@ -349,7 +358,9 @@ class EdgeRuntimeApplication:
         (with staging=gpu, inputs already on the GPU)."""
         from device.config import DEVICE
         from device.memstats import MB, cuda_mem
-        out = {"mode": "shared", "time_ns": time.time_ns(), **cuda_mem(DEVICE), "tasks": {}}
+        out = {"mode": "shared", "time_ns": time.time_ns(), **cuda_mem(DEVICE), "tasks": {},
+               # the GPU or MIG slice this process sees ("" = as configured)
+               "visible": os.environ.get("CUDA_VISIBLE_DEVICES", "")}
         queues = getattr(getattr(self.batcher, "_queues", None), "_queues", None) or {}
         for task, q in list(queues.items()):
             n = len(q)
