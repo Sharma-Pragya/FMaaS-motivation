@@ -490,12 +490,18 @@ def efficiency(a, task_urls: dict) -> None:
         with StatsPoller(task_urls.values(), t0, a.stats_period) as poller:
             rows = run_senders("closed", kw)
         win = a.duration - a.warmup
-        # GPU used, CUDA contexts included: per poll round, the most any server
-        # reports (one GPU, so every server sees the same device), in the window.
-        rounds: dict = {}
+        # GPU used, CUDA contexts included, per poll round in the window: the
+        # servers on one device (the GPU, or one MIG slice: "visible") all see
+        # that device's used memory, so take it once per device and add the
+        # devices up.
+        per_dev: dict = {}
         for r in poller.rows:
             if a.warmup <= r["t"] <= a.duration and r.get("device_used_mb"):
-                rounds[r["round"]] = max(rounds.get(r["round"], 0.0), r["device_used_mb"])
+                k = (r["round"], r.get("visible", ""))
+                per_dev[k] = max(per_dev.get(k, 0.0), r["device_used_mb"])
+        rounds: dict = {}
+        for (rnd, _), mb in per_dev.items():
+            rounds[rnd] = rounds.get(rnd, 0.0) + mb
         if rounds:
             row["avg_device_used_mb"] = round(float(np.mean(list(rounds.values()))), 1)
             row["peak_device_used_mb"] = round(max(rounds.values()), 1)

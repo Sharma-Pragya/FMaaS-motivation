@@ -18,7 +18,10 @@
 #                 mig         one server per MIG slice (needs N_TASKS slices)
 #                 no_sharing  one server per task on the whole GPU (no MIG)
 #   efficiency  (a): N in EFF_NS tasks, closed loop; shared (one server) vs
-#               partitioned (one server per task, whole GPU).
+#               partitioned (one server per task, whole GPU) vs mig (one
+#               server per task, task i on MIG slice i mod #slices) vs mig_tpc
+#               (mig, and the k servers on a slice each pinned to 1/k of its
+#               TPCs: --tpc-mode libsmctrl --tpc-share j/k).
 #
 # Run from serving/:
 #   bash experiments/motivation2/run.sh
@@ -147,11 +150,12 @@ on_exit() {
 }
 trap on_exit EXIT
 
-# start_server PORT LOG [CUDA_VISIBLE_DEVICES] [SCHEDULER] [ISOLATION_MODE]
+# start_server PORT LOG [CUDA_VISIBLE_DEVICES] [SCHEDULER] [ISOLATION_MODE] [TPC_SHARE i/k]
 start_server() {
     local port="$1" log="$2" visible="${3:-}" sched="${4:-$SCHEDULER}" mode="${5:-shared}"
-    local cuda="$CUDA_DEVICE" extra=()
+    local tpc_share="${6:-}" cuda="$CUDA_DEVICE" extra=()
     [[ "$mode" == process ]] && extra=(--slots-per-task "$FM_SLOTS" --task-backlog-cap "$FM_BACKLOG_CAP")
+    [[ -n "$tpc_share" ]] && extra+=(--tpc-mode libsmctrl --tpc-share "$tpc_share")
     pkill -f "device/main.py.*--port ${port}( |$)" 2>/dev/null || true
     local envs=()
     if [[ -n "$visible" ]]; then envs=(env "CUDA_VISIBLE_DEVICES=$visible"); cuda="cuda:0"; fi
@@ -163,7 +167,7 @@ start_server() {
         --queue-capacity "$QUEUE_CAPACITY" \
         > "$log" 2>&1 &
     PIDS+=("$!"); PORTS+=("$port"); LOGS+=("$log")
-    echo "[run.sh] server port=$port pid=$! ${visible:+CUDA_VISIBLE_DEVICES=$visible }log=$log"
+    echo "[run.sh] server port=$port pid=$! ${visible:+CUDA_VISIBLE_DEVICES=$visible }${tpc_share:+tpc=$tpc_share }log=$log"
 }
 
 # Wait until every started server is listening (or one has exited).
@@ -320,15 +324,36 @@ run_isolation() {
 # Efficiency
 # ---------------------------------------------------------------------------
 run_efficiency() {
-    local cond="$1" n="$2" urls="" sep="" i port
+    local cond="$1" n="$2" urls="" sep="" i port uuids=()
     stop_servers
+    if [[ "$cond" == mig || "$cond" == mig_tpc ]]; then
+        # One server per task, as partitioned, on the MIG slices: task i on
+        # slice i mod (number of slices), so with more tasks than slices a
+        # slice holds several tasks' servers (they share its SMs and memory).
+        # mig_tpc: those servers also split the slice's TPCs, j-th of k
+        # (libsmctrl stream masks on their backbone stream).
+        read -ra uuids <<< "$(mig_uuids)"
+        if (( ${#uuids[@]} == 0 )); then
+            echo "[run.sh] efficiency/mig: no MIG slices; skipping"; return 1
+        fi
+    fi
     if [[ "$cond" == shared ]]; then
         start_server "$BASE_PORT" "$LOG_DIR/eff_${cond}_n${n}_p${BASE_PORT}.log"
         for ((i = 0; i < n; i++)); do urls+="${sep}T${i}=localhost:${BASE_PORT}"; sep=","; done
     else
         for ((i = 0; i < n; i++)); do
             port=$((BASE_PORT + i))
-            start_server "$port" "$LOG_DIR/eff_${cond}_n${n}_p${port}.log"
+            if [[ "$cond" == mig || "$cond" == mig_tpc ]]; then
+                local ns=${#uuids[@]} sl=$((i % ${#uuids[@]})) share=""
+                if [[ "$cond" == mig_tpc ]]; then
+                    local k=$(( (n - sl + ns - 1) / ns )) j=$(( i / ns ))
+                    share="$j/$k"
+                fi
+                start_server "$port" "$LOG_DIR/eff_${cond}_n${n}_p${port}.log" \
+                    "${uuids[$sl]}" "" shared "$share"
+            else
+                start_server "$port" "$LOG_DIR/eff_${cond}_n${n}_p${port}.log"
+            fi
             urls+="${sep}T${i}=localhost:${port}"; sep=","
         done
     fi
@@ -349,14 +374,26 @@ run_efficiency() {
     stop_servers
 }
 
-# Isolation conditions: everything but mig runs with MIG off, mig last with MIG on.
+# Every mig condition (isolation and efficiency) runs last, with MIG on; the
+# rest first, with MIG off.
 IFS=',' read -ra ALL_ISO <<< "$ISO_CONDITIONS"
 ISO_NOMIG=(); RUN_MIG=0
 for c in "${ALL_ISO[@]}"; do [[ "$c" == mig ]] && RUN_MIG=1 || ISO_NOMIG+=("$c"); done
 [[ ",$EXPERIMENTS," == *,isolation,* ]] || RUN_MIG=0
+IFS=',' read -ra ALL_EFF <<< "$EFF_CONDITIONS"
+EFF_NOMIG=(); RUN_MIG_EFF=0
+EFF_MIG=()
+for c in "${ALL_EFF[@]}"; do
+    if [[ "$c" == mig || "$c" == mig_tpc ]]; then RUN_MIG_EFF=1; EFF_MIG+=("$c"); else EFF_NOMIG+=("$c"); fi
+done
+[[ ",$EXPERIMENTS," == *,efficiency,* ]] || RUN_MIG_EFF=0
+IFS=',' read -ra NS <<< "$EFF_NS"
 
 if [[ "$MIG_MANAGE" == 1 ]]; then
-    if mig_enabled && { (( ${#ISO_NOMIG[@]} )) || [[ ",$EXPERIMENTS," == *,efficiency,* ]]; }; then
+    NEED_MIG_OFF=0
+    [[ ",$EXPERIMENTS," == *,isolation,* ]] && (( ${#ISO_NOMIG[@]} )) && NEED_MIG_OFF=1
+    [[ ",$EXPERIMENTS," == *,efficiency,* ]] && (( ${#EFF_NOMIG[@]} )) && NEED_MIG_OFF=1
+    if [[ "$NEED_MIG_OFF" == 1 ]] && mig_enabled; then
         echo "[run.sh] MIG is on; turning it off for the non-MIG runs"
         mig_off
     fi
@@ -371,9 +408,7 @@ for exp in "${EXPS[@]}"; do
                 run_isolation "$c" || true
             done ;;
         efficiency)
-            IFS=',' read -ra CONDS <<< "$EFF_CONDITIONS"
-            IFS=',' read -ra NS <<< "$EFF_NS"
-            for c in "${CONDS[@]}"; do
+            for c in "${EFF_NOMIG[@]+"${EFF_NOMIG[@]}"}"; do
                 for n in "${NS[@]}"; do
                     echo; echo "######## efficiency / $c / n=$n ########"
                     run_efficiency "$c" "$n" || true
@@ -383,10 +418,20 @@ for exp in "${EXPS[@]}"; do
     esac
 done
 
-if [[ "$RUN_MIG" == 1 ]]; then
-    echo; echo "######## isolation / mig ########"
+if [[ "$RUN_MIG" == 1 || "$RUN_MIG_EFF" == 1 ]]; then
     if [[ "$MIG_MANAGE" != 1 ]] || have_slices || mig_on; then
-        run_isolation mig || true
+        if [[ "$RUN_MIG" == 1 ]]; then
+            echo; echo "######## isolation / mig ########"
+            run_isolation mig || true
+        fi
+        if [[ "$RUN_MIG_EFF" == 1 ]]; then
+            for c in "${EFF_MIG[@]}"; do
+                for n in "${NS[@]}"; do
+                    echo; echo "######## efficiency / $c / n=$n ########"
+                    run_efficiency "$c" "$n" || true
+                done
+            done
+        fi
     fi
     if [[ "$MIG_MANAGE" == 1 && "$MIG_TURNED_ON" == 1 ]]; then mig_off; fi
 fi

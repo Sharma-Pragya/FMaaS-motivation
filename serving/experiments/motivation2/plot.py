@@ -127,10 +127,10 @@ def load_stats(path: Path) -> list:
     return [json.loads(l) for l in open(path)] if path.exists() else []
 
 
-def noisy_memory_from_stats(rows: list, s: dict) -> tuple:
-    """(t, B's GB, B's quota GB or None) from Control("stats") samples (see
-    the module docstring)."""
-    b, urls = s["surging"], s["task_urls"]
+def noisy_memory_from_stats(rows: list, s: dict, task: str | None = None) -> tuple:
+    """(t, GB, quota GB or None) of one task (default the surging task B)
+    from Control("stats") samples (see the module docstring)."""
+    b, urls = task or s["surging"], s["task_urls"]
     b_url = urls[b]
     sharers = [t for t, u in urls.items() if u == b_url]
     rows = sorted((r for r in rows if r["url"] == b_url), key=lambda r: r["t"])
@@ -189,7 +189,11 @@ def efficiency_panel(ax, path: Path, part_key: str) -> None:
     w = 0.38
     ax_t = ax.twinx()
     top_mem, top_thr = 1.0, 1.0
-    for i, (cond, key) in enumerate((("partitioned", part_key), ("shared", "s_be"))):
+    # Partitioned: one server per task on MIG slices with each slice's TPCs
+    # split among its servers (mig_tpc) if that was run, else on MIG slices
+    # (mig), else on the whole GPU (partitioned).
+    part = next((c for c in ("mig_tpc", "mig", "partitioned") if c in data), "partitioned")
+    for i, (cond, key) in enumerate(((part, part_key), ("shared", "s_be"))):
         rows = data.get(cond, {})
         off = (i - 0.5) * w
         ys = []
@@ -236,6 +240,8 @@ def main() -> None:
                     help="isolation condition drawn as partitioned: mig or no_sharing "
                          "(default: mig if it was run)")
     ap.add_argument("--out", type=Path, default=None)
+    ap.add_argument("--thr-bin", type=float, default=mp.THR_BIN_S,
+                    help="(b) and (d) bin width in s (larger: smoother lines)")
     args = ap.parse_args()
     iso_dir, eff_csv = args.exp_dir / "isolation", args.exp_dir / "efficiency" / "summary.csv"
     out = args.out or args.exp_dir / "motivation2"
@@ -248,8 +254,8 @@ def main() -> None:
     s0 = summ[conds[0]]
     dur, ramp = s0["duration"], s0["ramp_at"]
     V = set(s0["victims"])
-    edges = np.arange(0, dur + 1e-9, mp.THR_BIN_S)
-    mids = edges[:-1] + mp.THR_BIN_S / 2
+    edges = np.arange(0, dur + 1e-9, args.thr_bin)
+    mids = edges[:-1] + args.thr_bin / 2
     has_eff = eff_csv.exists()
 
     with plt.rc_context({
