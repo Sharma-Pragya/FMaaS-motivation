@@ -272,6 +272,60 @@ def _child(kind: str, kw: dict, out_q) -> None:
         out_q.put((kw["task"], [], f"{type(exc).__name__}: {exc}"))
 
 
+class StatsPoller:
+    """Polls Control("stats") on every server every period_s, in a thread of
+    the parent while the senders run: GPU memory as the device server reports
+    it (device/memstats.py), sampled on a timer, so it goes on when no
+    request completes. Rows: {"t": s after t0, "round": k, "url": ..., **stats}."""
+
+    def __init__(self, urls, t0: float, period_s: float = 0.5):
+        import threading
+        self.urls, self.t0, self.period_s = sorted(set(urls)), t0, period_s
+        self.rows: list = []
+        self._stop = threading.Event()
+        self._th = threading.Thread(target=self._loop, name="stats", daemon=True)
+
+    def _loop(self) -> None:
+        import grpc
+        from device.proto import edge_runtime_pb2 as pb, edge_runtime_pb2_grpc as pbg
+        stubs = {u: pbg.EdgeRuntimeStub(grpc.insecure_channel(u)) for u in self.urls}
+        req = pb.ControlRequest(command="stats", payload_json="")
+        k, nxt = 0, time.time()
+        while not self._stop.is_set():
+            for u, stub in stubs.items():
+                try:
+                    r = stub.Control(req, timeout=2.0)
+                    self.rows.append({"t": round(time.time() - self.t0, 3), "round": k,
+                                      "url": u, **json.loads(r.logger_summary)})
+                except Exception:
+                    pass                # server down or busy: no sample
+            k += 1
+            nxt += self.period_s
+            self._stop.wait(max(0.0, nxt - time.time()))
+
+    def __enter__(self):
+        self._th.start()
+        return self
+
+    def __exit__(self, *exc):
+        self._stop.set()
+        self._th.join(timeout=5)
+
+
+def append_csv(path: Path, row: dict) -> None:
+    """Append row to path, rewriting the file if row has new columns."""
+    old, fields = [], list(row)
+    if path.exists():
+        with path.open() as f:
+            rd = csv.DictReader(f)
+            old = list(rd)
+            fields = list(rd.fieldnames or []) + [k for k in row if k not in (rd.fieldnames or [])]
+    with path.open("w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=fields, restval="")
+        w.writeheader()
+        w.writerows(old + [row])
+
+
 def run_senders(kind: str, per_task_kw: dict) -> dict:
     """One process per task; returns {task: rows}."""
     ctx = mp.get_context("spawn")
@@ -356,9 +410,14 @@ def isolation(a, task_urls: dict) -> None:
                   seed=SEED_BASE + i, end_s=end_s, req_timeout=a.req_timeout)
           for i, t in enumerate(tasks)}
     print(f"[Run] isolation/{a.condition}: sending for {a.duration:g} s ...", flush=True)
-    rows = run_senders("open", kw)
+    with StatsPoller(task_urls.values(), t0, a.stats_period) as poller:
+        rows = run_senders("open", kw)
 
     a.out_dir.mkdir(parents=True, exist_ok=True)
+    with (a.out_dir / f"mem_{a.condition}.jsonl").open("w") as f:
+        for r in poller.rows:
+            f.write(json.dumps(r) + "\n")
+    print(f"[Mem] {len(poller.rows)} stats samples -> mem_{a.condition}.jsonl", flush=True)
     path = a.out_dir / f"events_{a.condition}.csv"
     with path.open("w", newline="") as f:
         w = csv.writer(f)
@@ -415,7 +474,8 @@ def efficiency(a, task_urls: dict) -> None:
            "backbone": a.backbone, "res": a.res, "concurrency": a.concurrency,
            "duration": a.duration, "warmup": a.warmup, "status": "ok",
            "throughput_rps": "", "avg_gpu_mem_mb": "", "peak_gpu_mem_mb": "",
-           "avg_latency_ms": "", "p99_latency_ms": "", "fail": ""}
+           "avg_latency_ms": "", "p99_latency_ms": "", "fail": "",
+           "avg_device_used_mb": "", "peak_device_used_mb": ""}
     bad = {u: s for u, s in a.deploy_status.items() if not str(s).startswith("loaded")}
     if bad:
         row["status"] = "oom" if any("memory" in str(s).lower() for s in bad.values()) else "load_failed"
@@ -427,8 +487,18 @@ def efficiency(a, task_urls: dict) -> None:
               for i, t in enumerate(tasks)}
         print(f"[Run] efficiency/{a.condition} n={len(tasks)}: closed loop, "
               f"{a.concurrency} in flight per task, {a.duration:g} s ...", flush=True)
-        rows = run_senders("closed", kw)
+        with StatsPoller(task_urls.values(), t0, a.stats_period) as poller:
+            rows = run_senders("closed", kw)
         win = a.duration - a.warmup
+        # GPU used, CUDA contexts included: per poll round, the most any server
+        # reports (one GPU, so every server sees the same device), in the window.
+        rounds: dict = {}
+        for r in poller.rows:
+            if a.warmup <= r["t"] <= a.duration and r.get("device_used_mb"):
+                rounds[r["round"]] = max(rounds.get(r["round"], 0.0), r["device_used_mb"])
+        if rounds:
+            row["avg_device_used_mb"] = round(float(np.mean(list(rounds.values()))), 1)
+            row["peak_device_used_mb"] = round(max(rounds.values()), 1)
         ok = [(t, r) for t in tasks for r in rows[t] if r[2] and r[1] >= a.warmup]
         lats = [r[3] for _, r in ok]
         # Memory: per server, mean / max of its samples in the window; summed over servers.
@@ -447,13 +517,7 @@ def efficiency(a, task_urls: dict) -> None:
         if len(by_url) < n_servers:
             row["status"] = "partial"
     a.out_dir.mkdir(parents=True, exist_ok=True)
-    path = a.out_dir / "summary.csv"
-    new = not path.exists()
-    with path.open("a", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=list(row))
-        if new:
-            w.writeheader()
-        w.writerow(row)
+    append_csv(a.out_dir / "summary.csv", row)
     print(f"[Done] {row}")
 
 
@@ -485,6 +549,8 @@ def main() -> int:
                     help="isolation: warm-up requests in flight per task (the max batch)")
     ap.add_argument("--concurrency", type=int, default=1,
                     help="efficiency: requests in flight per task (1, as motivation1)")
+    ap.add_argument("--stats-period", type=float, default=0.5,
+                    help="s between Control(\"stats\") polls of every server")
     ap.add_argument("--gpu-index", type=int, default=0)
     ap.add_argument("--mig-uuid", default=None, help="a slice in use, for its capacity")
     ap.add_argument("--gpu-total-mb", type=float, default=None)

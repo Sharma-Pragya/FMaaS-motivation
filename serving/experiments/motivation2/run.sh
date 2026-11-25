@@ -262,8 +262,8 @@ run_efficiency() {
         # A server that cannot even start (e.g. out of memory) is recorded as OOM.
         mkdir -p "$EXP_DIR/efficiency"
         local f="$EXP_DIR/efficiency/summary.csv"
-        [[ -f "$f" ]] || echo "condition,n_tasks,n_servers,backbone,res,concurrency,duration,warmup,status,throughput_rps,avg_gpu_mem_mb,peak_gpu_mem_mb,avg_latency_ms,p99_latency_ms,fail" > "$f"
-        echo "$cond,$n,${#PIDS[@]},$BACKBONE,$RES,$EFF_CONC,$EFF_DURATION,$WARMUP,start_failed,,,,,," >> "$f"
+        [[ -f "$f" ]] || echo "condition,n_tasks,n_servers,backbone,res,concurrency,duration,warmup,status,throughput_rps,avg_gpu_mem_mb,peak_gpu_mem_mb,avg_latency_ms,p99_latency_ms,fail,avg_device_used_mb,peak_device_used_mb" > "$f"
+        echo "$cond,$n,${#PIDS[@]},$BACKBONE,$RES,$EFF_CONC,$EFF_DURATION,$WARMUP,start_failed,,,,,,,," >> "$f"
         stop_servers; return 1
     fi
     $PYTHON -u experiments/motivation2/run.py --experiment efficiency --condition "$cond" \

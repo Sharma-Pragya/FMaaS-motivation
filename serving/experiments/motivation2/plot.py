@@ -8,17 +8,29 @@
     (c) Mem. iso.    noisy task B's GPU memory over time
     (d) Fault iso.   victims' failed requests (cumulative)
 
-Memory is the device server's gpu_alloc_peak_mb (torch allocated in the
-server process, after each batch), one sample per completed request at the
-server's end time; resampled on a GRID_S grid (max per bin, gaps
-interpolated; nothing drawn after a server's last sample).
-    partitioned (mig / no_sharing): B's own server.
-    shared: one server for every task, so its memory is split: its mean
-        before the ramp (backbone, decoders, steady queues) evenly, 1/N per
-        task; everything above that goes to B (the victims' load is
-        constant, so the growth is B's backlog).
-(a) sums each server's mean memory, so partitioned counts one backbone copy
-per task (the CUDA contexts are not in torch's count).
+(c) B's GPU memory in use, from the device server's Control("stats"),
+polled every 0.5 s (isolation/mem_<condition>.jsonl, device/memstats.py).
+A CUDA context is charged to B only where it exists for B alone:
+    mig         B's server: the slice's used memory (cudaMemGetInfo), its
+                context, weights and queue included.
+    no_sharing  B's server: torch reserved (the GPU is shared by both
+                servers, so the device's used memory is not B's alone).
+    shared(_bfq) one server for every task, so its torch reserved memory is
+                split: its mean before the ramp evenly, 1/N per task; what it
+                grows above that by each task's queued bytes (inputs on the
+                GPU, staging=gpu). Its context is the system's.
+    fmvisor     B's slots in use x slot size (its part of its pool, in the
+                backbone process) + B's task process (torch reserved) + that
+                process's context, estimated as the device's used memory not
+                in any process's torch reserved, split evenly over the
+                processes. Its quota (whole pool + the same) is drawn dashed.
+Runs without a mem_<condition>.jsonl fall back to the gpu_alloc_peak_mb of
+completed requests (torch allocated, after each batch; B's split as above
+with every byte above the base charged to B), which stops when nothing
+completes.
+(a) GPU memory is the device's used memory (CUDA contexts included) averaged
+over the run (avg_device_used_mb), or, for older rows, the sum of each
+server's torch allocated (contexts left out).
 
 Usage (from serving/):
     python experiments/motivation2/plot.py --exp-dir experiments/motivation2/results
@@ -111,6 +123,51 @@ def noisy_memory_gb(ev: list, s: dict) -> tuple:
     return grid, y / 1024
 
 
+def load_stats(path: Path) -> list:
+    return [json.loads(l) for l in open(path)] if path.exists() else []
+
+
+def noisy_memory_from_stats(rows: list, s: dict) -> tuple:
+    """(t, B's GB, B's quota GB or None) from Control("stats") samples (see
+    the module docstring)."""
+    b, urls = s["surging"], s["task_urls"]
+    b_url = urls[b]
+    sharers = [t for t, u in urls.items() if u == b_url]
+    rows = sorted((r for r in rows if r["url"] == b_url), key=lambda r: r["t"])
+    t, y, quota = [], [], []
+    if rows and rows[0].get("mode") == "shared" and len(sharers) > 1:
+        res = np.array([r["reserved_mb"] for r in rows])
+        tt = np.array([r["t"] for r in rows])
+        pre = res[(tt >= 5.0) & (tt < s["ramp_at"])]
+        base = float(pre.mean()) if len(pre) else 0.0
+        for r, v in zip(rows, res):
+            q = {k: d.get("queued_mb", 0.0) for k, d in r.get("tasks", {}).items()}
+            qb, qall = q.get(b, 0.0), sum(q.values())
+            frac = qb / qall if qall > 0 else 1.0 / len(sharers)
+            t.append(r["t"])
+            y.append(base / len(sharers) + max(0.0, v - base) * frac)
+        return np.array(t), np.array(y) / 1024, None
+    for r in rows:
+        if r.get("mode") == "process":
+            tb = r.get("tasks", {}).get(b)
+            if tb is None or (tb.get("age_s") or 0) > 5:      # B's process is gone
+                continue
+            procs = 1 + len(r["tasks"])
+            in_torch = r["backbone"]["reserved_mb"] + sum(d["reserved_mb"] for d in r["tasks"].values())
+            ctx = max(0.0, r["device_used_mb"] - in_torch) / procs
+            t.append(r["t"])
+            y.append(tb["pool_used_mb"] + tb["reserved_mb"] + ctx)
+            quota.append(tb["pool_mb"] + tb["reserved_mb"] + ctx)
+        elif s["condition"] == "mig":
+            t.append(r["t"])
+            y.append(r["device_used_mb"])
+        else:
+            t.append(r["t"])
+            y.append(r["reserved_mb"])
+    q = float(np.median(quota)) / 1024 if quota else None
+    return np.array(t), np.array(y) / 1024, q
+
+
 def latest_summaries(path: Path) -> dict:
     out = {}
     for line in open(path):
@@ -138,8 +195,9 @@ def efficiency_panel(ax, path: Path, part_key: str) -> None:
         ys = []
         for j, n in enumerate(ns):
             r = rows.get(n)
-            if r and r["status"] in ("ok", "partial") and r["avg_gpu_mem_mb"]:
-                gb = float(r["avg_gpu_mem_mb"]) / 1024
+            mem = (r.get("avg_device_used_mb") or r.get("avg_gpu_mem_mb")) if r else None
+            if r and r["status"] in ("ok", "partial") and mem:
+                gb = float(mem) / 1024
                 top_mem = max(top_mem, gb)
                 ax.bar(x[j] + off, gb, w, color=mp.COLORS[key], alpha=0.35,
                        edgecolor=mp.COLORS[key], lw=0.6, zorder=2)
@@ -222,13 +280,22 @@ def main() -> None:
             thr = mp.rate_per_bin(ok_ev, V, edges)
             max_thr = max(max_thr, float(np.nanmax(thr)) if len(thr) else 0.0)
             ax_p.plot(mids, thr, **style(key, len(mids)))
-            t, yb = noisy_memory_gb(ev, s)
-            peak = float(np.nanmax(yb)) if np.isfinite(yb).any() else 0.0
-            max_mem = max(max_mem, peak)
-            # Process mode (fmvisor) reports no memory in its responses yet:
-            # draw nothing rather than a line at 0.
+            stats = load_stats(iso_dir / f"mem_{c}.jsonl")
+            quota = None
+            if stats:
+                t, yb, quota = noisy_memory_from_stats(stats, s)
+            else:
+                t, yb = noisy_memory_gb(ev, s)
+            peak = float(np.nanmax(yb)) if len(yb) and np.isfinite(yb).any() else 0.0
+            max_mem = max(max_mem, peak, quota or 0.0)
+            # A run with no memory numbers (process mode before stats): no line,
+            # rather than one at 0.
             if peak > 0:
                 ax_m.plot(t, yb, **style(key, len(t)))
+            if quota:
+                ax_m.axhline(quota, color=mp.COLORS[key], lw=0.6, ls="--")
+                ax_m.text(dur - 2, quota, f"{LABELS[c]} quota", color=mp.COLORS[key],
+                          fontsize=5.5, va="bottom", ha="right")
             ft = np.sort([r["t_done"] for r in ev if not r["ok"] and r["task"] in V])
             fails[c] = np.searchsorted(ft, mids, side="right")
             max_fail = max(max_fail, len(ft))
