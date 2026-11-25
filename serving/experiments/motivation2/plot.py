@@ -32,8 +32,19 @@ completes.
 over the run (avg_device_used_mb), or, for older rows, the sum of each
 server's torch allocated (contexts left out).
 
+Writes three figures into --exp-dir:
+    motivation2       (a)-(d), Partitioned vs Shared: the motivation figure
+    motivation2_all   (b)-(d), every isolation condition that was run
+                      (Partitioned, Shared, Shared + BFQ, FMVisor)
+    rough_memory      rough, not for the paper: per condition, noisy B, the
+                      victim, everything else, and the device's used memory
+(a)'s Partitioned is mig_tpc if it was run, else mig, else partitioned.
+--oom condition:n,... draws (a) points as OOM that left no row (e.g. the
+memory cap killed the run's client rather than a server).
+
 Usage (from serving/):
-    python experiments/motivation2/plot.py --exp-dir experiments/motivation2/results
+    python experiments/motivation2/plot.py --exp-dir experiments/motivation2/results \\
+        [--oom mig_tpc:24]
 """
 from __future__ import annotations
 
@@ -180,10 +191,15 @@ def latest_summaries(path: Path) -> dict:
 # Panels
 # ---------------------------------------------------------------------------
 
-def efficiency_panel(ax, path: Path, part_key: str) -> None:
+def efficiency_panel(ax, path: Path, part_key: str, oom: dict | None = None) -> None:
+    """oom: {condition: {n, ...}} drawn as OOM where the run left no row (e.g.
+    the memory cap killed the client, not a server; see --oom)."""
     data: dict = {}
     for r in csv.DictReader(open(path)):
         data.setdefault(r["condition"], {})[int(r["n_tasks"])] = r   # latest row wins
+    for cond, ns_oom in (oom or {}).items():
+        for n in ns_oom:
+            data.setdefault(cond, {}).setdefault(n, {"status": "oom"})
     ns = sorted({n for d in data.values() for n in d})
     x = np.arange(len(ns))
     w = 0.38
@@ -200,6 +216,7 @@ def efficiency_panel(ax, path: Path, part_key: str) -> None:
         for j, n in enumerate(ns):
             r = rows.get(n)
             mem = (r.get("avg_device_used_mb") or r.get("avg_gpu_mem_mb")) if r else None
+            mem = mem if r and r.get("status") in ("ok", "partial") else None
             if r and r["status"] in ("ok", "partial") and mem:
                 gb = float(mem) / 1024
                 top_mem = max(top_mem, gb)
@@ -233,43 +250,31 @@ def efficiency_panel(ax, path: Path, part_key: str) -> None:
     ax.set_title("(a) Efficiency")
 
 
-def main() -> None:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--exp-dir", type=Path, default=EXP_DIR / "results")
-    ap.add_argument("--partitioned", default=None,
-                    help="isolation condition drawn as partitioned: mig or no_sharing "
-                         "(default: mig if it was run)")
-    ap.add_argument("--out", type=Path, default=None)
-    ap.add_argument("--thr-bin", type=float, default=mp.THR_BIN_S,
-                    help="(b) and (d) bin width in s (larger: smoother lines)")
-    args = ap.parse_args()
-    iso_dir, eff_csv = args.exp_dir / "isolation", args.exp_dir / "efficiency" / "summary.csv"
-    out = args.out or args.exp_dir / "motivation2"
+RC = {
+    "font.family": "sans-serif", "font.size": 7, "axes.labelsize": 7,
+    "axes.titlesize": 7, "xtick.labelsize": 6.5, "ytick.labelsize": 6.5,
+    "axes.linewidth": 0.6, "axes.spines.top": False, "axes.spines.right": False,
+    "xtick.major.size": 2.5, "ytick.major.size": 2.5,
+    "pdf.fonttype": 42, "ps.fonttype": 42, "savefig.bbox": "standard",
+}
 
-    summ = latest_summaries(iso_dir / "summary.jsonl")
-    ded = args.partitioned or ("mig" if "mig" in summ else "no_sharing")
-    conds = [c for c in dict.fromkeys((ded, "shared", "shared_bfq", "fmvisor")) if c in summ]
-    if not conds:
-        raise SystemExit(f"no isolation runs of {ded} / shared in {iso_dir}")
+
+def draw_figure(summ: dict, conds: list, iso_dir: Path, out: Path, thr_bin: float,
+                eff_csv: Path | None = None, part_key: str = "mig", oom: dict | None = None,
+                fig_w: float = FIG_W) -> None:
+    """(a) if eff_csv, then (b) victim throughput, (c) noisy task memory,
+    (d) victim failures, for the isolation conditions conds."""
     s0 = summ[conds[0]]
     dur, ramp = s0["duration"], s0["ramp_at"]
     V = set(s0["victims"])
-    edges = np.arange(0, dur + 1e-9, args.thr_bin)
-    mids = edges[:-1] + args.thr_bin / 2
-    has_eff = eff_csv.exists()
-
-    with plt.rc_context({
-        "font.family": "sans-serif", "font.size": 7, "axes.labelsize": 7,
-        "axes.titlesize": 7, "xtick.labelsize": 6.5, "ytick.labelsize": 6.5,
-        "axes.linewidth": 0.6, "axes.spines.top": False, "axes.spines.right": False,
-        "xtick.major.size": 2.5, "ytick.major.size": 2.5,
-        "pdf.fonttype": 42, "ps.fonttype": 42, "savefig.bbox": "standard",
-    }):
-        fig = plt.figure(figsize=(FIG_W, FIG_H))
-        if has_eff:
+    edges = np.arange(0, dur + 1e-9, thr_bin)
+    mids = edges[:-1] + thr_bin / 2
+    with plt.rc_context(RC):
+        fig = plt.figure(figsize=(fig_w, FIG_H))
+        if eff_csv is not None:
             gs = fig.add_gridspec(1, 5, width_ratios=[1.3, 0.22, 1, 1, 1], wspace=0.42,
                                   left=0.055, right=0.99, top=0.76, bottom=0.21)
-            efficiency_panel(fig.add_subplot(gs[0]), eff_csv, STYLE_OF[ded])
+            efficiency_panel(fig.add_subplot(gs[0]), eff_csv, part_key, oom)
             ax_p = fig.add_subplot(gs[2])
             ax_m, ax_f = fig.add_subplot(gs[3], sharex=ax_p), fig.add_subplot(gs[4], sharex=ax_p)
         else:
@@ -347,7 +352,133 @@ def main() -> None:
         fig.savefig(out.with_suffix(".png"), dpi=300)
         plt.close(fig)
     print(f"wrote {out.with_suffix('.pdf')}")
-    for c in conds:
+
+
+# ---------------------------------------------------------------------------
+# Rough figure (not for the paper): where the GPU's memory goes, per condition
+# ---------------------------------------------------------------------------
+
+def _on_grid(t, y, grid):
+    if not len(t):
+        return np.full_like(grid, np.nan)
+    return np.interp(grid, t, y, left=np.nan, right=np.nan)
+
+
+def _device_used_gb(rows: list, s: dict, grid) -> np.ndarray:
+    """GB the GPU has in use: one server's view, or the MIG slices' summed."""
+    by_url: dict = {}
+    for r in rows:
+        if r.get("device_used_mb") is not None:
+            by_url.setdefault(r["url"], []).append((r["t"], r["device_used_mb"]))
+    if not by_url:
+        return np.full_like(grid, np.nan)
+    curves = []
+    for pts in by_url.values():
+        pts.sort()
+        curves.append(_on_grid(np.array([p[0] for p in pts]), np.array([p[1] for p in pts]), grid))
+    if s["condition"] == "mig":
+        return np.nansum(curves, axis=0) / 1024
+    return np.nanmax(curves, axis=0) / 1024       # one GPU: every server sees the same
+
+
+def draw_rough_memory(summ: dict, iso_dir: Path, out: Path) -> None:
+    """One panel per condition: noisy B and the victim(s) (as panel (c) charges
+    them), everything else (device used - B - victims: weights, decoders,
+    activations, CUDA contexts, cache), and the device's used memory."""
+    conds = [c for c in ("shared", "shared_bfq", "fmvisor", "mig", "no_sharing")
+             if c in summ and (iso_dir / f"mem_{c}.jsonl").exists()]
+    if not conds:
+        return
+    fig, axes = plt.subplots(1, len(conds), figsize=(3.0 * len(conds), 2.4),
+                             sharey=True, squeeze=False)
+    for ax, c in zip(axes[0], conds):
+        s = summ[c]
+        rows = load_stats(iso_dir / f"mem_{c}.jsonl")
+        dur = s["duration"]
+        grid = np.arange(0.0, dur, GRID_S)
+        tb, yb, quota = noisy_memory_from_stats(rows, s)
+        b = _on_grid(tb, yb, grid)
+        v = np.zeros_like(grid)
+        for task in s["victims"]:
+            tv, yv, _ = noisy_memory_from_stats(rows, s, task)
+            v = v + np.nan_to_num(_on_grid(tv, yv, grid))
+        dev = _device_used_gb(rows, s, grid)
+        other = np.clip(dev - np.nan_to_num(b) - v, 0, None)
+        ax.plot(grid, b, color="#c0392b", lw=1.4, label="noisy B")
+        ax.plot(grid, v, color="#2471a3", lw=1.4, label="victim")
+        ax.plot(grid, other, color="#7f8c8d", lw=1.0, ls="--", label="other (weights, ctx, cache)")
+        ax.plot(grid, dev, color="black", lw=0.9, label="device used")
+        cap = (s.get("gpu_total_mb") or 0) / 1024
+        if cap:
+            ax.axhline(cap, color="#999999", lw=0.6, ls=":")
+            ax.text(2, cap, "GPU capacity", fontsize=6, color="#777777", va="bottom")
+        if c == "mig" and s.get("mig_slice_mb"):
+            sl = s["mig_slice_mb"] / 1024
+            ax.axhline(sl, color="#2E8B57", lw=0.6, ls=":")
+            ax.text(2, sl, "one slice", fontsize=6, color="#2E8B57", va="bottom")
+        if quota:
+            ax.axhline(quota, color="#c0392b", lw=0.6, ls=":")
+            ax.text(2, quota, "B's quota", fontsize=6, color="#c0392b", va="bottom")
+        ax.axvline(s["ramp_at"], color="black", lw=0.4, ls=":")
+        ax.set_title("Partitioned (MIG)" if c == "mig" else LABELS.get(c, c), fontsize=8)
+        ax.set_xlabel("Time (s)", fontsize=7)
+        ax.set_xlim(0, dur)
+        ax.tick_params(labelsize=6.5)
+        ax.grid(True, color="#eeeeee", lw=0.4)
+    axes[0][0].set_ylabel("GPU memory (GB)", fontsize=7)
+    axes[0][0].legend(fontsize=6, frameon=False, loc="upper left", bbox_to_anchor=(0, 0.92))
+    fig.tight_layout()
+    fig.savefig(out.with_suffix(".png"), dpi=200)
+    fig.savefig(out.with_suffix(".pdf"))
+    plt.close(fig)
+    print(f"wrote {out.with_suffix('.pdf')}")
+
+
+def parse_oom(spec: str | None) -> dict:
+    """'mig_tpc:24,partitioned:16' -> {'mig_tpc': {24}, 'partitioned': {16}}"""
+    out: dict = {}
+    for item in (spec or "").split(","):
+        if item.strip():
+            c, n = item.split(":")
+            out.setdefault(c.strip(), set()).add(int(n))
+    return out
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--exp-dir", type=Path, default=EXP_DIR / "results")
+    ap.add_argument("--partitioned", default=None,
+                    help="isolation condition drawn as partitioned: mig or no_sharing "
+                         "(default: mig if it was run)")
+    ap.add_argument("--out", type=Path, default=None,
+                    help="main figure (default <exp-dir>/motivation2); the others are "
+                         "written next to it as <out>_all and rough_memory")
+    ap.add_argument("--thr-bin", type=float, default=5.0,
+                    help="(b) and (d) bin width in s (default 5; larger: smoother lines)")
+    ap.add_argument("--oom", default=None,
+                    help="(a): points to draw as OOM that have no row, condition:n,... "
+                         "(e.g. mig_tpc:24 when the memory cap killed the run's client)")
+    args = ap.parse_args()
+    iso_dir, eff_csv = args.exp_dir / "isolation", args.exp_dir / "efficiency" / "summary.csv"
+    out = args.out or args.exp_dir / "motivation2"
+
+    summ = latest_summaries(iso_dir / "summary.jsonl")
+    ded = args.partitioned or ("mig" if "mig" in summ else "no_sharing")
+    main_conds = [c for c in (ded, "shared") if c in summ]
+    all_conds = [c for c in dict.fromkeys((ded, "shared", "shared_bfq", "fmvisor")) if c in summ]
+    if not main_conds:
+        raise SystemExit(f"no isolation runs of {ded} / shared in {iso_dir}")
+
+    # 1) The motivation figure: Partitioned vs Shared, (a)-(d).
+    draw_figure(summ, main_conds, iso_dir, out, args.thr_bin,
+                eff_csv if eff_csv.exists() else None, STYLE_OF[ded], parse_oom(args.oom))
+    # 2) Every isolation condition that was run, (b)-(d).
+    if len(all_conds) > len(main_conds):
+        draw_figure(summ, all_conds, iso_dir, out.with_name(out.name + "_all"), args.thr_bin)
+    # 3) Rough: where the GPU's memory goes, per condition.
+    draw_rough_memory(summ, iso_dir, out.with_name("rough_memory"))
+
+    for c in all_conds:
         s = summ[c]
         print(f"  {c}: victims {s['victim_rps_before']} -> {s['victim_rps_after']} req/s, "
               f"B {s['surging_rps_before']} -> {s['surging_rps_after']} req/s, "
