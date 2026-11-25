@@ -133,6 +133,7 @@ class DeviceBatcher:
                 return
 
             self._next_prepared = prepared
+            prepared = None         # the worker holds it; don't keep it past the batch
             self._work_ready.set()  # unblocks worker thread
 
     async def stop(self):
@@ -158,8 +159,27 @@ class DeviceBatcher:
                 import traceback
                 print(f"[DeviceBatcher] ERROR in _execute_prepared: {exc}")
                 traceback.print_exc()
+                # Fail the requests with a fresh exception, not exc: exc's
+                # traceback keeps the failed forward's frames (its inputs and
+                # activations on the GPU) alive in a reference cycle that only
+                # Python's full GC breaks, so after an OOM the GPU memory
+                # stayed held for tens of seconds and was then freed at once.
+                import sys
+                err = RuntimeError(str(exc))
+                is_oom = "out of memory" in str(exc)
+                traceback.clear_frames(sys.exc_info()[2])   # drop the frames' locals now
+                del exc
                 for request in prepared.requests:
-                    loop.call_soon_threadsafe(self._fail_future_if_pending, request.future, exc)
+                    loop.call_soon_threadsafe(self._fail_future_if_pending, request.future, err)
+                if is_oom:
+                    try:
+                        import torch
+                        torch.cuda.empty_cache()
+                    except Exception:
+                        pass
+            finally:
+                prepared = None
+                self._next_prepared = None
             # Signal async side that we're done — it can dispatch the next batch
             loop.call_soon_threadsafe(self._work_done.set)
 
