@@ -111,6 +111,7 @@ def task_proc_main(
     result_q,                  # this proc → gRPC process
     dying,                     # set when this proc fails
     run_stop,                  # set when the server stops
+    stats_arr=None,            # shared array for Control("stats") (device.memstats)
 ):
     import json
 
@@ -375,6 +376,23 @@ def task_proc_main(
                 })
             pump()
 
+    if stats_arr is not None:
+        from device.memstats import MB, TASK_FIELDS, cuda_mem, start_writer
+
+        def read_stats() -> dict:
+            m = cuda_mem(dev)
+            with lock:
+                n_slots = pool["x"].shape[0] if pool["x"] is not None else 0
+                slot_b = 0
+                for k in ("x", "mask", "feat"):
+                    t = pool[k]
+                    if t is not None and t.shape[0]:
+                        slot_b += t[0].numel() * t.element_size()
+                return {"allocated_mb": m["allocated_mb"], "reserved_mb": m["reserved_mb"],
+                        "slots_total": n_slots, "slots_used": n_slots - len(free),
+                        "slot_mb": slot_b / MB, "overflow_n": len(overflow)}
+        start_writer(stats_arr, TASK_FIELDS, read_stats, stop)
+
     intake = threading.Thread(target=intake_loop, name="intake", daemon=True)
     head = threading.Thread(target=head_loop, name="head", daemon=True)
     intake.start()
@@ -390,11 +408,12 @@ def task_proc_main(
 # ---------------------------------------------------------------------------
 
 def start_task_process(ctx, task: str, lane: int, device: str, backlog_cap: int, req_q,
-                       ctrl_reply_q, sched_q, done_q, result_q, dying, run_stop):
+                       ctrl_reply_q, sched_q, done_q, result_q, dying, run_stop,
+                       stats_arr=None):
     p = ctx.Process(
         target=task_proc_main,
         args=(task, lane, device, backlog_cap, req_q, ctrl_reply_q, sched_q, done_q,
-              result_q, dying, run_stop),
+              result_q, dying, run_stop, stats_arr),
         daemon=True,
         name=f"task_proc_{task}",
     )

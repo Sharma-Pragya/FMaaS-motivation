@@ -79,6 +79,7 @@ def backbone_proc_main(
     ctrl_q,                    # ControlMsg / SentinelMsg from isolated_app
     ctrl_reply_q,              # backbone_proc → isolated_app (control replies)
     run_stop,                  # set when the server stops
+    stats_arr=None,            # shared array for Control("stats") (device.memstats)
 ):
     import gc
     import os
@@ -97,6 +98,9 @@ def backbone_proc_main(
     if cuda:
         torch.cuda.set_device(dev)
     torch.set_num_threads(1)
+    if stats_arr is not None:
+        from device.memstats import BB_FIELDS, cuda_mem, start_writer
+        start_writer(stats_arr, BB_FIELDS, lambda: cuda_mem(dev), run_stop)
 
     max_b = config.max_batch_size
     window_s = config.max_batch_wait_ms / 1000.0
@@ -425,10 +429,11 @@ def backbone_proc_main(
 # ---------------------------------------------------------------------------
 
 def start_backbone_process(ctx, config, device: str, sched_qs: list, done_qs: list,
-                           dyings: list, ctrl_q, ctrl_reply_q, run_stop):
+                           dyings: list, ctrl_q, ctrl_reply_q, run_stop, stats_arr=None):
     p = ctx.Process(
         target=backbone_proc_main,
-        args=(config, device, sched_qs, done_qs, dyings, ctrl_q, ctrl_reply_q, run_stop),
+        args=(config, device, sched_qs, done_qs, dyings, ctrl_q, ctrl_reply_q, run_stop,
+              stats_arr),
         daemon=True,
         name="backbone_proc",
     )

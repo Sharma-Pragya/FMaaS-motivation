@@ -34,6 +34,7 @@ import time
 import numpy as np
 import torch.multiprocessing as tmp
 
+from device import memstats
 from device.backbone_proc import ControlMsg, SentinelMsg, start_backbone_process
 from device.task_proc import TaskControlMsg, TaskInferMsg, start_task_process
 
@@ -58,6 +59,9 @@ class IsolatedRuntimeApplication:
         self._sched_qs = [ctx.Queue() for _ in range(k)]
         self._done_qs = [ctx.Queue() for _ in range(k)]
         self._dyings = [ctx.Event() for _ in range(k)]
+        # Memory numbers each process writes for Control("stats") (memstats).
+        self._bb_stats = memstats.new_array(ctx, memstats.BB_FIELDS)
+        self._lane_stats = [memstats.new_array(ctx, memstats.TASK_FIELDS) for _ in range(k)]
         self._next_lane = 0
 
         # Process handles
@@ -113,6 +117,7 @@ class IsolatedRuntimeApplication:
         self._backbone_proc = start_backbone_process(
             self._ctx, self.config, self._device, self._sched_qs, self._done_qs,
             self._dyings, self._ctrl_q, self._bb_ctrl_reply_q, self._run_stop,
+            stats_arr=self._bb_stats,
         )
 
         self._monitor_thread = threading.Thread(
@@ -226,7 +231,30 @@ class IsolatedRuntimeApplication:
     # Control
     # ------------------------------------------------------------------
 
+    def _stats(self) -> dict:
+        """Control("stats"): the numbers the backbone and task processes write
+        (memstats). Device used/total come from the backbone process. A task's
+        pool lives in the backbone process; slots_used x slot_mb of it holds
+        the task's requests."""
+        bb = memstats.read_array(self._bb_stats, memstats.BB_FIELDS)
+        out = {"mode": "process", "time_ns": time.time_ns(),
+               "device_used_mb": bb.pop("device_used_mb"),
+               "device_total_mb": bb.pop("device_total_mb"),
+               "backbone": bb, "tasks": {}}
+        for lane, task in list(self._lane_task.items()):
+            if lane in self._dead_lanes:
+                continue
+            st = memstats.read_array(self._lane_stats[lane], memstats.TASK_FIELDS)
+            st["pool_mb"] = st["slots_total"] * st["slot_mb"]
+            st["pool_used_mb"] = st["slots_used"] * st["slot_mb"]
+            with self._futures_lock:
+                st["open_n"] = self._open.get(task, 0)
+            out["tasks"][task] = st
+        return out
+
     async def control(self, command: str, payload_json: str) -> dict:
+        if command == "stats":          # polled often: no log line
+            return {"status": "ok", "logger_summary": json.dumps(self._stats())}
         payload = json.loads(payload_json) if payload_json else {}
         status = "ok"
         logger_summary = "no_logger"
@@ -312,7 +340,7 @@ class IsolatedRuntimeApplication:
             self._ctx, task, lane, self._device, self.config.task_backlog_cap,
             self._req_qs[lane], self._task_reply_qs[lane], self._sched_qs[lane],
             self._done_qs[lane], self._result_q, self._dyings[lane],
-            self._run_stop,
+            self._run_stop, stats_arr=self._lane_stats[lane],
         )
         self._task_procs[lane] = proc
         self._lane_task[lane] = task

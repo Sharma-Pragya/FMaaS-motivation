@@ -343,7 +343,24 @@ class EdgeRuntimeApplication:
         await self.batcher.enqueue(envelope)
         return future
 
+    def _stats(self) -> dict:
+        """Control("stats"): this process's GPU memory (device.memstats.cuda_mem)
+        and, per task, the requests waiting in the batch queue and their bytes
+        (with staging=gpu, inputs already on the GPU)."""
+        from device.config import DEVICE
+        from device.memstats import MB, cuda_mem
+        out = {"mode": "shared", "time_ns": time.time_ns(), **cuda_mem(DEVICE), "tasks": {}}
+        queues = getattr(getattr(self.batcher, "_queues", None), "_queues", None) or {}
+        for task, q in list(queues.items()):
+            n = len(q)
+            head = q[0] if n else None
+            per = getattr(getattr(head, "x", None), "nbytes", 0) or 0
+            out["tasks"][task] = {"queued_n": n, "queued_mb": n * per / MB}
+        return out
+
     async def control(self, command: str, payload_json: str) -> dict:
+        if command == "stats":          # polled often: no log line
+            return {"status": "ok", "logger_summary": json.dumps(self._stats())}
         logger = None
         status = "ok"
         try:
