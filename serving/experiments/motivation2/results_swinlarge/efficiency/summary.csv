@@ -1,0 +1,10 @@
+condition,n_tasks,n_servers,backbone,res,concurrency,duration,warmup,status,throughput_rps,avg_gpu_mem_mb,peak_gpu_mem_mb,avg_latency_ms,p99_latency_ms,fail,avg_device_used_mb,peak_device_used_mb
+shared,1,1,swinlarge,224,1,60.0,10.0,ok,53.92,755.6,755.6,18.55,19.43,0,1286.2,1286.2
+shared,4,1,swinlarge,224,1,60.0,10.0,ok,76.04,760.8,760.8,52.67,54.81,0,1384.2,1384.2
+shared,8,1,swinlarge,224,1,60.0,10.0,ok,90.86,770.0,771.0,88.2,96.02,0,1604.2,1604.2
+shared,16,1,swinlarge,224,1,60.0,10.0,ok,97.92,785.2,787.1,163.9,179.49,0,2004.2,2004.2
+shared,24,1,swinlarge,224,1,60.0,10.0,ok,82.56,805.4,806.9,292.07,320.38,0,2524.2,2524.2
+mig_tpc,1,1,swinlarge,224,1,60.0,10.0,ok,39.66,755.6,755.6,25.22,25.71,0,1201.2,1201.2
+mig_tpc,4,4,swinlarge,224,1,60.0,10.0,ok,56.3,3022.4,3022.4,71.15,72.64,0,4660.1,4660.1
+mig_tpc,8,8,swinlarge,224,1,60.0,10.0,ok,32.22,6044.8,6044.8,249.5,275.77,0,9187.8,9187.8
+mig_tpc,16,16,swinlarge,224,1,60.0,10.0,ok,17.12,12089.7,12089.7,949.41,1049.24,0,18243.1,18243.1
