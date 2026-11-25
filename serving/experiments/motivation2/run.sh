@@ -32,11 +32,14 @@
 #   (efficiency as motivation1: closed loop, one request in flight per task)
 #   CUDA_DEVICE=cuda:0 MIG_UUIDS=MIG-...,MIG-... EXP_DIR=experiments/motivation2/results
 #
-# MIG: create the slices first (root), e.g. RTX PRO 6000 Blackwell:
-#   sudo nvidia-smi -i 0 -mig 1
-#   sudo nvidia-smi mig -i 0 -cgi 1g.24gb,1g.24gb,1g.24gb,1g.24gb -C
-# then ISO_CONDITIONS=mig; run shared / no_sharing / efficiency with MIG off,
-# into the same EXP_DIR (the plot takes the latest run of each condition).
+# MIG is handled here (MIG_MANAGE=1, the default; runs nvidia-smi with sudo
+# unless the script is root):
+# every other run goes first with MIG off (turned off if it is on), then MIG
+# is turned on with N_TASKS slices of MIG_PROFILE, the mig runs go, and MIG
+# is turned off again (also if the script stops early). MIG_PROFILE: one from
+# `sudo nvidia-smi mig -i 0 -lgip` that allows N_TASKS instances (RTX PRO 4500
+# Blackwell: 1g.16gb, 2 of them; RTX PRO 6000: 1g.24gb, 4). MIG_MANAGE=0:
+# create / remove the slices yourself, as before.
 
 set -euo pipefail
 
@@ -87,6 +90,9 @@ GPU_INDEX="${CUDA_DEVICE##*:}"; [[ "$GPU_INDEX" =~ ^[0-9]+$ ]] || GPU_INDEX=0
 BASE_PORT="${BASE_PORT:-8100}"
 STARTUP_TIMEOUT="${STARTUP_TIMEOUT:-300}"
 STOP_TIMEOUT="${STOP_TIMEOUT:-30}"
+MIG_MANAGE="${MIG_MANAGE:-1}"
+MIG_PROFILE="${MIG_PROFILE:-1g.16gb}"
+MIG_WAIT="${MIG_WAIT:-120}"               # s to wait for the GPU to be free before creating slices
 EXP_DIR="${EXP_DIR:-experiments/motivation2/results}"
 LOG_DIR="$EXP_DIR/logs"
 mkdir -p "$LOG_DIR"
@@ -134,7 +140,12 @@ stop_servers() {
     PIDS=(); PORTS=(); LOGS=()
     sleep 2
 }
-trap stop_servers EXIT
+MIG_TURNED_ON=0
+on_exit() {
+    stop_servers
+    if [[ "$MIG_TURNED_ON" == 1 ]]; then mig_off || true; fi
+}
+trap on_exit EXIT
 
 # start_server PORT LOG [CUDA_VISIBLE_DEVICES] [SCHEDULER] [ISOLATION_MODE]
 start_server() {
@@ -178,6 +189,69 @@ check_servers() {
         kill -0 "${PIDS[$i]}" 2>/dev/null \
             || echo "[run.sh] WARNING: server on port ${PORTS[$i]} exited during the run (see ${LOGS[$i]})"
     done
+}
+
+mig_enabled() {
+    nvidia-smi -i "$GPU_INDEX" --query-gpu=mig.mode.current --format=csv,noheader 2>/dev/null \
+        | grep -qi enabled
+}
+
+have_slices() {         # at least N_TASKS MIG slices exist already
+    (( $(nvidia-smi -L 2>/dev/null | grep -c 'MIG-' || true) >= N_TASKS ))
+}
+
+# nvidia-smi as root for MIG changes: directly if this script is root, else sudo.
+SUDO=""; [[ "$(id -u)" == 0 ]] || SUDO=sudo
+
+mig_on() {
+    local profiles="" i n
+    for ((i = 0; i < N_TASKS; i++)); do profiles+="${profiles:+,}$MIG_PROFILE"; done
+    echo "[run.sh] MIG on: GPU $GPU_INDEX, $N_TASKS x $MIG_PROFILE"
+    $SUDO nvidia-smi -i "$GPU_INDEX" -mig 1
+    if ! mig_enabled; then
+        echo "[run.sh] MIG mode is pending (a GPU reset or reboot may be needed); not running mig"
+        return 1
+    fi
+    MIG_TURNED_ON=1
+    # Slices can only be created while no process has the GPU open ("In use
+    # by another client"): wait for the earlier runs' processes to go, then
+    # retry a few times.
+    local deadline=$((SECONDS + MIG_WAIT)) apps try
+    while :; do
+        apps=$(nvidia-smi -i "$GPU_INDEX" --query-compute-apps=pid,process_name \
+               --format=csv,noheader 2>/dev/null || true)
+        # With MIG mode on, --query-compute-apps misses processes that still
+        # hold the device open (e.g. an orphaned server from a killed run), so
+        # also look for this user's processes on /dev/nvidiaN.
+        if [[ -z "$apps" ]]; then
+            local pids
+            pids=$(fuser "/dev/nvidia$GPU_INDEX" 2>/dev/null | tr -s ' ' '\n' | grep -E '^[0-9]+$' \
+                   | while read -r p; do [[ "$(stat -c %U /proc/$p 2>/dev/null)" == "$USER" ]] && echo "$p"; done || true)
+            [[ -n "$pids" ]] && apps=$(ps -o pid=,cmd= -p "$(paste -sd, <<< "$pids")" 2>/dev/null || true)
+        fi
+        [[ -z "$apps" ]] && break
+        if (( SECONDS > deadline )); then
+            echo "[run.sh] GPU still in use after ${MIG_WAIT}s by:"; echo "$apps"; break
+        fi
+        sleep 2
+    done
+    for try in 1 2 3 4 5; do
+        $SUDO nvidia-smi mig -i "$GPU_INDEX" -cgi "$profiles" -C && break
+        echo "[run.sh] creating MIG slices failed (try $try/5); retrying in 10 s"
+        nvidia-smi -i "$GPU_INDEX" --query-compute-apps=pid,process_name --format=csv,noheader 2>/dev/null || true
+        sleep 10
+    done
+    n=$(nvidia-smi -L | grep -c 'MIG-' || true)
+    echo "[run.sh] $n MIG slice(s):"; nvidia-smi -L | grep 'MIG-' || true
+    (( n >= N_TASKS )) || { echo "[run.sh] need $N_TASKS slices"; return 1; }
+}
+
+mig_off() {
+    echo "[run.sh] MIG off: GPU $GPU_INDEX"
+    $SUDO nvidia-smi mig -i "$GPU_INDEX" -dci 2>/dev/null || true
+    $SUDO nvidia-smi mig -i "$GPU_INDEX" -dgi 2>/dev/null || true
+    $SUDO nvidia-smi -i "$GPU_INDEX" -mig 0
+    MIG_TURNED_ON=0
 }
 
 mig_uuids() {
@@ -275,12 +349,24 @@ run_efficiency() {
     stop_servers
 }
 
+# Isolation conditions: everything but mig runs with MIG off, mig last with MIG on.
+IFS=',' read -ra ALL_ISO <<< "$ISO_CONDITIONS"
+ISO_NOMIG=(); RUN_MIG=0
+for c in "${ALL_ISO[@]}"; do [[ "$c" == mig ]] && RUN_MIG=1 || ISO_NOMIG+=("$c"); done
+[[ ",$EXPERIMENTS," == *,isolation,* ]] || RUN_MIG=0
+
+if [[ "$MIG_MANAGE" == 1 ]]; then
+    if mig_enabled && { (( ${#ISO_NOMIG[@]} )) || [[ ",$EXPERIMENTS," == *,efficiency,* ]]; }; then
+        echo "[run.sh] MIG is on; turning it off for the non-MIG runs"
+        mig_off
+    fi
+fi
+
 IFS=',' read -ra EXPS <<< "$EXPERIMENTS"
 for exp in "${EXPS[@]}"; do
     case "$exp" in
         isolation)
-            IFS=',' read -ra CONDS <<< "$ISO_CONDITIONS"
-            for c in "${CONDS[@]}"; do
+            for c in "${ISO_NOMIG[@]+"${ISO_NOMIG[@]}"}"; do
                 echo; echo "######## isolation / $c ########"
                 run_isolation "$c" || true
             done ;;
@@ -296,6 +382,14 @@ for exp in "${EXPS[@]}"; do
         *) echo "[run.sh] unknown experiment: $exp" ;;
     esac
 done
+
+if [[ "$RUN_MIG" == 1 ]]; then
+    echo; echo "######## isolation / mig ########"
+    if [[ "$MIG_MANAGE" != 1 ]] || have_slices || mig_on; then
+        run_isolation mig || true
+    fi
+    if [[ "$MIG_MANAGE" == 1 && "$MIG_TURNED_ON" == 1 ]]; then mig_off; fi
+fi
 
 echo
 echo "[run.sh] done. Plot: $PYTHON experiments/motivation2/plot.py --exp-dir $EXP_DIR"

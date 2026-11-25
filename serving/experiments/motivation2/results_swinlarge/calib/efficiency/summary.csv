@@ -1,0 +1,2 @@
+condition,n_tasks,n_servers,backbone,res,concurrency,duration,warmup,status,throughput_rps,avg_gpu_mem_mb,peak_gpu_mem_mb,avg_latency_ms,p99_latency_ms,fail,avg_device_used_mb,peak_device_used_mb
+shared,1,1,swinlarge,224,32,60.0,10.0,ok,82.46,799.2,799.2,391.26,398.5,0,2714.2,2714.2
