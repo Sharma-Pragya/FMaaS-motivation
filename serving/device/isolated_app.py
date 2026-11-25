@@ -75,6 +75,13 @@ class IsolatedRuntimeApplication:
         self._next_rid = 0
         self._futures_lock = threading.Lock()
 
+        # Open requests per task (handed to its process, no result yet), and
+        # the most a task may have open: its GPU slots plus its CPU backlog.
+        # submit() fails a request with queue_full beyond this, before copying it.
+        self._open: dict[str, int] = {}
+        self._open_cap = ((config.slots_per_task or 2 * config.max_batch_size)
+                          + config.task_backlog_cap)
+
         # Sequence counter for control message seq matching
         self._ctrl_seq = 0
         self._ctrl_seq_lock = threading.Lock()
@@ -159,6 +166,14 @@ class IsolatedRuntimeApplication:
     # ------------------------------------------------------------------
 
     async def infer(self, request):
+        return await (await self.submit(request))
+
+    async def submit(self, request) -> asyncio.Future:
+        """Hand one request to its task process and return the future its
+        result lands on. The input is copied into the message for the task
+        process, and the returned future holds no reference to request, so
+        InferStream can drop request once this returns (as
+        EdgeRuntimeApplication.submit)."""
         task = request.task
         loop = asyncio.get_running_loop()
         future = loop.create_future()
@@ -169,10 +184,19 @@ class IsolatedRuntimeApplication:
                 raise RuntimeError(f"task_down:{task}")
             if task not in self._task_lane:
                 raise RuntimeError(f"task_not_deployed:{task}")
+            # Per-task cap, checked here, before the input is copied: the
+            # queue to the task process never blocks, so a task sending
+            # faster than its process reads would otherwise pile messages up
+            # in this process's RAM (the task process's --task-backlog-cap
+            # only sees a message once it has been read).
+            if self._open.get(task, 0) >= self._open_cap:
+                raise RuntimeError("queue_full")
+            self._open[task] = self._open.get(task, 0) + 1
             lane = self._task_lane[task]
             rid = self._next_rid
             self._next_rid += 1
             self._futures[rid] = (future, task)
+        future.add_done_callback(lambda _f, t=task: self._close_open(t))
 
         x_array = _decode_tensor_to_numpy(request.x)
         mask_array = (
@@ -191,7 +215,12 @@ class IsolatedRuntimeApplication:
             mask_dtype=str(mask_array.dtype) if mask_array is not None else "float32",
             enqueued_at=time.time(),
         ))
-        return await future
+        return future
+
+    def _close_open(self, task: str) -> None:
+        """A request of task got its result (or failed): it is no longer open."""
+        with self._futures_lock:
+            self._open[task] = max(0, self._open.get(task, 0) - 1)
 
     # ------------------------------------------------------------------
     # Control
