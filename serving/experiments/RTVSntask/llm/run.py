@@ -290,7 +290,7 @@ def main() -> int:
     parser.add_argument("--tasks", required=True,
                         help="Comma-separated task slots (e.g. qwenA,qwenB,qwenA__app2)")
     parser.add_argument("--condition", required=True,
-                        help="single_{task} | no_sharing | no_sharing_mps | no_sharing_tpc | sharing")
+                        help="single_{task} | no_sharing | no_sharing_mps | no_sharing_tpc | sharing | fmvisor")
     parser.add_argument("--device-urls", required=True,
                         help="Comma-separated device URLs (one per task for no_sharing*, "
                              "one for single/sharing)")
@@ -334,7 +334,7 @@ def main() -> int:
             return 1
         tasks = all_tasks
         task_urls = {t: device_urls[i] for i, t in enumerate(all_tasks)}
-    elif args.condition == "sharing":
+    elif args.condition in ("sharing", "fmvisor"):
         tasks = all_tasks
         task_urls = {t: device_urls[0] for t in all_tasks}
     else:

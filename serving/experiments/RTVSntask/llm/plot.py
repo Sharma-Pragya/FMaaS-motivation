@@ -48,31 +48,35 @@ import numpy as np
 # Styles — identical to RTVSntask/vision/plot.py
 # ---------------------------------------------------------------------------
 
-SERIES_ORDER = ["single", "no_sharing_tpc", "no_sharing", "sharing"]
-DEFAULT_INCLUDED_SERIES = ["no_sharing", "no_sharing_tpc", "sharing"]
+SERIES_ORDER = ["single", "no_sharing_tpc", "no_sharing", "sharing", "fmvisor"]
+DEFAULT_INCLUDED_SERIES = ["no_sharing", "no_sharing_tpc", "sharing", "fmvisor"]
 SERIES_COLORS = {
     "single":         "#A9C7B5",   # sage green
     "no_sharing_tpc": "#6B9AC4",   # muted blue
     "no_sharing":     "#888888",   # mid gray
-    "sharing":        "#E06C75",   # pink-red
+    "sharing":        "#E5A84B",   # amber: one shared engine, FIFO
+    "fmvisor":        "#E06C75",   # pink-red
 }
 SERIES_LABELS = {
     "single":         "ST",
     "no_sharing":     "BE",
     "no_sharing_tpc": "SP",
-    "sharing":        "FMVisor",
+    "sharing":        "Shared",
+    "fmvisor":        "FMVisor",
 }
 SERIES_LINESTYLE = {
     "single":         ":",
     "no_sharing_tpc": "--",
     "no_sharing":     "-.",
-    "sharing":        "-",
+    "sharing":        ":",
+    "fmvisor":        "-",
 }
 SERIES_MARKER = {
     "single":         "s",
     "no_sharing_tpc": "^",
     "no_sharing":     "D",
-    "sharing":        "o",
+    "sharing":        "v",
+    "fmvisor":        "o",
 }
 
 COND_LINE_MARKERSIZE = 2.6

@@ -8,7 +8,10 @@
 #
 # Conditions per (ntasks, rps):
 #   no_sharing_tpc  — N vLLM servers, each pinned to a TPC set (needs libsmctrl)
-#   sharing         — 1 vLLM server, all N LoRAs (Punica multi-LoRA)
+#   sharing         — 1 vLLM server, all N LoRAs (Punica multi-LoRA), FIFO
+#   fmvisor         — 1 server in process-isolation mode: the vLLM engine in a
+#                     backbone process (STFQ, FM_SCHED), one process
+#                     per task (tokenize / detokenize), FM_SLOTS slots per task
 #   no_sharing      — N vLLM servers, each a full backbone copy + 1 LoRA;
 #                     gpu_memory_utilization split N ways
 #
@@ -49,6 +52,15 @@
 #   DEPLOY_TIMEOUT        1800   (gRPC deadline for the load control call)
 #   INCLUDE_TPC           1      (0 to skip no_sharing_tpc — it needs libsmctrl)
 #   TPC_MODE              libsmctrl
+#   VLLM_DRIVER           step   (every arm: LLMEngine stepped by device/llm_loop.py;
+#                                 "async" = the old AsyncLLMEngine path, not for fmvisor)
+#   MAX_NUM_SEQS          (unset = vLLM's 256) engine batch cap, every arm
+#   LLM_QUEUE_K           1      requests waiting inside vLLM beyond MAX_NUM_SEQS
+#   FM_SCHED              stfq   fmvisor's policy: stfq (request-level STFQ, as for
+#                                 vision), token_stfq (token-level), or fifo
+#   FM_SLOTS              64     fmvisor: slots per task (bounds a task's in-flight requests)
+#   FM_BACKLOG_CAP        10000  fmvisor: requests per task waiting on the CPU
+#   FM_MAX_PROMPT_LEN     256    fmvisor: prompt tokens per slot
 #   CONDITIONS            (explicit override, e.g. "sharing,no_sharing" or
 #                          "single,sharing"; "single" expands to the first task slot)
 #   RESULTS_BASE          experiments/RTVSntask/llm/results
@@ -112,6 +124,13 @@ WARMUP_SECS="${WARMUP_SECS:-10}"
 # which a vLLM engine build over a networked filesystem blows straight past.
 DEPLOY_TIMEOUT="${DEPLOY_TIMEOUT:-1800}"
 RESULTS_BASE="${RESULTS_BASE:-experiments/RTVSntask/llm/results}"
+VLLM_DRIVER="${VLLM_DRIVER:-step}"
+MAX_NUM_SEQS="${MAX_NUM_SEQS:-}"
+LLM_QUEUE_K="${LLM_QUEUE_K:-1}"
+FM_SCHED="${FM_SCHED:-stfq}"
+FM_SLOTS="${FM_SLOTS:-64}"
+FM_BACKLOG_CAP="${FM_BACKLOG_CAP:-10000}"
+FM_MAX_PROMPT_LEN="${FM_MAX_PROMPT_LEN:-256}"
 
 IFS=',' read -ra ALL_TASKS <<< "$TASKS_CSV"
 POOL_SIZE=${#ALL_TASKS[@]}
@@ -131,6 +150,8 @@ echo "  GPU mem (full) : $GPU_MEM_UTIL  (no_sharing* divides by N)"
 echo "  max_new_tokens : $MAX_NEW_TOKENS"
 echo "  Deploy timeout : ${DEPLOY_TIMEOUT}s"
 echo "  TPC condition  : $([[ $INCLUDE_TPC == 1 ]] && echo "enabled (mode=$TPC_MODE)" || echo skipped)"
+echo "  vLLM driver    : $VLLM_DRIVER  (max_num_seqs=${MAX_NUM_SEQS:-256 default}, queue_k=$LLM_QUEUE_K)"
+echo "  fmvisor        : sched=$FM_SCHED slots/task=$FM_SLOTS max_prompt_len=$FM_MAX_PROMPT_LEN"
 echo "  Base port      : $DEVICE_PORT"
 echo "  Results        : $RESULTS_BASE"
 echo "================================================================"
@@ -220,10 +241,14 @@ EOF
     echo "[run.sh] FAILURE recorded: $condition ntasks=$ntasks reason=$reason -> ${out_dir}/failure.json" >&2
 }
 
-# start_vllm_device PORT GPU_MEM LOG [TPC_PART]
+# start_vllm_device PORT GPU_MEM LOG [TPC_PART] [EXTRA_ARGS...]
+#   Every arm gets the same engine settings and driver; EXTRA_ARGS add a
+#   condition's own flags (fmvisor: process mode).
 start_vllm_device() {
     local port="$1" gpu_mem="$2" log="$3"
     local tpc_part="${4:-}"
+    local extra=("${@:5}")
+    local sched="fifo"
 
     pkill -f "device/main.py.*--port ${port}" 2>/dev/null || true
     sleep 1
@@ -238,11 +263,15 @@ start_vllm_device() {
         --port                   "$port"           \
         --runtime-type           vllm              \
         --cuda                   "$CUDA_DEVICE"    \
-        --scheduler-policy       fifo              \
+        --scheduler-policy       "$sched"          \
         --gpu-memory-utilization "$gpu_mem"        \
         --max-model-len          "$MAX_MODEL_LEN"  \
         --max-new-tokens         "$MAX_NEW_TOKENS" \
+        --vllm-driver            "$VLLM_DRIVER"    \
+        --llm-queue-k            "$LLM_QUEUE_K"    \
+        ${MAX_NUM_SEQS:+--max-num-seqs "$MAX_NUM_SEQS"} \
         $tpc_args \
+        ${extra[@]+"${extra[@]}"} \
         > "$log" 2>&1 &
     local pid=$!
     DEVICE_PIDS+=("$pid")
@@ -251,7 +280,7 @@ start_vllm_device() {
 
     local waited=0
     while (( waited < DEVICE_STARTUP_WAIT )); do
-        if grep -q -E "Runtime application started|application started|gRPC server.*listen" "$log" 2>/dev/null; then
+        if grep -q -E "Runtime application started|application started|IsolatedApp\] Started|gRPC server.*listen" "$log" 2>/dev/null; then
             echo "[run.sh] Server ready (after ${waited}s)" >&2
             sleep 2
             return 0
@@ -422,6 +451,32 @@ print(sm // 2)
                 || { record_failure "$out_dir" "$condition" "$ntasks" "$rps" "workload" "$dev_log"; return 1; }
             ;;
 
+        fmvisor)
+            # One server, process isolation: the engine in the backbone
+            # process, one process per task. Later --scheduler-policy wins
+            # over start_vllm_device's fifo.
+            dev_log="$LOG_DIR/device_fmvisor_rps${rps}_n${ntasks}.log"
+            if ! start_vllm_device "$DEVICE_PORT" "$GPU_MEM_UTIL" "$dev_log" "" \
+                    --isolation-mode process --scheduler-policy "$FM_SCHED" \
+                    --max-tasks "$((ntasks * 2 + 4))" --slots-per-task "$FM_SLOTS" \
+                    --task-backlog-cap "$FM_BACKLOG_CAP" --llm-max-prompt-len "$FM_MAX_PROMPT_LEN"; then
+                record_failure "$out_dir" "$condition" "$ntasks" "$rps" "device_start" "$dev_log"
+                return 1
+            fi
+            $PYTHON -u experiments/RTVSntask/llm/run.py \
+                --tasks       "$tasks_csv" \
+                --condition   fmvisor \
+                --device-urls "localhost:${DEVICE_PORT}" \
+                --backbone    "$BACKBONE" \
+                --rps         "$run_rps" \
+                --duration    "$PHASE_DURATION" \
+                --warmup-secs "$WARMUP_SECS" \
+                --exp-dir     "$out_dir" \
+                --trace-file  "$trace_file" \
+                --deploy-timeout "$DEPLOY_TIMEOUT" \
+                || { record_failure "$out_dir" "$condition" "$ntasks" "$rps" "workload" "$dev_log"; return 1; }
+            ;;
+
         *)
             echo "[run.sh] ERROR: unknown condition '$condition'" >&2
             return 1
@@ -443,6 +498,11 @@ print(sm // 2)
   "gpu_memory_utilization_per_server": ${LAST_PER_MEM},
   "max_model_len": ${MAX_MODEL_LEN},
   "max_new_tokens": ${MAX_NEW_TOKENS},
+  "vllm_driver": "${VLLM_DRIVER}",
+  "max_num_seqs": "${MAX_NUM_SEQS:-default}",
+  "llm_queue_k": ${LLM_QUEUE_K},
+  "fm_sched": "${FM_SCHED}",
+  "fm_slots": ${FM_SLOTS},
   "device_port_base": ${DEVICE_PORT}
 }
 EOF
@@ -495,6 +555,7 @@ for ntasks in "${NTASKS_LIST[@]:-}"; do
         # figures directly comparable. Opt in with CONDITIONS=single,...
         [[ "$INCLUDE_TPC" == "1" ]] && conditions+=("no_sharing_tpc")
         conditions+=("sharing")
+        conditions+=("fmvisor")
         conditions+=("no_sharing")
     fi
 
