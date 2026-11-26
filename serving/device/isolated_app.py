@@ -83,8 +83,10 @@ class IsolatedRuntimeApplication:
         # the most a task may have open: its GPU slots plus its CPU backlog.
         # submit() fails a request with queue_full beyond this, before copying it.
         self._open: dict[str, int] = {}
-        self._open_cap = ((config.slots_per_task or 2 * config.max_batch_size)
-                          + config.task_backlog_cap)
+        # The GPU slots are the pool's, which the task process reports once
+        # the pool exists (with --task-mem-mb they depend on the input size);
+        # until then --slots-per-task (or 2 x max batch) stands in.
+        self._default_slots = config.slots_per_task or 2 * config.max_batch_size
 
         # Sequence counter for control message seq matching
         self._ctrl_seq = 0
@@ -194,10 +196,10 @@ class IsolatedRuntimeApplication:
             # faster than its process reads would otherwise pile messages up
             # in this process's RAM (the task process's --task-backlog-cap
             # only sees a message once it has been read).
-            if self._open.get(task, 0) >= self._open_cap:
+            lane = self._task_lane[task]
+            if self._open.get(task, 0) >= self._open_cap(lane):
                 raise RuntimeError("queue_full")
             self._open[task] = self._open.get(task, 0) + 1
-            lane = self._task_lane[task]
             rid = self._next_rid
             self._next_rid += 1
             self._futures[rid] = (future, task)
@@ -221,6 +223,12 @@ class IsolatedRuntimeApplication:
             enqueued_at=time.time(),
         ))
         return future
+
+    def _open_cap(self, lane: int) -> int:
+        """The most requests a lane's task may have open: its GPU slots plus
+        its CPU backlog."""
+        slots = int(self._lane_stats[lane][memstats.TASK_FIELDS.index("slots_total")])
+        return (slots if slots > 0 else self._default_slots) + self.config.task_backlog_cap
 
     def _close_open(self, task: str) -> None:
         """A request of task got its result (or failed): it is no longer open."""
@@ -247,6 +255,7 @@ class IsolatedRuntimeApplication:
             st = memstats.read_array(self._lane_stats[lane], memstats.TASK_FIELDS)
             st["pool_mb"] = st["slots_total"] * st["slot_mb"]
             st["pool_used_mb"] = st["slots_used"] * st["slot_mb"]
+            st["budget_mb"] = memstats.task_mem_mb(self.config.task_mem_mb, task)
             with self._futures_lock:
                 st["open_n"] = self._open.get(task, 0)
             out["tasks"][task] = st

@@ -64,6 +64,9 @@ class RuntimeServerConfig:
     verbose_batch_logs: bool = False      # high-frequency per-batch request logging
     max_tasks: int = 16                  # isolation_mode=process: task lanes created at start
     slots_per_task: int = None           # isolation_mode=process: GPU slots per vFM pool (None = 2 x max_batch_size)
+    task_mem_mb: str = None              # isolation_mode=process: vFM memory budget, "MB" or
+                                         # "task=MB,...,*=MB"; sets the pool's slots (overrides
+                                         # slots_per_task). Pool only for now.
     task_backlog_cap: int = 10000        # isolation_mode=process: requests a vFM may hold waiting on the CPU
     staging: str = "host"                # shared mode: "host" = inputs wait on the CPU, copied at batch time;
                                          # "gpu" = copied to the GPU on arrival and wait there (like process mode)

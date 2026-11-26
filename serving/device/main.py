@@ -83,6 +83,7 @@ def main():
     parser.add_argument("--verbose-batch-logs", action="store_true", help="Enable high-frequency per-batch request logs. Disabled by default for benchmark stability.")
     parser.add_argument("--max-tasks", type=int, default=16, help="isolation_mode=process: task lanes created at start; each task process ever started (restarts included) uses one.")
     parser.add_argument("--slots-per-task", type=int, default=None, help="isolation_mode=process: GPU slots in each vFM's pool (backbone-owned, lent to the task). Default: 2 x --max-batch-size.")
+    parser.add_argument("--task-mem-mb", type=str, default=None, help="isolation_mode=process: each vFM's GPU memory budget in MB, \"MB\" or \"task=MB,...,*=MB\". Its pool gets as many slots as fit (overrides --slots-per-task). Covers the pool only for now.")
     parser.add_argument("--task-backlog-cap", type=int, default=10000, help="isolation_mode=process: requests a vFM may hold waiting on the CPU beyond its GPU slots; more fail with queue_full.")
     parser.add_argument("--staging", choices=["host", "gpu"], default="host", help="Shared mode: where queued inputs wait. host: CPU, copied at batch time. gpu: copied to the GPU on arrival (matches process mode).")
     args = parser.parse_args()
@@ -117,6 +118,7 @@ def main():
                 verbose_batch_logs=args.verbose_batch_logs,
                 max_tasks=args.max_tasks,
                 slots_per_task=args.slots_per_task,
+                task_mem_mb=args.task_mem_mb,
                 task_backlog_cap=args.task_backlog_cap,
                 staging=args.staging,
             ),

@@ -58,6 +58,29 @@ def start_writer(arr, fields: tuple, read, stop=None) -> threading.Thread:
     return th
 
 
+def task_mem_mb(spec: str | None, task: str | None) -> float | None:
+    """A vFM's memory budget in MB from --task-mem-mb, or None (no budget).
+
+    spec is "MB" (every task) or "task=MB,...", where "*=MB" sets the
+    budget of tasks not named, e.g. "victim=2048,*=1024"."""
+    if not spec:
+        return None
+    default, per = None, {}
+    for part in str(spec).split(","):
+        part = part.strip()
+        if not part:
+            continue
+        if "=" in part:
+            name, mb = part.split("=", 1)
+            if name.strip() == "*":
+                default = float(mb)
+            else:
+                per[name.strip()] = float(mb)
+        else:
+            default = float(part)
+    return per.get(task, default)
+
+
 def read_array(arr, fields: tuple) -> dict:
     out = {f: arr[k] for k, f in enumerate(fields)}
     out["age_s"] = time.time() - out.pop("t") if out.get("t") else None

@@ -43,6 +43,7 @@ lane's task process is gone; not replied).
 """
 
 import json
+import math
 import queue
 import time
 from contextlib import nullcontext
@@ -90,6 +91,7 @@ def backbone_proc_main(
 
     from device.model_loader import _build_pipeline
     from device.scheduler import RequestEnvelope, SABAPolicy, STFQPolicy, TenantQueues
+    from device.memstats import task_mem_mb
     from device.server import EdgeRuntimeApplication
     from fmtk.logger import Logger
 
@@ -116,7 +118,7 @@ def backbone_proc_main(
 
     print(f"[BackboneProc] Started device={device} policy={type(policy).__name__} "
           f"max_batch_size={max_b} max_batch_wait_ms={config.max_batch_wait_ms} "
-          f"lanes={n} slots_per_task={n_slots}")
+          f"lanes={n} slots_per_task={n_slots} task_mem_mb={config.task_mem_mb}")
 
     pipeline = None
     logger = Logger(device, "backbone_proc")
@@ -162,6 +164,25 @@ def backbone_proc_main(
             bb_stream.synchronize()
         return tuple(f.shape[1:]), f.dtype
 
+    def pool_slots(task, key, f_shape, f_dtype) -> int:
+        """Slots in task's pool: --slots-per-task, or as many as fit in its
+        --task-mem-mb budget (one slot = one request's input + mask + features)."""
+        budget = task_mem_mb(config.task_mem_mb, task)
+        if budget is None:
+            return n_slots
+
+        def nbytes(shape, dtype):
+            return math.prod(shape) * torch.empty((), dtype=dtype).element_size()
+
+        slot_b = nbytes(key[0], key[1]) + nbytes(f_shape, f_dtype)
+        if key[2] is not None:
+            slot_b += nbytes(key[2], key[3])
+        n_i = int(budget * 2**20 // slot_b)
+        if n_i < 1:
+            raise RuntimeError(f"task_mem_mb {budget:g} MB is below one slot "
+                               f"({slot_b / 2**20:.2f} MB)")
+        return n_i
+
     def alloc_pool(i: int, x_shape, x_dtype, m_shape, m_dtype) -> None:
         """Allocate (or reuse) lane i's pool and lend it to the task."""
         if pools[i] is not None:
@@ -170,19 +191,25 @@ def backbone_proc_main(
             raise RuntimeError("backbone_not_loaded")
         key = (tuple(x_shape), x_dtype, tuple(m_shape) if m_shape is not None else None, m_dtype)
         f_shape, f_dtype = feature_spec(*key)
+        n_i = pool_slots(task_of[i], key, f_shape, f_dtype)
         spares = spare_pools.get(key)
+        pool = None
         if spares:
-            pool = spares.pop()
+            for k, sp in enumerate(spares):
+                if sp["n"] == n_i:
+                    pool = spares.pop(k)
+                    break
+        if pool is not None:
             if tuple(pool["feat"].shape[1:]) != f_shape or pool["feat"].dtype != f_dtype:
                 pool["feat"] = torch.empty((pool["n"], *f_shape), dtype=f_dtype, device=dev)
         else:
             pool = {
                 "key": key,
-                "n": n_slots,
-                "x": torch.empty((n_slots, *key[0]), dtype=key[1], device=dev),
-                "mask": (torch.empty((n_slots, *key[2]), dtype=key[3], device=dev)
+                "n": n_i,
+                "x": torch.empty((n_i, *key[0]), dtype=key[1], device=dev),
+                "mask": (torch.empty((n_i, *key[2]), dtype=key[3], device=dev)
                          if key[2] is not None else None),
-                "feat": torch.empty((n_slots, *f_shape), dtype=f_dtype, device=dev),
+                "feat": torch.empty((n_i, *f_shape), dtype=f_dtype, device=dev),
             }
         pools[i] = pool
         done_qs[i].put(("pool", pool["x"], pool["mask"], pool["feat"]))
