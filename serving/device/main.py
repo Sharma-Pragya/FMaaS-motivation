@@ -75,6 +75,9 @@ def main():
     parser.add_argument("--max-new-tokens", type=int, default=None, help="vLLM SamplingParams.max_tokens (per-request output length cap). None = backbone default (qwen_vllm.py uses 64).")
     parser.add_argument("--max-num-seqs", type=int, default=None, help="vLLM max concurrent sequences in the running batch (engine batch-size cap). None = vLLM default (256). Raise it so KV memory/compute, not this policy cap, is the binding constraint — a per-engine cap silently hands N-server deployments an Nx concurrency budget.")
     parser.add_argument("--ignore-eos", action="store_true", help="Force every request to emit exactly --max-new-tokens (vLLM ignore_eos). Makes output length an experimental constant; use for timing runs, not accuracy.")
+    parser.add_argument("--vllm-driver", choices=["step", "async"], default="step", help="vLLM: step = an LLMEngine stepped by device/llm_loop.py, which does admission and scheduling (both isolation modes); async = AsyncLLMEngine (shared mode only, the old path).")
+    parser.add_argument("--llm-queue-k", type=int, default=1, help="Step driver: requests kept waiting inside vLLM beyond --max-num-seqs; the loop admits more only as these drain, so vLLM's FCFS never overrides the scheduler.")
+    parser.add_argument("--llm-max-prompt-len", type=int, default=512, help="isolation_mode=process with vllm: prompt tokens a slot holds; longer prompts fail.")
     parser.add_argument("--tpc-mode", choices=["none", "libsmctrl", "green"], default="none", help="TPC isolation: none, libsmctrl (driver<=528), or green (CUDA 12.4+).")
     parser.add_argument("--tpc-partition", type=int, nargs="+", default=None, help="TPC IDs to pin this server to (e.g. --tpc-partition 0 1 2 3).")
     parser.add_argument("--tpc-share", type=str, default=None, help="libsmctrl: 'i/k' pins this server to the i-th of k equal TPC ranges of the device it sees (e.g. one of k servers on a MIG slice). Overrides --tpc-partition.")
@@ -111,6 +114,9 @@ def main():
                 max_new_tokens=args.max_new_tokens,
                 max_num_seqs=args.max_num_seqs,
                 ignore_eos=args.ignore_eos,
+                vllm_driver=args.vllm_driver,
+                llm_queue_k=args.llm_queue_k,
+                llm_max_prompt_len=args.llm_max_prompt_len,
                 tpc_mode=args.tpc_mode,
                 tpc_partition=args.tpc_partition,
                 tpc_share=args.tpc_share,

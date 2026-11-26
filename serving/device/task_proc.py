@@ -59,6 +59,7 @@ class TaskInferMsg:
     mask_shape: tuple = ()
     mask_dtype: str = "float32"
     enqueued_at: float = 0.0   # wall time set by gRPC process on arrival
+    question: str = ""         # LLM tasks: the prompt (no tensor input)
 
 
 @dataclass
@@ -130,6 +131,10 @@ def task_proc_main(
     print(f"[TaskProc:{task}] Started on device={device} backlog_cap={backlog_cap}")
 
     decoder = None
+    # LLM tasks (model_category "llm"): no decoder head. The prompt is
+    # tokenized here (chat template + encode, as the engine would) into x[j],
+    # its length into mask[j]; the generated ids in feat[j] are decoded here.
+    llm = {"tok": None, "max_len": 0}
     lock = threading.Lock()          # pool state, free, overflow, rid_of
     stage_lock = threading.Lock()    # one stager at a time: pinned buffers, copy stream, FIFO
     stop = threading.Event()
@@ -160,6 +165,15 @@ def task_proc_main(
         backbone lives in backbone_proc.
         """
         nonlocal decoder
+        if spec.get("model_category") == "llm":
+            from transformers import AutoTokenizer
+            tok = AutoTokenizer.from_pretrained(spec["tokenizer"], trust_remote_code=True)
+            if tok.pad_token is None:
+                tok.pad_token = tok.eos_token
+            llm["tok"], llm["max_len"] = tok, int(spec["max_prompt_len"])
+            print(f"[TaskProc:{task}] LLM task: tokenizer={spec['tokenizer']} "
+                  f"max_prompt_len={llm['max_len']} adapter={spec.get('path')}")
+            return 0.0
         from fmtk.pipeline import Pipeline
         from device.model_loader import _build_decoder
 
@@ -212,11 +226,32 @@ def task_proc_main(
     # Requests: CPU overflow -> GPU slots
     # -----------------------------------------------------------------------
 
+    def llm_encode(prompt: str):
+        """Prompt -> (x [1, max_len] int32 ids, padded; m [1, 1] int32 length),
+        or None if it does not fit a slot. Same tokenization as
+        QwenVLLMModel.prompt_token_ids (FMTK)."""
+        tok = llm["tok"]
+        text = tok.apply_chat_template([{"role": "user", "content": prompt}],
+                                       tokenize=False, add_generation_prompt=True)
+        ids = tok.encode(text)
+        if not 0 < len(ids) <= llm["max_len"]:
+            return None
+        x = np.zeros((1, llm["max_len"]), dtype=np.int32)
+        x[0, :len(ids)] = ids
+        return x, np.array([[len(ids)]], dtype=np.int32)
+
     def submit(msg: TaskInferMsg) -> None:
         """Intake: validate, queue on the CPU, ask for the pool once, pump."""
-        x = np.frombuffer(msg.x_bytes, dtype=msg.x_dtype).reshape(msg.x_shape)
-        m = (np.frombuffer(msg.mask_bytes, dtype=msg.mask_dtype).reshape(msg.mask_shape)
-             if msg.mask_bytes else None)
+        if llm["tok"] is not None:
+            enc = llm_encode(msg.question)
+            if enc is None:
+                fail(msg.req_id, f"prompt_too_long (max {llm['max_len']} tokens)")
+                return
+            x, m = enc
+        else:
+            x = np.frombuffer(msg.x_bytes, dtype=msg.x_dtype).reshape(msg.x_shape)
+            m = (np.frombuffer(msg.mask_bytes, dtype=msg.mask_dtype).reshape(msg.mask_shape)
+                 if msg.mask_bytes else None)
         if x.shape[0] != 1 or (m is not None and m.shape[0] != 1):
             fail(msg.req_id, "isolation_mode=process serves one sample per request")
             return
@@ -270,7 +305,10 @@ def task_proc_main(
             # Host-side queues do not order kernels across CUDA contexts: the
             # input must be in the pool before the backbone reads it.
             copy_stream.synchronize()
-        sched_q.put(("slot", j, p.enqueued_at))
+        if llm["tok"] is not None:
+            sched_q.put(("slot", j, p.enqueued_at, int(p.m[0, 0])))   # + prompt length
+        else:
+            sched_q.put(("slot", j, p.enqueued_at))
 
     def on_pool(x, mask, feat) -> None:
         with stage_lock:
@@ -352,6 +390,24 @@ def task_proc_main(
 
             _, js, start_ns, proc_ns = msg          # "done"
             dec_start = time.time_ns()
+            if llm["tok"] is not None:
+                # feat[j] = [n, id_0, ..., id_{n-1}, ...]: decode to text here.
+                with (torch.cuda.stream(stream) if cuda else nullcontext()):
+                    idx = torch.tensor(js, dtype=torch.long, device=dev)
+                    rows = pool["feat"].index_select(0, idx).cpu().numpy()
+                texts = [llm["tok"].decode(r[1:1 + int(r[0])].tolist(),
+                                           skip_special_tokens=True).strip() for r in rows]
+                end_ns = time.time_ns()
+                dec_ns = (end_ns - dec_start) // max(len(js), 1)
+                for k, rid in enumerate(release(js)):
+                    result_q.put({
+                        "req_id": rid, "output": None, "text_output": texts[k],
+                        "start_time_ns": start_ns, "end_time_ns": start_ns + proc_ns,
+                        "proc_time_ns": proc_ns, "swap_time_ns": 0,
+                        "decoder_time_ns": dec_ns,
+                    })
+                pump()
+                continue
             with (torch.cuda.stream(stream) if cuda else nullcontext()), torch.no_grad():
                 idx = torch.tensor(js, dtype=torch.long, device=dev)
                 feats = pool["feat"].index_select(0, idx)

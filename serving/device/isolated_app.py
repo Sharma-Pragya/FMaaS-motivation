@@ -98,6 +98,7 @@ class IsolatedRuntimeApplication:
         self._stopped = False
         self._current_backbone: str | None = None
         self._model_category: str = "tsfm"  # updated from backbone_proc reply
+        self._llm_info: dict = {}            # LLM backbone: tokenizer, max_prompt_len
 
     def _next_seq(self) -> int:
         with self._ctrl_seq_lock:
@@ -204,6 +205,15 @@ class IsolatedRuntimeApplication:
             self._next_rid += 1
             self._futures[rid] = (future, task)
         future.add_done_callback(lambda _f, t=task: self._close_open(t))
+
+        if self._model_category == "llm":
+            # The task process tokenizes the prompt into its slot.
+            self._req_qs[lane].put(TaskInferMsg(
+                req_id=rid,
+                question=request.question if request.HasField("question") else "",
+                enqueued_at=time.time(),
+            ))
+            return future
 
         x_array = _decode_tensor_to_numpy(request.x)
         mask_array = (
@@ -316,10 +326,20 @@ class IsolatedRuntimeApplication:
         """Returns logger_summary string with backbone + decoder memory appended."""
         self._current_backbone = backbone
 
-        # Tell backbone proc to load the backbone weights
-        resp = await self._backbone_control("load", {"backbone": backbone}, 120.0)
+        # Tell backbone proc to load the backbone weights. An LLM engine also
+        # registers every task's LoRA now (it is built with LoRA enabled and
+        # max_loras sized for them), so the adapter specs go with the load.
+        load_payload = {"backbone": backbone}
+        if self.config.runtime_type == "vllm":
+            load_payload["decoders"] = decoder_specs
+        timeout = 1800.0 if self.config.runtime_type == "vllm" else 120.0
+        resp = await self._backbone_control("load", load_payload, timeout)
         logger_summary = resp.get("logger_summary", "")
         self._model_category = resp.get("model_category", "tsfm")
+        if not str(resp.get("status", "")).startswith("loaded_"):
+            raise RuntimeError(f"backbone load failed: {resp.get('status')}")
+        self._llm_info = ({"tokenizer": resp["tokenizer"], "max_prompt_len": resp["max_prompt_len"]}
+                          if "tokenizer" in resp else {})
         print(f"[IsolatedApp] Backbone load: {resp['status']}  model_category={self._model_category}")
 
         # Spawn one task process per decoder, accumulate decoder memory
@@ -359,11 +379,12 @@ class IsolatedRuntimeApplication:
         self._req_qs[lane].put(TaskControlMsg(
             command="load_decoder",
             payload_json=json.dumps({**dec_spec, "backbone": backbone,
-                                     "model_category": self._model_category}),
+                                     "model_category": self._model_category,
+                                     **self._llm_info}),
             seq=seq,
         ))
         resp = await asyncio.to_thread(
-            _wait_for_seq, self._task_reply_qs[lane], seq, 60.0
+            _wait_for_seq, self._task_reply_qs[lane], seq, 300.0
         )
         mem_mb = resp.get("gpu_decoder_mem_mb", 0.0)
         print(f"[IsolatedApp] Task proc {task} (lane {lane}) decoder: {resp['status']}  "

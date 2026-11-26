@@ -82,14 +82,13 @@ def backbone_proc_main(
     run_stop,                  # set when the server stops
     stats_arr=None,            # shared array for Control("stats") (device.memstats)
 ):
-    import gc
     import os
 
     import torch
     import torch.multiprocessing  # noqa: F401  (CUDA tensors through queues)
     os.environ["CUDA_DEVICE"] = device
 
-    from device.model_loader import _build_pipeline
+    from device.executors import make_executor
     from device.scheduler import RequestEnvelope, SABAPolicy, STFQPolicy, TenantQueues
     from device.memstats import task_mem_mb
     from device.server import EdgeRuntimeApplication
@@ -120,7 +119,6 @@ def backbone_proc_main(
           f"max_batch_size={max_b} max_batch_wait_ms={config.max_batch_wait_ms} "
           f"lanes={n} slots_per_task={n_slots} task_mem_mb={config.task_mem_mb}")
 
-    pipeline = None
     logger = Logger(device, "backbone_proc")
 
     task_of = [None] * n        # lane -> task name (None: not attached)
@@ -132,6 +130,16 @@ def backbone_proc_main(
 
     def stream_ctx():
         return torch.cuda.stream(bb_stream) if cuda else nullcontext()
+
+    def sync_stream():
+        if cuda:
+            bb_stream.synchronize()
+
+    # The model, behind one interface (executors.py): PyTorchExecutor runs a
+    # batch per forward, VLLMExecutor is stepped by llm_loop.py.
+    executor = make_executor(config, device, logger, stream_ctx, sync_stream, bb_stream)
+    # Called with a lane being dropped (the LLM loop aborts its requests).
+    drop_hooks: list = []
 
     # -----------------------------------------------------------------------
     # Lanes and pools
@@ -151,18 +159,13 @@ def backbone_proc_main(
         if pools[i] is not None:
             spare_pools.setdefault(pools[i]["key"], []).append(pools[i])
             pools[i] = None
+        for hook in drop_hooks:
+            hook(i)
         print(f"[BackboneProc] Dropped lane {i} (task={task}): {why}")
 
     def feature_spec(x_shape, x_dtype, m_shape, m_dtype):
-        """(shape, dtype) of one request's features, from a dry-run forward."""
-        with stream_ctx(), torch.no_grad():
-            x = torch.zeros((1, *x_shape), dtype=x_dtype, device=dev)
-            m = (torch.ones((1, *m_shape), dtype=m_dtype, device=dev)
-                 if m_shape is not None else None)
-            f = pipeline.model_instance.forward(x, m)
-        if cuda:
-            bb_stream.synchronize()
-        return tuple(f.shape[1:]), f.dtype
+        """(shape, dtype) of one request's output slot (executors.py)."""
+        return executor.output_spec(x_shape, x_dtype, m_shape, m_dtype)
 
     def pool_slots(task, key, f_shape, f_dtype) -> int:
         """Slots in task's pool: --slots-per-task, or as many as fit in its
@@ -187,7 +190,7 @@ def backbone_proc_main(
         """Allocate (or reuse) lane i's pool and lend it to the task."""
         if pools[i] is not None:
             raise RuntimeError("pool already allocated")
-        if pipeline is None:
+        if not executor.loaded:
             raise RuntimeError("backbone_not_loaded")
         key = (tuple(x_shape), x_dtype, tuple(m_shape) if m_shape is not None else None, m_dtype)
         f_shape, f_dtype = feature_spec(*key)
@@ -228,13 +231,19 @@ def backbone_proc_main(
                 done_qs[i].put(("pool_error", f"{type(exc).__name__}: {str(exc)[:200]}"))
             return
         if kind == "slot":
-            _, j, enqueued_at = msg
+            # ("slot", j, enqueued_at[, n_prompt]): n_prompt only from LLM tasks
+            j, enqueued_at = msg[1], msg[2]
             pool = pools[i]
             if pool is None or not isinstance(j, int) or not 0 <= j < pool["n"]:
                 raise ValueError(f"slot {j!r} not owned by lane")
             env = RequestEnvelope(req_id=(i, j), task=task_of[i], x=pool["x"][j],
                                   mask=pool["mask"][j] if pool["mask"] is not None else None,
                                   question=None, enqueued_at=enqueued_at, future=None)
+            if len(msg) > 3:
+                n_prompt = msg[3]
+                if not isinstance(n_prompt, int) or not 0 < n_prompt <= pool["x"].shape[1]:
+                    raise ValueError(f"bad prompt length {n_prompt!r}")
+                env.n_prompt = n_prompt
             tenant_queues.push(env)
             if isinstance(policy, STFQPolicy):
                 policy.assign_start_time(env)
@@ -293,7 +302,6 @@ def backbone_proc_main(
         spare_pools.clear()
 
     def handle_control(msg: ControlMsg) -> None:
-        nonlocal pipeline
         payload = json.loads(msg.payload_json) if msg.payload_json else {}
 
         if msg.command == "attach":
@@ -316,8 +324,7 @@ def backbone_proc_main(
                 print(f"[BackboneProc] Loading backbone={backbone}")
                 if cuda:
                     torch.cuda.reset_peak_memory_stats()
-                pipeline = _build_pipeline(backbone, device, logger,
-                                           model_config=payload.get("model_config"))
+                executor.load(backbone, payload)
                 if cuda:
                     torch.cuda.synchronize(dev)
                     gpu_backbone_mem_mb = torch.cuda.max_memory_allocated(dev) / (1024 ** 2)
@@ -326,13 +333,9 @@ def backbone_proc_main(
             elif msg.command == "swap_backbone":
                 backbone = payload["backbone"]
                 print(f"[BackboneProc] Swapping backbone → {backbone}")
-                pipeline = None
-                gc.collect()
                 if cuda:
-                    torch.cuda.empty_cache()
                     torch.cuda.reset_peak_memory_stats()
-                pipeline = _build_pipeline(backbone, device, logger,
-                                           model_config=payload.get("model_config"))
+                executor.swap(backbone, payload)
                 if cuda:
                     torch.cuda.synchronize(dev)
                     gpu_backbone_mem_mb = torch.cuda.max_memory_allocated(dev) / (1024 ** 2)
@@ -340,17 +343,21 @@ def backbone_proc_main(
                 status = f"swapped_{backbone}"
             else:
                 status = f"unknown_command_{msg.command}"
-            if pipeline is not None:
-                model_category = pipeline.model_instance.model_category
+            if executor.loaded:
+                model_category = executor.model_category
         except Exception as e:
             status = f"error_{e}"
             print(f"[BackboneProc] Control error: {e}")
         gpu_backbone_reserved_mb = torch.cuda.memory_reserved(dev) / (1024 ** 2) if cuda else 0.0
         summary = {"backbone_process": {"gpu peak": gpu_backbone_mem_mb,
                                         "gpu reserved": gpu_backbone_reserved_mb}}
-        ctrl_reply_q.put({"seq": msg.seq, "status": status,
-                          "logger_summary": str(summary),
-                          "model_category": model_category})
+        reply = {"seq": msg.seq, "status": status, "logger_summary": str(summary),
+                 "model_category": model_category}
+        if executor.kind == "continuous" and executor.loaded:
+            # what task processes need to tokenize the same way the engine would
+            reply["tokenizer"] = executor.tokenizer_name()
+            reply["max_prompt_len"] = config.llm_max_prompt_len
+        ctrl_reply_q.put(reply)
 
     # -----------------------------------------------------------------------
     # Batches
@@ -382,7 +389,7 @@ def backbone_proc_main(
                 bmask = torch.cat([pools[i]["mask"].index_select(0, idx[i]) for i in lanes])
             else:
                 bmask = None
-            feats = pipeline.model_instance.forward(bx, bmask)
+            feats = executor.forward(bx, bmask)
             # Scatter each lane's rows into its own feature pool.
             row = 0
             for i, js in lanes.items():
@@ -413,6 +420,66 @@ def backbone_proc_main(
                   f"tasks={[env.task for env in batch]} proc_time_ns={proc_ns}")
 
     # -----------------------------------------------------------------------
+    # LLM loop (executor.kind == "continuous"): llm_loop.py, fed from slots
+    # -----------------------------------------------------------------------
+
+    def run_llm_loop() -> None:
+        from device.llm_loop import LLMStepLoop
+        from device.server import EdgeRuntimeApplication
+
+        def prompt_of(env):
+            i, j = env.req_id
+            return pools[i]["x"][j, :env.n_prompt].tolist()
+
+        def on_done(env, ids, admit_ns, end_ns):
+            i, j = env.req_id
+            if task_of[i] is None or pools[i] is None:
+                return
+            feat = pools[i]["feat"]
+            k = min(len(ids), feat.shape[1] - 1)
+            row = torch.tensor([k] + ids[:k], dtype=feat.dtype)
+            feat[j, :k + 1].copy_(row)
+            # Tokens must be in the slot before the task reads them.
+            if cuda:
+                torch.cuda.current_stream(dev).synchronize()
+            done_qs[i].put(("done", [j], admit_ns, end_ns - admit_ns))
+
+        def on_error(envs, why):
+            fail_batch(envs, why)
+
+        llm = LLMStepLoop(executor.runtime, policy, tenant_queues,
+                          max_running=EdgeRuntimeApplication._llm_max_running(config),
+                          queue_k=config.llm_queue_k, prompt_of=prompt_of,
+                          on_done=on_done, on_error=on_error, name="BackboneProc:LLM")
+        # A dropped lane's in-flight requests leave the engine (KV freed).
+        drop_hooks.append(lambda i: llm.abort_where(lambda env: env.req_id[0] == i))
+
+        with (torch.cuda.stream(bb_stream) if executor.runtime._cuda_stream is not None
+              else nullcontext()):
+            while not run_stop.is_set():
+                if poll_ctrl_q():
+                    print("[BackboneProc] Received stop, exiting")
+                    break
+                poll()
+                for i in range(n):
+                    if task_of[i] is not None and dyings[i].is_set():
+                        drop_lane(i, "task process failed")
+                if not llm.has_work():
+                    time.sleep(0.0002)
+                    continue
+                if not executor.loaded:
+                    fail_batch(tenant_queues.select_batch(policy, tenant_queues.pending_count()),
+                               "backbone_not_loaded")
+                    continue
+                llm.run_once()
+        llm.fail_all("backbone_stopping")
+
+    if executor.kind == "continuous":
+        run_llm_loop()
+        print("[BackboneProc] Exited")
+        return
+
+    # -----------------------------------------------------------------------
     # Scheduler loop
     # -----------------------------------------------------------------------
     while not run_stop.is_set():
@@ -439,7 +506,7 @@ def backbone_proc_main(
         if not batch:
             continue
 
-        if pipeline is None:
+        if not executor.loaded:
             fail_batch(batch, "backbone_not_loaded")
             continue
         try:

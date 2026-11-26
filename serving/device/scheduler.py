@@ -569,6 +569,68 @@ class DeadlineSplitPolicy:
         return picked
 
 
+class TokenSTFQPolicy:
+    """Token-level STFQ for LLM engines driven step by step (device/llm_loop.py).
+
+    lora_fair_share's BFQ-STFQ (fault.py:Stfq) behind the select() interface
+    the other policies use. Each task t has a finish tag F_t, the system a
+    virtual clock V:
+        pick       the ready task with the smallest start tag S_t = max(V, F_t)
+                   (ties rotate); V <- S_t
+        admission  F_t = S_t + prompt_tokens x prefill_cost / w_t
+        each step  F_t += decoded_tokens x decode_cost / w_t   (on_decode)
+    So a task is charged for the tokens the engine actually serves it, not a
+    flat amount per request. Costs default to VTC's (prefill 1, decode 2 per
+    token); weights follow STFQPolicy's convention (w = 1/rps when task rates
+    are given, else 1).
+
+    A request's prompt length comes from its envelope's n_prompt attribute
+    (set by whoever queues it; 0 if missing).
+    """
+
+    def __init__(self, weights: Dict[str, float] | None = None,
+                 prefill_cost: float = 1.0, decode_cost: float = 2.0):
+        self._weights: Dict[str, float] = weights or {}
+        self.prefill_cost = prefill_cost
+        self.decode_cost = decode_cost
+        self._f: Dict[str, float] = {}
+        self._v: float = 0.0
+        self._order: list[str] = []      # tasks in first-seen order, for tie rotation
+        self._rr: int = 0
+
+    def _weight(self, task: str) -> float:
+        return max(self._weights.get(task, 1.0), 1e-9)
+
+    def set_weight(self, task: str, weight: float) -> None:
+        self._weights[task] = max(weight, 1e-6)
+
+    def select(self, queues: dict[str, deque], max_batch_size: int) -> list[RequestEnvelope]:
+        picked: list[RequestEnvelope] = []
+        while len(picked) < max_batch_size:
+            ready = [t for t, q in queues.items() if q]
+            if not ready:
+                break
+            for t in ready:
+                if t not in self._f:
+                    self._f[t] = 0.0
+                    self._order.append(t)
+            n = len(self._order)
+            rank = {t: (self._order.index(t) - self._rr) % n for t in ready}
+            start = {t: max(self._v, self._f[t]) for t in ready}
+            t = min(ready, key=lambda c: (start[c], rank[c]))
+            req = queues[t].popleft()
+            picked.append(req)
+            self._v = start[t]
+            self._rr = (self._order.index(t) + 1) % n
+            n_prompt = getattr(req, "n_prompt", 0) or 0
+            self._f[t] = start[t] + n_prompt * self.prefill_cost / self._weight(t)
+        return picked
+
+    def on_decode(self, task: str, n_tokens: int) -> None:
+        if n_tokens > 0 and task in self._f:
+            self._f[task] += n_tokens * self.decode_cost / self._weight(task)
+
+
 class TenantQueues:
     """Holds one logical queue per task and exposes batch selection."""
 

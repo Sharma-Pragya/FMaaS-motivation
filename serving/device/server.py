@@ -12,7 +12,7 @@ import numpy as np
 from device.batcher import DeviceBatcher
 from device.proto import edge_runtime_pb2, edge_runtime_pb2_grpc
 from device.runtime import PyTorchRuntime, VLLMRuntime
-from device.scheduler import FifoPolicy, RequestEnvelope, RoundRobinPolicy, WFQPolicy, STFQPolicy, TokenBucketPolicy, SABAPolicy, DeadlineSplitPolicy
+from device.scheduler import FifoPolicy, RequestEnvelope, RoundRobinPolicy, WFQPolicy, STFQPolicy, TokenBucketPolicy, SABAPolicy, DeadlineSplitPolicy, TokenSTFQPolicy
 from device.vllm_admission import VLLMAdmissionScheduler
 
 
@@ -55,6 +55,11 @@ class RuntimeServerConfig:
     max_new_tokens: int = None           # vLLM SamplingParams.max_tokens (None = backbone default)
     max_num_seqs: int = None             # vLLM max concurrent sequences in the batch (None = vLLM default 256)
     ignore_eos: bool = False             # vLLM SamplingParams.ignore_eos (force exactly max_tokens)
+    vllm_driver: str = "step"            # "step": LLMEngine stepped by device/llm_loop.py (both
+                                         # isolation modes); "async": AsyncLLMEngine (shared mode only)
+    llm_queue_k: int = 1                 # step driver: requests kept waiting inside vLLM beyond
+                                         # max_num_seqs (vLLM's FCFS never holds more than this)
+    llm_max_prompt_len: int = 512        # process mode: prompt tokens per slot (longer prompts fail)
     tpc_mode: str = "none"               # "none" | "libsmctrl" | "green"
     tpc_partition: list = None           # list of TPC IDs to pin this server to
     tpc_share: str = None                # "i/k": the i-th of k equal TPC ranges of the
@@ -93,10 +98,12 @@ class EdgeRuntimeApplication:
         # in main.py's pre-parser, before this constructor's first CUDA call.
         cuda_stream = self._setup_tpc(config)
         if config.runtime_type == "vllm":
-            self.runtime = VLLMRuntime(cuda_stream=cuda_stream)
+            self.runtime = VLLMRuntime(cuda_stream=cuda_stream, driver=config.vllm_driver)
             self.batcher = None
             task_rates = config.task_rates or {}
-            if config.scheduler_policy in ("stfq", "wfq") and task_rates:
+            if config.vllm_driver == "step":
+                pass    # admission + scheduling happen in the step loop (start_step_loop)
+            elif config.scheduler_policy in ("stfq", "wfq") and task_rates:
                 weights = {t: 1.0/r if r > 0 else 1.0 for t, r in task_rates.items()}
                 self.admission = VLLMAdmissionScheduler(
                     runtime=self.runtime,
@@ -145,10 +152,36 @@ class EdgeRuntimeApplication:
         return t
 
     @staticmethod
+    def _vllm_model_config(config: RuntimeServerConfig) -> dict:
+        """Engine/generation settings for a vLLM backbone, from config. One
+        place, so both isolation modes build the engine identically."""
+        model_config = {"gpu_memory_utilization": config.gpu_memory_utilization}
+        if config.max_model_len is not None:
+            model_config["max_model_len"] = config.max_model_len
+        if config.max_new_tokens is not None:
+            model_config["max_new_tokens"] = config.max_new_tokens
+        if config.max_num_seqs is not None:
+            model_config["max_num_seqs"] = config.max_num_seqs
+        if config.ignore_eos:
+            model_config["ignore_eos"] = True
+        return model_config
+
+    @staticmethod
+    def _llm_max_running(config: RuntimeServerConfig) -> int:
+        """Requests the step loop keeps running in vLLM: the engine's own
+        batch cap (max_num_seqs, vLLM default 256)."""
+        return config.max_num_seqs or 256
+
+    @staticmethod
     def _make_policy(config: RuntimeServerConfig):
         """Batch scheduling policy from config. Also used by the backbone
         process in isolation_mode=process (backbone_proc.py)."""
         task_rates = config.task_rates or {}
+        if (config.runtime_type == "vllm" and config.vllm_driver == "step"
+                and config.scheduler_policy == "stfq"):
+            # LLM engines stepped by llm_loop.py: charge tokens, not requests.
+            inv_weights = {t: 1.0/r for t, r in task_rates.items()} if task_rates else None
+            return TokenSTFQPolicy(weights=inv_weights)
         if config.scheduler_policy == "round_robin":
             policy = RoundRobinPolicy()
         elif config.scheduler_policy == "stfq":
@@ -266,29 +299,31 @@ class EdgeRuntimeApplication:
                 f"[Device] Bootstrapping backbone={payload['backbone']} "
                 f"decoders={len(payload['decoders'])}"
             )
-            model_config = {"gpu_memory_utilization": self.config.gpu_memory_utilization}
-            if self.config.max_model_len is not None:
-                model_config["max_model_len"] = self.config.max_model_len
-            if self.config.max_new_tokens is not None:
-                model_config["max_new_tokens"] = self.config.max_new_tokens
-            if self.config.max_num_seqs is not None:
-                model_config["max_num_seqs"] = self.config.max_num_seqs
-            if self.config.ignore_eos:
-                model_config["ignore_eos"] = True
+            model_config = self._vllm_model_config(self.config)
             await asyncio.to_thread(
                 self.runtime.load,
                 payload["backbone"],
                 payload.get("decoders", []),
                 model_config=model_config,
-            ) 
+            )
+            self._maybe_start_step_loop()
         if self.runtime_type == "pytorch" and self.batcher is not None and self._batch_task is None:
             self._batch_task = asyncio.create_task(self.batcher.run_forever())
         if self.admission is not None:
             await self.admission.start()
         print("[Device] Runtime application started")
 
+    def _maybe_start_step_loop(self) -> None:
+        """vLLM with the step driver: (re)start the step loop on the loaded engine."""
+        if self.runtime_type == "vllm" and self.config.vllm_driver == "step":
+            self.runtime.start_step_loop(self._make_policy(self.config),
+                                         max_running=self._llm_max_running(self.config),
+                                         queue_k=self.config.llm_queue_k)
+
     async def stop(self):
         print("[Device] Stopping runtime application")
+        if self.runtime_type == "vllm" and self.config.vllm_driver == "step":
+            await asyncio.to_thread(self.runtime.stop_step_loop)
         if self.admission is not None:
             await self.admission.stop()
         if self.batcher is not None:
@@ -382,19 +417,14 @@ class EdgeRuntimeApplication:
             print(f"[Device] Control command={command}")
 
             if command == "load":
-                model_config = {"gpu_memory_utilization": self.config.gpu_memory_utilization}
-                if self.config.max_model_len is not None:
-                    model_config["max_model_len"] = self.config.max_model_len
-                if self.config.max_new_tokens is not None:
-                    model_config["max_new_tokens"] = self.config.max_new_tokens
-                if self.config.max_num_seqs is not None:
-                    model_config["max_num_seqs"] = self.config.max_num_seqs
-                if self.config.ignore_eos:
-                    model_config["ignore_eos"] = True
+                if self.runtime_type == "vllm" and self.config.vllm_driver == "step":
+                    await asyncio.to_thread(self.runtime.stop_step_loop)
+                model_config = self._vllm_model_config(self.config)
                 logger = await asyncio.to_thread(
                             self.runtime.load, payload["backbone"], payload.get("decoders", []),
                             model_config=model_config
                         )
+                self._maybe_start_step_loop()
                 status = f"loaded_{payload['backbone']}"
             elif command == "swap_backbone":
                 logger = await asyncio.to_thread(

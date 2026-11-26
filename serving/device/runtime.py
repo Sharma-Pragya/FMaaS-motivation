@@ -471,7 +471,15 @@ class VLLMRuntime(BaseRuntime):
     decoders is always [] for LLMs — accepted for interface compatibility.
     """
 
-    def __init__(self, cuda_stream=None):
+    def __init__(self, cuda_stream=None, driver: str = "async"):
+        # driver "async": AsyncLLMEngine runs the step loop (infer awaits
+        # async_forward). "step": a plain LLMEngine that we step ourselves
+        # (device/llm_loop.py) — in a thread here in shared mode
+        # (start_step_loop), or from the backbone process in process mode.
+        self.driver = driver
+        self._step_sp = None
+        self._step = None             # shared mode: {"loop", "inbox", "thread", "stop"}
+        self._tok_lock = threading.Lock()   # HF tokenizers are not safe across threads
         self._loader  = ModelLoader()
         self.logger   = Logger(self._loader.device, "runtime")
         self._loader.logger = self.logger
@@ -484,6 +492,14 @@ class VLLMRuntime(BaseRuntime):
         # mask is visible to the backbone (fmtk's qwen_vllm.py): it is applied
         # entirely from here, against vLLM's own internals.
         self._cuda_stream = cuda_stream
+
+    def _llm_engine(self):
+        """The LLMEngine underneath: built directly (engine="step") or inside
+        the AsyncLLMEngine."""
+        model = self.pipeline.model_instance
+        if getattr(model, "_engine", None) is not None:
+            return model._engine
+        return model._async_engine.engine
 
     def _mask_graph_capture(self) -> None:
         """Capture CUDA graphs on the TPC-masked stream.
@@ -533,8 +549,7 @@ class VLLMRuntime(BaseRuntime):
         """
         import torch
 
-        worker = (self.pipeline.model_instance._async_engine
-                  .engine.model_executor.driver_worker)
+        worker = self._llm_engine().model_executor.driver_worker
         inner = worker.execute_model
         stream = self._cuda_stream
 
@@ -551,7 +566,7 @@ class VLLMRuntime(BaseRuntime):
         Path: async_engine → engine → model_executor → driver_worker → model_runner.model_memory_usage
         Returns bytes, or 0 if the path doesn't exist (vLLM version mismatch)."""
         try:
-            engine = self.pipeline.model_instance._async_engine.engine
+            engine = self._llm_engine()
             return int(engine.model_executor.driver_worker.model_runner.model_memory_usage)
         except Exception:
             return 0
@@ -569,7 +584,7 @@ class VLLMRuntime(BaseRuntime):
             # Imported lazily: runtime.py is imported by torch-only callers too.
             from vllm.worker.cache_engine import CacheEngine
 
-            engine = self.pipeline.model_instance._async_engine.engine
+            engine = self._llm_engine()
             cache_config = engine.cache_config
             num_blocks = int(cache_config.num_gpu_blocks or 0)
             if not num_blocks:
@@ -615,8 +630,21 @@ class VLLMRuntime(BaseRuntime):
         # construction, the other needs the built engine.
         if self._cuda_stream is not None:
             self._mask_graph_capture()
+        if self.driver == "step":
+            model_config = dict(model_config or {}, engine="step")
         op_log = self._loader.load_models(backbone, decoders, model_config=model_config)
         self.pipeline = self._loader.pipeline
+        if self.driver == "step":
+            model = self.pipeline.model_instance
+            if getattr(model, "_engine", None) is None:
+                raise RuntimeError(f"vllm driver 'step' is not supported by backbone "
+                                   f"{backbone} ({type(model).__name__}); use --vllm-driver async")
+            from vllm import SamplingParams
+            sp = model.sampling_params
+            # Same generation settings; the engine does not detokenize — the
+            # caller does, outside the step loop (both isolation modes alike).
+            self._step_sp = SamplingParams(temperature=sp.temperature, max_tokens=sp.max_tokens,
+                                           ignore_eos=sp.ignore_eos, detokenize=False)
         if self._cuda_stream is not None:
             self._mask_execute_model()
         self.backbone = backbone
@@ -641,6 +669,125 @@ class VLLMRuntime(BaseRuntime):
         """
         return self._loader.add_adapter(adapters)
 
+    # ------------------------------------------------------------------
+    # Step driver (driver="step"): primitives used by device/llm_loop.py
+    # ------------------------------------------------------------------
+
+    @property
+    def max_new_tokens(self) -> int:
+        return int(self.pipeline.model_instance.sampling_params.max_tokens)
+
+    def tokenizer_name(self) -> str:
+        return self.pipeline.model_instance.tokenizer.name_or_path
+
+    def prompt_token_ids(self, prompt: str) -> list:
+        with self._tok_lock:
+            return self.pipeline.model_instance.prompt_token_ids(prompt)
+
+    def decode_tokens(self, token_ids) -> str:
+        with self._tok_lock:
+            return self.pipeline.model_instance.decode_tokens(token_ids)
+
+    def llm_add(self, request_id: str, token_ids, task: str | None) -> None:
+        from vllm.inputs import TokensPrompt
+        model = self.pipeline.model_instance
+        adapter_name = self._loader.adapters.get(task) if task and self._loader.adapters else None
+        self._llm_engine().add_request(
+            request_id, TokensPrompt(prompt_token_ids=list(token_ids)), self._step_sp,
+            lora_request=model.lora_request(adapter_name))
+
+    def llm_step(self) -> list:
+        return self._llm_engine().step()
+
+    def llm_abort(self, request_ids: list) -> None:
+        self._llm_engine().abort_request(request_ids)
+
+    def llm_num_unfinished(self) -> int:
+        return self._llm_engine().get_num_unfinished_requests()
+
+    def start_step_loop(self, policy, max_running: int, queue_k: int) -> None:
+        """Shared mode: run the step loop in its own thread (off the gRPC
+        event loop). infer() hands requests over through a thread-safe inbox."""
+        import queue as _queue
+        from device.llm_loop import LLMStepLoop
+        from device.scheduler import STFQPolicy, TenantQueues
+        self.stop_step_loop()
+        inbox: _queue.Queue = _queue.Queue()
+        stop = threading.Event()
+        queues = TenantQueues()
+
+        def on_done(env, ids, admit_ns, end_ns):
+            aloop, fut = env.future
+            aloop.call_soon_threadsafe(_set_future_result, fut, (ids, admit_ns, end_ns))
+
+        def on_error(envs, why):
+            for env in envs:
+                aloop, fut = env.future
+                aloop.call_soon_threadsafe(_set_future_exception, fut, RuntimeError(why))
+
+        loop = LLMStepLoop(self, policy, queues, max_running, queue_k,
+                           prompt_of=lambda env: env.prompt_ids,
+                           on_done=on_done, on_error=on_error, name="VLLMStepLoop")
+
+        def run():
+            import torch
+            stream_ctx = (torch.cuda.stream(self._cuda_stream) if self._cuda_stream is not None
+                          else nullcontext())
+            with stream_ctx:
+                while not stop.is_set():
+                    try:
+                        env = (inbox.get_nowait() if loop.has_work()
+                               else inbox.get(timeout=0.05))
+                    except _queue.Empty:
+                        env = None
+                    while env is not None:
+                        queues.push(env)
+                        if isinstance(policy, STFQPolicy):
+                            policy.assign_start_time(env)
+                        try:
+                            env = inbox.get_nowait()
+                        except _queue.Empty:
+                            env = None
+                    loop.run_once()
+            loop.fail_all("server_stopping")
+
+        th = threading.Thread(target=run, name="vllm_step_loop", daemon=True)
+        th.start()
+        self._step = {"loop": loop, "inbox": inbox, "thread": th, "stop": stop}
+
+    def stop_step_loop(self) -> None:
+        if self._step is not None:
+            self._step["stop"].set()
+            self._step["thread"].join(timeout=10)
+            self._step = None
+
+    async def _infer_step(self, req_id: int, prompt: str, task: str | None) -> dict:
+        import asyncio
+        from device.scheduler import RequestEnvelope
+        if self._step is None:
+            raise RuntimeError("vllm_step_loop_not_running")
+        ids = await asyncio.to_thread(self.prompt_token_ids, prompt)
+        aloop = asyncio.get_running_loop()
+        fut = aloop.create_future()
+        env = RequestEnvelope(req_id=req_id, task=task, x=None, mask=None, question=None,
+                              enqueued_at=time.time(), future=(aloop, fut))
+        env.prompt_ids = ids
+        env.n_prompt = len(ids)
+        self._step["inbox"].put(env)
+        out_ids, admit_ns, end_ns = await fut
+        dec_start = time.time_ns()
+        text = self.decode_tokens(out_ids)
+        dec_ns = time.time_ns() - dec_start
+        return {
+            "output": [],
+            "text_output": text,
+            "start_time_ns": admit_ns,
+            "end_time_ns": end_ns,
+            "proc_time_ns": end_ns - admit_ns,
+            "swap_time_ns": 0,
+            "decoder_time_ns": dec_ns,
+        }
+
     async def infer(self, req_id: int, prompt: str, task: str | None = None,
                     x=None) -> dict:
         """Single prompt → generated text. Multiple concurrent calls are
@@ -654,6 +801,10 @@ class VLLMRuntime(BaseRuntime):
         than from whether x happens to be present."""
         if self.pipeline is None:
             raise RuntimeError("vllm_model_not_loaded")
+        if self.driver == "step":
+            if x is not None:
+                raise RuntimeError("vllm driver 'step' serves text LLMs only")
+            return await self._infer_step(req_id, prompt, task)
         adapter_name = None
         if task and self._loader.adapters:
             adapter_name = self._loader.adapters.get(task)
@@ -674,6 +825,16 @@ class VLLMRuntime(BaseRuntime):
             "swap_time_ns": 0,
             "decoder_time_ns": 0,
         }
+
+
+def _set_future_result(fut, value) -> None:
+    if not fut.done():
+        fut.set_result(value)
+
+
+def _set_future_exception(fut, exc) -> None:
+    if not fut.done():
+        fut.set_exception(exc)
 
 
 # ---------------------------------------------------------------------------
