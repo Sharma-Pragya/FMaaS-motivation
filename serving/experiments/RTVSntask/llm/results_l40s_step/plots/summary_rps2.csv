@@ -1,0 +1,10 @@
+rps_per_task,series,condition,num_tasks,status,avg_latency_ms,p95_latency_ms,p99_latency_ms,throughput_rps,n_requests,failure_reason
+2,SP,no_sharing_tpc,1,ok,520.543,678.471,758.778,2.112,169,
+2,SP,no_sharing_tpc,3,ok,1309.904,1851.575,1952.538,5.938,475,
+2,SP,no_sharing_tpc,5,failed,,,,,,no KV cache room
+2,Shared,sharing,1,ok,517.187,668.498,757.229,2.112,169,
+2,Shared,sharing,3,ok,750.55,1150.322,1306.052,5.938,475,
+2,Shared,sharing,5,ok,1278.453,2160.319,2687.946,10.312,825,
+2,FMVisor,fmvisor,1,ok,526.024,680.019,791.392,2.112,169,
+2,FMVisor,fmvisor,3,ok,782.209,1168.281,1434.869,5.938,475,
+2,FMVisor,fmvisor,5,ok,1296.345,2160.585,2467.585,10.312,825,

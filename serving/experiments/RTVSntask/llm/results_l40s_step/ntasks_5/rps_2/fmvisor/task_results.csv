@@ -1,0 +1,6 @@
+task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_client_pre_rpc_ms,avg_non_server_exec_overhead_ms
+qwenA__app1,fmvisor,169,2.1125,1323.856,1268.872,2099.824,2364.264,1300.302,1300.302,0.0,0.597,21.802,0.0,23.554
+qwenB__app1,fmvisor,142,1.775,1273.928,1200.65,2038.937,2281.065,1246.08,1246.08,0.0,0.625,26.031,0.0,27.848
+qwenA__app2,fmvisor,164,2.05,1308.938,1219.704,2160.585,2329.728,1282.06,1282.06,0.0,0.618,25.016,0.0,26.879
+qwenB__app2,fmvisor,164,2.05,1241.221,1181.705,2087.292,2316.712,1214.012,1214.012,0.0,0.607,25.294,0.0,27.21
+qwenA__app3,fmvisor,186,2.325,1325.961,1243.777,2130.918,2467.585,1296.869,1296.869,0.0,0.597,26.906,0.0,29.092
