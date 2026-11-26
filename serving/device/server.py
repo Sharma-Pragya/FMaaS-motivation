@@ -74,7 +74,9 @@ class RuntimeServerConfig:
                                          # slots_per_task). Pool only for now.
     task_backlog_cap: int = 10000        # isolation_mode=process: requests a vFM may hold waiting on the CPU
     staging: str = "host"                # shared mode: "host" = inputs wait on the CPU, copied at batch time;
-                                         # "gpu" = copied to the GPU on arrival and wait there (like process mode)
+                                         # "gpu" = copied to the GPU on arrival and wait there (like process mode).
+                                         # vllm (step driver): token ids staged on the GPU and copied back, as
+                                         # process mode's slots (runtime.VLLMRuntime). Process mode always stages.
 
 
 class EdgeRuntimeApplication:
@@ -98,7 +100,10 @@ class EdgeRuntimeApplication:
         # in main.py's pre-parser, before this constructor's first CUDA call.
         cuda_stream = self._setup_tpc(config)
         if config.runtime_type == "vllm":
-            self.runtime = VLLMRuntime(cuda_stream=cuda_stream, driver=config.vllm_driver)
+            if config.staging == "gpu" and config.vllm_driver != "step":
+                raise ValueError("--staging gpu with vllm needs --vllm-driver step")
+            self.runtime = VLLMRuntime(cuda_stream=cuda_stream, driver=config.vllm_driver,
+                                       staging=config.staging, worker_mode=config.worker_mode)
             self.batcher = None
             task_rates = config.task_rates or {}
             if config.vllm_driver == "step":

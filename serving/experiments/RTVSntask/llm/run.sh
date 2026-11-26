@@ -7,8 +7,24 @@
 # task ID backed by its own LoRA slot in the engine.
 #
 # Conditions per (ntasks, rps):
+# Every arm: the same LLMEngine stepped by device/llm_loop.py (VLLM_DRIVER),
+# the same engine flags, and request tokens staged on the GPU (STAGING=gpu:
+# shared-mode servers copy ids to the GPU and back exactly as fmvisor's slots
+# do, so staging is not a difference between arms). Per arm:
+#
+#   arm             servers  --isolation-mode  policy    staging    worker mode
+#   no_sharing_tpc  N        shared            fifo      $STAGING   $WORKER_MODE
+#   no_sharing      N        shared            fifo      $STAGING   $WORKER_MODE
+#   sharing         1        shared            fifo      $STAGING   $WORKER_MODE
+#   fmvisor         1        process           FM_SCHED  GPU slots  task processes
+#
+# Worker mode: where a finished request's per-task output work (ids back from
+# the GPU, detokenize) runs. inline (default) = on the step-loop thread, one
+# after another, as vLLM/S-LoRA's engine and Nexus/Mainstream run per-task work;
+# threaded = each task's own thread (WORKER_MODE=threaded, e.g. an ablation).
+#
 #   no_sharing_tpc  — N vLLM servers, each pinned to a TPC set (needs libsmctrl)
-#   sharing         — 1 vLLM server, all N LoRAs (Punica multi-LoRA), FIFO
+#   sharing         — 1 vLLM server, all N LoRAs (Punica / S-LoRA style), FIFO
 #   fmvisor         — 1 server in process-isolation mode: the vLLM engine in a
 #                     backbone process (STFQ, FM_SCHED), one process
 #                     per task (tokenize / detokenize), FM_SLOTS slots per task
@@ -56,6 +72,10 @@
 #                                 "async" = the old AsyncLLMEngine path, not for fmvisor)
 #   MAX_NUM_SEQS          (unset = vLLM's 256) engine batch cap, every arm
 #   LLM_QUEUE_K           1      requests waiting inside vLLM beyond MAX_NUM_SEQS
+#   WORKER_MODE           inline shared-mode arms: inline | threaded (see above)
+#   STAGING               gpu    shared-mode arms (sharing, no_sharing*): gpu = token
+#                                 ids staged on the GPU as fmvisor's slots; host = CPU
+#                                 only. fmvisor always stages (its slots are GPU tensors)
 #   FM_SCHED              stfq   fmvisor's policy: stfq (request-level STFQ, as for
 #                                 vision), token_stfq (token-level), or fifo
 #   FM_SLOTS              64     fmvisor: slots per task (bounds a task's in-flight requests)
@@ -127,6 +147,12 @@ RESULTS_BASE="${RESULTS_BASE:-experiments/RTVSntask/llm/results}"
 VLLM_DRIVER="${VLLM_DRIVER:-step}"
 MAX_NUM_SEQS="${MAX_NUM_SEQS:-}"
 LLM_QUEUE_K="${LLM_QUEUE_K:-1}"
+STAGING="${STAGING:-gpu}"
+WORKER_MODE="${WORKER_MODE:-inline}"
+if [[ "$STAGING" == gpu && "$VLLM_DRIVER" != step ]]; then
+    echo "[run.sh] ERROR: STAGING=gpu needs VLLM_DRIVER=step (set STAGING=host for async)" >&2
+    exit 1
+fi
 FM_SCHED="${FM_SCHED:-stfq}"
 FM_SLOTS="${FM_SLOTS:-64}"
 FM_BACKLOG_CAP="${FM_BACKLOG_CAP:-10000}"
@@ -151,6 +177,8 @@ echo "  max_new_tokens : $MAX_NEW_TOKENS"
 echo "  Deploy timeout : ${DEPLOY_TIMEOUT}s"
 echo "  TPC condition  : $([[ $INCLUDE_TPC == 1 ]] && echo "enabled (mode=$TPC_MODE)" || echo skipped)"
 echo "  vLLM driver    : $VLLM_DRIVER  (max_num_seqs=${MAX_NUM_SEQS:-256 default}, queue_k=$LLM_QUEUE_K)"
+echo "  Staging        : $STAGING (shared-mode arms; fmvisor always gpu)"
+echo "  Worker mode    : $WORKER_MODE (shared-mode arms; fmvisor: task processes)"
 echo "  fmvisor        : sched=$FM_SCHED slots/task=$FM_SLOTS max_prompt_len=$FM_MAX_PROMPT_LEN"
 echo "  Base port      : $DEVICE_PORT"
 echo "  Results        : $RESULTS_BASE"
@@ -269,6 +297,8 @@ start_vllm_device() {
         --max-new-tokens         "$MAX_NEW_TOKENS" \
         --vllm-driver            "$VLLM_DRIVER"    \
         --llm-queue-k            "$LLM_QUEUE_K"    \
+        --staging                "$STAGING"        \
+        --worker-mode            "$WORKER_MODE"    \
         ${MAX_NUM_SEQS:+--max-num-seqs "$MAX_NUM_SEQS"} \
         $tpc_args \
         ${extra[@]+"${extra[@]}"} \
@@ -501,6 +531,10 @@ print(sm // 2)
   "vllm_driver": "${VLLM_DRIVER}",
   "max_num_seqs": "${MAX_NUM_SEQS:-default}",
   "llm_queue_k": ${LLM_QUEUE_K},
+  "staging": "$([[ "$condition" == fmvisor ]] && echo gpu_slots || echo "${STAGING}")",
+  "worker_mode": "$([[ "$condition" == fmvisor ]] && echo task_processes || echo "${WORKER_MODE}")",
+  "isolation_mode": "$([[ "$condition" == fmvisor ]] && echo process || echo shared)",
+  "scheduler": "$([[ "$condition" == fmvisor ]] && echo "${FM_SCHED}" || echo fifo)",
   "fm_sched": "${FM_SCHED}",
   "fm_slots": ${FM_SLOTS},
   "device_port_base": ${DEVICE_PORT}

@@ -82,13 +82,13 @@ def main():
     parser.add_argument("--tpc-partition", type=int, nargs="+", default=None, help="TPC IDs to pin this server to (e.g. --tpc-partition 0 1 2 3).")
     parser.add_argument("--tpc-share", type=str, default=None, help="libsmctrl: 'i/k' pins this server to the i-th of k equal TPC ranges of the device it sees (e.g. one of k servers on a MIG slice). Overrides --tpc-partition.")
     parser.add_argument("--mps-thread-pct", type=int, default=None, help="CUDA MPS active thread percentage (0-100). Requires MPS daemon running. Set via pre-parser so it takes effect before CUDA init.")
-    parser.add_argument("--worker-mode", choices=["threaded", "inline"], default="threaded", help="Per-task pipeline worker mode. threaded: each task gets its own thread + CUDA stream. inline: synchronous on the backbone worker thread, no per-task thread/stream.")
+    parser.add_argument("--worker-mode", choices=["threaded", "inline"], default="threaded", help="Shared mode, per-task work after the backbone. pytorch: the task heads (decoders). vllm (step driver): reading the generated ids back and detokenizing. threaded: each task gets its own thread + CUDA stream. inline: one after another on the backbone/step-loop thread, no per-task thread/stream (Nexus, Mainstream, vLLM/S-LoRA). Process mode ignores it (each task has its own process).")
     parser.add_argument("--verbose-batch-logs", action="store_true", help="Enable high-frequency per-batch request logs. Disabled by default for benchmark stability.")
     parser.add_argument("--max-tasks", type=int, default=16, help="isolation_mode=process: task lanes created at start; each task process ever started (restarts included) uses one.")
     parser.add_argument("--slots-per-task", type=int, default=None, help="isolation_mode=process: GPU slots in each vFM's pool (backbone-owned, lent to the task). Default: 2 x --max-batch-size.")
     parser.add_argument("--task-mem-mb", type=str, default=None, help="isolation_mode=process: each vFM's GPU memory budget in MB, \"MB\" or \"task=MB,...,*=MB\". Its pool gets as many slots as fit (overrides --slots-per-task). Covers the pool only for now.")
     parser.add_argument("--task-backlog-cap", type=int, default=10000, help="isolation_mode=process: requests a vFM may hold waiting on the CPU beyond its GPU slots; more fail with queue_full.")
-    parser.add_argument("--staging", choices=["host", "gpu"], default="host", help="Shared mode: where queued inputs wait. host: CPU, copied at batch time. gpu: copied to the GPU on arrival (matches process mode).")
+    parser.add_argument("--staging", choices=["host", "gpu"], default="host", help="Shared mode: where queued inputs wait. host: CPU, copied at batch time. gpu: copied to the GPU on arrival (matches process mode, which always stages). vllm: token ids staged on the GPU in and out, as process mode's slots (needs --vllm-driver step).")
     args = parser.parse_args()
     # Parse task rates: "ecgclass:10,gestureclass:100" -> {"ecgclass": 10.0, ...}
     task_rates: dict[str, float] = {}

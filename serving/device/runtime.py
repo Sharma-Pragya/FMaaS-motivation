@@ -471,12 +471,30 @@ class VLLMRuntime(BaseRuntime):
     decoders is always [] for LLMs — accepted for interface compatibility.
     """
 
-    def __init__(self, cuda_stream=None, driver: str = "async"):
+    def __init__(self, cuda_stream=None, driver: str = "async", staging: str = "host",
+                 worker_mode: str = "threaded"):
         # driver "async": AsyncLLMEngine runs the step loop (infer awaits
         # async_forward). "step": a plain LLMEngine that we step ourselves
         # (device/llm_loop.py) — in a thread here in shared mode
         # (start_step_loop), or from the backbone process in process mode.
         self.driver = driver
+        # staging "gpu" (shared mode, step driver): a request's tokens take the
+        # same path as in process mode's GPU slots (backbone_proc.py), so every
+        # arm pays the same copies:
+        #   arrival  prompt ids -> GPU (copy stream, synchronized)   ~ task_proc stage
+        #   admit    GPU -> CPU list for vLLM, in the step loop      ~ backbone prompt_of
+        #   finish   generated ids -> GPU, synchronized, in the loop ~ backbone on_done
+        #   reply    GPU -> CPU, then detokenize                     ~ task_proc head_loop
+        # "host": ids stay CPU lists throughout.
+        self.staging = staging
+        self._copy_stream = None
+        # worker_mode (shared mode, step driver), as for vision heads: where a
+        # finished request's per-task output work (ids back from the GPU,
+        # detokenize) runs. The LoRA itself runs inside vLLM's forward, so this
+        # is the only per-task step after the backbone.
+        #   inline    on the step-loop thread, before the next step
+        #   threaded  on the task's own thread (_TaskOutputWorker)
+        self.worker_mode = worker_mode
         self._step_sp = None
         self._step = None             # shared mode: {"loop", "inbox", "thread", "stop"}
         self._tok_lock = threading.Lock()   # HF tokenizers are not safe across threads
@@ -645,6 +663,11 @@ class VLLMRuntime(BaseRuntime):
             # caller does, outside the step loop (both isolation modes alike).
             self._step_sp = SamplingParams(temperature=sp.temperature, max_tokens=sp.max_tokens,
                                            ignore_eos=sp.ignore_eos, detokenize=False)
+            if self.staging == "gpu":
+                import torch
+                self._copy_stream = torch.cuda.Stream(device=self._loader.device)
+                print(f"[VLLMRuntime] staging=gpu: request tokens staged on "
+                      f"{self._loader.device} (as process mode's slots)")
         if self._cuda_stream is not None:
             self._mask_execute_model()
         self.backbone = backbone
@@ -688,6 +711,32 @@ class VLLMRuntime(BaseRuntime):
         with self._tok_lock:
             return self.pipeline.model_instance.decode_tokens(token_ids)
 
+    # -- staging=gpu copies (shared mode; see __init__) -------------------------
+
+    def _stage_in(self, ids: list):
+        """Prompt ids -> GPU on the copy stream, landed before queueing."""
+        if self._copy_stream is None:
+            return ids
+        import torch
+        with torch.cuda.stream(self._copy_stream):
+            t = torch.tensor(ids, dtype=torch.int32).to(self._loader.device, non_blocking=False)
+        self._copy_stream.synchronize()
+        return t
+
+    @staticmethod
+    def _as_list(ids) -> list:
+        """A staged tensor (GPU -> CPU) or a list, as a list of ints."""
+        return ids.tolist() if hasattr(ids, "tolist") else list(ids)
+
+    def _stage_out(self, ids: list):
+        """Generated ids -> GPU, synchronized (called in the step loop)."""
+        if self._copy_stream is None:
+            return ids
+        import torch
+        t = torch.tensor(ids, dtype=torch.int32).to(self._loader.device)
+        torch.cuda.current_stream(self._loader.device).synchronize()
+        return t
+
     def llm_add(self, request_id: str, token_ids, task: str | None) -> None:
         from vllm.inputs import TokensPrompt
         model = self.pipeline.model_instance
@@ -716,9 +765,38 @@ class VLLMRuntime(BaseRuntime):
         stop = threading.Event()
         queues = TenantQueues()
 
-        def on_done(env, ids, admit_ns, end_ns):
+        workers: dict = {}            # threaded: task -> _TaskOutputWorker
+
+        def finish(env, ids, admit_ns, end_ns, decode):
+            """Read the generated ids back (staging=gpu) and detokenize; hand
+            the text to the waiting infer()."""
             aloop, fut = env.future
-            aloop.call_soon_threadsafe(_set_future_result, fut, (ids, admit_ns, end_ns))
+            try:
+                t0 = time.time_ns()
+                text = decode(self._as_list(ids))
+                dec_ns = time.time_ns() - t0
+            except Exception as exc:
+                aloop.call_soon_threadsafe(_set_future_exception, fut, exc)
+                return
+            aloop.call_soon_threadsafe(_set_future_result, fut,
+                                       (text, admit_ns, end_ns, dec_ns))
+
+        def on_done(env, ids, admit_ns, end_ns):
+            # In the loop, as process mode's backbone writes the slot.
+            ids = self._stage_out(ids)
+            if self.worker_mode == "inline":
+                # Per-task output work on the loop thread, one request after
+                # another, before the next step (vLLM's own LLMEngine
+                # detokenizes inside step(); Nexus runs suffixes sequentially).
+                finish(env, ids, admit_ns, end_ns, self.decode_tokens)
+                return
+            # threaded: the task's own thread, tokenizer and CUDA stream.
+            w = workers.get(env.task)
+            if w is None:
+                w = workers[env.task] = _TaskOutputWorker(
+                    env.task, self.pipeline.model_instance.tokenizer,
+                    self._loader.device if self._copy_stream is not None else None, finish)
+            w.submit(env, ids, admit_ns, end_ns)
 
         def on_error(envs, why):
             for env in envs:
@@ -726,7 +804,7 @@ class VLLMRuntime(BaseRuntime):
                 aloop.call_soon_threadsafe(_set_future_exception, fut, RuntimeError(why))
 
         loop = LLMStepLoop(self, policy, queues, max_running, queue_k,
-                           prompt_of=lambda env: env.prompt_ids,
+                           prompt_of=lambda env: self._as_list(env.prompt_ids),
                            on_done=on_done, on_error=on_error, name="VLLMStepLoop")
 
         def run():
@@ -753,12 +831,16 @@ class VLLMRuntime(BaseRuntime):
 
         th = threading.Thread(target=run, name="vllm_step_loop", daemon=True)
         th.start()
-        self._step = {"loop": loop, "inbox": inbox, "thread": th, "stop": stop}
+        print(f"[VLLMRuntime] step loop: worker_mode={self.worker_mode} staging={self.staging}")
+        self._step = {"loop": loop, "inbox": inbox, "thread": th, "stop": stop,
+                      "workers": workers}
 
     def stop_step_loop(self) -> None:
         if self._step is not None:
             self._step["stop"].set()
             self._step["thread"].join(timeout=10)
+            for w in self._step["workers"].values():
+                w.stop()
             self._step = None
 
     async def _infer_step(self, req_id: int, prompt: str, task: str | None) -> dict:
@@ -767,17 +849,17 @@ class VLLMRuntime(BaseRuntime):
         if self._step is None:
             raise RuntimeError("vllm_step_loop_not_running")
         ids = await asyncio.to_thread(self.prompt_token_ids, prompt)
+        n_prompt = len(ids)
+        if self._copy_stream is not None:
+            ids = await asyncio.to_thread(self._stage_in, ids)
         aloop = asyncio.get_running_loop()
         fut = aloop.create_future()
         env = RequestEnvelope(req_id=req_id, task=task, x=None, mask=None, question=None,
                               enqueued_at=time.time(), future=(aloop, fut))
         env.prompt_ids = ids
-        env.n_prompt = len(ids)
+        env.n_prompt = n_prompt
         self._step["inbox"].put(env)
-        out_ids, admit_ns, end_ns = await fut
-        dec_start = time.time_ns()
-        text = self.decode_tokens(out_ids)
-        dec_ns = time.time_ns() - dec_start
+        text, admit_ns, end_ns, dec_ns = await fut
         return {
             "output": [],
             "text_output": text,
@@ -825,6 +907,49 @@ class VLLMRuntime(BaseRuntime):
             "swap_time_ns": 0,
             "decoder_time_ns": 0,
         }
+
+
+class _TaskOutputWorker:
+    """worker_mode=threaded for the vLLM step loop: one task's output work
+    (read its generated ids back from the GPU, detokenize) on the task's own
+    thread, with its own tokenizer copy and CUDA stream, so tasks overlap each
+    other and the engine's next step: the LLM counterpart of
+    task_worker.ThreadedTaskWorker (vision heads), and of process mode's task
+    process (task_proc.head_loop)."""
+
+    def __init__(self, task, tokenizer, device, finish):
+        import copy
+        import queue as _queue
+        self._tok = copy.deepcopy(tokenizer)     # HF tokenizers are not thread-safe
+        self._device = device                    # None: ids are CPU lists (staging=host)
+        self._finish = finish
+        self._q: _queue.Queue = _queue.Queue()
+        self._th = threading.Thread(target=self._run, name=f"llm_out_{task}", daemon=True)
+        self._th.start()
+
+    def _decode(self, ids) -> str:
+        # Same as qwen_vllm.QwenVLLMModel.decode_tokens (postprocess is identity).
+        return self._tok.decode(list(ids), skip_special_tokens=True).strip()
+
+    def submit(self, env, ids, admit_ns, end_ns) -> None:
+        self._q.put((env, ids, admit_ns, end_ns))
+
+    def stop(self) -> None:
+        self._q.put(None)
+        self._th.join(timeout=5)
+
+    def _run(self) -> None:
+        stream_ctx = nullcontext()
+        if self._device is not None:
+            import torch
+            stream_ctx = torch.cuda.stream(torch.cuda.Stream(device=self._device))
+        with stream_ctx:
+            while True:
+                item = self._q.get()
+                if item is None:
+                    return
+                env, ids, admit_ns, end_ns = item
+                self._finish(env, ids, admit_ns, end_ns, self._decode)
 
 
 def _set_future_result(fut, value) -> None:
