@@ -177,9 +177,13 @@ class EdgeRuntimeApplication:
         """Batch scheduling policy from config. Also used by the backbone
         process in isolation_mode=process (backbone_proc.py)."""
         task_rates = config.task_rates or {}
-        if (config.runtime_type == "vllm" and config.vllm_driver == "step"
-                and config.scheduler_policy == "stfq"):
+        if config.scheduler_policy == "token_stfq":
             # LLM engines stepped by llm_loop.py: charge tokens, not requests.
+            # "stfq" stays request-level STFQPolicy (1/w per request), which
+            # the step loop also runs.
+            if not (config.runtime_type == "vllm" and config.vllm_driver == "step"):
+                raise ValueError("--scheduler-policy token_stfq needs --runtime-type vllm "
+                                 "--vllm-driver step")
             inv_weights = {t: 1.0/r for t, r in task_rates.items()} if task_rates else None
             return TokenSTFQPolicy(weights=inv_weights)
         if config.scheduler_policy == "round_robin":

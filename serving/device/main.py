@@ -67,7 +67,7 @@ def main():
     parser.add_argument("--max-batch-wait-ms", type=float, default=0, help="Maximum batch formation wait.")
     parser.add_argument("--queue-capacity", type=int, default=102400, help="Maximum total queued inference requests.")
     parser.add_argument("--runtime-type", choices=["pytorch", "vllm"], default="pytorch", help="Inference runtime: pytorch (TSFM) or vllm (LLM).")
-    parser.add_argument("--scheduler-policy", choices=["fifo", "round_robin", "wfq", "token_bucket", "saba", "deadline_split","stfq"], default="stfq", help="Batch scheduling policy: fifo, round_robin, wfq, token_bucket, saba, or deadline_split (deadline-driven batch splitting).")
+    parser.add_argument("--scheduler-policy", choices=["fifo", "round_robin", "wfq", "token_bucket", "saba", "deadline_split","stfq","token_stfq"], default="stfq", help="Batch scheduling policy: fifo, round_robin, wfq, token_bucket, saba, deadline_split (deadline-driven batch splitting), stfq (request-level), or token_stfq (token-level STFQ; vllm with --vllm-driver step only).")
     parser.add_argument("--task-rates", type=str, default=None, help="Comma-separated task:rps pairs e.g. ecgclass:10,gestureclass:100 — used by WFQ/TokenBucket policies.")
     parser.add_argument("--isolation-mode", choices=["shared", "process", "none"], default="shared", help="Isolation mode: shared (default, all tasks in one process) or process (one process per task).")
     parser.add_argument("--gpu-memory-utilization", type=float, default=0.9, help="Fraction of GPU memory vLLM may use for KV cache (0.0–1.0). Lower values allow multiple engines on one GPU.")
