@@ -5,10 +5,23 @@
 # plot.py draws the figure. Memory is the device server's own measurement
 # (gpu_alloc_peak_mb in every response); see run.py.
 #
+# Every arm stages inputs on the GPU (STAGING=gpu) and, except fmvisor, runs
+# the task heads inline (WORKER_MODE=inline: one after another on the backbone
+# thread, as Nexus / Mainstream run per-model suffixes). Per arm:
+#
+#   arm          servers           --isolation-mode  policy  staging  worker mode
+#   shared       1                 shared            fifo    gpu      inline
+#   shared_bfq   1                 shared            stfq    gpu      inline
+#   fmvisor      1                 process           stfq    gpu slots task processes
+#   no_sharing   1 per task        shared            fifo    gpu      inline
+#   mig          1 per MIG slice   shared            fifo    gpu      inline
+#   partitioned  1 per task        shared            fifo    gpu      inline   (efficiency)
+#   mig, mig_tpc 1 per task        shared            fifo    gpu      inline   (efficiency)
+#
 #   isolation   (b, c, d): noisy task B ramps RATE_B -> RATE_B_MAX req/s at
 #               RAMP_AT s; victims A1.. stay at RATE_A. Conditions:
 #                 shared      one server, every task, --staging gpu, FIFO,
-#                             cross-task batches (S-BE)
+#                             cross-task batches (S-BE; Nexus / Mainstream style)
 #                 shared_bfq  shared, with the STFQ (BFQ-style) scheduler, equal
 #                             weights: performance isolation only
 #                 fmvisor     one server in process-isolation mode (a backbone
@@ -31,6 +44,7 @@
 # Overrides (defaults follow memory_isolation_vision/results_bw_n2_a110):
 #   EXPERIMENTS=isolation,efficiency ISO_CONDITIONS=shared,mig N_TASKS=2
 #   BACKBONE=dinobase-patch DECODER_PATH=nyudepth_dinobase_monocular RES=224 MAX_BATCH=32 STAGING=gpu SCHEDULER=fifo
+#   WORKER_MODE=inline (shared-mode arms; threaded = per-task head threads, an ablation)
 #   RATE_A=110 RATE_B=20 RATE_B_MAX=1000 RAMP_AT=60 RAMP_S=15 DURATION=180 WARMUP_BURST_SECS=15
 #   EFF_CONDITIONS=shared,partitioned EFF_NS=1,2,4,6,8 EFF_DURATION=60 EFF_CONC=1
 #   (efficiency as motivation1: closed loop, one request in flight per task)
@@ -75,6 +89,7 @@ MAX_BATCH_WAIT_MS="${MAX_BATCH_WAIT_MS:-0}"
 QUEUE_CAPACITY="${QUEUE_CAPACITY:-10000000}"
 STAGING="${STAGING:-gpu}"
 SCHEDULER="${SCHEDULER:-fifo}"
+WORKER_MODE="${WORKER_MODE:-inline}"       # shared-mode arms: task heads inline | threaded
 FM_SLOTS="${FM_SLOTS:-64}"                 # fmvisor: GPU slots per task (2 x MAX_BATCH)
 FM_MEM_MB="${FM_MEM_MB:-}"                 # fmvisor: per-task memory budget in MB ("MB" or
                                            # "task=MB,...,*=MB"); set, it replaces FM_SLOTS
@@ -110,7 +125,7 @@ for ((i = 1; i < N_TASKS; i++)); do ISO_TASKS+=("A$i"); done
 echo "================================================================"
 echo "  motivation2 (device server)"
 echo "  experiments=$EXPERIMENTS  backbone=$BACKBONE  res=$RES  max_batch=$MAX_BATCH"
-echo "  isolation: $ISO_CONDITIONS  tasks=${ISO_TASKS[*]}  staging=$STAGING"
+echo "  isolation: $ISO_CONDITIONS  tasks=${ISO_TASKS[*]}  staging=$STAGING  worker_mode=$WORKER_MODE (fmvisor: task processes)"
 echo "             B $RATE_B -> $RATE_B_MAX req/s at ${RAMP_AT}s (+${RAMP_S}s), A $RATE_A req/s, ${DURATION}s"
 echo "  efficiency: $EFF_CONDITIONS  n=$EFF_NS  conc=$EFF_CONC  ${EFF_DURATION}s"
 echo "  results: $EXP_DIR"
@@ -168,7 +183,8 @@ start_server() {
     if [[ -n "$visible" ]]; then envs=(env "CUDA_VISIBLE_DEVICES=$visible"); cuda="cuda:0"; fi
     ${envs[@]+"${envs[@]}"} $PYTHON -u "$SERVING_DIR/device/main.py" \
         --port "$port" --runtime-type pytorch --cuda "$cuda" \
-        --isolation-mode "$mode" --staging "$STAGING" ${extra[@]+"${extra[@]}"} \
+        --isolation-mode "$mode" --staging "$STAGING" --worker-mode "$WORKER_MODE" \
+        ${extra[@]+"${extra[@]}"} \
         --scheduler-policy "$sched" \
         --max-batch-size "$MAX_BATCH" --max-batch-wait-ms "$MAX_BATCH_WAIT_MS" \
         --queue-capacity "$QUEUE_CAPACITY" \
@@ -320,7 +336,7 @@ run_isolation() {
         --ramp-at "$RAMP_AT" --ramp-s "$RAMP_S" --duration "$DURATION" --warmup "$WARMUP" \
         --warmup-burst-secs "$WARMUP_BURST_SECS" --warmup-concurrency "$MAX_BATCH" \
         --gpu-index "$GPU_INDEX" ${total:+--gpu-total-mb "$total"} ${mig_arg[@]+"${mig_arg[@]}"} \
-        --extra "{\"max_batch\": $MAX_BATCH, \"staging\": \"$STAGING\", \"scheduler\": \"$sched\", \"fm_slots\": $FM_SLOTS, \"fm_mem_mb\": \"$FM_MEM_MB\", \"fm_backlog_cap\": $FM_BACKLOG_CAP}" \
+        --extra "{\"max_batch\": $MAX_BATCH, \"staging\": \"$STAGING\", \"scheduler\": \"$sched\", \"isolation_mode\": \"$([[ $cond == fmvisor ]] && echo process || echo shared)\", \"worker_mode\": \"$([[ $cond == fmvisor ]] && echo task_processes || echo "$WORKER_MODE")\", \"fm_slots\": $FM_SLOTS, \"fm_mem_mb\": \"$FM_MEM_MB\", \"fm_backlog_cap\": $FM_BACKLOG_CAP}" \
         --out-dir "$EXP_DIR/isolation" \
         || echo "[run.sh] WARNING: isolation/$cond failed"
     check_servers

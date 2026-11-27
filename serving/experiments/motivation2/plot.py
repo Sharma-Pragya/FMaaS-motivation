@@ -32,10 +32,15 @@ completes.
 over the run (avg_device_used_mb), or, for older rows, the sum of each
 server's torch allocated (contexts left out).
 
-Writes three figures into --exp-dir:
+Writes into --exp-dir:
     motivation2       (a)-(d), Partitioned vs Shared: the motivation figure
     motivation2_all   (b)-(d), every isolation condition that was run
                       (Partitioned, Shared, Shared + BFQ, FMVisor)
+    motivation2_tput, motivation2_tput_all
+                      the same, laid out as (a) Efficiency, (b) noisy task B's
+                      throughput, (c) the
+                      victims' throughput, (d) noisy task B's memory; no fault
+                      panel
     rough_memory      rough, not for the paper: per condition, noisy B, the
                       victim, everything else, and the device's used memory
 (a)'s Partitioned is mig_tpc if it was run, else mig, else partitioned.
@@ -77,6 +82,7 @@ LABELS = {"mig": "Partitioned", "no_sharing": "Partitioned", "shared": "Shared",
 FIG_W, FIG_H = 7.0, 1.6
 LW, MS, N_MARKERS = 1.3, 3.5, 6
 GRID_S = 0.5
+HEADROOM = 1.5      # time panels' y-limit over their peak: room for the event notes
 RED = mp.SURGE_COLOR
 
 
@@ -132,6 +138,81 @@ def noisy_memory_gb(ev: list, s: dict) -> tuple:
         base = float(pre.mean()) if len(pre) else 0.0
         y = base / len(sharers) + np.maximum(0.0, y - base)
     return grid, y / 1024
+
+
+# A request lost to a failure: a CUDA OOM error, or its server (process) gone
+# after one (the server exits on OOM): the stream broke, or the front end
+# reports the task's / backbone's process down.
+FAILURE_CODES = ("out of memory", "UNAVAILABLE", "STREAM_ENDED", "CANCELLED",
+                 "task_down", "backbone_down")
+
+
+CRASH_CODES = FAILURE_CODES[1:]     # the server (process) is gone, not just a failed request
+
+
+def first_crash(ev: list, tasks: set) -> float | None:
+    """When the process serving tasks went down (it exits on OOM)."""
+    ts = [r["t_done"] for r in ev
+          if not r["ok"] and r["task"] in tasks
+          and any(c in (r.get("code") or "") for c in CRASH_CODES)]
+    return min(ts) if ts else None
+
+
+def drop_at_crash(t, y, t_crash: float | None, dur: float) -> tuple:
+    """A crashed process holds no memory: the line drops straight to 0 at
+    the crash and stays there (as memory_isolation_vision's task_memory_gb)."""
+    if t_crash is None:
+        return t, y
+    t, y = np.asarray(t, float), np.asarray(y, float)
+    keep = t < t_crash
+    last = y[keep][-1] if keep.any() else 0.0
+    return (np.concatenate([t[keep], [t_crash, t_crash, dur]]),
+            np.concatenate([y[keep], [last, 0.0, 0.0]]))
+
+
+def first_oom(ev: list, tasks: set) -> float | None:
+    """When any of tasks first lost a request to an OOM failure."""
+    ts = [r["t_done"] for r in ev
+          if not r["ok"] and r["task"] in tasks
+          and any(c in (r.get("code") or "") for c in FAILURE_CODES)]
+    return min(ts) if ts else None
+
+
+def mark_ooms(ax, ooms: dict, dur: float, merge_s: float = 6.0) -> None:
+    """Each run's OOM failure as an event, like the noisy ramp: a vertical
+    line at its time, in the run's colour, and a red "failure" note, as
+    " noisy: a→b rps" is written. ooms: {condition: t}. Runs failing within
+    merge_s of each other share one note."""
+    groups: list = []                  # [[t, [conditions]]]
+    for c, t in sorted(ooms.items(), key=lambda kv: kv[1]):
+        ax.axvline(t, color=mp.COLORS[STYLE_OF[c]], lw=0.7, ls="--", zorder=1)
+        if groups and t - groups[-1][0] < merge_s:
+            groups[-1][1].append(c)
+        else:
+            groups.append([t, [c]])
+    tr = ax.get_xaxis_transform()      # x in data, y in axes fraction
+    renderer = ax.figure.canvas.get_renderer()
+    placed: list = []                  # (x0, x1, row) in data units
+    for t, cs in groups:
+        # In the headroom above the curves (HEADROOM), below the noisy note:
+        # right of the line unless that leaves the panel, and one row lower
+        # than any note it would overlap.
+        txt = ax.text(t + 1, 0.87, "failure", transform=tr, color=RED,
+                      fontsize=5.5, va="top", ha="left", zorder=4)
+        bb = txt.get_window_extent(renderer)
+        (x0, _), (x1, _) = ax.transData.inverted().transform([(bb.x0, 0), (bb.x1, 0)])
+        w = x1 - x0
+        if t + 1 + w > ax.get_xlim()[1]:
+            txt.set_x(t - 1)
+            txt.set_horizontalalignment("right")
+            x0, x1 = t - 1 - w, t - 1
+        else:
+            x0, x1 = t + 1, t + 1 + w
+        row = 0
+        while any(r == row and a < x1 and x0 < b for a, b, r in placed):
+            row += 1
+        txt.set_y(0.87 - 0.1 * row)
+        placed.append((x0, x1, row))
 
 
 def load_stats(path: Path) -> list:
@@ -261,29 +342,42 @@ RC = {
 
 def draw_figure(summ: dict, conds: list, iso_dir: Path, out: Path, thr_bin: float,
                 eff_csv: Path | None = None, part_key: str = "mig", oom: dict | None = None,
-                fig_w: float = FIG_W) -> None:
-    """(a) if eff_csv, then (b) victim throughput, (c) noisy task memory,
-    (d) victim failures, for the isolation conditions conds."""
+                fig_w: float = FIG_W, layout: str = "isolation") -> None:
+    """(a) if eff_csv, then, for the isolation conditions conds:
+        layout "isolation"  (b) victim throughput, (c) noisy task memory,
+                            (d) victim failures
+        layout "tput"       (b) noisy task throughput, (c) victim throughput,
+                            (d) noisy task memory"""
     s0 = summ[conds[0]]
     dur, ramp = s0["duration"], s0["ramp_at"]
     V = set(s0["victims"])
+    B = {s0["surging"]}
     edges = np.arange(0, dur + 1e-9, thr_bin)
     mids = edges[:-1] + thr_bin / 2
+    tput = layout == "tput"
     with plt.rc_context(RC):
         fig = plt.figure(figsize=(fig_w, FIG_H))
         if eff_csv is not None:
             gs = fig.add_gridspec(1, 5, width_ratios=[1.3, 0.22, 1, 1, 1], wspace=0.42,
                                   left=0.055, right=0.99, top=0.76, bottom=0.21)
             efficiency_panel(fig.add_subplot(gs[0]), eff_csv, part_key, oom)
-            ax_p = fig.add_subplot(gs[2])
-            ax_m, ax_f = fig.add_subplot(gs[3], sharex=ax_p), fig.add_subplot(gs[4], sharex=ax_p)
+            cols = (gs[2], gs[3], gs[4])
         else:
             gs = fig.add_gridspec(1, 3, wspace=0.42, left=0.07, right=0.99, top=0.76, bottom=0.21)
-            ax_p = fig.add_subplot(gs[0])
-            ax_m, ax_f = fig.add_subplot(gs[1], sharex=ax_p), fig.add_subplot(gs[2], sharex=ax_p)
+            cols = (gs[0], gs[1], gs[2])
+        ax1 = fig.add_subplot(cols[0])
+        ax2, ax3 = fig.add_subplot(cols[1], sharex=ax1), fig.add_subplot(cols[2], sharex=ax1)
+        if tput:
+            ax_n, ax_p, ax_m, ax_f = ax1, ax2, ax3, None
+        else:
+            ax_n, ax_p, ax_m, ax_f = None, ax1, ax2, ax3
 
-        max_fail, max_mem, max_thr = 0, 0.0, 0.0
+        max_fail, max_mem, max_thr, max_nthr = 0, 0.0, 0.0, 0.0
         fails = {}
+        # condition -> first CUDA OOM of the noisy task / of a victim. Each
+        # panel marks only failures of the task it shows.
+        ooms_b: dict = {}
+        ooms_v: dict = {}
         for c in conds:
             s, key = summ[c], STYLE_OF[c]
             ev = load_events(iso_dir / f"events_{c}.csv")
@@ -291,6 +385,10 @@ def draw_figure(summ: dict, conds: list, iso_dir: Path, out: Path, thr_bin: floa
             thr = mp.rate_per_bin(ok_ev, V, edges)
             max_thr = max(max_thr, float(np.nanmax(thr)) if len(thr) else 0.0)
             ax_p.plot(mids, thr, **style(key, len(mids)))
+            if ax_n is not None:
+                nthr = mp.rate_per_bin(ok_ev, B, edges)
+                max_nthr = max(max_nthr, float(np.nanmax(nthr)) if len(nthr) else 0.0)
+                ax_n.plot(mids, nthr, **style(key, len(mids)))
             stats = load_stats(iso_dir / f"mem_{c}.jsonl")
             quota = None
             if stats:
@@ -302,23 +400,29 @@ def draw_figure(summ: dict, conds: list, iso_dir: Path, out: Path, thr_bin: floa
             # A run with no memory numbers (process mode before stats): no line,
             # rather than one at 0.
             if peak > 0:
+                t, yb = drop_at_crash(t, yb, first_crash(ev, B), dur)
                 ax_m.plot(t, yb, **style(key, len(t)))
+            for tasks, into in ((B, ooms_b), (V, ooms_v)):
+                t_oom = first_oom(ev, tasks)
+                if t_oom is not None:
+                    into[c] = t_oom
             if quota:
                 ax_m.axhline(quota, color=mp.COLORS[key], lw=0.6, ls="--")
                 ax_m.text(dur - 2, quota, f"{LABELS[c]} quota", color=mp.COLORS[key],
-                          fontsize=5.5, va="bottom", ha="right")
+                          fontsize=5.5, va="top", ha="right")
             ft = np.sort([r["t_done"] for r in ev if not r["ok"] and r["task"] in V])
             fails[c] = np.searchsorted(ft, mids, side="right")
             max_fail = max(max_fail, len(ft))
 
         k = max_fail >= 2000
-        for c in conds:
-            ax_f.plot(mids, fails[c] / (1000 if k else 1), **style(STYLE_OF[c], len(mids)))
+        if ax_f is not None:
+            for c in conds:
+                ax_f.plot(mids, fails[c] / (1000 if k else 1), **style(STYLE_OF[c], len(mids)))
 
         # (c) capacity lines (from the summary; absent if nvidia-smi / NVML had none).
         cap = (s0.get("gpu_total_mb") or summ.get("shared", {}).get("gpu_total_mb") or 0) / 1024
         sl = (summ.get("mig", {}).get("mig_slice_mb") or 0) / 1024
-        top = max(max_mem, cap, sl) * 1.1 or 1.0
+        top = max(max_mem, cap, sl) * (HEADROOM if ooms_b else 1.1) or 1.0
         if cap:
             ax_m.axhline(cap, color=mp.CAPACITY_COLOR, lw=0.6, ls="--")
             ax_m.text(4, cap, "GPU capacity", color=mp.CAPACITY_COLOR, fontsize=5.5, va="bottom")
@@ -326,13 +430,22 @@ def draw_figure(summ: dict, conds: list, iso_dir: Path, out: Path, thr_bin: floa
             ax_m.axhline(sl, color=mp.COLORS["mig"], lw=0.6, ls="--")
             ax_m.text(4, sl, "MIG slice", color=mp.COLORS["mig"], fontsize=5.5, va="bottom")
         ax_m.set_ylim(0, top)
-        ax_p.set_ylim(0, max_thr * 1.25 or 1.0)
-        ax_f.set_ylim(0, (max_fail / (1000 if k else 1)) * 1.15 or 1.0)
-
-        for ax, title, yl in ((ax_p, "(b) Performance isolation", "Victim tput (req/s)"),
-                              (ax_m, "(c) Memory isolation", "Noisy task mem. (GB)"),
-                              (ax_f, "(d) Fault isolation",
-                               "Victim failed req." + (" (K)" if k else ""))):
+        ax_p.set_ylim(0, max_thr * HEADROOM or 1.0)
+        if tput:
+            # B's offered load is in the "noisy: a→b rps" note; drawn as a line
+            # it would flatten what B is actually served.
+            ax_n.set_ylim(0, max_nthr * HEADROOM or 1.0)
+            panels = ((ax_n, "(b) Noisy task", "Noisy task tput (req/s)"),
+                      (ax_p, "(c) Victim task", "Victim tput (req/s)"),
+                      (ax_m, "(d) Memory isolation", "Noisy task mem. (GB)"))
+        else:
+            ax_f.set_ylim(0, (max_fail / (1000 if k else 1)) * HEADROOM or 1.0)
+            panels = ((ax_p, "(b) Performance isolation", "Victim tput (req/s)"),
+                      (ax_m, "(c) Memory isolation", "Noisy task mem. (GB)"),
+                      (ax_f, "(d) Fault isolation",
+                       "Victim failed req." + (" (K)" if k else "")))
+        oom_of = {ax_n: ooms_b, ax_m: ooms_b, ax_p: ooms_v, ax_f: ooms_v}
+        for ax, title, yl in panels:
             ax.set_title(title)
             ax.set_ylabel(yl, labelpad=1)
             ax.set_xlabel("Time (s)", labelpad=1)
@@ -340,8 +453,15 @@ def draw_figure(summ: dict, conds: list, iso_dir: Path, out: Path, thr_bin: floa
             ax.axvline(ramp, **mp.PHASE_LINE)
             ax.yaxis.grid(True, color="#dddddd", lw=0.4)
             ax.set_axisbelow(True)
-        ax_p.text(ramp, ax_p.get_ylim()[1], f" noisy: {s0['rate_b']:g}→{s0['rate_b_max']:g} rps",
-                  color=RED, fontsize=5.5, va="top")
+            mark_ooms(ax, oom_of[ax], dur)
+        # The noisy ramp note goes on the first time panel only: the victim
+        # panel in the isolation layout, the noisy task's panel in "tput".
+        if ax_n is None:
+            ax_p.text(ramp, ax_p.get_ylim()[1], f" noisy: {s0['rate_b']:g}→{s0['rate_b_max']:g} rps",
+                      color=RED, fontsize=5.5, va="top")
+        else:
+            ax_n.text(ramp, ax_n.get_ylim()[1], f" noisy: {s0['rate_b']:g}→{s0['rate_b_max']:g} rps",
+                      color=RED, fontsize=5.5, va="top")
 
         handles = [Line2D([], [], **{**style(STYLE_OF[c], 1), "markevery": None}, label=LABELS[c])
                    for c in conds]
@@ -475,6 +595,15 @@ def main() -> None:
     # 2) Every isolation condition that was run, (b)-(d).
     if len(all_conds) > len(main_conds):
         draw_figure(summ, all_conds, iso_dir, out.with_name(out.name + "_all"), args.thr_bin)
+    # 2b) Variant: (a) efficiency, (b) noisy tput, (c) victim tput, (d) memory.
+    tp = out.with_name(out.name + "_tput")
+    draw_figure(summ, main_conds, iso_dir, tp, args.thr_bin,
+                eff_csv if eff_csv.exists() else None, STYLE_OF[ded], parse_oom(args.oom),
+                layout="tput")
+    if len(all_conds) > len(main_conds):
+        draw_figure(summ, all_conds, iso_dir, tp.with_name(tp.name + "_all"), args.thr_bin,
+                    eff_csv if eff_csv.exists() else None, STYLE_OF[ded], parse_oom(args.oom),
+                    layout="tput")
     # 3) Rough: where the GPU's memory goes, per condition.
     draw_rough_memory(summ, iso_dir, out.with_name("rough_memory"))
 
