@@ -9,7 +9,19 @@
 #
 # For tsfm, NUM_TASKS_SWEEP controls how many tasks (picked in canonical order above).
 # Conditions run per (ntasks, rps) pair:
-#   single_{task_i} for each i, then no_sharing_tpc, no_sharing, sharing
+#   single_{task_i} for each i, then no_sharing, no_sharing_tpc, sharing, fmvisor
+#
+# Arms (every one stages inputs on the GPU, STAGING=gpu; the baselines run
+# their task heads inline, WORKER_MODE=inline, and FIFO, SHARED_SCHED=fifo):
+#   arm             servers        --isolation-mode  policy        worker mode
+#   single_<task>   1 (one task)   shared            fifo          inline
+#   no_sharing      N (BE)         shared            fifo          inline
+#   no_sharing_tpc  N, TPC-pinned  shared            fifo          inline
+#   no_sharing_mps  N, MPS         shared            fifo          inline
+#   sharing         1 (Shared)     shared            SHARED_SCHED  WORKER_MODE
+#   fmvisor         1              process           FM_SCHED      task processes
+# fmvisor: FM_SLOTS GPU slots per task (empty = the server's 2 x MAX_BATCH_SIZE),
+# then up to FM_BACKLOG_CAP waiting on the CPU (empty = the server's 10000).
 #
 # Device servers are started on consecutive ports: DEVICE_PORT, DEVICE_PORT+1, ...
 #
@@ -26,6 +38,13 @@
 #   DEVICE_PORT        8000       (base port; additional servers use 8001, 8002, ...)
 #   MAX_BATCH_SIZE     100
 #   TPC_MODE           libsmctrl (or green)
+#   STAGING            gpu        (every arm; host = inputs wait on the CPU)
+#   WORKER_MODE        inline     (sharing's task heads; threaded = per-task threads)
+#   SHARED_SCHED       fifo       (sharing's policy; stfq = Shared + BFQ)
+#   FM_SCHED           stfq       (fmvisor's policy)
+#   FM_SLOTS           (empty)    fmvisor slots per task
+#   FM_BACKLOG_CAP     (empty)    fmvisor CPU backlog per task
+#   CONDITIONS         (empty)    e.g. "sharing,fmvisor" runs only those
 #   RESULTS_BASE       experiments/sharing_benefit/tpc/results
 #   NYUDEPTH_PATH      ../../FMTK/dataset/nyu-depth-v2   (vision only)
 #   PASCALVOC_PATH     ../../FMTK/dataset/PASCAL-VOC      (vision only)
@@ -94,7 +113,12 @@ DEVICE_STARTUP_WAIT="${DEVICE_STARTUP_WAIT:-5}"
 MAX_BATCH_WAIT_MS="${MAX_BATCH_WAIT_MS:-0}"
 TPC_MODE="${TPC_MODE:-libsmctrl}"
 WARMUP_BURST_SECS="${WARMUP_BURST_SECS:-15}"   # closed-loop GPU warmup before each open-loop run
-STAGING="${STAGING:-host}"   # host | gpu: where queued inputs wait in shared mode (gpu = copied on arrival, like process mode)
+STAGING="${STAGING:-gpu}"    # host | gpu: where queued inputs wait in shared mode (gpu = copied on arrival, as fmvisor's slots)
+WORKER_MODE="${WORKER_MODE:-inline}"     # sharing: task heads inline (Nexus / Mainstream) | threaded
+SHARED_SCHED="${SHARED_SCHED:-fifo}"     # sharing's policy
+FM_SCHED="${FM_SCHED:-stfq}"             # fmvisor's policy
+FM_SLOTS="${FM_SLOTS:-}"                 # fmvisor: GPU slots per task (empty: server default)
+FM_BACKLOG_CAP="${FM_BACKLOG_CAP:-}"     # fmvisor: CPU backlog per task (empty: server default)
 
 # Canonical ordered list of all tsfm tasks (NUM_TASKS_SWEEP selects the first N)
 ALL_TSFM_TASKS=(ecgclass gestureclass heartrate diasbp sysbp etth1fore weatherfore trafficfore eclfore exchangefore)
@@ -128,6 +152,9 @@ echo "  RPS sweep      : $RPS_SWEEP"
 echo "  Duration/run   : ${PHASE_DURATION}s"
 echo "  TPC mode       : $TPC_MODE"
 echo "  Warmup burst   : ${WARMUP_BURST_SECS}s"
+echo "  Staging        : $STAGING (every arm; fmvisor: GPU slots)"
+echo "  Shared         : sched=$SHARED_SCHED worker_mode=$WORKER_MODE"
+echo "  FMVisor        : sched=$FM_SCHED slots/task=${FM_SLOTS:-default} backlog=${FM_BACKLOG_CAP:-default}"
 echo "  Base port      : $DEVICE_PORT"
 echo "  Results        : $RESULTS_BASE"
 echo "================================================================"
@@ -242,6 +269,11 @@ start_device() {
         mps_args="--mps-thread-pct $mps_pct"
     fi
     local worker_args="--worker-mode $worker_mode"
+    local fm_args=""
+    if [[ "$isolation_mode" == process ]]; then
+        [[ -n "$FM_SLOTS" ]] && fm_args+=" --slots-per-task $FM_SLOTS"
+        [[ -n "$FM_BACKLOG_CAP" ]] && fm_args+=" --task-backlog-cap $FM_BACKLOG_CAP"
+    fi
 
     # Sanity check: warn if GPU memory is still mostly occupied from a previous run
     local gpu_free gpu_total
@@ -272,6 +304,7 @@ start_device() {
         $tpc_args \
         $mps_args \
         $worker_args \
+        $fm_args \
         --isolation-mode    "$isolation_mode" \
         --staging           "$STAGING" \
         > "$log" 2>&1 &
@@ -442,27 +475,28 @@ print(sm // 2)  # TPCs ~ SMs/2
             done
             local port="$DEVICE_PORT"
             local pid
-            pid=$(start_device "$port" "stfq" \
+            # Shared: one process, every task (Nexus / Mainstream / S-LoRA style).
+            pid=$(start_device "$port" "$SHARED_SCHED" \
                   "$LOG_DIR/device_sharing_rps${rps}_n${ntasks}.log" \
-                  "$rps" "$task_rates")
+                  "$rps" "$task_rates" "none" "" "" "$WORKER_MODE")
             DEVICE_PIDS+=("$pid")
             run_py --condition sharing --device-urls "localhost:${port}"
             ;;
 
-        sharing_process)
-            # As sharing, with each task's decoder in its own process / CUDA
-            # context (device --isolation-mode process).
+        fmvisor)
+            # FMVisor: one backbone process, each task's decoder in its own
+            # process / CUDA context (device --isolation-mode process).
             local task_rates=""
             for t in "${TASKS[@]}"; do
                 task_rates+="${task_rates:+,}${t}:${rps}"
             done
             local port="$DEVICE_PORT"
             local pid
-            pid=$(start_device "$port" "stfq" \
-                  "$LOG_DIR/device_sharing_process_rps${rps}_n${ntasks}.log" \
-                  "$rps" "$task_rates" "none" "" "" "threaded" "process")
+            pid=$(start_device "$port" "$FM_SCHED" \
+                  "$LOG_DIR/device_fmvisor_rps${rps}_n${ntasks}.log" \
+                  "$rps" "$task_rates" "none" "" "" "$WORKER_MODE" "process")
             DEVICE_PIDS+=("$pid")
-            run_py --condition sharing_process --device-urls "localhost:${port}"
+            run_py --condition fmvisor --device-urls "localhost:${port}"
             ;;
     esac
 
@@ -486,6 +520,12 @@ print(sm // 2)  # TPCs ~ SMs/2
   "phase_duration_s": ${PHASE_DURATION},
   "rps_per_task": ${rps},
   "tpc_mode": "${TPC_MODE}",
+  "staging": "$([[ "$condition" == fmvisor ]] && echo gpu_slots || echo "${STAGING}")",
+  "isolation_mode": "$([[ "$condition" == fmvisor ]] && echo process || echo shared)",
+  "scheduler": "$(case "$condition" in sharing) echo "${SHARED_SCHED}";; fmvisor) echo "${FM_SCHED}";; *) echo fifo;; esac)",
+  "worker_mode": "$(case "$condition" in sharing) echo "${WORKER_MODE}";; fmvisor) echo task_processes;; *) echo inline;; esac)",
+  "fm_slots": "${FM_SLOTS:-default}",
+  "fm_backlog_cap": "${FM_BACKLOG_CAP:-default}",
   "device_port_base": ${DEVICE_PORT},
   "device_startup_wait_s": ${DEVICE_STARTUP_WAIT}
 }
@@ -618,8 +658,8 @@ if [[ "$TASK_SET" == "vision" ]]; then
             conditions+=("single_${t}")
         done
         # conditions+=("no_sharing" "no_sharing_tpc" "no_sharing_mps" "sharing")
-        conditions+=("no_sharing" "no_sharing_tpc" "sharing" "sharing_process")
-        # CONDITIONS="sharing,sharing_process" runs only those conditions.
+        conditions+=("no_sharing" "no_sharing_tpc" "sharing" "fmvisor")
+        # CONDITIONS="sharing,fmvisor" runs only those conditions.
         if [[ -n "${CONDITIONS:-}" ]]; then
             IFS=',' read -ra conditions <<< "$CONDITIONS"
         fi
@@ -669,8 +709,8 @@ else
         done
         unset _seen_tasks
         # conditions+=("no_sharing" "no_sharing_tpc" "no_sharing_mps" "sharing")
-        conditions+=("no_sharing" "no_sharing_tpc" "sharing" "sharing_process")
-        # CONDITIONS="sharing,sharing_process" runs only those conditions.
+        conditions+=("no_sharing" "no_sharing_tpc" "sharing" "fmvisor")
+        # CONDITIONS="sharing,fmvisor" runs only those conditions.
         if [[ -n "${CONDITIONS:-}" ]]; then
             IFS=',' read -ra conditions <<< "$CONDITIONS"
         fi

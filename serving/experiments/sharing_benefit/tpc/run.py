@@ -681,7 +681,7 @@ def main() -> int:
                   file=sys.stderr)
             return 1
         task_urls = {_slot_key(i, t, all_tasks): device_urls[i] for i, t in enumerate(all_tasks)}
-    elif args.condition in ("sharing", "sharing_process"):
+    elif args.condition in ("sharing", "fmvisor"):
         tasks = all_tasks
         task_urls = {_slot_key(i, t, all_tasks): device_urls[0] for i, t in enumerate(all_tasks)}
     else:
