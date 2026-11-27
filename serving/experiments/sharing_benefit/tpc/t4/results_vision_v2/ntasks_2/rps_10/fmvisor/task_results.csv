@@ -1,0 +1,3 @@
+task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_client_pre_rpc_ms,avg_non_server_exec_overhead_ms
+nyudepth,fmvisor,5993,10.1576,30.871,26.044,51.626,69.429,20.027,18.311,0.0,1.266,7.11,0.0,10.844
+vocseg,fmvisor,5925,10.0424,31.16,26.387,52.32,68.66,19.992,18.27,0.0,1.304,7.078,0.0,11.168
