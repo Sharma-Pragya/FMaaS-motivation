@@ -1,4 +1,5 @@
 import asyncio
+import os
 import threading
 import time
 from dataclasses import dataclass
@@ -159,6 +160,11 @@ class DeviceBatcher:
                 import traceback
                 print(f"[DeviceBatcher] ERROR in _execute_prepared: {exc}")
                 traceback.print_exc()
+                if "out of memory" in str(exc):
+                    # A real OOM: the server process dies, every task on it
+                    # with it (memory_isolation_vision's semantics).
+                    print("[DeviceBatcher] CUDA OOM: server exits", flush=True)
+                    os._exit(1)
                 # Fail the requests with a fresh exception, not exc: exc's
                 # traceback keeps the failed forward's frames (its inputs and
                 # activations on the GPU) alive in a reference cycle that only
@@ -166,17 +172,10 @@ class DeviceBatcher:
                 # stayed held for tens of seconds and was then freed at once.
                 import sys
                 err = RuntimeError(str(exc))
-                is_oom = "out of memory" in str(exc)
                 traceback.clear_frames(sys.exc_info()[2])   # drop the frames' locals now
                 del exc
                 for request in prepared.requests:
                     loop.call_soon_threadsafe(self._fail_future_if_pending, request.future, err)
-                if is_oom:
-                    try:
-                        import torch
-                        torch.cuda.empty_cache()
-                    except Exception:
-                        pass
             finally:
                 prepared = None
                 self._next_prepared = None

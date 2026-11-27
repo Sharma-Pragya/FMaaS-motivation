@@ -513,6 +513,9 @@ def backbone_proc_main(
             run_batch(batch)
         except Exception as e:
             print(f"[BackboneProc] Forward error: {e}")
+            if "out of memory" in str(e):   # a real OOM: the backbone exits, every task with it
+                print("[BackboneProc] CUDA OOM: exiting", flush=True)
+                os._exit(1)
             fail_batch(batch, str(e))
 
     print("[BackboneProc] Exited")

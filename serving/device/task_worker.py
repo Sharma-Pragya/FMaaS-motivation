@@ -1,3 +1,4 @@
+import os
 import queue as pyqueue
 import threading
 from abc import ABC, abstractmethod
@@ -114,6 +115,9 @@ class ThreadedTaskWorker(TaskWorker):
                 import traceback
                 print(f"[{self._worker_name}-{task_name}] ERROR: {exc}")
                 traceback.print_exc()
+                if "out of memory" in str(exc):     # a real OOM: the server exits
+                    print(f"[{self._worker_name}-{task_name}] CUDA OOM: server exits", flush=True)
+                    os._exit(1)
 
 
 class InlineTaskWorker(TaskWorker):
@@ -133,6 +137,9 @@ class InlineTaskWorker(TaskWorker):
             import traceback
             print(f"[InlineTaskWorker] ERROR task={task_name}: {exc}")
             traceback.print_exc()
+            if "out of memory" in str(exc):         # a real OOM: the server exits
+                print("[InlineTaskWorker] CUDA OOM: server exits", flush=True)
+                os._exit(1)
 
     def shutdown(self) -> None:
         return

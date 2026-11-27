@@ -526,6 +526,9 @@ class EdgeRuntimeServicer(edge_runtime_pb2_grpc.EdgeRuntimeServicer):
                         future = (await submit(request) if submit is not None
                                   else asyncio.ensure_future(self._app.infer(request)))
                     except Exception as exc:
+                        if "out of memory" in str(exc):   # staging: a real OOM, the server exits
+                            print("[Device] CUDA OOM staging a request: server exits", flush=True)
+                            os._exit(1)
                         out.put_nowait(error_response(req_id, exc))
                         continue
                     finally:
