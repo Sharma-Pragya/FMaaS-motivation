@@ -143,7 +143,7 @@ def noisy_memory_gb(ev: list, s: dict) -> tuple:
 # A request lost to a failure: a CUDA OOM error, or its server (process) gone
 # after one (the server exits on OOM): the stream broke, or the front end
 # reports the task's / backbone's process down.
-FAILURE_CODES = ("out of memory", "UNAVAILABLE", "STREAM_ENDED", "CANCELLED",
+FAILURE_CODES = ("out of memory", "UNAVAILABLE", "INTERNAL", "STREAM_ENDED", "CANCELLED",
                  "task_down", "backbone_down")
 
 
@@ -378,6 +378,7 @@ def draw_figure(summ: dict, conds: list, iso_dir: Path, out: Path, thr_bin: floa
         # panel marks only failures of the task it shows.
         ooms_b: dict = {}
         ooms_v: dict = {}
+        mem_fail: list = []                   # (t, GB) where B's server crashed
         for c in conds:
             s, key = summ[c], STYLE_OF[c]
             ev = load_events(iso_dir / f"events_{c}.csv")
@@ -400,7 +401,13 @@ def draw_figure(summ: dict, conds: list, iso_dir: Path, out: Path, thr_bin: floa
             # A run with no memory numbers (process mode before stats): no line,
             # rather than one at 0.
             if peak > 0:
-                t, yb = drop_at_crash(t, yb, first_crash(ev, B), dur)
+                t_crash = first_crash(ev, B)
+                if t_crash is not None:
+                    # Memory panel: "failure" written at the top of the peak.
+                    ok = np.isfinite(yb) & (np.asarray(t) < t_crash)
+                    if ok.any():
+                        mem_fail.append((t_crash, float(np.asarray(yb)[ok][-1])))
+                t, yb = drop_at_crash(t, yb, t_crash, dur)
                 ax_m.plot(t, yb, **style(key, len(t)))
             for tasks, into in ((B, ooms_b), (V, ooms_v)):
                 t_oom = first_oom(ev, tasks)
@@ -422,7 +429,7 @@ def draw_figure(summ: dict, conds: list, iso_dir: Path, out: Path, thr_bin: floa
         # (c) capacity lines (from the summary; absent if nvidia-smi / NVML had none).
         cap = (s0.get("gpu_total_mb") or summ.get("shared", {}).get("gpu_total_mb") or 0) / 1024
         sl = (summ.get("mig", {}).get("mig_slice_mb") or 0) / 1024
-        top = max(max_mem, cap, sl) * (HEADROOM if ooms_b else 1.1) or 1.0
+        top = max(max_mem, cap, sl) * 1.15 or 1.0
         if cap:
             ax_m.axhline(cap, color=mp.CAPACITY_COLOR, lw=0.6, ls="--")
             ax_m.text(4, cap, "GPU capacity", color=mp.CAPACITY_COLOR, fontsize=5.5, va="bottom")
@@ -444,8 +451,11 @@ def draw_figure(summ: dict, conds: list, iso_dir: Path, out: Path, thr_bin: floa
                       (ax_m, "(c) Memory isolation", "Noisy task mem. (GB)"),
                       (ax_f, "(d) Fault isolation",
                        "Victim failed req." + (" (K)" if k else "")))
-        oom_of = {ax_n: ooms_b, ax_m: ooms_b, ax_p: ooms_v, ax_f: ooms_v}
+        # Memory panel: no failure lines, the word at the peak instead (below).
+        oom_of = {ax_n: ooms_b, ax_m: {}, ax_p: ooms_v, ax_f: ooms_v}
         for ax, title, yl in panels:
+            if eff_csv is None:             # no (a): the time panels start at (a)
+                title = f"({chr(ord(title[1]) - 1)}){title[3:]}"
             ax.set_title(title)
             ax.set_ylabel(yl, labelpad=1)
             ax.set_xlabel("Time (s)", labelpad=1)
@@ -454,13 +464,16 @@ def draw_figure(summ: dict, conds: list, iso_dir: Path, out: Path, thr_bin: floa
             ax.yaxis.grid(True, color="#dddddd", lw=0.4)
             ax.set_axisbelow(True)
             mark_ooms(ax, oom_of[ax], dur)
+        for t_c, y_c in mem_fail:
+            ax_m.text(t_c, y_c + 0.03 * top, "failure", color=RED, fontsize=5.5,
+                      ha="center", va="bottom")
         # The noisy ramp note goes on the first time panel only: the victim
         # panel in the isolation layout, the noisy task's panel in "tput".
         if ax_n is None:
-            ax_p.text(ramp, ax_p.get_ylim()[1], f" noisy: {s0['rate_b']:g}→{s0['rate_b_max']:g} rps",
+            ax_p.text(ramp, ax_p.get_ylim()[1], f" {s0['rate_b']:g}→{s0['rate_b_max']:g} rps",
                       color=RED, fontsize=5.5, va="top")
         else:
-            ax_n.text(ramp, ax_n.get_ylim()[1], f" noisy: {s0['rate_b']:g}→{s0['rate_b_max']:g} rps",
+            ax_n.text(ramp, ax_n.get_ylim()[1], f" {s0['rate_b']:g}→{s0['rate_b_max']:g} rps",
                       color=RED, fontsize=5.5, va="top")
 
         handles = [Line2D([], [], **{**style(STYLE_OF[c], 1), "markevery": None}, label=LABELS[c])
