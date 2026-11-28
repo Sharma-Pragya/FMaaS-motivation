@@ -656,7 +656,7 @@ def main() -> int:
                         help="Comma-separated list of tasks to run (overrides task-set default). "
                              "tsfm options: " + ", ".join(ALL_TSFM_TASKS))
     parser.add_argument("--condition", required=True,
-                        help="Condition name: single_{task}, no_sharing_tpc, no_sharing, or sharing")
+                        help="Condition name: single_{task}, no_sharing_tpc, no_sharing, sharing, sharing_inline, or fmvisor")
     parser.add_argument("--device-urls", default=None,
                         help="Comma-separated device URLs, one per task for no_sharing* conditions "
                              "(e.g. localhost:8000,localhost:8001,localhost:8002)")
@@ -759,7 +759,7 @@ def main() -> int:
                   file=sys.stderr)
             return 1
         task_urls = {_slot_key(i, t, all_tasks): device_urls[i] for i, t in enumerate(all_tasks)}
-    elif args.condition == "sharing":
+    elif args.condition in ("sharing", "sharing_inline", "fmvisor"):
         tasks = all_tasks
         task_urls = {_slot_key(i, t, all_tasks): device_urls[0] for i, t in enumerate(all_tasks)}
     else:

@@ -1,40 +1,56 @@
 #!/bin/bash
-# Sharing Benefit + TPC Isolation experiment
-# Sweeps over number of tasks (NUM_TASKS_SWEEP) and/or request rates (RPS_SWEEP).
+# RTVSntask — response time vs. number of tasks (time-series and vision FMs).
+# Sweeps NUM_TASKS_SWEEP x RPS_SWEEP. RTVSntask/tpc/run.sh and
+# RTVSntask/vision/run.sh are the same script (each runs its own run.py).
 #
-# Task sets:
-#   tsfm   — selects from: ecgclass heartrate diasbp sysbp gestureclass
-#                           etth1fore weatherfore trafficfore eclfore exchangefore
-#   vision — single_nyudepth, single_vocseg, no_sharing_tpc, no_sharing, sharing
+# Arms — each arm's flags are fixed in its case block in run_condition below.
+# Every arm stages inputs on the GPU (--staging gpu).
+#   arm             paper    servers        --isolation-mode  policy  worker mode
+#   no_sharing      BE       N              shared            fifo    inline
+#   no_sharing_tpc  SP       N, TPC-pinned  shared            fifo    inline
+#   no_sharing_mps  -        N, MPS         shared            fifo    inline
+#   sharing         S-BE     1              shared            fifo    threaded (per-task head streams)
+#   sharing_inline  -        1              shared            fifo    inline (heads one after another,
+#                                                                     as Nexus; reference only)
+#   fmvisor         FMVisor  1              process           stfq    task processes
+#   single_<task>   ST       1 (one task at the aggregate rate)  fifo  inline
+# One task per server (BE/SP/ST) has no other task's head to overlap, so inline.
 #
-# For tsfm, NUM_TASKS_SWEEP controls how many tasks (picked in canonical order above).
-# Conditions run per (ntasks, rps) pair:
-#   single_{task_i} for each i, then no_sharing_tpc, no_sharing, sharing
+# Usage — only the backbone is needed; the rest has defaults:
+#   bash experiments/RTVSntask/tpc/run.sh momentlarge
+#   bash experiments/RTVSntask/vision/run.sh dinobase-patch
+#   bash experiments/RTVSntask/vision/run.sh swinlarge
+#   CONDITIONS=fmvisor NUM_TASKS_SWEEP=2 bash experiments/RTVSntask/tpc/run.sh momentlarge
+# TASK_SET follows from the backbone (moment*/papagei* -> tsfm, else vision).
+# Default RPS_SWEEP: 5 (momentlarge, dinobase-patch), 2 (swinlarge).
+# Results go to experiments/RTVSntask/<tpc|vision>/results_<backbone>_<gpu>
+# (<gpu> from nvidia-smi: t4, a10, l4, l40s, ...) unless RESULTS_BASE is set.
+# Finished runs (latencies.csv or infeasible.json present) are skipped.
 #
 # Device servers are started on consecutive ports: DEVICE_PORT, DEVICE_PORT+1, ...
 #
 # Environment variables (all optional):
+#   BACKBONE           (or the first argument)
+#   RPS_SWEEP          per backbone, see above
+#   NUM_TASKS_SWEEP    2,4,6,8,10
+#   PHASE_DURATION     600
+#   MAX_BATCH_SIZE     32
+#   CONDITIONS         no_sharing_tpc,no_sharing,sharing,fmvisor
+#   RESULTS_BASE       (auto, see above)
+#   FM_SLOTS           (empty)    fmvisor slots per task (server default 2 x MAX_BATCH_SIZE)
+#   FM_BACKLOG_CAP     (empty)    fmvisor CPU backlog per task (server default 10000)
 #   CONDA_ENV          fmtk
-#   FMTK_DIR           ../../../FMTK
-#   FMAAS_DIR          ../..
 #   CUDA_DEVICE        cuda:0
-#   TASK_SET           tsfm  (or vision)
-#   BACKBONE           momentlarge  (tsfm) / dinobase-patch  (vision)
-#   NUM_TASKS_SWEEP    2          (comma-separated counts, e.g. "2,4,6,8,10")
-#   RPS_SWEEP          25         (comma-separated RPS values, e.g. "25" or "10,25,50")
-#   PHASE_DURATION     300
-#   DEVICE_PORT        8000       (base port; additional servers use 8001, 8002, ...)
-#   MAX_BATCH_SIZE     100
+#   DEVICE_PORT        8000
 #   TPC_MODE           libsmctrl (or green)
-#   RESULTS_BASE       experiments/RTVSntask/tpc/results
-#   NYUDEPTH_PATH      ../../FMTK/dataset/nyu-depth-v2   (vision only)
-#   PASCALVOC_PATH     ../../FMTK/dataset/PASCAL-VOC      (vision only)
+#   FMTK_DIR, FMAAS_DIR, NYUDEPTH_PATH, PASCALVOC_PATH
 
 set -euo pipefail
 
 # ---------------------------------------------------------------------------
 # Path setup
 # ---------------------------------------------------------------------------
+EXP_NAME="$(basename "$(cd "$(dirname "$0")" && pwd)")"   # tpc | vision
 SERVING_DIR="$(cd "$(dirname "$0")/../../.." && pwd)"
 cd "$SERVING_DIR"
 
@@ -83,17 +99,45 @@ fi
 # Experiment configuration
 # ---------------------------------------------------------------------------
 CUDA_DEVICE="${CUDA_DEVICE:-cuda:0}"
-TASK_SET="${TASK_SET:-vision}"  # vision or tsfm
-RPS_SWEEP="${RPS_SWEEP:-5}"
-NUM_TASKS_SWEEP="${NUM_TASKS_SWEEP:-4,5}"
+BACKBONE="${1:-${BACKBONE:-}}"
+if [[ -z "$BACKBONE" ]]; then
+    echo "Usage: bash experiments/RTVSntask/${EXP_NAME}/run.sh <backbone>   (e.g. momentlarge, dinobase-patch, swinlarge)"
+    exit 1
+fi
+case "$BACKBONE" in
+    moment*|papagei*) TASK_SET="${TASK_SET:-tsfm}" ;;
+    *)                TASK_SET="${TASK_SET:-vision}" ;;
+esac
+case "$BACKBONE" in
+    swinlarge) RPS_SWEEP="${RPS_SWEEP:-2}" ;;
+    *)         RPS_SWEEP="${RPS_SWEEP:-5}" ;;
+esac
+NUM_TASKS_SWEEP="${NUM_TASKS_SWEEP:-2,4,6,8,10}"
 PHASE_DURATION="${PHASE_DURATION:-600}"
 DEVICE_PORT="${DEVICE_PORT:-8000}"
 MAX_BATCH_SIZE="${MAX_BATCH_SIZE:-32}"
-RESULTS_BASE="${RESULTS_BASE:-experiments/RTVSntask/vision/results_vision_a10_swinlarge}"
+if [[ -z "${RESULTS_BASE:-}" ]]; then
+    # GPU tag from the device name: "Tesla T4" -> t4, "NVIDIA A10G" -> a10, "NVIDIA L40S" -> l40s
+    _gpu_idx="${CUDA_DEVICE##*:}"
+    _gpu_name=$(nvidia-smi -i "$_gpu_idx" --query-gpu=name --format=csv,noheader 2>/dev/null | head -1)
+    case "$_gpu_name" in
+        *T4*)   GPU_TAG=t4 ;;
+        *A10*)  GPU_TAG=a10 ;;
+        *L40S*) GPU_TAG=l40s ;;
+        *L4*)   GPU_TAG=l4 ;;
+        *A2*)   GPU_TAG=a2 ;;
+        *)      GPU_TAG=$(echo "${_gpu_name:-gpu}" | awk '{print tolower($NF)}') ;;
+    esac
+    RESULTS_BASE="experiments/RTVSntask/${EXP_NAME}/results_${BACKBONE}_${GPU_TAG}"
+fi
 DEVICE_STARTUP_WAIT="${DEVICE_STARTUP_WAIT:-5}"
 MAX_BATCH_WAIT_MS="${MAX_BATCH_WAIT_MS:-0}"
 TPC_MODE="${TPC_MODE:-libsmctrl}"
 WARMUP_BURST_SECS="${WARMUP_BURST_SECS:-15}"   # closed-loop GPU warmup before each open-loop run
+FM_SLOTS="${FM_SLOTS:-}"                 # fmvisor: GPU slots per task (empty: server default)
+FM_BACKLOG_CAP="${FM_BACKLOG_CAP:-}"     # fmvisor: CPU backlog per task (empty: server default)
+# Per-arm settings (scheduler, worker mode, isolation mode) are fixed in the
+# case blocks of run_condition; every arm stages inputs on the GPU.
 
 # Canonical ordered list of all tsfm tasks (NUM_TASKS_SWEEP selects the first N)
 ALL_TSFM_TASKS=(ecgclass gestureclass heartrate diasbp sysbp etth1fore weatherfore trafficfore eclfore exchangefore)
@@ -103,20 +147,20 @@ ALL_VISION_TASKS=(nyudepth vocseg)
 
 # Task-set-specific defaults
 if [[ "$TASK_SET" == "vision" ]]; then
-    BACKBONE="${BACKBONE:-swinlarge}"
     DECODER_DIR="${DECODER_DIR:-${FMTK_DIR}/models/vision/finetuned}"
     export NYUDEPTH_PATH="${NYUDEPTH_PATH:-../../FMTK/dataset/nyu-depth-v2}"
     export PASCALVOC_PATH="${PASCALVOC_PATH:-../../FMTK/dataset/PASCAL-VOC}"
 else
-    BACKBONE="${BACKBONE:-momentlarge}"
     DECODER_DIR="${DECODER_DIR:-${FMTK_DIR}/models/tsfm/finetuned}"
 fi
+
+CONDITIONS="${CONDITIONS:-no_sharing_tpc,no_sharing,sharing,fmvisor}"
 
 LOG_DIR="${RESULTS_BASE}/logs"
 mkdir -p "$LOG_DIR"
 
 echo "================================================================"
-echo "  Sharing Benefit + TPC Isolation"
+echo "  RTVSntask (${EXP_NAME})"
 echo "  Conda env      : $CONDA_ENV"
 echo "  FMTK_DIR       : $FMTK_DIR"
 echo "  FMAAS_DIR      : $FMAAS_DIR"
@@ -127,6 +171,10 @@ echo "  RPS sweep      : $RPS_SWEEP"
 echo "  Duration/run   : ${PHASE_DURATION}s"
 echo "  TPC mode       : $TPC_MODE"
 echo "  Warmup burst   : ${WARMUP_BURST_SECS}s"
+echo "  Max batch      : $MAX_BATCH_SIZE"
+echo "  Conditions     : $CONDITIONS"
+echo "  Arms           : BE/SP/ST fifo inline | Shared fifo threaded | FMVisor stfq process (all staging=gpu)"
+echo "  FMVisor        : slots/task=${FM_SLOTS:-default} backlog=${FM_BACKLOG_CAP:-default}"
 echo "  Base port      : $DEVICE_PORT"
 echo "  Results        : $RESULTS_BASE"
 echo "================================================================"
@@ -219,13 +267,15 @@ ensure_mps_running() {
     echo "[run.sh] MPS control daemon is responsive" >&2
 }
 
-# start_device PORT SCHEDULER LOG RPS TASK_RATES [TPC_MODE [TPC_PARTITION [MPS_PCT [WORKER_MODE]]]]
+# start_device PORT SCHEDULER LOG RPS TASK_RATES [TPC_MODE [TPC_PARTITION [MPS_PCT [WORKER_MODE [ISOLATION_MODE]]]]]
 # MPS_PCT: if non-empty, passes --mps-thread-pct to the device server (set before CUDA init).
 # WORKER_MODE: "threaded" (default) | "inline" — per-task pipeline worker mode.
+# ISOLATION_MODE: "shared" (default) | "process" — process: FMVisor, one process per task.
 # Prints the PID of the started server on stdout; all other output goes to stderr.
 start_device() {
     local port="$1" scheduler="$2" log="$3" rps="$4" task_rates="$5"
     local tpc_mode="${6:-none}" tpc_partition="${7:-}" mps_pct="${8:-}" worker_mode="${9:-threaded}"
+    local isolation_mode="${10:-shared}"
 
     pkill -f "device/main.py.*--port ${port}" 2>/dev/null || true
     sleep 1
@@ -239,6 +289,11 @@ start_device() {
         mps_args="--mps-thread-pct $mps_pct"
     fi
     local worker_args="--worker-mode $worker_mode"
+    local fm_args=""
+    if [[ "$isolation_mode" == process ]]; then
+        [[ -n "$FM_SLOTS" ]] && fm_args+=" --slots-per-task $FM_SLOTS"
+        [[ -n "$FM_BACKLOG_CAP" ]] && fm_args+=" --task-backlog-cap $FM_BACKLOG_CAP"
+    fi
 
     # Sanity check: warn if GPU memory is still mostly occupied from a previous run
     local gpu_free gpu_total
@@ -254,7 +309,7 @@ start_device() {
     if [[ -n "$mps_pct" ]]; then
         echo "[run.sh] Starting device server port=$port scheduler=$scheduler mps_pct=${mps_pct}% ..." >&2
     else
-        echo "[run.sh] Starting device server port=$port scheduler=$scheduler tpc=$tpc_mode ..." >&2
+        echo "[run.sh] Starting device server port=$port scheduler=$scheduler tpc=$tpc_mode isolation=$isolation_mode ..." >&2
     fi
 
     # shellcheck disable=SC2086
@@ -269,6 +324,9 @@ start_device() {
         $tpc_args \
         $mps_args \
         $worker_args \
+        $fm_args \
+        --isolation-mode    "$isolation_mode" \
+        --staging           gpu \
         > "$log" 2>&1 &
     local pid=$!
     echo "[run.sh] PID=$pid  log=$log" >&2
@@ -330,7 +388,7 @@ run_condition() {
 
     # Helper: call run.py with common args
     run_py() {
-        $PYTHON -u experiments/RTVSntask/vision/run.py \
+        $PYTHON -u "experiments/RTVSntask/${EXP_NAME}/run.py" \
             --task-set          "$TASK_SET" \
             --tasks             "$run_tasks_csv" \
             --backbone          "$BACKBONE" \
@@ -433,7 +491,7 @@ print(sm // 2)  # TPCs ~ SMs/2
             run_py --condition no_sharing_mps --device-urls "$device_urls"
             ;;
 
-        sharing)
+        sharing|sharing_inline)
             # All tasks on one server
             local task_rates=""
             for t in "${TASKS[@]}"; do
@@ -441,11 +499,34 @@ print(sm // 2)  # TPCs ~ SMs/2
             done
             local port="$DEVICE_PORT"
             local pid
-            pid=$(start_device "$port" "stfq" \
-                  "$LOG_DIR/device_sharing_rps${rps}_n${ntasks}.log" \
-                  "$rps" "$task_rates")
+            # Shared (S-BE): one process, every task, FIFO; Nexus-style prefix
+            # batching. sharing: each task's head on its own thread + CUDA
+            # stream. sharing_inline (reference only): heads one after another
+            # on the backbone thread, as Nexus executes suffixes.
+            local heads=threaded
+            [[ "$condition" == sharing_inline ]] && heads=inline
+            pid=$(start_device "$port" "fifo" \
+                  "$LOG_DIR/device_${condition}_rps${rps}_n${ntasks}.log" \
+                  "$rps" "$task_rates" "none" "" "" "$heads")
             DEVICE_PIDS+=("$pid")
-            run_py --condition sharing --device-urls "localhost:${port}"
+            run_py --condition "$condition" --device-urls "localhost:${port}"
+            ;;
+
+        fmvisor)
+            # FMVisor: one backbone process, each task's head in its own
+            # process / CUDA context (device --isolation-mode process), STFQ.
+            # --worker-mode is ignored in process mode.
+            local task_rates=""
+            for t in "${TASKS[@]}"; do
+                task_rates+="${task_rates:+,}${t}:${rps}"
+            done
+            local port="$DEVICE_PORT"
+            local pid
+            pid=$(start_device "$port" "stfq" \
+                  "$LOG_DIR/device_fmvisor_rps${rps}_n${ntasks}.log" \
+                  "$rps" "$task_rates" "none" "" "" "inline" "process")
+            DEVICE_PIDS+=("$pid")
+            run_py --condition fmvisor --device-urls "localhost:${port}"
             ;;
     esac
 
@@ -463,6 +544,12 @@ print(sm // 2)  # TPCs ~ SMs/2
   "rps_per_task": ${rps},
   "rps_single_aggregate": $([[ "$condition" == single_* ]] && echo $((rps * ntasks)) || echo "null"),
   "tpc_mode": "${TPC_MODE}",
+  "staging": "$([[ "$condition" == fmvisor ]] && echo gpu_slots || echo gpu)",
+  "isolation_mode": "$([[ "$condition" == fmvisor ]] && echo process || echo shared)",
+  "scheduler": "$([[ "$condition" == fmvisor ]] && echo stfq || echo fifo)",
+  "worker_mode": "$(case "$condition" in sharing) echo threaded;; fmvisor) echo task_processes;; *) echo inline;; esac)",
+  "fm_slots": "${FM_SLOTS:-default}",
+  "fm_backlog_cap": "${FM_BACKLOG_CAP:-default}",
   "device_port_base": ${DEVICE_PORT},
   "device_startup_wait_s": ${DEVICE_STARTUP_WAIT}
 }
@@ -521,7 +608,7 @@ print(sm // 2)
           "$rps" "${task}:${rps}" "$TPC_MODE" "$part" "" "inline")
     DEVICE_PIDS+=("$pid")
 
-    $PYTHON -u experiments/RTVSntask/vision/run.py \
+    $PYTHON -u "experiments/RTVSntask/${EXP_NAME}/run.py" \
         --task-set          "$TASK_SET" \
         --tasks             "$task" \
         --backbone          "$BACKBONE" \
@@ -583,9 +670,6 @@ if [[ "$TASK_SET" == "vision" ]]; then
             exit 1
         fi
 
-        # Build task list: cycle through ALL_VISION_TASKS using modulo.
-        # If ntasks exceeds the pool, suffix every slot with __appN to keep
-        # task IDs unique (matches the long_horizon naming convention).
         pool_size=${#ALL_VISION_TASKS[@]}
         tasks_arr=()
         if [[ $ntasks -le $pool_size ]]; then
@@ -603,14 +687,14 @@ if [[ "$TASK_SET" == "vision" ]]; then
 
         # Conditions to run. Override with CONDITIONS=sharing,no_sharing to
         # sweep a subset (e.g. when only some methods need a rerun).
-        IFS=',' read -ra conditions <<< "${CONDITIONS:-no_sharing_tpc,sharing,no_sharing}"
+        IFS=',' read -ra conditions <<< "$CONDITIONS"
         # Validate up front: an unrecognised name falls through the case in
         # run_condition, which silently produces an empty result dir.
         for _c in "${conditions[@]}"; do
             case "$_c" in
-                sharing|no_sharing|no_sharing_tpc|no_sharing_mps|single_*) ;;
+                sharing|sharing_inline|fmvisor|no_sharing|no_sharing_tpc|no_sharing_mps|single_*) ;;
                 *) echo "[run.sh] ERROR: unknown condition '$_c' in CONDITIONS" >&2
-                   echo "[run.sh] valid: sharing, no_sharing, no_sharing_tpc, no_sharing_mps, single_<task>" >&2
+                   echo "[run.sh] valid: sharing, sharing_inline, fmvisor, no_sharing, no_sharing_tpc, no_sharing_mps, single_<task>" >&2
                    exit 1 ;;
             esac
         done
@@ -641,28 +725,39 @@ else
             exit 1
         fi
 
-        # Build task list: cycle through ALL_TSFM_TASKS using modulo
+        # Build task list: cycle through ALL_TSFM_TASKS using modulo.
+        # If ntasks exceeds the pool, suffix every slot with __appN so task IDs
+        # stay unique across slots — otherwise two slots share one task name and
+        # the device cannot tell their decoders apart. run.py strips the suffix
+        # to resolve types/decoders/loaders.
         pool_size=${#ALL_TSFM_TASKS[@]}
         tasks_arr=()
-        for ((i=0; i<ntasks; i++)); do
-            tasks_arr+=("${ALL_TSFM_TASKS[$((i % pool_size))]}")
-        done
+        if [[ $ntasks -le $pool_size ]]; then
+            for ((i=0; i<ntasks; i++)); do
+                tasks_arr+=("${ALL_TSFM_TASKS[$i]}")
+            done
+        else
+            for ((i=0; i<ntasks; i++)); do
+                base="${ALL_TSFM_TASKS[$((i % pool_size))]}"
+                app_idx=$((i / pool_size + 1))
+                tasks_arr+=("${base}__app${app_idx}")
+            done
+        fi
         tasks_csv=$(IFS=','; echo "${tasks_arr[*]}")
 
-        # Build single conditions for unique tasks only (no point re-running the same task)
-        conditions=()
-        # declare -A _seen_tasks=()
-        # for t in "${tasks_arr[@]}"; do
-        #     if [[ -z "${_seen_tasks[$t]+x}" ]]; then
-        #         conditions+=("single_${t}")
-        #         _seen_tasks[$t]=1
-        #     fi
-        # done
-        # unset _seen_tasks
-        # conditions+=("no_sharing" "no_sharing_tpc" "no_sharing_mps" "sharing")
-        # conditions+=("no_sharing_tpc" "sharing")
-        conditions+=("no_sharing_tpc" "sharing" "no_sharing" )
-        # conditions+=("single_${ALL_TSFM_TASKS[0]}")
+        # Conditions to run. Override with CONDITIONS=sharing,no_sharing to
+        # sweep a subset (e.g. when only some methods need a rerun).
+        IFS=',' read -ra conditions <<< "$CONDITIONS"
+        # Validate up front: an unrecognised name falls through the case in
+        # run_condition, which silently produces an empty result dir.
+        for _c in "${conditions[@]}"; do
+            case "$_c" in
+                sharing|sharing_inline|fmvisor|no_sharing|no_sharing_tpc|no_sharing_mps|single_*) ;;
+                *) echo "[run.sh] ERROR: unknown condition '$_c' in CONDITIONS" >&2
+                   echo "[run.sh] valid: sharing, sharing_inline, fmvisor, no_sharing, no_sharing_tpc, no_sharing_mps, single_<task>" >&2
+                   exit 1 ;;
+            esac
+        done
         for rps in "${RPS_LIST[@]}"; do
             echo ""
             echo "################################################################"
