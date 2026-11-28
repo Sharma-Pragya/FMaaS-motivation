@@ -13,7 +13,7 @@
   "staging": "gpu",
   "isolation_mode": "shared",
   "scheduler": "fifo",
-  "worker_mode": "inline",
+  "worker_mode": "threaded",
   "fm_slots": "default",
   "fm_backlog_cap": "default",
   "device_port_base": 8000,
