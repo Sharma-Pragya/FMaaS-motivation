@@ -6,27 +6,41 @@
 # pool, adapters are cycled with a __appN suffix so each slot is a distinct
 # task ID backed by its own LoRA slot in the engine.
 #
-# Conditions per (ntasks, rps):
-# Every arm: the same LLMEngine stepped by device/llm_loop.py (VLLM_DRIVER),
-# the same engine flags, and request tokens staged on the GPU (STAGING=gpu:
-# shared-mode servers copy ids to the GPU and back exactly as fmvisor's slots
-# do, so staging is not a difference between arms). Per arm:
+# Usage:  bash experiments/RTVSntask/llm/run.sh [BACKBONE]     (default qwen2.5-3b)
 #
-#   arm             servers  --isolation-mode  policy    staging    worker mode
-#   no_sharing_tpc  N        shared            fifo      $STAGING   $WORKER_MODE
-#   no_sharing      N        shared            fifo      $STAGING   $WORKER_MODE
-#   sharing         1        shared            fifo      $STAGING   $WORKER_MODE
-#   fmvisor         1        process           FM_SCHED  GPU slots  task processes
+# Conditions per (ntasks, rps). Every arm: the same LLMEngine stepped by
+# device/llm_loop.py (--vllm-driver step), the same engine flags, and request
+# tokens staged on the GPU (--staging gpu: shared-mode servers copy ids to the
+# GPU and back exactly as fmvisor's slots do, so staging is not a difference
+# between arms). The flags are fixed per arm, the same as RTVSntask/vision:
+#
+#   arm             servers  --isolation-mode  policy  staging    worker mode
+#   no_sharing_tpc  N        shared            fifo    gpu        inline   (SP)
+#   no_sharing      N        shared            fifo    gpu        inline   (BE)
+#   sharing         1        shared            fifo    gpu        threaded (Shared)
+#   sharing_inline  1        shared            fifo    gpu        inline   (reference, not plotted)
+#   fmvisor         1        process           stfq    GPU slots  task processes
 #
 # Worker mode: where a finished request's per-task output work (ids back from
-# the GPU, detokenize) runs. inline (default) = on the step-loop thread, one
-# after another, as vLLM/S-LoRA's engine and Nexus/Mainstream run per-task work;
-# threaded = each task's own thread (WORKER_MODE=threaded, e.g. an ablation).
+# the GPU, detokenize) runs. threaded = each task's own thread; inline = on the
+# step-loop thread, one task after another. BE/SP have one task per server, so
+# the two are the same there. Shared is threaded, as for vision, so per-task
+# work is not serialised behind the step loop; sharing_inline is kept only as a
+# reference (CONDITIONS=...,sharing_inline).
 #
-#   no_sharing_tpc  — N vLLM servers, each pinned to a TPC set (needs libsmctrl)
-#   sharing         — 1 vLLM server, all N LoRAs (Punica / S-LoRA style), FIFO
+#   no_sharing_tpc  — SP: N vLLM servers, one per task, spatially partitioned.
+#                     SP_MODE=mig (default where the GPU supports MIG):
+#                       N=1   whole GPU, MIG off, no pinning
+#                       N=2   2 MIG slices (MIG_PROFILE_HALF, 2g.48gb), one task each
+#                       N>=3  4 MIG slices (MIG_PROFILE_QUARTER, 1g.24gb); task i on
+#                             slice i mod 4, and the k tasks on a slice each pinned
+#                             to 1/k of its TPCs (libsmctrl, --tpc-share j/k)
+#                     Each server gets GPU_MEM_UTIL/k of its slice's memory. MIG is
+#                     turned on for this arm only and off again after it (sudo).
+#                     SP_MODE=tpc: no MIG, the whole GPU's TPCs split N ways.
+#   sharing         — 1 vLLM server, all N LoRAs (Punica / S-LoRA style), FIFO, threaded
 #   fmvisor         — 1 server in process-isolation mode: the vLLM engine in a
-#                     backbone process (STFQ, FM_SCHED), one process
+#                     backbone process (STFQ), one process
 #                     per task (tokenize / detokenize), FM_SLOTS slots per task
 #   no_sharing      — N vLLM servers, each a full backbone copy + 1 LoRA;
 #                     gpu_memory_utilization split N ways
@@ -46,44 +60,40 @@
 #         --backbone qwen2.5-1.5b --names qwenA,qwenB
 #
 # Quick start (smoke test):
-#     NUM_TASKS_SWEEP=2 RPS_SWEEP=2 PHASE_DURATION=90 \
-#         bash experiments/RTVSntask/llm/run.sh
+#     NUM_TASKS_SWEEP=3 PHASE_DURATION=90 RESULTS_BASE=experiments/RTVSntask/llm/smoke \
+#         bash experiments/RTVSntask/llm/run.sh qwen2.5-3b
 #
-# Full sweep:
-#     NUM_TASKS_SWEEP=1,2,4,6,8,10 RPS_SWEEP=2 \
-#         bash experiments/RTVSntask/llm/run.sh
+# Full sweep (defaults: ntasks 1,3,5,7,9, 2 rps/task, 600 s):
+#     bash experiments/RTVSntask/llm/run.sh qwen2.5-3b
 #
 # Optional knobs (env vars):
 #   CONDA_ENV             fmtk
-#   BACKBONE              qwen2.5-1.5b
+#   BACKBONE              qwen2.5-3b     (or the first argument)
 #   TASKS                 qwenA,qwenB    (adapter pool; cycled with __appN past its size)
-#   NUM_TASKS_SWEEP       1,2,4,6,8      (comma-separated; no upper bound)
+#   NUM_TASKS_SWEEP       1,3,5,7,9      (comma-separated; no upper bound)
 #   RPS_SWEEP             2              (comma-separated, PER-TASK rps)
 #   PHASE_DURATION        600
 #   GPU_MEM_UTIL          0.85   (single/sharing use it whole; no_sharing* gets /N each)
-#   MAX_MODEL_LEN         2048
-#   MAX_NEW_TOKENS        256
+#   MAX_MODEL_LEN         512
+#   MAX_NEW_TOKENS        32
 #   DEVICE_PORT           8000   (base port; servers use 8000, 8001, ...)
 #   DEVICE_STARTUP_WAIT   120    (vLLM cold load is slow, and slower with N servers)
 #   DEPLOY_TIMEOUT        1800   (gRPC deadline for the load control call)
 #   INCLUDE_TPC           1      (0 to skip no_sharing_tpc — it needs libsmctrl)
 #   TPC_MODE              libsmctrl
-#   VLLM_DRIVER           step   (every arm: LLMEngine stepped by device/llm_loop.py;
-#                                 "async" = the old AsyncLLMEngine path, not for fmvisor)
+#   SP_MODE               auto   mig if the GPU supports MIG, else tpc (see SP above)
+#   MIG_PROFILE_HALF      2g.48gb   (RTX PRO 6000 Blackwell; `sudo nvidia-smi mig -lgip`)
+#   MIG_PROFILE_QUARTER   1g.24gb
+#   MIG_WAIT              120    s to wait for the GPU to be free before MIG changes
 #   MAX_NUM_SEQS          (unset = vLLM's 256) engine batch cap, every arm
 #   LLM_QUEUE_K           1      requests waiting inside vLLM beyond MAX_NUM_SEQS
-#   WORKER_MODE           inline shared-mode arms: inline | threaded (see above)
-#   STAGING               gpu    shared-mode arms (sharing, no_sharing*): gpu = token
-#                                 ids staged on the GPU as fmvisor's slots; host = CPU
-#                                 only. fmvisor always stages (its slots are GPU tensors)
-#   FM_SCHED              stfq   fmvisor's policy: stfq (request-level STFQ, as for
-#                                 vision), token_stfq (token-level), or fifo
 #   FM_SLOTS              64     fmvisor: slots per task (bounds a task's in-flight requests)
 #   FM_BACKLOG_CAP        10000  fmvisor: requests per task waiting on the CPU
 #   FM_MAX_PROMPT_LEN     256    fmvisor: prompt tokens per slot
-#   CONDITIONS            (explicit override, e.g. "sharing,no_sharing" or
-#                          "single,sharing"; "single" expands to the first task slot)
-#   RESULTS_BASE          experiments/RTVSntask/llm/results
+#   CONDITIONS            no_sharing_tpc,sharing,fmvisor,no_sharing (default order;
+#                          also sharing_inline, single — "single" expands to the first task slot)
+#   RESULTS_BASE          experiments/RTVSntask/llm/results_<backbone>_<gpu>
+#                          (gpu tag from nvidia-smi: l40s, a10, t4, ...)
 
 set -euo pipefail
 
@@ -127,10 +137,10 @@ fi
 # Config
 # ---------------------------------------------------------------------------
 CUDA_DEVICE="${CUDA_DEVICE:-cuda:0}"
-BACKBONE="${BACKBONE:-qwen2.5-3b}"
+BACKBONE="${1:-${BACKBONE:-qwen2.5-3b}}"
 TASKS_CSV="${TASKS:-qwenA,qwenB}"
 RPS_SWEEP="${RPS_SWEEP:-2}"
-NUM_TASKS_SWEEP="${NUM_TASKS_SWEEP:-1,2,3,4,5}"
+NUM_TASKS_SWEEP="${NUM_TASKS_SWEEP:-1,3,5,7,9}"
 PHASE_DURATION="${PHASE_DURATION:-600}"
 DEVICE_PORT="${DEVICE_PORT:-8000}"
 DEVICE_STARTUP_WAIT="${DEVICE_STARTUP_WAIT:-180}"
@@ -139,21 +149,41 @@ MAX_MODEL_LEN="${MAX_MODEL_LEN:-512}"
 MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-32}"
 INCLUDE_TPC="${INCLUDE_TPC:-1}"
 TPC_MODE="${TPC_MODE:-libsmctrl}"
+GPU_INDEX="${CUDA_DEVICE##*:}"
+SP_MODE="${SP_MODE:-auto}"
+if [[ "$SP_MODE" == auto ]]; then
+    # mig.mode.current is "Enabled"/"Disabled" on a MIG-capable GPU, "[N/A]" otherwise.
+    if nvidia-smi -i "$GPU_INDEX" --query-gpu=mig.mode.current --format=csv,noheader 2>/dev/null \
+            | grep -qiE 'enabled|disabled'; then
+        SP_MODE=mig
+    else
+        SP_MODE=tpc
+    fi
+fi
+MIG_PROFILE_HALF="${MIG_PROFILE_HALF:-2g.48gb}"
+MIG_PROFILE_QUARTER="${MIG_PROFILE_QUARTER:-1g.24gb}"
+MIG_WAIT="${MIG_WAIT:-120}"
 WARMUP_SECS="${WARMUP_SECS:-10}"
 # gRPC deadline for the "load" control call. The client default is 120s,
 # which a vLLM engine build over a networked filesystem blows straight past.
 DEPLOY_TIMEOUT="${DEPLOY_TIMEOUT:-1800}"
-RESULTS_BASE="${RESULTS_BASE:-experiments/RTVSntask/llm/results}"
-VLLM_DRIVER="${VLLM_DRIVER:-step}"
+if [[ -z "${RESULTS_BASE:-}" ]]; then
+    # GPU tag from the device name: "NVIDIA L40S" -> l40s, "NVIDIA A10G" -> a10, "Tesla T4" -> t4
+    _gpu_idx="${CUDA_DEVICE##*:}"
+    _gpu_name=$(nvidia-smi -i "$_gpu_idx" --query-gpu=name --format=csv,noheader 2>/dev/null | head -1)
+    case "$_gpu_name" in
+        *T4*)   GPU_TAG=t4 ;;
+        *A10*)  GPU_TAG=a10 ;;
+        *L40S*) GPU_TAG=l40s ;;
+        *L4*)   GPU_TAG=l4 ;;
+        *A2*)   GPU_TAG=a2 ;;
+        *"RTX PRO 6000"*) GPU_TAG=rtxpro6000 ;;
+        *)      GPU_TAG=$(echo "${_gpu_name:-gpu}" | awk '{print tolower($NF)}') ;;
+    esac
+    RESULTS_BASE="experiments/RTVSntask/llm/results_${BACKBONE}_${GPU_TAG}"
+fi
 MAX_NUM_SEQS="${MAX_NUM_SEQS:-}"
 LLM_QUEUE_K="${LLM_QUEUE_K:-1}"
-STAGING="${STAGING:-gpu}"
-WORKER_MODE="${WORKER_MODE:-inline}"
-if [[ "$STAGING" == gpu && "$VLLM_DRIVER" != step ]]; then
-    echo "[run.sh] ERROR: STAGING=gpu needs VLLM_DRIVER=step (set STAGING=host for async)" >&2
-    exit 1
-fi
-FM_SCHED="${FM_SCHED:-stfq}"
 FM_SLOTS="${FM_SLOTS:-64}"
 FM_BACKLOG_CAP="${FM_BACKLOG_CAP:-10000}"
 FM_MAX_PROMPT_LEN="${FM_MAX_PROMPT_LEN:-256}"
@@ -175,14 +205,111 @@ echo "  Duration/run   : ${PHASE_DURATION}s"
 echo "  GPU mem (full) : $GPU_MEM_UTIL  (no_sharing* divides by N)"
 echo "  max_new_tokens : $MAX_NEW_TOKENS"
 echo "  Deploy timeout : ${DEPLOY_TIMEOUT}s"
-echo "  TPC condition  : $([[ $INCLUDE_TPC == 1 ]] && echo "enabled (mode=$TPC_MODE)" || echo skipped)"
-echo "  vLLM driver    : $VLLM_DRIVER  (max_num_seqs=${MAX_NUM_SEQS:-256 default}, queue_k=$LLM_QUEUE_K)"
-echo "  Staging        : $STAGING (shared-mode arms; fmvisor always gpu)"
-echo "  Worker mode    : $WORKER_MODE (shared-mode arms; fmvisor: task processes)"
-echo "  fmvisor        : sched=$FM_SCHED slots/task=$FM_SLOTS max_prompt_len=$FM_MAX_PROMPT_LEN"
+if [[ "$INCLUDE_TPC" != 1 ]]; then
+    echo "  SP condition   : skipped"
+elif [[ "$SP_MODE" == mig ]]; then
+    echo "  SP condition   : MIG (N=1 whole GPU, N=2 2x$MIG_PROFILE_HALF, N>=3 4x$MIG_PROFILE_QUARTER) + $TPC_MODE inside a shared slice"
+else
+    echo "  SP condition   : $TPC_MODE over the whole GPU"
+fi
+echo "  vLLM driver    : step  (max_num_seqs=${MAX_NUM_SEQS:-256 default}, queue_k=$LLM_QUEUE_K)"
+echo "  Arms           : BE/SP fifo inline | Shared fifo threaded | FMVisor stfq process (all gpu staging)"
+echo "  fmvisor        : slots/task=$FM_SLOTS backlog=$FM_BACKLOG_CAP max_prompt_len=$FM_MAX_PROMPT_LEN"
 echo "  Base port      : $DEVICE_PORT"
 echo "  Results        : $RESULTS_BASE"
 echo "================================================================"
+
+# ---------------------------------------------------------------------------
+# MIG (SP_MODE=mig). As experiments/motivation2/run.sh: nvidia-smi with sudo
+# (or directly as root); slices only while no process has the GPU open.
+# ---------------------------------------------------------------------------
+SUDO=""; [[ "$(id -u)" == 0 ]] || SUDO=sudo
+MIG_TURNED_ON=0
+
+mig_enabled() {
+    nvidia-smi -i "$GPU_INDEX" --query-gpu=mig.mode.current --format=csv,noheader 2>/dev/null \
+        | grep -qi enabled
+}
+
+# wait_gpu_idle: until no process (of this user) holds the GPU, or MIG_WAIT s.
+wait_gpu_idle() {
+    local deadline=$((SECONDS + MIG_WAIT)) apps pids
+    while :; do
+        apps=$(nvidia-smi -i "$GPU_INDEX" --query-compute-apps=pid,process_name \
+               --format=csv,noheader 2>/dev/null || true)
+        # With MIG on, --query-compute-apps misses processes that still hold
+        # the device open, so also look for this user's on /dev/nvidiaN.
+        if [[ -z "$apps" ]]; then
+            pids=$(fuser "/dev/nvidia$GPU_INDEX" 2>/dev/null | tr -s ' ' '\n' | grep -E '^[0-9]+$' \
+                   | while read -r p; do [[ "$(stat -c %U /proc/$p 2>/dev/null)" == "$USER" ]] && echo "$p"; done || true)
+            [[ -n "$pids" ]] && apps=$(ps -o pid=,cmd= -p "$(paste -sd, <<< "$pids")" 2>/dev/null || true)
+        fi
+        [[ -z "$apps" ]] && return 0
+        if (( SECONDS > deadline )); then
+            echo "[run.sh] GPU still in use after ${MIG_WAIT}s by:" >&2; echo "$apps" >&2
+            return 1
+        fi
+        sleep 2
+    done
+}
+
+# mig_on PROFILES_CSV — MIG mode on, and exactly these slices.
+mig_on() {
+    local profiles="$1" want n try
+    want=$(tr ',' '\n' <<< "$profiles" | grep -c .)
+    echo "[run.sh] MIG on: GPU $GPU_INDEX, slices $profiles" >&2
+    wait_gpu_idle || true
+    if ! mig_enabled; then
+        $SUDO nvidia-smi -i "$GPU_INDEX" -mig 1 >&2
+        if ! mig_enabled; then
+            echo "[run.sh] MIG mode is pending (a GPU reset may be needed)" >&2
+            return 1
+        fi
+    fi
+    MIG_TURNED_ON=1
+    # Drop any slices left from an earlier layout.
+    $SUDO nvidia-smi mig -i "$GPU_INDEX" -dci >/dev/null 2>&1 || true
+    $SUDO nvidia-smi mig -i "$GPU_INDEX" -dgi >/dev/null 2>&1 || true
+    for try in 1 2 3 4 5; do
+        $SUDO nvidia-smi mig -i "$GPU_INDEX" -cgi "$profiles" -C >&2 && break
+        echo "[run.sh] creating MIG slices failed (try $try/5); retrying in 10 s" >&2
+        sleep 10
+    done
+    n=$(nvidia-smi -L | grep -c 'MIG-' || true)
+    nvidia-smi -L | grep 'MIG-' >&2 || true
+    (( n == want )) || { echo "[run.sh] expected $want MIG slices, found $n" >&2; return 1; }
+}
+
+mig_off() {
+    mig_enabled || { MIG_TURNED_ON=0; return 0; }
+    echo "[run.sh] MIG off: GPU $GPU_INDEX" >&2
+    wait_gpu_idle || true
+    $SUDO nvidia-smi mig -i "$GPU_INDEX" -dci >/dev/null 2>&1 || true
+    $SUDO nvidia-smi mig -i "$GPU_INDEX" -dgi >/dev/null 2>&1 || true
+    $SUDO nvidia-smi -i "$GPU_INDEX" -mig 0 >&2
+    MIG_TURNED_ON=0
+    if mig_enabled; then
+        echo "[run.sh] ERROR: MIG still enabled — the other arms need the whole GPU" >&2
+        return 1
+    fi
+}
+
+mig_uuids() {
+    nvidia-smi -L 2>/dev/null | grep -o 'MIG-[0-9a-fA-F-]*' | tr '\n' ' '
+}
+
+# sp_layout N — MIG slices for SP with N tasks (empty: whole GPU, no MIG).
+sp_layout() {
+    local n="$1" i out=""
+    if (( n <= 1 )); then
+        echo ""
+    elif (( n == 2 )); then
+        echo "${MIG_PROFILE_HALF},${MIG_PROFILE_HALF}"
+    else
+        for ((i = 0; i < 4; i++)); do out+="${out:+,}$MIG_PROFILE_QUARTER"; done
+        echo "$out"
+    fi
+}
 
 # ---------------------------------------------------------------------------
 # Device server lifecycle
@@ -219,7 +346,7 @@ stop_devices() {
     ACTIVE_PORTS=()
     sleep 3   # vLLM CUDA cleanup is slow
 }
-trap 'stop_devices' EXIT
+trap 'stop_devices; [[ "$MIG_TURNED_ON" == 1 ]] && mig_off || true' EXIT
 
 # classify_failure LOG -> prints a reason slug
 #   Reads a device log and names why the server could not be placed. This is
@@ -269,36 +396,46 @@ EOF
     echo "[run.sh] FAILURE recorded: $condition ntasks=$ntasks reason=$reason -> ${out_dir}/failure.json" >&2
 }
 
-# start_vllm_device PORT GPU_MEM LOG [TPC_PART] [EXTRA_ARGS...]
-#   Every arm gets the same engine settings and driver; EXTRA_ARGS add a
-#   condition's own flags (fmvisor: process mode).
+# start_vllm_device PORT GPU_MEM LOG SCHED WORKER_MODE ISOLATION [TPC] [EXTRA_ARGS...]
+#   Every arm gets the same engine settings, driver (step) and staging (gpu);
+#   the arm's own flags (policy, worker mode, isolation) are passed explicitly.
+#   TPC: "" (no pinning), a TPC list "0 1 2" (--tpc-partition), or "share:j/k"
+#   (--tpc-share: the j-th of k TPC ranges of the device the server sees).
+#   SV_VISIBLE (caller's local, optional): a MIG slice UUID the server runs on.
 start_vllm_device() {
     local port="$1" gpu_mem="$2" log="$3"
-    local tpc_part="${4:-}"
-    local extra=("${@:5}")
-    local sched="fifo"
+    local sched="$4" worker_mode="$5" isolation="$6"
+    local tpc_part="${7:-}"
+    local extra=("${@:8}")
 
     pkill -f "device/main.py.*--port ${port}" 2>/dev/null || true
     sleep 1
 
     local tpc_args=""
-    [[ -n "$tpc_part" ]] && tpc_args="--tpc-mode $TPC_MODE --tpc-partition $tpc_part"
+    if [[ "$tpc_part" == share:* ]]; then
+        tpc_args="--tpc-mode $TPC_MODE --tpc-share ${tpc_part#share:}"
+    elif [[ -n "$tpc_part" ]]; then
+        tpc_args="--tpc-mode $TPC_MODE --tpc-partition $tpc_part"
+    fi
+    local visible="${SV_VISIBLE:-}" cuda="$CUDA_DEVICE" envs=()
+    if [[ -n "$visible" ]]; then envs=(env "CUDA_VISIBLE_DEVICES=$visible"); cuda="cuda:0"; fi
 
-    echo "[run.sh] Starting vLLM server port=$port gpu_mem=$gpu_mem ${tpc_part:+tpc=[$tpc_part]}" >&2
+    echo "[run.sh] Starting vLLM server port=$port gpu_mem=$gpu_mem sched=$sched worker=$worker_mode isolation=$isolation ${tpc_part:+tpc=[$tpc_part] }${visible:+on $visible}" >&2
 
     # shellcheck disable=SC2086
-    $PYTHON -u "$SERVING_DIR/device/main.py" \
+    ${envs[@]+"${envs[@]}"} $PYTHON -u "$SERVING_DIR/device/main.py" \
         --port                   "$port"           \
         --runtime-type           vllm              \
-        --cuda                   "$CUDA_DEVICE"    \
+        --cuda                   "$cuda"           \
         --scheduler-policy       "$sched"          \
         --gpu-memory-utilization "$gpu_mem"        \
         --max-model-len          "$MAX_MODEL_LEN"  \
         --max-new-tokens         "$MAX_NEW_TOKENS" \
-        --vllm-driver            "$VLLM_DRIVER"    \
+        --vllm-driver            step              \
         --llm-queue-k            "$LLM_QUEUE_K"    \
-        --staging                "$STAGING"        \
-        --worker-mode            "$WORKER_MODE"    \
+        --staging                gpu               \
+        --worker-mode            "$worker_mode"    \
+        --isolation-mode         "$isolation"      \
         ${MAX_NUM_SEQS:+--max-num-seqs "$MAX_NUM_SEQS"} \
         $tpc_args \
         ${extra[@]+"${extra[@]}"} \
@@ -381,13 +518,16 @@ run_condition() {
 
     LAST_PER_MEM="null"
     LAST_FAIL_LOG=""
+    LAST_SP_LAYOUT=""
+    LAST_SP_ASSIGN=""
 
     local dev_log
     case "$condition" in
         single_*)
+            mig_off || { record_failure "$out_dir" "$condition" "$ntasks" "$rps" "mig_off" ""; return 1; }
             local single_task="${condition#single_}"
             dev_log="$LOG_DIR/device_${condition}_rps${rps}_n${ntasks}.log"
-            if ! start_vllm_device "$DEVICE_PORT" "$GPU_MEM_UTIL" "$dev_log"; then
+            if ! start_vllm_device "$DEVICE_PORT" "$GPU_MEM_UTIL" "$dev_log" fifo inline shared; then
                 record_failure "$out_dir" "$condition" "$ntasks" "$rps" "device_start" "$dev_log"
                 return 1
             fi
@@ -407,15 +547,40 @@ run_condition() {
 
         no_sharing|no_sharing_tpc)
             local urls="" per_mem
+            local SV_VISIBLE=""
+            local -a uuids=() slice_k=()
+            local nslices=0
             per_mem=$(ns_gpu_mem "$ntasks")
             LAST_PER_MEM="$per_mem"
-            awk -v p="$per_mem" -v n="$ntasks" -v b="$GPU_MEM_UTIL" 'BEGIN{
-                if (p*n > b + 1e-9)
-                    printf "[run.sh] NOTE: %d servers x %.3f = %.3f exceeds GPU_MEM_UTIL=%.2f — over-subscribed, launching anyway\n", n, p, p*n, b;
-            }' >&2
+
+            if [[ "$condition" == no_sharing_tpc && "$SP_MODE" == mig ]]; then
+                # SP on MIG: slices for this N, then TPC shares inside a slice.
+                local layout; layout=$(sp_layout "$ntasks")
+                LAST_SP_LAYOUT="${layout:-whole_gpu}"
+                if [[ -z "$layout" ]]; then
+                    mig_off || { record_failure "$out_dir" "$condition" "$ntasks" "$rps" "mig_off" ""; return 1; }
+                    per_mem="$GPU_MEM_UTIL"; LAST_PER_MEM="$per_mem"
+                else
+                    mig_on "$layout" || { record_failure "$out_dir" "$condition" "$ntasks" "$rps" "mig_setup" ""; return 1; }
+                    read -ra uuids <<< "$(mig_uuids)"
+                    nslices=${#uuids[@]}
+                    for ((s = 0; s < nslices; s++)); do
+                        # tasks on slice s: i = s, s+nslices, s+2*nslices, ...
+                        slice_k[s]=$(( (ntasks - s + nslices - 1) / nslices ))
+                    done
+                    LAST_PER_MEM="null"
+                fi
+            else
+                [[ "$condition" == no_sharing_tpc ]] && LAST_SP_LAYOUT="whole_gpu_tpc"
+                mig_off || { record_failure "$out_dir" "$condition" "$ntasks" "$rps" "mig_off" ""; return 1; }
+                awk -v p="$per_mem" -v n="$ntasks" -v b="$GPU_MEM_UTIL" 'BEGIN{
+                    if (p*n > b + 1e-9)
+                        printf "[run.sh] NOTE: %d servers x %.3f = %.3f exceeds GPU_MEM_UTIL=%.2f — over-subscribed, launching anyway\n", n, p, p*n, b;
+                }' >&2
+            fi
 
             local tpcs_per=0
-            if [[ "$condition" == "no_sharing_tpc" ]]; then
+            if [[ "$condition" == "no_sharing_tpc" && "$SP_MODE" != mig ]]; then
                 local total_tpcs
                 total_tpcs=$($PYTHON -c "
 import torch
@@ -430,23 +595,42 @@ print(sm // 2)
                 fi
             fi
 
-            local cur=0
+            local cur=0 assign=""
             for ((i=0; i<ntasks; i++)); do
                 local port=$((DEVICE_PORT + i))
-                local part=""
+                local part="" mem="$per_mem"
+                SV_VISIBLE=""
                 if [[ "$condition" == "no_sharing_tpc" ]]; then
-                    part=$(seq -s ' ' "$cur" "$((cur + tpcs_per - 1))")
-                    cur=$((cur + tpcs_per))
+                    if (( nslices > 0 )); then
+                        local s=$(( i % nslices )) j=$(( i / nslices ))
+                        local k=${slice_k[s]}
+                        SV_VISIBLE="${uuids[s]}"
+                        mem=$(ns_gpu_mem "$k")
+                        (( k > 1 )) && part="share:${j}/${k}"
+                        assign+="${assign:+;}${i}:slice${s}${part:+:${part#share:}}"
+                    elif [[ "$SP_MODE" != mig ]]; then
+                        part=$(seq -s ' ' "$cur" "$((cur + tpcs_per - 1))")
+                        cur=$((cur + tpcs_per))
+                    fi
                 fi
                 dev_log="$LOG_DIR/device_${condition}_${i}_rps${rps}_n${ntasks}.log"
-                if ! start_vllm_device "$port" "$per_mem" "$dev_log" "$part"; then
+                # BE / SP: one task per server, fifo, inline.
+                if ! start_vllm_device "$port" "$mem" "$dev_log" fifo inline shared "$part"; then
                     echo "[run.sh] $condition could not place server $((i+1))/$ntasks" >&2
                     record_failure "$out_dir" "$condition" "$ntasks" "$rps" \
                         "device_start_${i}_of_${ntasks}" "$dev_log"
                     return 1
                 fi
+                # A server meant to be pinned that did not pin is not SP: stop
+                # rather than measure an unpartitioned run under SP's name.
+                if [[ -n "$part" ]] && ! grep -q "\[TPC\] libsmctrl: pinned" "$dev_log"; then
+                    echo "[run.sh] ERROR: server $i did not report TPC pinning — see $dev_log" >&2
+                    record_failure "$out_dir" "$condition" "$ntasks" "$rps" "tpc_pin_missing_${i}" "$dev_log"
+                    return 1
+                fi
                 urls+="${urls:+,}localhost:${port}"
             done
+            [[ -n "$assign" ]] && LAST_SP_ASSIGN="$assign"
             $PYTHON -u experiments/RTVSntask/llm/run.py \
                 --tasks       "$tasks_csv" \
                 --condition   "$condition" \
@@ -461,15 +645,20 @@ print(sm // 2)
                 || { record_failure "$out_dir" "$condition" "$ntasks" "$rps" "workload" "$dev_log"; return 1; }
             ;;
 
-        sharing)
-            dev_log="$LOG_DIR/device_sharing_rps${rps}_n${ntasks}.log"
-            if ! start_vllm_device "$DEVICE_PORT" "$GPU_MEM_UTIL" "$dev_log"; then
+        sharing|sharing_inline)
+            mig_off || { record_failure "$out_dir" "$condition" "$ntasks" "$rps" "mig_off" ""; return 1; }
+            # Shared: one engine, all N LoRAs, fifo; per-task output work on
+            # each task's own thread (sharing) or on the step loop (sharing_inline).
+            local heads=threaded
+            [[ "$condition" == sharing_inline ]] && heads=inline
+            dev_log="$LOG_DIR/device_${condition}_rps${rps}_n${ntasks}.log"
+            if ! start_vllm_device "$DEVICE_PORT" "$GPU_MEM_UTIL" "$dev_log" fifo "$heads" shared; then
                 record_failure "$out_dir" "$condition" "$ntasks" "$rps" "device_start" "$dev_log"
                 return 1
             fi
             $PYTHON -u experiments/RTVSntask/llm/run.py \
                 --tasks       "$tasks_csv" \
-                --condition   sharing \
+                --condition   "$condition" \
                 --device-urls "localhost:${DEVICE_PORT}" \
                 --backbone    "$BACKBONE" \
                 --rps         "$run_rps" \
@@ -482,12 +671,12 @@ print(sm // 2)
             ;;
 
         fmvisor)
+            mig_off || { record_failure "$out_dir" "$condition" "$ntasks" "$rps" "mig_off" ""; return 1; }
             # One server, process isolation: the engine in the backbone
-            # process, one process per task. Later --scheduler-policy wins
-            # over start_vllm_device's fifo.
+            # process (STFQ), one process per task. --worker-mode is ignored
+            # in process mode (each task has its own process).
             dev_log="$LOG_DIR/device_fmvisor_rps${rps}_n${ntasks}.log"
-            if ! start_vllm_device "$DEVICE_PORT" "$GPU_MEM_UTIL" "$dev_log" "" \
-                    --isolation-mode process --scheduler-policy "$FM_SCHED" \
+            if ! start_vllm_device "$DEVICE_PORT" "$GPU_MEM_UTIL" "$dev_log" stfq inline process "" \
                     --max-tasks "$((ntasks * 2 + 4))" --slots-per-task "$FM_SLOTS" \
                     --task-backlog-cap "$FM_BACKLOG_CAP" --llm-max-prompt-len "$FM_MAX_PROMPT_LEN"; then
                 record_failure "$out_dir" "$condition" "$ntasks" "$rps" "device_start" "$dev_log"
@@ -528,20 +717,24 @@ print(sm // 2)
   "gpu_memory_utilization_per_server": ${LAST_PER_MEM},
   "max_model_len": ${MAX_MODEL_LEN},
   "max_new_tokens": ${MAX_NEW_TOKENS},
-  "vllm_driver": "${VLLM_DRIVER}",
+  "vllm_driver": "step",
   "max_num_seqs": "${MAX_NUM_SEQS:-default}",
   "llm_queue_k": ${LLM_QUEUE_K},
-  "staging": "$([[ "$condition" == fmvisor ]] && echo gpu_slots || echo "${STAGING}")",
-  "worker_mode": "$([[ "$condition" == fmvisor ]] && echo task_processes || echo "${WORKER_MODE}")",
+  "staging": "$([[ "$condition" == fmvisor ]] && echo gpu_slots || echo gpu)",
+  "worker_mode": "$(case "$condition" in fmvisor) echo task_processes ;; sharing) echo threaded ;; *) echo inline ;; esac)",
   "isolation_mode": "$([[ "$condition" == fmvisor ]] && echo process || echo shared)",
-  "scheduler": "$([[ "$condition" == fmvisor ]] && echo "${FM_SCHED}" || echo fifo)",
-  "fm_sched": "${FM_SCHED}",
+  "scheduler": "$([[ "$condition" == fmvisor ]] && echo stfq || echo fifo)",
   "fm_slots": ${FM_SLOTS},
+  "fm_backlog_cap": ${FM_BACKLOG_CAP},
+  "sp_mode": "$([[ "$condition" == no_sharing_tpc ]] && echo "${SP_MODE}" || echo null)",
+  "sp_layout": "${LAST_SP_LAYOUT:-null}",
+  "sp_assignment": "${LAST_SP_ASSIGN:-null}",
   "device_port_base": ${DEVICE_PORT}
 }
 EOF
 
     stop_devices
+    if [[ "$condition" == no_sharing_tpc && "$MIG_TURNED_ON" == 1 ]]; then mig_off || true; fi
 }
 
 # ---------------------------------------------------------------------------
@@ -578,6 +771,8 @@ for ntasks in "${NTASKS_LIST[@]:-}"; do
         for c in "${CUSTOM[@]}"; do
             if [[ "$c" == "single" ]]; then
                 conditions+=("single_${tasks_arr[0]}")
+            elif [[ ! "$c" =~ ^(no_sharing_tpc|no_sharing|sharing|sharing_inline|fmvisor)$ ]]; then
+                echo "[run.sh] ERROR: unknown condition '$c'" >&2; exit 1
             else
                 conditions+=("$c")
             fi
