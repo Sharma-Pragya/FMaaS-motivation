@@ -1,0 +1,7 @@
+task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_client_pre_rpc_ms,avg_non_server_exec_overhead_ms,avg_gpu_alloc_peak_mb,max_gpu_alloc_peak_mb
+ecgclass,no_sharing,2906,4.9254,51.007,42.634,107.107,147.493,41.846,39.179,0.002,1.876,8.501,0.0,9.161,1403.128,1403.635
+gestureclass,no_sharing,2996,5.078,50.098,41.898,104.912,148.505,41.012,38.438,0.003,1.784,8.489,0.0,9.086,1403.131,1403.633
+heartrate,no_sharing,2990,5.0678,50.253,41.578,106.93,160.069,42.269,39.713,0.002,1.785,7.374,0.0,7.985,1403.127,1403.872
+diasbp,no_sharing,2979,5.0492,48.738,41.299,100.126,146.072,41.425,38.876,0.003,1.783,6.753,0.0,7.313,1403.125,1404.127
+sysbp,no_sharing,2955,5.0085,49.803,42.024,103.442,149.912,42.032,39.458,0.002,1.803,7.133,0.0,7.77,1403.125,1403.622
+etth1fore,no_sharing,2765,4.6864,48.53,41.384,98.331,143.687,41.308,38.621,0.003,1.942,6.589,0.0,7.222,1450.619,1451.119

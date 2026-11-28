@@ -296,7 +296,9 @@ async def deploy(device_url: str, backbone: str, tasks: List[str],
         await client.wait_ready()
         payload = json.dumps({"backbone": backbone, "decoders": decoders})
         print(f"[Deploy] {device_url}  backbone={backbone}  tasks={tasks}")
-        resp = await client.control("load", payload)
+        # FMVisor spawns one process per task serially (~12-15s each), so
+        # loading many tasks exceeds the client's default 120s deadline.
+        resp = await client.control("load", payload, timeout_s=600)
         print(f"[Deploy] {device_url}  status={resp['status']}")
     finally:
         await client.close()

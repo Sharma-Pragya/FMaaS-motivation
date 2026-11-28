@@ -1,0 +1,35 @@
+{
+  "condition": "no_sharing_tpc",
+  "task_set": "tsfm",
+  "tasks": [
+    "ecgclass",
+    "gestureclass",
+    "heartrate",
+    "diasbp",
+    "sysbp",
+    "etth1fore",
+    "weatherfore",
+    "trafficfore",
+    "eclfore",
+    "exchangefore"
+  ],
+  "num_tasks": 10,
+  "backbone": "momentlarge",
+  "rps_per_task": 5.0,
+  "phase_duration_s": 600.0,
+  "reason": "warmup_failure",
+  "detail": "1/10 slots failed the 15.0s warmup burst (median healthy slot: 21 requests)",
+  "warmup_burst_secs": 15.0,
+  "slots_total": 10,
+  "slots_dead": 1,
+  "median_slot_requests": 21,
+  "min_required_requests": 1.05,
+  "dead_slots": [
+    {
+      "slot": "exchangefore",
+      "task": "exchangefore",
+      "warmup_successes": 0,
+      "last_error": "AioRpcError: <AioRpcError of RPC that terminated with:\n\tstatus = StatusCode.UNKNOWN\n\tdetails = \"Unexpected <class 'RuntimeError'>: pipeline_not_loaded: backbone has not been loaded yet\"\n\tdebug_error_string = \"UNKNOWN:Error received from peer  {grpc_status:2, grpc_message:\"Unexpected <class \\'RuntimeError\\'>: pipeline_not_loaded: backbone has not been loaded yet\"}\"\n>"
+    }
+  ]
+}

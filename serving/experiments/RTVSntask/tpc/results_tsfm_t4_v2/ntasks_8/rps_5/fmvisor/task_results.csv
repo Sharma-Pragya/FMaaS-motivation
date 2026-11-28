@@ -1,0 +1,9 @@
+task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_client_pre_rpc_ms,avg_non_server_exec_overhead_ms,avg_gpu_alloc_peak_mb,max_gpu_alloc_peak_mb
+ecgclass,fmvisor,2906,4.9254,49.711,47.74,82.443,109.462,34.246,32.799,0.0,0.969,14.527,0.0,15.465,0.0,0.0
+gestureclass,fmvisor,2996,5.078,49.07,47.263,80.936,104.264,34.022,32.581,0.0,0.954,14.102,0.0,15.048,0.0,0.0
+heartrate,fmvisor,2990,5.0678,50.186,47.719,85.104,111.712,34.578,33.136,0.0,0.949,14.664,0.0,15.607,0.0,0.0
+diasbp,fmvisor,2979,5.0492,48.909,45.771,83.048,114.601,34.326,32.888,0.0,0.945,13.644,0.0,14.584,0.0,0.0
+sysbp,fmvisor,2955,5.0085,49.208,46.928,82.017,104.832,34.195,32.76,0.0,0.942,14.068,0.0,15.013,0.0,0.0
+etth1fore,fmvisor,2765,4.6864,48.864,46.68,80.735,105.396,34.097,32.617,0.0,0.975,13.779,0.0,14.766,0.0,0.0
+weatherfore,fmvisor,2984,5.0576,48.815,46.586,80.109,104.264,33.887,32.406,0.0,0.976,13.989,0.0,14.928,0.0,0.0
+trafficfore,fmvisor,3051,5.1712,49.42,46.762,83.071,106.826,34.306,32.82,0.0,0.971,14.12,0.0,15.114,0.0,0.0

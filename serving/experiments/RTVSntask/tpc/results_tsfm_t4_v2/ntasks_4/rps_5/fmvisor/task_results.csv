@@ -1,0 +1,5 @@
+task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_client_pre_rpc_ms,avg_non_server_exec_overhead_ms,avg_gpu_alloc_peak_mb,max_gpu_alloc_peak_mb
+ecgclass,fmvisor,2906,4.9254,37.735,31.012,56.251,65.556,28.369,27.163,0.0,0.809,8.404,0.0,9.365,0.0,0.0
+gestureclass,fmvisor,2996,5.078,37.388,30.998,55.815,64.499,28.253,27.067,0.0,0.787,8.171,0.0,9.135,0.0,0.0
+heartrate,fmvisor,2990,5.0678,37.483,31.132,55.803,63.108,28.365,27.169,0.0,0.792,8.208,0.0,9.119,0.0,0.0
+diasbp,fmvisor,2979,5.0492,37.014,30.857,55.351,64.531,28.329,27.134,0.0,0.792,7.769,0.0,8.685,0.0,0.0

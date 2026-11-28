@@ -1,0 +1,7 @@
+task,condition,n_requests,throughput_rps,avg_latency_ms,p50_latency_ms,p95_latency_ms,p99_latency_ms,avg_server_exec_ms,avg_server_proc_ms,avg_server_swap_ms,avg_server_decoder_ms,avg_queue_wait_plus_rpc_ms,avg_client_pre_rpc_ms,avg_non_server_exec_overhead_ms,avg_gpu_alloc_peak_mb,max_gpu_alloc_peak_mb
+nyudepth__app1,fmvisor,2906,4.9254,39.407,28.703,82.545,122.581,24.834,23.085,0.0,1.273,10.403,0.0,14.573,0.0,0.0
+vocseg__app1,fmvisor,2979,5.0492,52.816,46.58,101.489,139.92,31.711,29.5,0.0,1.566,15.607,0.0,21.105,0.0,0.0
+nyudepth__app2,fmvisor,2979,5.0492,51.548,45.555,99.729,136.832,31.439,29.526,0.0,1.343,15.263,0.0,20.11,0.0,0.0
+vocseg__app2,fmvisor,2996,5.078,52.302,46.563,96.663,138.164,31.766,29.505,0.0,1.658,15.037,0.0,20.536,0.0,0.0
+nyudepth__app3,fmvisor,2996,5.078,51.425,45.799,94.721,139.044,31.493,29.488,0.0,1.413,15.084,0.0,19.933,0.0,0.0
+vocseg__app3,fmvisor,2984,5.0576,39.327,28.968,81.744,120.529,24.647,22.882,0.0,1.322,10.08,0.0,14.68,0.0,0.0
